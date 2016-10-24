@@ -19,7 +19,7 @@ Local sharing is quite popular, especially in Emerging Markets countries, due to
 ### Content Distribution Networks and Web caches.
 The CDNs can provide service of hosting web content that should be delivered at scale. This includes both hosting subresources (JS libraries, images) as well as entire content ([Google AMP](https://developers.google.com/amp/cache/overview)) on network of servers, often provided as a service by 3rd party. Unfortunately, origin-based security model of the Web limits the ways a 3rd-party caches/servers can be used. Indeed, for example in case of hosting JS subresourcves, the original document must explicitly trust the CDN origin to serve the trusted script. The user agent must use protocol-based means to verify the subresource is coming from the trusted CDN. Another example is a CDN that caches the whole content. Because the origin of CDN is different from the origin of the site, the browser normally can't afford the origin treatment of the site tot he loaded content. Look at how an article from New York Times is represented:
 
-<img align="center" width=350 src="https://github.com/dimich-g/webpackage/blob/initial/amp_screenshot.png">
+<img align="center" width=350 src="https://github.com/dimich-g/webpackage/blob/initial/buick.png">
 
 Note the address bar indicating google.com. Also, since the content of NYT is hosted in an iframe, it can't use all the functionality typically afforded to a top-level document:
 - Can't request permissions
