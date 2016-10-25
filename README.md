@@ -33,10 +33,14 @@ We propose to introduce a packaging format for the Web that would be able to con
 In addition, that format would include optional signing of the resources, which can be used to verify authenticity and integrity of the content. Once and if verified (this may or may not require network connection), the content can be afforded the treatment of the claimed origin - for example showing a "green lock" with URL in a browser, or being able to send network request to the origin's server.
 
 There is already a [packaging format proposal](https://w3ctag.github.io/packaging-on-the-web/) which we will base upon.
+We are proposing to improve on the spec, in particular by introducing 2 major additions:
+- Hierarchical structure of the sub-packages to allow resources from multiple origins.
+- Index of content to facilitate local resource fetching from the package.
+- Signature block, to cryptographically sign the content of the package.
+
+Following are some example usages that correspond to these additions:
 
 ### Use Case: a copy of web site in a file.
-
-It is hard to send someone a page by email, or share it 
 
 ```html
 Content-Type: application/package
@@ -74,7 +78,7 @@ Content-Location: index.html
 Content-Type: text/html
 <h1>Table Of Contents</h1>
 <body>
-<a href=">Page1
+
 [ html content of the index page ]
 --j38n02qryf9n0eqny8cq0
 Content-Location: TOC
