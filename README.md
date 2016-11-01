@@ -1,6 +1,7 @@
 **TODO list**
 - this is work in progress
 - needs more links
+- text is a bit dense, hard to read.
 
 
 # Web Packaging Format Explainer
@@ -82,6 +83,7 @@ Transfer-Encoding: binary
 The example web site contains an HTML page and pulls a script from the well-known location (different origin). Note the usage of the nested package to contain a resource (JS library) from a separate origin, as well as the "forward declaration" of the package via **Link:** header. We propose the nested packages to be the only way to keep resources from the origins different from the Content-Location origin of the main package itself.
 
 There are a few things shown here:
+
 1. Note the nested package uses its own separate boundary string.
 2. The **scope=** attribute of the Link: header is used to resolve the "https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js" URL in the page to the package that contains it. The simple text match is used.
 3. The nested package from https://ajax.googleapis.com is used that contains the js file referenced by the main page. Note the package may contain other resources as well and can be signed by googleapis.com.
@@ -147,11 +149,18 @@ Content-Type: text/html
   Hello World! <img src="images/world.png">
 </body>
 --j38n02qryf9n0eqny8cq0
+Content-Location: /images/world.png
+Content-Type: image/png
+Transfer-Encoding: binary
+
+... binary png image ...
+--j38n02qryf9n0eqny8cq0
 Content-Location: sid:bn4rkj4n4nr1ln
 Content-Type: application/index
 
-/index.html 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
-... one entry per resource ...
+/index.html     0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
+/otherPage.html 0xabc126434d7fed989ca0e3d88379acef897ffc98 368 180
+/mages/world.png     0x4d7fed989ca0eef897ffc996f70a90701c9989ca 548 1024
 --j38n02qryf9n0eqny8cq0--
 ```
 
@@ -161,18 +170,28 @@ Each directory entry is a line that looks like following:
 
 Where:
 
+```
 directory-entry = part-id SP part-hash SP part-offset SP part-size CRLF
-part-id = part-url [":" <headers that are mentioned in Vary: header of the part>]
-part-hash = <cryptographic hash of the part>
-part-location = <octet offset of the part from the beginning of the package>
-part-size = <octet size of the part>
+  part-id = part-url [":" <headers that are mentioned in Vary: header of the part>]
+  part-hash = <cryptographic hash of the part>
+  part-location = <octet offset of the part from the beginning of the package>
+  part-size = <octet size of the part>
+```
 
 The **part-hash** is used in signing (see below) and can be optional (filled with 0x0 value) if signing is not used.
 
 ### Use Case: Signed package, one origin.
-The example contains an HTML page and an image. The package is signed by the
+The example contains an HTML page and an image. The package is signed by the example.com publisher, using the same private key that example.com uses for HTTPS. The signed package ensures the verification of the origin even if the package is stored in a local file or obtained via other insecure ways like HTTP, or hosted on another origin's server.
+
+Important notes:
+
+1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains an encrypted hash of the content index, and a reference to the public key certificate (or if needed, a chain of certificates to the root CA).
+2. The content index contains hashes of all parts of the package, so it is enough to validate the index to trust its hashes, then compute the hash of the each part upon using it to validate each part.
+3. The inclusion of certificate makes it possible to validate the package offline (certificate revocation aside, this can be done out-of-band when device is actually online).
+4. Certificate is included as one of standard the DER-encoded resource (with proper Content-type).
 
 ```html
+Package-Signature: 0xabc126434d7fed989ca0e3d88379acef897ffc98; certificate=sid:hgfkadfafiweof034
 Content-Type: application/package
 Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
@@ -183,63 +202,31 @@ Content-Location: /index.html
 Content-Type: text/html
 
 <body>
-  <a href="otherPage.html">Other page</a>
-</body>
---j38n02qryf9n0eqny8cq0
-Content-Location: /otherPage.html
-Content-Type: text/html
-
-<body>
-  Hello World! <img src="images/world.png">
+  Hello World!
 </body>
 --j38n02qryf9n0eqny8cq0
 Content-Location: sid:bn4rkj4n4nr1ln
 Content-Type: application/index
 
-/index.html 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153
-... one entry per resource ...
---j38n02qryf9n0eqny8cq0--
-```
-
-
-
-4. If both packages (from example.com and googleapis.com) are signed, opening the page from this package stored locally is equivalent to loading all the resources from the corresponding HTTPS endpoints online. Therefore, the index.html page may be shown in the browser as "green lock" origin and can issue XHR requests back to example.com server. It also can trust that the JS library it loaded
-
-
-
-
-Content-Location: TOC
-Content-Type: application/x-content-index
-
-http://example.org/images/image1.png 16100/4096
-http://example.org/styles/first.css 25124/1000
-cid://e12eff3e4r5fg6g780 320/10240
---j38n02qryf9n0eqny8cq0--
-```
-
-```html
-Content-Type: application/package
-Content-Location: http://example.org/examplePack.pack
-Link: <index.html>; rel=describedby
-Link: <TOC>; rel=index; file-location: 267/312
-
-
+/index.html 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
 --j38n02qryf9n0eqny8cq0
-Content-Location: index.html
-Content-Type: text/html
-<h1>Table Of Contents</h1>
-<body>
+Content-Location: sid:hgfkadfafiweof034
+Content-Type: application/pkcs7-mime
 
-[ html content of the index page ]
---j38n02qryf9n0eqny8cq0
-Content-Location: TOC
-Content-Type: application/x-content-index
-
-http://example.org/images/image1.png 16100/4096
-http://example.org/styles/first.css 25124/1000
-cid://e12eff3e4r5fg6g780 320/10240
+... certificate (or a chain) in any of the
 --j38n02qryf9n0eqny8cq0--
 ```
+
+The process of validation:
+1. Decrypt the hash provided by Package-Signature header (lets call result of decryption HPackage) using the provided public key cert.
+2. Compute the hash of the application/index part. Lets call it HIndex.
+3. If HPackage == HIndex, the index of the archive is deemed validated.
+4. When a part is loaded, compute its hash and compare it with the hash in the content index. If they match, the part is deemed validated.
+
+
+>>TODO: example with 2 signed packages
+>>If both packages (from example.com and googleapis.com) are signed, opening the page from this package stored locally is equivalent to loading all the resources from the corresponding HTTPS endpoints online. Therefore, the index.html page may be shown in the browser as "green lock" origin and can issue XHR requests back to example.com server. It also can trust that the JS library it loads from the inner package.
+
 
 ##FAQ
 
