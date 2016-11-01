@@ -134,7 +134,7 @@ The package in this case contains a lot of pages with resources ("Encyclopedia i
 Content-Type: application/package
 Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
-Link: <sid:bn4rkj4n4nr1ln>; rel=index; offset=12014/2048
+Link: <cid:bn4rkj4n4nr1ln>; rel=index; offset=12014/2048
 
 --j38n02qryf9n0eqny8cq0
 Content-Location: /index.html
@@ -157,7 +157,7 @@ Transfer-Encoding: binary
 
 ... binary png image ...
 --j38n02qryf9n0eqny8cq0
-Content-Location: sid:bn4rkj4n4nr1ln
+Content-Location: cid:bn4rkj4n4nr1ln
 Content-Type: application/index
 
 /index.html     0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
@@ -193,11 +193,11 @@ Important notes:
 4. Certificate is included as one of standard the DER-encoded resource (with proper Content-type).
 
 ```html
-Package-Signature: 0xabc126434d7fed989ca0e3d88379acef897ffc98; certificate=sid:hgfkadfafiweof034
+Package-Signature: 0xabc126434d7fed989ca0e3d88379acef897ffc98; certificate=cid:hgfkadfafiweof034
 Content-Type: application/package
 Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
-Link: <sid:bn4rkj4n4nr1ln>; rel=index; offset=12014/2048
+Link: <cid:bn4rkj4n4nr1ln>; rel=index; offset=12014/2048
 
 --j38n02qryf9n0eqny8cq0
 Content-Location: /index.html
@@ -207,12 +207,12 @@ Content-Type: text/html
   Hello World!
 </body>
 --j38n02qryf9n0eqny8cq0
-Content-Location: sid:bn4rkj4n4nr1ln
+Content-Location: cid:bn4rkj4n4nr1ln
 Content-Type: application/index
 
 /index.html 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
 --j38n02qryf9n0eqny8cq0
-Content-Location: sid:hgfkadfafiweof034
+Content-Location: cid:hgfkadfafiweof034
 Content-Type: application/pkcs7-mime
 
 ... certificate (or a chain) in any of the
