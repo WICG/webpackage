@@ -37,6 +37,7 @@ Since the packaged "bundle" can be quite large (a game with a lot of resources o
 
 There is already a [packaging format proposal](https://w3ctag.github.io/packaging-on-the-web/) which we will base upon.
 We are proposing to improve on the spec, in particular by introducing 3 major additions:
+
 1. Hierarchical structure of the sub-packages to allow resources from multiple origins.
 2. Index of content to facilitate local resource fetching from the package.
 3. Signature block, to cryptographically sign the content of the package.
@@ -47,6 +48,7 @@ Following are some example usages that correspond to these additions:
 
 ### Use Case: a couple of web pages with resources in a package.
 The example web site contains two HTML pages and an image. This is straightforward case, demonstrating the following:
+
 1. [Package Header](https://w3ctag.github.io/packaging-on-the-web/#package-header) section at the beginning. It contains a Content-Location of the package, which also serves as base URL to resolve the relative URLs of the [parts](https://w3ctag.github.io/packaging-on-the-web/#parts). So far, this is straight example of the package per existing spec draft.
 2. Note the "main resource" of the package specified by Link: header with **rel=describedby** in th ePackage Header section.
 
@@ -218,6 +220,7 @@ Content-Type: application/pkcs7-mime
 ```
 
 The process of validation:
+
 1. Decrypt the hash provided by Package-Signature header (lets call result of decryption HPackage) using the provided public key cert.
 2. Compute the hash of the application/index part. Lets call it HIndex.
 3. If HPackage == HIndex, the index of the archive is deemed validated.
