@@ -33,7 +33,7 @@ We propose to introduce a packaging format for the Web that would be able to con
 
 In addition, that format would include optional **signing** of the resources, which can be used to verify authenticity and integrity of the content. Once and if verified (this may or may not require network connection), the content can be afforded the treatment of the claimed origin - for example showing a "green lock" with URL in a browser, or being able to send network request to the origin's server. This disconnects the verification of the origin from actual network connection and enables many new scenarios for the web content to be consumed, including time-shifted delivery (when content is delivered by an opportunistic restartable download for example), peer-to-peer sharing or caching on local file servers.
 
-Since the packaged "bundle" can be quite large (a game with a lot of resources or content of multiple web sites), the efficient access to that content becomes important. For example, it would be often prohibitively expensive to "unpack" or somehow else pre-process such a large resource on the client device. Unpacking, for example, may require a double size occupied in device's storage, which can be a problem, especially on low-end devices. We propose a optional **directory structure** that allows the bundle to be consumed (browsed) efficiently as is, without unpacking - by adding an index-like structure which provides direct offsets into the package.
+Since the packaged "bundle" can be quite large (a game with a lot of resources or content of multiple web sites), the efficient access to that content becomes important. For example, it would be often prohibitively expensive to "unpack" or somehow else pre-process such a large resource on the client device. Unpacking, for example, may require a double size occupied in device's storage, which can be a problem, especially on low-end devices. We propose a optional **Content Index** structure that allows the bundle to be consumed (browsed) efficiently as is, without unpacking - by adding an index-like structure which provides direct offsets into the package.
 
 There is already a [packaging format proposal](https://w3ctag.github.io/packaging-on-the-web/) which we will base upon.
 We are proposing to improve on the spec, in particular by introducing 3 major additions:
@@ -120,14 +120,14 @@ Content-Type" application/javascript
 ```
 
 
-### Use case: Optional Directory
+### Use case: Optional Content Index
 The package in this case contains a lot of pages with resources ("Encyclopedia in a file") or multiple sites (in subpackages). The proposed structure facilitates efficient access, assuming the whole package is available locally. Several important notes:
 
-1. The Link: header with **rel=index** declares a specified part to be a directory of the package. The **offset=12014** attribute specifies the octet offset/size from the beginning of the Package Header of the package to the directory part. That can be used in file-seek APIs to quickly read the part without a need to parse the potentially huge package itself.
-2. Directory part is typically generated during package creation, it doesn't have a natural URL. We propose to use cid: generated URLs for such generated parts. The visibility scope of those URLs is limited similar to package boundaries, and is for the current package only.
-3. Content-type of the directory is application/index.
-4. The directory consists of the Directory Entries (see below for the discussion of what they are).
-5. Directory part may be compressed (as specified by Transfer-Encoding header).
+1. The Link: header with **rel=index** declares a specified part to be a Content Index of the package. The **offset=12014** attribute specifies the octet offset/size from the beginning of the Package Header of the package to the Content Index part. That can be used in file-seek APIs to quickly read the part without a need to parse the potentially huge package itself.
+2. Content Index part is typically generated during package creation, it doesn't have a natural URL. We propose to use cid: generated URLs for such generated parts. The visibility scope of those URLs is limited similar to package boundaries, and is for the current package only.
+3. Content-type of the Content Index is application/index.
+4. The Content Index consists of the Content Index Entries (see below for the discussion of what they are).
+5. Content Index part may be compressed (as specified by Transfer-Encoding header).
 
 
 ```html
@@ -166,14 +166,14 @@ Content-Type: application/index
 --j38n02qryf9n0eqny8cq0--
 ```
 
-#### Directory Entry
-Each directory entry is a line that looks like following:
+#### Content Index Entry
+Each Content Index entry is a line that looks like following:
 > /index.html 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
 
 Where:
 
 ```
-directory-entry = part-id SP part-hash SP part-offset SP part-size CRLF
+content-index-entry = part-id SP part-hash SP part-offset SP part-size CRLF
   part-id = part-url [":" <headers that are mentioned in Vary: header of the part>]
   part-hash = <cryptographic hash of the part>
   part-location = <octet offset of the part from the beginning of the package>
@@ -187,8 +187,8 @@ The example contains an HTML page and an image. The package is signed by the exa
 
 Important notes:
 
-1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains an encrypted hash of the content index, and a reference to the public key certificate (or if needed, a chain of certificates to the root CA).
-2. The content index contains hashes of all parts of the package, so it is enough to validate the index to trust its hashes, then compute the hash of the each part upon using it to validate each part.
+1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains an encrypted hash of the Package Header section (not including Package-Signature header) and Content Index. It also contains a reference (via [cid: URL](https://tools.ietf.org/html/rfc2392)) to the part that contains the public key certificate (or if needed, a chain of certificates to the root CA).
+2. The Content Index contains hashes of all parts of the package, so it is enough to validate the index to trust its hashes, then compute the hash of the each part upon using it to validate each part.
 3. The inclusion of certificate makes it possible to validate the package offline (certificate revocation aside, this can be done out-of-band when device is actually online).
 4. Certificate is included as one of standard the DER-encoded resource (with proper Content-type).
 
@@ -224,15 +224,78 @@ The process of validation:
 1. Decrypt the hash provided by Package-Signature header (lets call result of decryption HPackage) using the provided public key cert.
 2. Compute the hash of the application/index part. Lets call it HIndex.
 3. If HPackage == HIndex, the index of the archive is deemed validated.
-4. When a part is loaded, compute its hash and compare it with the hash in the content index. If they match, the part is deemed validated.
+4. When a part is loaded, compute its hash and compare it with the hash in the Content Index. If they match, the part is deemed validated.
 
 
->>TODO: example with 2 signed packages
->>If both packages (from example.com and googleapis.com) are signed, opening the page from this package stored locally is equivalent to loading all the resources from the corresponding HTTPS endpoints online. Therefore, the index.html page may be shown in the browser as "green lock" origin and can issue XHR requests back to example.com server. It also can trust that the JS library it loads from the inner package.
+### Use Case: Signed package, 2 origins
 
+Lets add signing to example mentioned above where a page used cross-origin JS library, hosted on https://ajax.googleapis.com. Since this package includes resources fmor 2 origins, this means there are 2 packages, one of them nested. Both of them should be signed by their respective publisher, since for the main page to be validated as secure (green lock, origin access) all resources that conprise it must be signed/validated - equivalent of them being loaded via HTTPS.
+
+Important notes:
+
+1. Nested package with the JS library, obtained from googleapis.com, is separately signed by googleapis.com
+2. Alternative for example.com woudl be to include the JS library into its own package and sign it as part of example.com, but this is useful example on how the nested signed package looks like.
+3. The nested package indented for illustration purposes.
+
+```html
+Package-Signature: 0xd83he34d7fed989ca0e3d88379acef897ffc11; certificate=cid:hgfkadfafiweof034
+Content-Type: application/package
+Content-Location: https://example.org/examplePack.pack
+Link: </index.html>; rel=describedby
+Link: <https://ajax.googleapis.com/packs/jquery_3.1.0.pack>; rel=package; scope=/ajax/libs/jquery/3.1.0
+Link: <cid:bn4rkj4n4nr1ln>; rel=index; offset=12014/2048
+
+--j38n02qryf9n0eqny8cq0
+Content-Location: /index.html
+Content-Type: text/html
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<body>
+...
+</body>
+--j38n02qryf9n0eqny8cq0
+	Package-Signature: 0xabc126434d7fed989ca0e3d88379acef897ffc98; certificate=cid:hkjflnoiu3rn45n
+	Content-Location: https://ajax.googleapis.com/packs/jquery_3.1.0.pack
+	Content-Type: application/package
+	Link: <cid:asdnklni4o3r5>; rel=index; offset=12014/2048
+
+	--klhfdlifhhiorefioeri1
+	Content-Location: /ajax/libs/jquery/3.1.0/jquery.min.js
+	Content-Type" application/javascript
+
+	... some JS code ...
+	--klhfdlifhhiorefioeri1
+	Content-Location: cid:asdnklni4o3r5
+	Content-Type: application/index
+
+	/ajax/libs/jquery/3.1.0/jquery.min.js 0x5b8b78de7c9b8aa6bc8a7a36f70a9db4d990701c 102 3876
+	... other entries ...
+	--klhfdlifhhiorefioeri1
+	Content-Location: cid:hkjflnoiu3rn45n
+	Content-Type: application/pkix-cert
+
+	... certificate for ajax.googleapi.com ...
+	--klhfdlifhhiorefioeri1--
+--j38n02qryf9n0eqny8cq0
+Content-Location: cid:bn4rkj4n4nr1ln
+Content-Type: application/index
+
+/index.html 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
+--j38n02qryf9n0eqny8cq0
+Content-Location: cid:hgfkadfafiweof034
+Content-Type: application/pkcs7-mime
+
+... certificate for example.com ...
+--j38n02qryf9n0eqny8cq0--
+
+```
 
 ##FAQ
 
 > Why signing but not encryption? HTTPS provides both...
 
 The signing part of the proposal addresses *integrity*, *authenticity* and *non-repudiation* aspects of the security. It is enough for the resource to be signed to validate it belongs to the origin corresponding to the certificate used. This, in turn allows the browsers and other user agents to afford the 'origin treatment' to the resources in the package, because there is a guarantee that those resources were not tampered with.
+
+>What about certificate revocation? Many use cases assume package is validated while offline.
+
+Indeed, as is the case with web browsers as well, certificate revocation is not instant on the web. In case of packages that are consumed while device is offline (maybe for a long period of time), the revocation of the certificate may not reach device promptly. But then again, if the web resources were stored in a browser cache, or if pages were Saved As, and used when device is offline, there would be no way to receive the CRL or use OCSP for real-time certificate validation as well. Once the device is online, the certificate should be validated using best practices of the user agent and access revoked if needed.
