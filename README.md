@@ -1,9 +1,3 @@
-**TODO list**
-- this is work in progress
-- needs more links
-- text is a bit dense, hard to read.
-
-
 # Web Packaging Format Explainer
 This document intends to list use cases motivating the improvements of the current [Web Packaging Draft](https://w3ctag.github.io/packaging-on-the-web/). It serves similar role as typical "Introduction" or "Using" and other non-normative sections of specs.
 
