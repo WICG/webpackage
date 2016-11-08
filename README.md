@@ -118,7 +118,7 @@ Content-Type" application/javascript
 The package in this case contains a lot of pages with resources ("Encyclopedia in a file") or multiple sites (in subpackages). The proposed structure facilitates efficient access, assuming the whole package is available locally. Several important notes:
 
 1. The Link: header with **rel=index** declares a specified part to be a Content Index of the package. The **offset=12014** attribute specifies the octet offset/size from the beginning of the Package Header of the package to the Content Index part. That can be used in file-seek APIs to quickly read the part without a need to parse the potentially huge package itself.
-2. Content Index part is typically generated during package creation, it doesn't have a natural URL. We propose to use cid: generated URLs for such generated parts. The visibility scope of those URLs is limited similar to package boundaries, and is for the current package only.
+2. Content Index part is typically generated during package creation, it doesn't have a natural URL. We propose to use cid: generated URLs (UUID-based, 128-bit) for such generated parts. The visibility scope of those URLs is limited similar to package boundaries, and is for the current package only.
 3. Content-type of the Content Index is application/index.
 4. The Content Index consists of the Content Index Entries (see below for the discussion of what they are).
 5. Content Index part may be compressed (as specified by Transfer-Encoding header).
@@ -128,7 +128,7 @@ The package in this case contains a lot of pages with resources ("Encyclopedia i
 Content-Type: application/package
 Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
-Link: <cid:bn4rkj4n4nr1ln>; rel=index; offset=12014/2048
+Link: <cid:f47ac10b-58cc-4372-a567-0e02b2c3d479>; rel=index; offset=12014/2048
 
 --j38n02qryf9n0eqny8cq0
 Content-Location: /index.html
@@ -151,7 +151,7 @@ Transfer-Encoding: binary
 
 ... binary png image ...
 --j38n02qryf9n0eqny8cq0
-Content-Location: cid:bn4rkj4n4nr1ln
+Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/index
 
 /index.html     0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
@@ -181,17 +181,17 @@ The example contains an HTML page and an image. The package is signed by the exa
 
 Important notes:
 
-1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains an encrypted hash of the Package Header section (not including Package-Signature header) and Content Index. It also contains a reference (via [cid: URL](https://tools.ietf.org/html/rfc2392)) to the part that contains the public key certificate (or if needed, a chain of certificates to the root CA).
+1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains an encrypted hash of the Package Header section (not including Package-Signature header) and Content Index. It also contains a reference (via cid: UUID-based URL) to the part that contains the public key certificate (or if needed, a chain of certificates to the root CA).
 2. The Content Index contains hashes of all parts of the package, so it is enough to validate the index to trust its hashes, then compute the hash of the each part upon using it to validate each part.
 3. The inclusion of certificate makes it possible to validate the package offline (certificate revocation aside, this can be done out-of-band when device is actually online).
 4. Certificate is included as one of standard the DER-encoded resource (with proper Content-type).
 
 ```html
-Package-Signature: 0xabc126434d7fed989ca0e3d88379acef897ffc98; certificate=cid:hgfkadfafiweof034
+Package-Signature: 0xabc126434d7fed989ca0e3d88379acef897ffc98; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/package
 Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
-Link: <cid:bn4rkj4n4nr1ln>; rel=index; offset=12014/2048
+Link: <cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a>; rel=index; offset=12014/2048
 
 --j38n02qryf9n0eqny8cq0
 Content-Location: /index.html
@@ -201,12 +201,12 @@ Content-Type: text/html
   Hello World!
 </body>
 --j38n02qryf9n0eqny8cq0
-Content-Location: cid:bn4rkj4n4nr1ln
+Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
 Content-Type: application/index
 
 /index.html 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
 --j38n02qryf9n0eqny8cq0
-Content-Location: cid:hgfkadfafiweof034
+Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/pkcs7-mime
 
 ... certificate (or a chain) in any of the
@@ -228,16 +228,16 @@ Lets add signing to example mentioned above where a page used cross-origin JS li
 Important notes:
 
 1. Nested package with the JS library, obtained from googleapis.com, is separately signed by googleapis.com
-2. Alternative for example.com woudl be to include the JS library into its own package and sign it as part of example.com, but this is useful example on how the nested signed package looks like.
+2. Alternative for example.com would be to include the JS library into its own package and sign it as part of example.com, but this is useful example on how the nested signed package looks like.
 3. The nested package indented for illustration purposes.
 
 ```html
-Package-Signature: 0xd83he34d7fed989ca0e3d88379acef897ffc11; certificate=cid:hgfkadfafiweof034
+Package-Signature: 0xd83he34d7fed989ca0e3d88379acef897ffc11; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/package
 Content-Location: https://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
 Link: <https://ajax.googleapis.com/packs/jquery_3.1.0.pack>; rel=package; scope=/ajax/libs/jquery/3.1.0
-Link: <cid:bn4rkj4n4nr1ln>; rel=index; offset=12014/2048
+Link: <cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a>; rel=index; offset=12014/2048
 
 --j38n02qryf9n0eqny8cq0
 Content-Location: /index.html
@@ -248,35 +248,35 @@ Content-Type: text/html
 ...
 </body>
 --j38n02qryf9n0eqny8cq0
-	Package-Signature: 0xabc126434d7fed989ca0e3d88379acef897ffc98; certificate=cid:hkjflnoiu3rn45n
+	Package-Signature: 0xabc126434d7fed989ca0e3d88379acef897ffc98; certificate=cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
 	Content-Location: https://ajax.googleapis.com/packs/jquery_3.1.0.pack
 	Content-Type: application/package
-	Link: <cid:asdnklni4o3r5>; rel=index; offset=12014/2048
+	Link: <cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa>; rel=index; offset=12014/2048
 
 	--klhfdlifhhiorefioeri1
 	Content-Location: /ajax/libs/jquery/3.1.0/jquery.min.js
 	Content-Type" application/javascript
 
 	... some JS code ...
-	--klhfdlifhhiorefioeri1
-	Content-Location: cid:asdnklni4o3r5
+	--klhfdlifhhiorefioeri1   (This is Content Index for ajax.googleapis.com subpackage)
+	Content-Location: cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa
 	Content-Type: application/index
 
 	/ajax/libs/jquery/3.1.0/jquery.min.js 0x5b8b78de7c9b8aa6bc8a7a36f70a9db4d990701c 102 3876
 	... other entries ...
 	--klhfdlifhhiorefioeri1
-	Content-Location: cid:hkjflnoiu3rn45n
+	Content-Location: cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
 	Content-Type: application/pkix-cert
 
 	... certificate for ajax.googleapi.com ...
 	--klhfdlifhhiorefioeri1--
---j38n02qryf9n0eqny8cq0
-Content-Location: cid:bn4rkj4n4nr1ln
+--j38n02qryf9n0eqny8cq0   (This is Content Index for example.com package)
+Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
 Content-Type: application/index
 
 /index.html 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
 --j38n02qryf9n0eqny8cq0
-Content-Location: cid:hgfkadfafiweof034
+Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/pkcs7-mime
 
 ... certificate for example.com ...
@@ -288,8 +288,29 @@ Content-Type: application/pkcs7-mime
 
 > Why signing but not encryption? HTTPS provides both...
 
-The signing part of the proposal addresses *integrity*, *authenticity* and *non-repudiation* aspects of the security. It is enough for the resource to be signed to validate it belongs to the origin corresponding to the certificate used. This, in turn allows the browsers and other user agents to afford the 'origin treatment' to the resources in the package, because there is a guarantee that those resources were not tampered with.
+The signing part of the proposal addresses *integrity* and *authenticity* aspects of the security. It is enough for the resource to be signed to validate it belongs to the origin corresponding to the certificate used. This, in turn allows the browsers and other user agents to afford the 'origin treatment' to the resources in the package, because there is a guarantee that those resources were not tampered with.
 
 >What about certificate revocation? Many use cases assume package is validated while offline.
 
 Indeed, as is the case with web browsers as well, certificate revocation is not instant on the web. In case of packages that are consumed while device is offline (maybe for a long period of time), the revocation of the certificate may not reach device promptly. But then again, if the web resources were stored in a browser cache, or if pages were Saved As, and used when device is offline, there would be no way to receive the CRL or use OCSP for real-time certificate validation as well. Once the device is online, the certificate should be validated using best practices of the user agent and access revoked if needed.
+
+>Is that Package-Signature a MAC or HMAC of the package?
+
+No, we don't use what commonly is called [MAC](https://en.wikipedia.org/wiki/Message_authentication_code) here because the packages are not encrypted (and there is no strong use case motivating such encryption) so there is no symmetrical key and therefore the traditional concept of MAC is not applicable. However, the Package-Signature contains a [Digital Signature](https://en.wikipedia.org/wiki/Digital_signature) which is a hash of the (Content Index + Package Header) signed with a private key of the publisher. The Content Index contains hashes for each resource part included in the package, so the Package-Signature validates each resource part as well.
+
+>Is Package-Signature covering all the bits of the package?
+
+Yes, the Package Header and Content Index are hashed and this hash, signed, is provided in the Package-Signature header. The Content Index, in turn, has hashes for all resources (Header+Body) so all bits of package are covered.
+
+>Are subpackages signed as well?
+
+No. If a package contains subpackages, those subpackages are not covered by the package's signature or hashes and have to have their own Package-Signature header if they need to be signed. This reflects the fact that subpackages typically group resources from a different origin, with their own certificate. The [sub]packages are the units that are typically package resources from their respective origins and are therefore separately signed.
+
+>What exactly are cid: URLs mentioned in this doc? Are they the same cid: URLs described in [RFC-2392](https://tools.ietf.org/html/rfc2392)?
+
+No, they are a bit different. They are simply a random-generated (as [Version 4 UUIDs](https://tools.ietf.org/html/rfc4122)) content IDs used exclusively inside the package to refer to the generated, non-content parts of the package - namely Content Index and Certificate used for signature.
+
+>What happens if cid: URLs collide?
+
+Since they are Version 4 UUIDs, the chances of them colliding are disappearingly small.
+
