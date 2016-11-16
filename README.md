@@ -43,12 +43,15 @@ Following are some example usages that correspond to these additions:
 ### Use Case: a couple of web pages with resources in a package.
 The example web site contains two HTML pages and an image. This is straightforward case, demonstrating the following:
 
-1. [Package Header](https://w3ctag.github.io/packaging-on-the-web/#package-header) section at the beginning. It contains a Content-Location of the package, which also serves as base URL to resolve the relative URLs of the [parts](https://w3ctag.github.io/packaging-on-the-web/#parts). So far, this is straight example of the package per existing spec draft.
-2. Note the "main resource" of the package specified by Link: header with **rel=describedby** in th ePackage Header section.
+1. See the [Package Header](https://w3ctag.github.io/packaging-on-the-web/#package-header) section at the beginning. It contains a Content-Location of the package, which also serves as base URL to resolve the relative URLs of the [parts](https://w3ctag.github.io/packaging-on-the-web/#parts). So far, this is straight example of the package per existing spec draft.
+2. The Package Header section also contains Date/Expires headers that specify when the package can be used by UA, similar to HTTP 1.1 [Expiration Model](https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.2). The actual expiration model is TBD and to be reflected in the spec.
+3. Note the "main resource" of the package specified by Link: header with **rel=describedby** in th ePackage Header section.
 
 ```html
 Content-Type: application/package
 Content-Location: http://example.org/examplePack.pack
+Date: Wed, 15 Nov 2016 06:25:24 GMT
+Expires: Thu, 01 Jan 2017 16:00:00 GMT
 Link: </index.html>; rel=describedby
 
 --j38n02qryf9n0eqny8cq0
@@ -181,13 +184,14 @@ The example contains an HTML page and an image. The package is signed by the exa
 
 Important notes:
 
-1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains an encrypted hash of the Package Header section (not including Package-Signature header) and Content Index. It also contains a reference (via cid: UUID-based URL) to the part that contains the public key certificate (or if needed, a chain of certificates to the root CA).
-2. The Content Index contains hashes of all parts of the package, so it is enough to validate the index to trust its hashes, then compute the hash of the each part upon using it to validate each part.
+1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains a signed hash of the Package Header section (not including Package-Signature header) and Content Index. It also contains a reference (via cid: UUID-based URL) to the part that contains the public key certificate (or if needed, a chain of certificates to the root CA).
+2. The **algorithm** attribute contains a type of hash and signature algorithm used ('sha384-with-ECDSA' in this case) and the encrypted hash of the Content Index. It is encoded as [Integrity Metadata in SRI spec](https://www.w3.org/TR/SRI/#integrity-metadata). *Should there be '-with-ECDSA' since certificate specifies the key's algorithm?*
+2. The Content Index contains hashes of all parts of the package, so it is enough to validate the index to trust its hashes, then compute the hash of the each part upon using it to validate each part. Hashes have hash algorithm specified in front.
 3. The inclusion of certificate makes it possible to validate the package offline (certificate revocation aside, this can be done out-of-band when device is actually online).
 4. Certificate is included as one of standard the DER-encoded resource (with proper Content-type).
 
 ```html
-Package-Signature: 0xabc126434d7fed989ca0e3d88379acef897ffc98; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
+Package-Signature: Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7; algorithm=ecdsa-with-sha384; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/package
 Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
@@ -204,7 +208,7 @@ Content-Type: text/html
 Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
 Content-Type: application/index
 
-/index.html 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
+/index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
 --j38n02qryf9n0eqny8cq0
 Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/pkcs7-mime
@@ -215,10 +219,9 @@ Content-Type: application/pkcs7-mime
 
 The process of validation:
 
-1. Decrypt the hash provided by Package-Signature header (lets call result of decryption HPackage) using the provided public key cert.
-2. Compute the hash of the application/index part. Lets call it HIndex.
-3. If HPackage == HIndex, the index of the archive is deemed validated.
-4. When a part is loaded, compute its hash and compare it with the hash in the Content Index. If they match, the part is deemed validated.
+1. Validate the signature provided by Package-Signature header, using provided public key cert and content of application/index part of the package.
+2. That establishes authenticity and integrity of the Content Index that contains hashes of all the parts int he package.
+2. When a part is loaded, compute its hash and compare it with the hash in the Content Index. If they match, the part is deemed validated.
 
 
 ### Use Case: Signed package, 2 origins
@@ -232,7 +235,7 @@ Important notes:
 3. The nested package indented for illustration purposes.
 
 ```html
-Package-Signature: 0xd83he34d7fed989ca0e3d88379acef897ffc11; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
+Package-Signature: NNejtdEjGnea4VTvO7A/x+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjxQOXvfX5+; algorithm="sha384-with-ECDSA"; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/package
 Content-Location: https://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
@@ -248,7 +251,7 @@ Content-Type: text/html
 ...
 </body>
 --j38n02qryf9n0eqny8cq0
-	Package-Signature: 0xabc126434d7fed989ca0e3d88379acef897ffc98; certificate=cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
+	Package-Signature: A/xtdEjGnea4VTvNNejO7+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjx5+QOXvfX; algorithm="sha384-with-ECDSA"; certificate=cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
 	Content-Location: https://ajax.googleapis.com/packs/jquery_3.1.0.pack
 	Content-Type: application/package
 	Link: <cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa>; rel=index; offset=12014/2048
@@ -262,7 +265,7 @@ Content-Type: text/html
 	Content-Location: cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa
 	Content-Type: application/index
 
-	/ajax/libs/jquery/3.1.0/jquery.min.js 0x5b8b78de7c9b8aa6bc8a7a36f70a9db4d990701c 102 3876
+	/ajax/libs/jquery/3.1.0/jquery.min.js sha384-3dEjGnea4A/xtGPkQ1TDVTvNNejO7+5ucZm+pASWjx5+QOXvfX2oT3oKGhPWeF0h 102 3876
 	... other entries ...
 	--klhfdlifhhiorefioeri1
 	Content-Location: cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
@@ -274,7 +277,7 @@ Content-Type: text/html
 Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
 Content-Type: application/index
 
-/index.html 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
+/index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
 --j38n02qryf9n0eqny8cq0
 Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/pkcs7-mime
@@ -313,4 +316,20 @@ No, they are a bit different. They are simply a random-generated (as [Version 4 
 >What happens if cid: URLs collide?
 
 Since they are Version 4 UUIDs, the chances of them colliding are disappearingly small.
+
+>What if a publisher signed a package with a JS library, and later discovered a vulnerability in it. On the Web, they would just replace the JS file with an updated one. What is the story in case of packages?
+
+The expiration headers in Package Headers section prescribe the 'useful lifetime' of the package, with UA optionally indicating the 'stale' state to the user and asking to upgrade, or automatically fetching a new one. While offline, the expiration may be ignored (not unlike Cache-Control: no-cache) but once user is online, the UA should verify both the certificate and if the package Content-Location contains an updated package (per Package Headers section) - and replace the package if necessary. In general, if the device is online and the package is expired, and the original location has updated package, the UA should obtain a new one (details TBD).
+
+>Why is there a Content Index that specifies where each part is, and also MIME-like 'boundaries' that separate parts in the package?
+
+This is due to two main use cases of package loading:
+
+1. Loading the package from Web as part of the page or some other resource. In this case, the package is streamed from the server and **boundaries** allow to parse the package as it comes in and start using subresources as fast as possible. If the package has to be signed though, the package in its entirety has to be loaded first.
+2. Loading a (potentially large) package offline. In that case, it is important to provide a fast access to subresources as they are requested, w/o unpacking the package (it takes double the storage at least to unpack and significant time). Using direct byte-offset Content Index allows to directly access resources in a potentially large package.
+
+>Is the certificate supplied by package a full chain to the known CA root?
+
+Not necessarily. To quote Emily Stark, "because different devices have different sets of roots in their trust stores, it's not always the case that there is a single "correct" set of certificates to send that will work best for all clients. Instead, for compatibility, sites will sometimes send a set of certificates and rely on clients to dynamically fetch additional intermediates when needed". We suspect that to be an interesting issue since offline validation would need a full chain. Browsers (at least Chrome) are implementing automatic fetching of intermediate certificates but for this to work they have to be online. This will probably become a matter of best practices when creating the packaging format, possibly with validation by the packaging tool.
+
 
