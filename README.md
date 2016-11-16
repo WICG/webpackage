@@ -157,22 +157,22 @@ Transfer-Encoding: binary
 Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/index
 
-/index.html     0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
-/otherPage.html 0xabc126434d7fed989ca0e3d88379acef897ffc98 368 180
-/mages/world.png     0x4d7fed989ca0eef897ffc996f70a90701c9989ca 548 1024
+/index.html     sha384-Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7 153 215
+/otherPage.html sha384-8tnTXuiaAJuMLi9vy3DqFL3ky+er10rcgN1pbOxEbzJr7R/VqsVpcw+ThHmYcwiB 368 180
+/mages/world.png     sha384-vy3DqFLi98t3ky+er10nTXuiaAJuMLrczJr7gNR/VqsVpcw+ThHmYcwiB1pbOxEb 548 1024
 --j38n02qryf9n0eqny8cq0--
 ```
 
 #### Content Index Entry
 Each Content Index entry is a line that looks like following:
-> /index.html 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9 153 215
+> /index.html sha384-Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7 153 215
 
 Where:
 
 ```
 content-index-entry = part-id SP part-hash SP part-offset SP part-size CRLF
   part-id = part-url [":" <headers that are mentioned in Vary: header of the part>]
-  part-hash = <cryptographic hash of the part>
+  part-hash = <hash-algorithm> "-" <hash of the part>
   part-location = <octet offset of the part from the beginning of the package>
   part-size = <octet size of the part>
 ```
