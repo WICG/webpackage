@@ -231,8 +231,10 @@ Lets add signing to example mentioned above where a page used cross-origin JS li
 Important notes:
 
 1. Nested package with the JS library, obtained from googleapis.com, is separately signed by googleapis.com
-2. Alternative for example.com would be to include the JS library into its own package and sign it as part of example.com, but this is useful example on how the nested signed package looks like.
-3. The nested package indented for illustration purposes.
+2. Nested packages may have their own signatures and Content Index.  They can be included verbatim as a [part](https://w3ctag.github.io/packaging-on-the-web/#parts) of the outer package. Therefore, their index entries will be relative to the inner package.  This does mean that accessing a part of a nested package will require multiple index lookups depending on how deeply nested a package is, as it will be necessary to locate the inner package using the outer package's Content Index.
+3. Alternative for example.com would be to include the JS library into its own package and sign it as part of example.com, but this is useful example on how the nested signed package looks like.
+4. The nested package has been indented for illustration purposes but would not be in an actual package.
+
 
 ```html
 Package-Signature: NNejtdEjGnea4VTvO7A/x+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjxQOXvfX5+; algorithm="sha384-with-ECDSA"; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
