@@ -1,0 +1,3 @@
+index.html
+otherPage.html
+images/test.png
