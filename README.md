@@ -70,12 +70,16 @@ Content-Type: text/html
 <body>
   Hello World! <img src="images/world.png">
 </body>
+0
+
 ... chunked encoding length of headers + PNG image...
 Content-Location: /images/world.png
 Content-Type: image/png
 Transfer-Encoding: binary
 
 ... binary png image ...
+0
+
 ```
 
 
@@ -108,11 +112,15 @@ Content-Type: text/html
 104
 Content-Location: https://ajax.googleapis.com/packs/jquery_3.1.0.pack
 Content-Type: application/package
+0
+
 ... chunked encoding length of headers + JS code...
 Content-Location: /ajax/libs/jquery/3.1.0/jquery.min.js
 Content-Type" application/javascript
 
 ... some JS code ...
+0
+
 ```
 
 
@@ -139,6 +147,8 @@ Content-Type: text/html
 <body>
   <a href="otherPage.html">Other page</a>
 </body>
+0
+
 122
 Content-Location: /otherPage.html
 Content-Type: text/html
@@ -146,12 +156,16 @@ Content-Type: text/html
 <body>
   Hello World! <img src="images/world.png">
 </body>
+0
+
 ... chunked encoding length of headers + PNG image...
 Content-Location: /images/world.png
 Content-Type: image/png
 Transfer-Encoding: binary
 
 ... binary png image ...
+0
+
 390
 Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/index
@@ -159,6 +173,8 @@ Content-Type: application/index
 /index.html     sha384-Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7 153 215
 /otherPage.html sha384-8tnTXuiaAJuMLi9vy3DqFL3ky+er10rcgN1pbOxEbzJr7R/VqsVpcw+ThHmYcwiB 368 180
 /mages/world.png     sha384-vy3DqFLi98t3ky+er10nTXuiaAJuMLrczJr7gNR/VqsVpcw+ThHmYcwiB1pbOxEb 548 1024
+0
+
 ```
 
 #### Content Index Entry
@@ -204,6 +220,8 @@ Content-Type: text/html
 <body>
   Hello World!
 </body>
+0
+
 186
 Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
 Content-Type: application/index
@@ -214,6 +232,8 @@ Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/pkcs7-mime
 
 ... certificate (or a chain) in any of the
+0
+
 ```
 
 The process of validation:
@@ -260,27 +280,37 @@ Content-Type: text/html
 	Content-Type" application/javascript
 
 	... some JS code ...
+	0
+
   ... chunked encoding length of headers + Content Index ...  (This is Content Index for ajax.googleapis.com subpackage)
 	Content-Location: cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa
 	Content-Type: application/index
 
 	/ajax/libs/jquery/3.1.0/jquery.min.js sha384-3dEjGnea4A/xtGPkQ1TDVTvNNejO7+5ucZm+pASWjx5+QOXvfX2oT3oKGhPWeF0h 102 3876
 	... other entries ...
+	0
+
   ... chunked encoding length of headers + certificate ...
 	Content-Location: cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
 	Content-Type: application/pkix-cert
 
 	... certificate for ajax.googleapi.com ...
+	0
+
 ... chunked encoding length of headers + Content Index ...   (This is Content Index for example.com package)
 Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
 Content-Type: application/index
 
 /index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
+0
+
 ... chunked encoding length of headers + certificate ...
 Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/pkcs7-mime
 
 ... certificate for example.com ...
+0
+
 ```
 
 ##FAQ
