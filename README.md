@@ -38,6 +38,8 @@ We are proposing to improve on the spec, in particular by introducing 3 major ad
 
 We also propose to remove the [fragment-based URL schema](https://w3ctag.github.io/packaging-on-the-web/#fragment-identifiers) from the spec as it is not clear what would be the use case supporting it.
 
+We also propose to change the encoding of content within the package format to use [chunked encoding](https://tools.ietf.org/html/rfc7230#section-4.1). The encoding will be bound to the start of a content's headers and end at the completion of the content's body. Multiple chunks for a single content resource may be used when sending data. The data for chunked encoding chunk lengths will be ignored during signing. Withing packages there must be no use of extension for chunked encoding.
+
 Following are some example usages that correspond to these additions:
 
 ### Use Case: a couple of web pages with resources in a package.
@@ -54,27 +56,26 @@ Date: Wed, 15 Nov 2016 06:25:24 GMT
 Expires: Thu, 01 Jan 2017 16:00:00 GMT
 Link: </index.html>; rel=describedby
 
---j38n02qryf9n0eqny8cq0
+118
 Content-Location: /index.html
 Content-Type: text/html
 
 <body>
   <a href="otherPage.html">Other page</a>
 </body>
---j38n02qryf9n0eqny8cq0
+122
 Content-Location: /otherPage.html
 Content-Type: text/html
 
 <body>
   Hello World! <img src="images/world.png">
 </body>
---j38n02qryf9n0eqny8cq0
+... chunked encoding length of headers + PNG image...
 Content-Location: /images/world.png
 Content-Type: image/png
 Transfer-Encoding: binary
 
 ... binary png image ...
---j38n02qryf9n0eqny8cq0--
 ```
 
 
@@ -95,25 +96,23 @@ Content-Location: https://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
 Link: <https://ajax.googleapis.com/packs/jquery_3.1.0.pack>; rel=package; scope=/ajax/libs/jquery/3.1.0
 
---j38n02qryf9n0eqny8cq0
+... chunked encoding length of headers + HTML code...
 Content-Location: /index.html
 Content-Type: text/html
+
 <head>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
 <body>
 ...
 </body>
---j38n02qryf9n0eqny8cq0
+104
 Content-Location: https://ajax.googleapis.com/packs/jquery_3.1.0.pack
 Content-Type: application/package
-
---klhfdlifhhiorefioeri1
+... chunked encoding length of headers + JS code...
 Content-Location: /ajax/libs/jquery/3.1.0/jquery.min.js
 Content-Type" application/javascript
 
 ... some JS code ...
---klhfdlifhhiorefioeri1--
---j38n02qryf9n0eqny8cq0--
 ```
 
 
@@ -133,34 +132,33 @@ Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
 Link: <cid:f47ac10b-58cc-4372-a567-0e02b2c3d479>; rel=index; offset=12014/2048
 
---j38n02qryf9n0eqny8cq0
+116
 Content-Location: /index.html
 Content-Type: text/html
 
 <body>
   <a href="otherPage.html">Other page</a>
 </body>
---j38n02qryf9n0eqny8cq0
+122
 Content-Location: /otherPage.html
 Content-Type: text/html
 
 <body>
   Hello World! <img src="images/world.png">
 </body>
---j38n02qryf9n0eqny8cq0
+... chunked encoding length of headers + PNG image...
 Content-Location: /images/world.png
 Content-Type: image/png
 Transfer-Encoding: binary
 
 ... binary png image ...
---j38n02qryf9n0eqny8cq0
+390
 Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/index
 
 /index.html     sha384-Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7 153 215
 /otherPage.html sha384-8tnTXuiaAJuMLi9vy3DqFL3ky+er10rcgN1pbOxEbzJr7R/VqsVpcw+ThHmYcwiB 368 180
 /mages/world.png     sha384-vy3DqFLi98t3ky+er10nTXuiaAJuMLrczJr7gNR/VqsVpcw+ThHmYcwiB1pbOxEb 548 1024
---j38n02qryf9n0eqny8cq0--
 ```
 
 #### Content Index Entry
@@ -178,6 +176,8 @@ content-index-entry = part-id SP part-hash SP part-offset SP part-size CRLF
 ```
 
 The **part-hash** is used in signing (see below) and can be optional (filled with 0x0 value) if signing is not used.
+
+The **part-size** is the size of the content excluding any chunked encoding chunk lengths. This does mean that even with a well known size, it may be necessary to read from disk multiple times in order to find multiple chunks that create the full size of the content.
 
 ### Use Case: Signed package, one origin.
 The example contains an HTML page and an image. The package is signed by the example.com publisher, using the same private key that example.com uses for HTTPS. The signed package ensures the verification of the origin even if the package is stored in a local file or obtained via other insecure ways like HTTP, or hosted on another origin's server.
@@ -197,31 +197,30 @@ Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
 Link: <cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a>; rel=index; offset=12014/2048
 
---j38n02qryf9n0eqny8cq0
+89
 Content-Location: /index.html
 Content-Type: text/html
 
 <body>
   Hello World!
 </body>
---j38n02qryf9n0eqny8cq0
+186
 Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
 Content-Type: application/index
 
 /index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
---j38n02qryf9n0eqny8cq0
+... chunked encoding length of headers + certificate ...
 Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/pkcs7-mime
 
 ... certificate (or a chain) in any of the
---j38n02qryf9n0eqny8cq0--
 ```
 
 The process of validation:
 
 1. Validate the signature provided by Package-Signature header, using provided public key cert and content of application/index part of the package.
 2. That establishes authenticity and integrity of the Content Index that contains hashes of all the parts int he package.
-2. When a part is loaded, compute its hash and compare it with the hash in the Content Index. If they match, the part is deemed validated.
+2. When a part is loaded, compute the hash of the combined headers and body excluding chunked encoding lengths. Compare the computed hash with the hash in the Content Index. If they match, the part is deemed validated.
 
 
 ### Use Case: Signed package, 2 origins
@@ -242,7 +241,7 @@ Link: </index.html>; rel=describedby
 Link: <https://ajax.googleapis.com/packs/jquery_3.1.0.pack>; rel=package; scope=/ajax/libs/jquery/3.1.0
 Link: <cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a>; rel=index; offset=12014/2048
 
---j38n02qryf9n0eqny8cq0
+... chunked encoding length of headers + HTML code ...
 Content-Location: /index.html
 Content-Type: text/html
 <head>
@@ -250,41 +249,38 @@ Content-Type: text/html
 <body>
 ...
 </body>
---j38n02qryf9n0eqny8cq0
+... chunked encoding length of headers + nested package ...
 	Package-Signature: A/xtdEjGnea4VTvNNejO7+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjx5+QOXvfX; algorithm="sha384-with-ECDSA"; certificate=cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
 	Content-Location: https://ajax.googleapis.com/packs/jquery_3.1.0.pack
 	Content-Type: application/package
 	Link: <cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa>; rel=index; offset=12014/2048
 
-	--klhfdlifhhiorefioeri1
+	... chunked encoding length of headers + JS code ...
 	Content-Location: /ajax/libs/jquery/3.1.0/jquery.min.js
 	Content-Type" application/javascript
 
 	... some JS code ...
-	--klhfdlifhhiorefioeri1   (This is Content Index for ajax.googleapis.com subpackage)
+  ... chunked encoding length of headers + Content Index ...  (This is Content Index for ajax.googleapis.com subpackage)
 	Content-Location: cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa
 	Content-Type: application/index
 
 	/ajax/libs/jquery/3.1.0/jquery.min.js sha384-3dEjGnea4A/xtGPkQ1TDVTvNNejO7+5ucZm+pASWjx5+QOXvfX2oT3oKGhPWeF0h 102 3876
 	... other entries ...
-	--klhfdlifhhiorefioeri1
+  ... chunked encoding length of headers + certificate ...
 	Content-Location: cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
 	Content-Type: application/pkix-cert
 
 	... certificate for ajax.googleapi.com ...
-	--klhfdlifhhiorefioeri1--
---j38n02qryf9n0eqny8cq0   (This is Content Index for example.com package)
+... chunked encoding length of headers + Content Index ...   (This is Content Index for example.com package)
 Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
 Content-Type: application/index
 
 /index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
---j38n02qryf9n0eqny8cq0
+... chunked encoding length of headers + certificate ...
 Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/pkcs7-mime
 
 ... certificate for example.com ...
---j38n02qryf9n0eqny8cq0--
-
 ```
 
 ##FAQ
@@ -303,7 +299,7 @@ No, we don't use what commonly is called [MAC](https://en.wikipedia.org/wiki/Mes
 
 >Is Package-Signature covering all the bits of the package?
 
-Yes, the Package Header and Content Index are hashed and this hash, signed, is provided in the Package-Signature header. The Content Index, in turn, has hashes for all resources (Header+Body) so all bits of package are covered.
+Yes, the Package Header and Content Index are hashed and this hash, signed, is provided in the Package-Signature header. The Content Index, in turn, has hashes for all resources (Headers+Body) so all bits of package are covered.
 
 >Are subpackages signed as well?
 
@@ -321,7 +317,7 @@ Since they are Version 4 UUIDs, the chances of them colliding are disappearingly
 
 The expiration headers in Package Headers section prescribe the 'useful lifetime' of the package, with UA optionally indicating the 'stale' state to the user and asking to upgrade, or automatically fetching a new one. While offline, the expiration may be ignored (not unlike Cache-Control: no-cache) but once user is online, the UA should verify both the certificate and if the package Content-Location contains an updated package (per Package Headers section) - and replace the package if necessary. In general, if the device is online and the package is expired, and the original location has updated package, the UA should obtain a new one (details TBD).
 
->Why is there a Content Index that specifies where each part is, and also MIME-like 'boundaries' that separate parts in the package?
+>Why is there a Content Index that specifies where each part is, and also chunked encoding separate parts in the package?
 
 This is due to two main use cases of package loading:
 
