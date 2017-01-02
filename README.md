@@ -359,3 +359,27 @@ This is due to two main use cases of package loading:
 Not necessarily. To quote one of the Chrome security engineers, "because different devices have different sets of roots in their trust stores, it's not always the case that there is a single "correct" set of certificates to send that will work best for all clients. Instead, for compatibility, sites will sometimes send a set of certificates and rely on clients to dynamically fetch additional intermediates when needed". We suspect that to be an interesting issue since offline validation would need a full chain. Browsers (at least Chrome) are implementing automatic fetching of intermediate certificates but for this to work they have to be online. This will probably become a matter of best practices when creating the packaging format, possibly with validation by the packaging tool.
 
 
+## Grammar
+
+Uses [ABNF](https://tools.ietf.org/html/rfc5234). The values of `message-header`, `CRLF`, and `Chunked-Body` are from [RFC2616](https://tools.ietf.org/html/rfc2616).
+
+```abnf
+headers = *message-header CRLF
+pkg-header-end, resource-begin, body-begin, pkg-trailer-end =	CRLF
+
+web-package = pkg-headers *resource pkg-trailer-begin pkg-trailers
+pkg-headers = headers
+pkg-trailers = pkg-headers
+
+resource = resource-begin resource-headers Chunked-Body
+resource-header = headers
+```
+
+### Semantics
+
+* It is an error to have multiple `Package-Signature` headers in `pkg-headers`.
+* It is an error to have multiple `Link` headers in `pkg-headers` with `rel=index`.
+* It is an error to have a `Link` header in `pkg-headers` if there is no `Package-Signature` header.
+* It is an error to have multiple `Link` headers in `pkg-headers` with `rel=describedby`.
+* If a Content Index is present. It is an error to have a resource with `Content-Location` not contained within the Content Index.
+* It is an error to specify a `Transfer-Encoding` header that is not `chunked` within `resource-headers`. All resources must use `Transfer-Encoding: chunked` implicitly.
