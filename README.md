@@ -365,13 +365,13 @@ Uses [ABNF](https://tools.ietf.org/html/rfc5234). The values of `message-header`
 
 ```abnf
 headers = *message-header CRLF
-pkg-header-end, resource-begin, body-begin, pkg-trailer-end =	CRLF
+pkg-trailer-begin =	CRLF
 
 web-package = pkg-headers *resource pkg-trailer-begin pkg-trailers
 pkg-headers = headers
 pkg-trailers = pkg-headers
 
-resource = resource-begin resource-headers Chunked-Body
+resource = resource-headers Chunked-Body
 resource-header = headers
 ```
 
