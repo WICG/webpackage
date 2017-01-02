@@ -38,7 +38,7 @@ We are proposing to improve on the spec, in particular by introducing 3 major ad
 
 We also propose to remove the [fragment-based URL schema](https://w3ctag.github.io/packaging-on-the-web/#fragment-identifiers) from the spec as it is not clear what would be the use case supporting it.
 
-We also propose to change the encoding of content within the package format to use [chunked encoding](https://tools.ietf.org/html/rfc7230#section-4.1). The encoding will be bound to the start of a content's headers and end at the completion of the content's body. Multiple chunks for a single content resource may be used when sending data. The data for chunked encoding chunk lengths will be ignored during signing. Withing packages there must be no use of extension for chunked encoding.
+We also propose to change the encoding of content bodies within the package format to use [chunked encoding](https://tools.ietf.org/html/rfc7230#section-4.1). The data for chunked encoding chunk lengths will be ignored during signing. Within packages there must be no use of extension for chunked encoding.
 
 Following are some example usages that correspond to these additions:
 
@@ -56,29 +56,31 @@ Date: Wed, 15 Nov 2016 06:25:24 GMT
 Expires: Thu, 01 Jan 2017 16:00:00 GMT
 Link: </index.html>; rel=describedby
 
-118
 Content-Location: /index.html
 Content-Type: text/html
 
+38
 <body>
   <a href="otherPage.html">Other page</a>
 </body>
-122
+0
+
 Content-Location: /otherPage.html
 Content-Type: text/html
 
+3A
 <body>
   Hello World! <img src="images/world.png">
 </body>
 0
 
-... chunked encoding length of headers + PNG image...
 Content-Location: /images/world.png
 Content-Type: image/png
-Transfer-Encoding: binary
 
+... chunked encoding length of PNG image...
 ... binary png image ...
 0
+
 
 ```
 
@@ -100,26 +102,28 @@ Content-Location: https://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
 Link: <https://ajax.googleapis.com/packs/jquery_3.1.0.pack>; rel=package; scope=/ajax/libs/jquery/3.1.0
 
-... chunked encoding length of headers + HTML code...
 Content-Location: /index.html
 Content-Type: text/html
 
+... chunked encoding length of HTML code...
 <head>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
 <body>
 ...
 </body>
-104
+0
+
 Content-Location: https://ajax.googleapis.com/packs/jquery_3.1.0.pack
 Content-Type: application/package
 0
 
-... chunked encoding length of headers + JS code...
 Content-Location: /ajax/libs/jquery/3.1.0/jquery.min.js
 Content-Type" application/javascript
 
+... chunked encoding length of JS code...
 ... some JS code ...
 0
+
 
 ```
 
@@ -140,40 +144,41 @@ Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
 Link: <cid:f47ac10b-58cc-4372-a567-0e02b2c3d479>; rel=index; offset=12014/2048
 
-116
 Content-Location: /index.html
 Content-Type: text/html
 
+38
 <body>
   <a href="otherPage.html">Other page</a>
 </body>
 0
 
-122
 Content-Location: /otherPage.html
 Content-Type: text/html
 
+3A
 <body>
   Hello World! <img src="images/world.png">
 </body>
 0
 
-... chunked encoding length of headers + PNG image...
 Content-Location: /images/world.png
 Content-Type: image/png
 Transfer-Encoding: binary
 
+... chunked encoding length of PNG image...
 ... binary png image ...
 0
 
-390
 Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/index
 
+125
 /index.html     sha384-Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7 153 215
 /otherPage.html sha384-8tnTXuiaAJuMLi9vy3DqFL3ky+er10rcgN1pbOxEbzJr7R/VqsVpcw+ThHmYcwiB 368 180
 /mages/world.png     sha384-vy3DqFLi98t3ky+er10nTXuiaAJuMLrczJr7gNR/VqsVpcw+ThHmYcwiB1pbOxEb 548 1024
 0
+
 
 ```
 
@@ -213,26 +218,29 @@ Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
 Link: <cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a>; rel=index; offset=12014/2048
 
-89
 Content-Location: /index.html
 Content-Type: text/html
 
+1D
 <body>
   Hello World!
 </body>
 0
 
-186
 Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
 Content-Type: application/index
 
+5B
 /index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
-... chunked encoding length of headers + certificate ...
+0
+
 Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/pkcs7-mime
 
+... chunked encoding length of ertificate ...
 ... certificate (or a chain) in any of the
 0
+
 
 ```
 
@@ -261,55 +269,59 @@ Link: </index.html>; rel=describedby
 Link: <https://ajax.googleapis.com/packs/jquery_3.1.0.pack>; rel=package; scope=/ajax/libs/jquery/3.1.0
 Link: <cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a>; rel=index; offset=12014/2048
 
-... chunked encoding length of headers + HTML code ...
 Content-Location: /index.html
 Content-Type: text/html
+
+... chunked encoding length of HTML code ...
 <head>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
 <body>
 ...
 </body>
-... chunked encoding length of headers + nested package ...
-	Package-Signature: A/xtdEjGnea4VTvNNejO7+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjx5+QOXvfX; algorithm="sha384-with-ECDSA"; certificate=cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
-	Content-Location: https://ajax.googleapis.com/packs/jquery_3.1.0.pack
-	Content-Type: application/package
-	Link: <cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa>; rel=index; offset=12014/2048
+0
 
-	... chunked encoding length of headers + JS code ...
+Package-Signature: A/xtdEjGnea4VTvNNejO7+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjx5+QOXvfX; algorithm="sha384-with-ECDSA"; certificate=cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
+Content-Location: https://ajax.googleapis.com/packs/jquery_3.1.0.pack
+Content-Type: application/package
+Link: <cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa>; rel=index; offset=12014/2048
+... chunked encoding length of nested package ...
+
 	Content-Location: /ajax/libs/jquery/3.1.0/jquery.min.js
 	Content-Type" application/javascript
 
+	... chunked encoding length of JS code ...
 	... some JS code ...
 	0
 
-  ... chunked encoding length of headers + Content Index ...  (This is Content Index for ajax.googleapis.com subpackage)
 	Content-Location: cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa
 	Content-Type: application/index
 
+  ... chunked encoding length of Content Index ...  (This is Content Index for ajax.googleapis.com subpackage)
 	/ajax/libs/jquery/3.1.0/jquery.min.js sha384-3dEjGnea4A/xtGPkQ1TDVTvNNejO7+5ucZm+pASWjx5+QOXvfX2oT3oKGhPWeF0h 102 3876
 	... other entries ...
 	0
 
-  ... chunked encoding length of headers + certificate ...
 	Content-Location: cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
 	Content-Type: application/pkix-cert
 
+  ... chunked encoding length of certificate ...
 	... certificate for ajax.googleapi.com ...
 	0
 
-... chunked encoding length of headers + Content Index ...   (This is Content Index for example.com package)
 Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
 Content-Type: application/index
 
+... chunked encoding length of Content Index ...   (This is Content Index for example.com package)
 /index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
 0
 
-... chunked encoding length of headers + certificate ...
 Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/pkcs7-mime
 
+... chunked encoding length of certificate ...
 ... certificate for example.com ...
 0
+
 
 ```
 
@@ -369,7 +381,7 @@ pkg-trailer-begin =	CRLF
 
 web-package = pkg-headers *resource pkg-trailer-begin pkg-trailers
 pkg-headers = headers
-pkg-trailers = pkg-headers
+pkg-trailers = *message-header
 
 resource = resource-headers Chunked-Body
 resource-header = headers
