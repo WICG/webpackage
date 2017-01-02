@@ -379,7 +379,7 @@ resource-header = headers
 
 * It is an error to have multiple `Package-Signature` headers in `pkg-headers`.
 * It is an error to have multiple `Link` headers in `pkg-headers` with `rel=index`.
-* It is an error to have a `Link` header in `pkg-headers` if there is no `Package-Signature` header.
+* It is an error to have a `Link` header with `rel=index` in `pkg-headers` if there is no `Package-Signature` header.
 * It is an error to have multiple `Link` headers in `pkg-headers` with `rel=describedby`.
 * If a Content Index is present. It is an error to have a resource with `Content-Location` not contained within the Content Index.
 * It is an error to specify a `Transfer-Encoding` header that is not `chunked` within `resource-headers`. All resources must use `Transfer-Encoding: chunked` implicitly.
