@@ -187,7 +187,7 @@ Important notes:
 1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains a signed hash of the Package Header section (not including Package-Signature header) and Content Index. It also contains a reference (via cid: UUID-based URL) to the part that contains the public key certificate (or if needed, a chain of certificates to the root CA).
 2. The **algorithm** attribute contains a type of hash and signature algorithm used ('sha384-with-ECDSA' in this case) and the encrypted hash of the Content Index. It is encoded as [Integrity Metadata in SRI spec](https://www.w3.org/TR/SRI/#integrity-metadata). *Should there be '-with-ECDSA' since certificate specifies the key's algorithm?*
 3. The Content Index contains hashes of all parts of the package, so it is enough to validate the index to trust its hashes, then compute the hash of the each part upon using it to validate each part. Hashes have hash algorithm specified in front.
-4. Content Index Entry `part-location` and `part-size` must not refer to locations outside of the package which contains the entry or locations within nested packages. They may refer to the boundaries of a nested package.
+4. Content Index Entry `part-location` and `part-size` must not refer to locations outside of the package which contains the entry or to locations within nested packages. They may refer to the boundaries of a nested package.
 5. The inclusion of certificate makes it possible to validate the package offline (certificate revocation aside, this can be done out-of-band when device is actually online).
 6. Certificate is included as one of standard the DER-encoded resource (with proper Content-type).
 
