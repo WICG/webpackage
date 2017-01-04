@@ -185,14 +185,14 @@ The example contains an HTML page and an image. The package is signed by the exa
 Important notes:
 
 1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains a signed hash of the Package Header section (not including Package-Signature header) and Content Index. It also contains a reference (via cid: UUID-based URL) to the part that contains the public key certificate (or if needed, a chain of certificates to the root CA).
-2. The **algorithm** must be encoded within the certificate that signed the package.
+2. The **certificate algorithm** must be encoded within the certificate that signed the package. The **algorithm** in **Package-Signature** is the hash algorithm used to sign the **Content Index** and produce the Package-Signature.
 3. The Content Index contains hashes of all parts of the package, so it is enough to validate the index to trust its hashes, then compute the hash of the each part upon using it to validate each part. Hashes have hash algorithm specified in front.
 4. Content Index Entry `part-location` and `part-size` must not refer to locations outside of the package which contains the entry or locations within nested packages. They may refer to the boundaries of a nested package.
 5. The inclusion of certificate makes it possible to validate the package offline (certificate revocation aside, this can be done out-of-band when device is actually online).
 6. Certificate is included as one of standard the DER-encoded resource (with proper Content-type).
 
 ```html
-Package-Signature: Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
+Package-Signature: Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7; algorithm: sha384; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/package
 Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
@@ -236,7 +236,7 @@ Important notes:
 3. The nested package indented for illustration purposes.
 
 ```html
-Package-Signature: NNejtdEjGnea4VTvO7A/x+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjxQOXvfX5+; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
+Package-Signature: NNejtdEjGnea4VTvO7A/x+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjxQOXvfX5+; algorithm=sha384; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/package
 Content-Location: https://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
@@ -252,7 +252,7 @@ Content-Type: text/html
 ...
 </body>
 --j38n02qryf9n0eqny8cq0
-	Package-Signature: A/xtdEjGnea4VTvNNejO7+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjx5+QOXvfX; certificate=cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
+	Package-Signature: A/xtdEjGnea4VTvNNejO7+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjx5+QOXvfX; algorithm=sha384; certificate=cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
 	Content-Location: https://ajax.googleapis.com/packs/jquery_3.1.0.pack
 	Content-Type: application/package
 	Link: <cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa>; rel=index; offset=12014/2048
