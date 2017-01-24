@@ -122,7 +122,7 @@ The package in this case contains a lot of pages with resources ("Encyclopedia i
 
 1. The Link: header with **rel=index** declares a specified part to be a Content Index of the package. The **offset=12014** attribute specifies the octet offset/size from the beginning of the Package Header of the package to the Content Index part. That can be used in file-seek APIs to quickly read the part without a need to parse the potentially huge package itself.
 2. Content Index part is typically generated during package creation, it doesn't have a natural URL. We propose to use cid: generated URLs (UUID-based, 128-bit) for such generated parts. The visibility scope of those URLs is limited similar to package boundaries, and is for the current package only.
-3. Content-type of the Content Index is application/index.
+3. Content-type of the Content Index is application/package.index.
 4. The Content Index consists of the Content Index Entries (see below for the discussion of what they are).
 5. Content Index part may be compressed (as specified by Transfer-Encoding header).
 
@@ -155,7 +155,7 @@ Transfer-Encoding: binary
 ... binary png image ...
 --j38n02qryf9n0eqny8cq0
 Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
-Content-Type: application/index
+Content-Type: application/package.index
 
 /index.html     sha384-Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7 153 215
 /otherPage.html sha384-8tnTXuiaAJuMLi9vy3DqFL3ky+er10rcgN1pbOxEbzJr7R/VqsVpcw+ThHmYcwiB 368 180
@@ -207,7 +207,7 @@ Content-Type: text/html
 </body>
 --j38n02qryf9n0eqny8cq0
 Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
-Content-Type: application/index
+Content-Type: application/package.index
 
 /index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
 --j38n02qryf9n0eqny8cq0
@@ -220,7 +220,7 @@ Content-Type: application/pkcs7-mime
 
 The process of validation:
 
-1. Validate the signature provided by Package-Signature header, using provided public key cert and content of application/index part of the package.
+1. Validate the signature provided by Package-Signature header, using provided public key cert and content of application/package.index part of the package.
 2. That establishes authenticity and integrity of the Content Index that contains hashes of all the parts int he package.
 2. When a part is loaded, compute its hash and compare it with the hash in the Content Index. If they match, the part is deemed validated.
 
@@ -266,7 +266,7 @@ Content-Type: text/html
 	... some JS code ...
 	--klhfdlifhhiorefioeri1   (This is Content Index for ajax.googleapis.com subpackage)
 	Content-Location: cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa
-	Content-Type: application/index
+	Content-Type: application/package.index
 
 	/ajax/libs/jquery/3.1.0/jquery.min.js sha384-3dEjGnea4A/xtGPkQ1TDVTvNNejO7+5ucZm+pASWjx5+QOXvfX2oT3oKGhPWeF0h 102 3876
 	... other entries ...
@@ -278,7 +278,7 @@ Content-Type: text/html
 	--klhfdlifhhiorefioeri1--
 --j38n02qryf9n0eqny8cq0   (This is Content Index for example.com package)
 Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
-Content-Type: application/index
+Content-Type: application/package.index
 
 /index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
 --j38n02qryf9n0eqny8cq0
