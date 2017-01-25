@@ -120,7 +120,7 @@ Content-Type" application/javascript
 The package in this case contains a lot of pages with resources ("Encyclopedia in a file") or multiple sites (in subpackages). The proposed structure facilitates efficient access, assuming the whole package is available locally. Several important notes:
 
 1. The Link: header with **rel=index** declares a specified part to be a Content Index of the package. The **offset=12014** attribute specifies the octet offset/size from the beginning of the Package Header of the package to the Content Index part. That can be used in file-seek APIs to quickly read the part without a need to parse the potentially huge package itself.
-2. Content Index part is typically generated during package creation, it doesn't have a natural URL. We propose to use cid: generated URLs (UUID-based, 128-bit) for such generated parts. The visibility scope of those URLs is limited similar to package boundaries, and is for the current package only.
+2. Content Index part is typically generated during package creation, it doesn't have a natural URL. We propose to use [`urn:uuid:`](https://tools.ietf.org/html/rfc4122) generated URLs (UUID-based, 128-bit) for such generated parts. The visibility scope of those URLs is limited similar to package boundaries, and is for the current package only.
 3. Content-type of the Content Index is application/package.index.
 4. The Content Index consists of the Content Index Entries (see below for the discussion of what they are).
 5. Content Index part may be compressed (as specified by Transfer-Encoding header).
@@ -130,7 +130,7 @@ The package in this case contains a lot of pages with resources ("Encyclopedia i
 Content-Type: application/package
 Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
-Link: <cid:f47ac10b-58cc-4372-a567-0e02b2c3d479>; rel=index; offset=12014/2048
+Link: <urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479>; rel=index; offset=12014/2048
 
 --j38n02qryf9n0eqny8cq0
 Content-Location: /index.html
@@ -153,7 +153,7 @@ Transfer-Encoding: binary
 
 ... binary png image ...
 --j38n02qryf9n0eqny8cq0
-Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
+Content-Location: urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/package.index
 
 /index.html     sha384-Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7 153 215
@@ -183,7 +183,7 @@ The example contains an HTML page and an image. The package is signed by the exa
 
 Important notes:
 
-1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains a signed hash of the Package Header section (not including Package-Signature header) and Content Index. It also contains a reference (via cid: UUID-based URL) to the part that contains the public key certificate (or if needed, a chain of certificates to the root CA).
+1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains a signed hash of the Package Header section (not including Package-Signature header) and Content Index. It also contains a reference (via urn:uuid: UUID-based URL) to the part that contains the public key certificate (or if needed, a chain of certificates to the root CA).
 2. The **certificate algorithm** must be encoded within the certificate that signed the package. The **algorithm** in **Package-Signature** is the hash algorithm used to sign the **Content Index** and produce the Package-Signature.
 3. The Content Index contains hashes of all parts of the package, so it is enough to validate the index to trust its hashes, then compute the hash of each part upon using it to validate each part. Hashes have the hash algorithm specified in front.
 4. Content Index Entry `part-location` and `part-size` must not refer to locations outside of the package which contains the entry or to locations within nested packages. They may refer to the boundaries of a nested package.
@@ -191,11 +191,11 @@ Important notes:
 6. Certificate is included as a standard DER-encoded resource (with proper Content-type) corresponding to a [X.509 certificate](https://tools.ietf.org/html/rfc5280). The policies for verifying the validity of the certificate are left up to the host environment. There are no requirements on any fields in the certificate such as [Key Usage](https://tools.ietf.org/html/rfc5280#section-4.2.1.3); this also is left up to the host environment.
 
 ```html
-Package-Signature: Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7; algorithm: sha384; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
+Package-Signature: Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7; algorithm: sha384; certificate=urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/package
 Content-Location: http://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
-Link: <cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a>; rel=index; offset=12014/2048
+Link: <urn:uuid:d479c10b-58cc-4243-97a5-0e02b2c3f47a>; rel=index; offset=12014/2048
 
 --j38n02qryf9n0eqny8cq0
 Content-Location: /index.html
@@ -205,12 +205,12 @@ Content-Type: text/html
   Hello World!
 </body>
 --j38n02qryf9n0eqny8cq0
-Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
+Content-Location: urn:uuid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
 Content-Type: application/package.index
 
 /index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
 --j38n02qryf9n0eqny8cq0
-Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
+Content-Location: urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/pkcs7-mime
 
 ... certificate (or a chain) in any of the
@@ -237,12 +237,12 @@ Important notes:
 
 
 ```html
-Package-Signature: NNejtdEjGnea4VTvO7A/x+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjxQOXvfX5+; algorithm=sha384; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
+Package-Signature: NNejtdEjGnea4VTvO7A/x+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjxQOXvfX5+; algorithm=sha384; certificate=urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/package
 Content-Location: https://example.org/examplePack.pack
 Link: </index.html>; rel=describedby
 Link: <https://ajax.googleapis.com/packs/jquery_3.1.0.pack>; rel=package; scope=/ajax/libs/jquery/3.1.0
-Link: <cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a>; rel=index; offset=12014/2048
+Link: <urn:uuid:d479c10b-58cc-4243-97a5-0e02b2c3f47a>; rel=index; offset=12014/2048
 
 --j38n02qryf9n0eqny8cq0
 Content-Location: /index.html
@@ -253,10 +253,10 @@ Content-Type: text/html
 ...
 </body>
 --j38n02qryf9n0eqny8cq0
-	Package-Signature: A/xtdEjGnea4VTvNNejO7+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjx5+QOXvfX; algorithm=sha384; certificate=cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
+	Package-Signature: A/xtdEjGnea4VTvNNejO7+5ucZm+pGPkQ1TD32oT3oKGhPWeF0hASWjx5+QOXvfX; algorithm=sha384; certificate=urn:uuid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
 	Content-Location: https://ajax.googleapis.com/packs/jquery_3.1.0.pack
 	Content-Type: application/package
-	Link: <cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa>; rel=index; offset=12014/2048
+	Link: <urn:uuid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa>; rel=index; offset=12014/2048
 
 	--klhfdlifhhiorefioeri1
 	Content-Location: /ajax/libs/jquery/3.1.0/jquery.min.js
@@ -264,24 +264,24 @@ Content-Type: text/html
 
 	... some JS code ...
 	--klhfdlifhhiorefioeri1   (This is Content Index for ajax.googleapis.com subpackage)
-	Content-Location: cid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa
+	Content-Location: urn:uuid:aaf4c10b-58cc-4372-8567-0e02b2c3daaa
 	Content-Type: application/package.index
 
 	/ajax/libs/jquery/3.1.0/jquery.min.js sha384-3dEjGnea4A/xtGPkQ1TDVTvNNejO7+5ucZm+pASWjx5+QOXvfX2oT3oKGhPWeF0h 102 3876
 	... other entries ...
 	--klhfdlifhhiorefioeri1
-	Content-Location: cid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
+	Content-Location: urn:uuid:7af4c10b-58cc-4372-8567-0e02b2c3dabc
 	Content-Type: application/pkix-cert
 
 	... certificate for ajax.googleapi.com ...
 	--klhfdlifhhiorefioeri1--
 --j38n02qryf9n0eqny8cq0   (This is Content Index for example.com package)
-Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
+Content-Location: urn:uuid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
 Content-Type: application/package.index
 
 /index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
 --j38n02qryf9n0eqny8cq0
-Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
+Content-Location: urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479
 Content-Type: application/pkcs7-mime
 
 ... certificate for example.com ...
@@ -311,11 +311,7 @@ Yes, the Package Header and Content Index are hashed and this hash, signed, is p
 
 No. If a package contains subpackages, those subpackages are not covered by the package's signature or hashes and have to have their own Package-Signature header if they need to be signed. This reflects the fact that subpackages typically group resources from a different origin, with their own certificate. The [sub]packages are the units that are typically package resources from their respective origins and are therefore separately signed.
 
->What exactly are cid: URLs mentioned in this doc? Are they the same cid: URLs described in [RFC-2392](https://tools.ietf.org/html/rfc2392)?
-
-No, they are a bit different. They are simply a random-generated (as [Version 4 UUIDs](https://tools.ietf.org/html/rfc4122)) content IDs used exclusively inside the package to refer to the generated, non-content parts of the package - namely Content Index and Certificate used for signature.
-
->What happens if cid: URLs collide?
+>What happens if urn:uuid: URLs collide?
 
 Since they are Version 4 UUIDs, the chances of them colliding are vanishingly small.
 
