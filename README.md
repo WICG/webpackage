@@ -575,7 +575,12 @@ The example contains an HTML page and an image. The package is signed by the exa
 
 Important notes:
 
-1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains a signed hash of the Package Header section (not including Package-Signature header) and Content Index. It also contains a reference (via urn:uuid: UUID-based URL) to the part that contains the public key certificate (or if needed, a chain of certificates to the root CA).
+1. The very first header in Package Header section of the package is
+   **Package-Signature**, a new header that contains a signed hash of the
+   Package Header section (not including Package-Signature header) and Content
+   Index. It also contains a reference (via urn:uuid: UUID-based URL) to the
+   part that contains the public key certificate (or if needed, a group of
+   certificates that chain to one or more root CAs).
 2. The **certificate algorithm** must be encoded within the certificate that signed the package. The **algorithm** in **Package-Signature** is the hash algorithm used to sign the **Content Index** and produce the Package-Signature.
 3. The Content Index contains hashes of all parts of the package, so it is enough to validate the index to trust its hashes, then compute the hash of each part upon using it to validate each part. Hashes have the hash algorithm specified in front.
 4. Content Index Entry `part-location` and `part-size` must not refer to locations outside of the package which contains the entry or to locations within nested packages. They may refer to the boundaries of a nested package.
@@ -718,8 +723,15 @@ This is due to two main use cases of package loading:
 1. Loading the package from Web as part of the page or some other resource. In this case, the package is streamed from the server and **boundaries** allow to parse the package as it comes in and start using subresources as fast as possible. If the package has to be signed though, the package in its entirety has to be loaded first.
 2. Loading a (potentially large) package offline. In that case, it is important to provide a fast access to subresources as they are requested, w/o unpacking the package (it takes double the storage at least to unpack and significant time). Using direct byte-offset Content Index allows to directly access resources in a potentially large package.
 
-### Is the certificate supplied by package a full chain to the known CA root?
+### Does the package supply a full chain of certificates to a known CA root?
 
-Not necessarily. To quote one of the Chrome security engineers, "because different devices have different sets of roots in their trust stores, it's not always the case that there is a single "correct" set of certificates to send that will work best for all clients. Instead, for compatibility, sites will sometimes send a set of certificates and rely on clients to dynamically fetch additional intermediates when needed". We suspect that to be an interesting issue since offline validation would need a full chain. Browsers (at least Chrome) are implementing automatic fetching of intermediate certificates but for this to work they have to be online. This will probably become a matter of best practices when creating the packaging format, possibly with validation by the packaging tool.
+Not necessarily. Different devices have different sets of roots in their trust
+stores, so there is not a single "correct" set of certificates to send that will
+work best for all clients. Instead, for compatibility, packages may need to
+include a set of certificates from which chains can be built to multiple roots,
+or rely on clients to dynamically fetch additional intermediates when needed.
 
+This becomes a tradeoff between the package size vs the set of clients that can
+validate the signature offline. We expect that packaging tools will allow their
+users to configure this tradeoff in appropriate ways.
 
