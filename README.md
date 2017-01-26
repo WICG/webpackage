@@ -32,8 +32,25 @@ If the original origin signs a package, the contents can get full access to
 browser state and network requests for that origin. This lets people share full
 PWAs peer-to-peer.
 
+Local sharing tends to have persistent constraints on the amount of data
+transferred: each byte costs money. This means the client may be stuck with an
+outdated version of a package for a significant amount of time, including that
+package's vulnerabilities. It may be feasible to periodically check for:
+1. OCSP notification that a package's certificate has been revoked, and
+2. A yet-to-be-designed notification that the package is critically vulnerable
+   and needs to be disabled until it can be updated.
+
 ### Physical Web
 [Beacons](https://google.github.io/physical-web/) and other physical web devices often want to 'broadcast' various content locally. Today, they broadcast a URL and make the user's device go to a web site. This delivers the trusted content to the user's browser (user can observe the address bar to verify) and allow web apps to talk back to their services. It can be useful to be able to broadcast a package containing several pages or even a simple web app, even without a need to immediately have a Web connection - for example, via Bluetooth. If combined with signature from the publisher, the loaded pages may be treated as if they were loaded via TLS connection with a valid certificate, in terms of the [origin-based security model](https://tools.ietf.org/html/rfc6454). For example, they can use [`fetch()`](https://fetch.spec.whatwg.org/#fetch-api) against its service or use "Add To Homescreen" for the convenience of the user.
+
+Physical web beacons may be located in a place that has no connectivity, and
+their owner may only visit to update them as often as their battery needs
+replacement: annually or less often. This leaves a large window during which a
+certificate could be compromised or a package could get out of date. We think
+there's no way to prevent a client from trusting its initial download of a
+package signed by a compromised certificate. When the client gets back to a
+public network, it should attempt to validate both the certificate and the
+package, likely by fetching the package's `Content-Location`.
 
 ### Content Distribution Networks and Web caches.
 The CDNs can provide service of hosting web content that should be delivered at scale. This includes both hosting subresources (JS libraries, images) as well as entire content ([Google AMP](https://developers.google.com/amp/cache/overview)) on network of servers, often provided as a service by 3rd party. Unfortunately, origin-based security model of the Web limits the ways a 3rd-party caches/servers can be used. Indeed, for example in case of hosting JS subresources, the original document must explicitly trust the CDN origin to serve the trusted script. The user agent must use protocol-based means to verify the subresource is coming from the trusted CDN. Another example is a CDN that caches the whole content. Because the origin of CDN is different from the origin of the site, the browser normally can't afford the origin treatment of the site to the loaded content. Look at how an article from USA Today is represented:
@@ -43,6 +60,10 @@ The CDNs can provide service of hosting web content that should be delivered at 
 Note the address bar indicating google.com. Also, since the content of USA Today is hosted in an iframe, it can't use all the functionality typically afforded to a top-level document:
 - Can't request permissions
 - Can't be added to homescreen
+
+Packages served to CDNs can staple an OCSP response and have a short expiration
+time, avoiding the above problems with outdated packages.
+
 
 ## Goals and non-goals
 
