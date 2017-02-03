@@ -28,14 +28,222 @@ In addition, that format would include optional **signing** of the resources, wh
 
 Since the packaged "bundle" can be quite large (a game with a lot of resources or content of multiple web sites), efficient access to that content becomes important. For example, it would be often prohibitively expensive to "unpack" or somehow else pre-process such a large resource on the client device. Unpacking, for example, may require twice the space to be occupied in device's storage, which can be a problem, especially on low-end devices. We propose a optional **Content Index** structure that allows the bundle to be consumed (browsed) efficiently as is, without unpacking - by adding an index-like structure which provides direct offsets into the package.
 
-There is already a [packaging format proposal](https://w3ctag.github.io/packaging-on-the-web/) which we will base upon.
-We are proposing to improve on the spec, in particular by introducing 3 major additions:
+This is roughly based on the existing [Packaging on the Web](https://w3ctag.github.io/packaging-on-the-web/) W3C TAG proposal, but we've made significant changes:
 
-1. Hierarchical structure of the sub-packages to allow resources from multiple origins.
-2. Index of content to facilitate local resource fetching from the package.
+1. Index of content to facilitate local resource fetching from the package.
+2. Package manifests that can refer to sub-package manifests to allow resources
+   from multiple origins.
 3. Signature block, to cryptographically sign the content of the package.
+4. Removed the
+   [fragment-based URL schema](https://w3ctag.github.io/packaging-on-the-web/#fragment-identifiers)
+   from the spec as it's complex with limited use cases.
 
-We also propose to remove the [fragment-based URL schema](https://w3ctag.github.io/packaging-on-the-web/#fragment-identifiers) from the spec as it is not clear what would be the use case supporting it.
+Note that this is just an explainer, **not a specification**. We'll add more
+precision when we translate it to a spec.
+
+### Overall format
+
+The package is structured as follows. All "offsets" are 8-byte little-endian
+integers representing a byte offset from the start of the initial magic number.
+
+1. A magic number: `F0 9F 8C 90 F0 9F 93 A6` (🌐📦 in UTF-8).
+2. The length of the package (all bytes from the first of the initial magic
+   number to the last of the final magic number) as a little-endian 8-byte
+   integer.
+3. A 1-byte count of metadata sections followed by that many of the following
+   entries. Repeated entry IDs and non-monotonically-increasing offsets cause
+   the package to fail to parse.
+   * The byte `01` indicating an [index](#index), followed by the offset of the
+     start of the index.
+   * The byte `02` indicating a block of [certificates](#certificates), followed
+     by the offset of the start of the certificates.
+   * The byte `03` indicating a [manifest](#manifest), followed by the offset of
+     the start of the manifest.
+
+   Unknown entry IDs are assumed to be followed by an offset, and the pair must
+   be ignored.
+4. The offset of the [main content](#main-content) of the package.
+5. The metadata sections promised above.
+6. A sequence of HTTP responses constituting the main content of the package.
+   Mismatches with the manifest usually cause the package to fail to parse, as
+   described in the [manifest](#manifest) section, but mismatches with the index
+   might not.
+7. The length of the package, repeated from earlier. This allows tools to
+   operate on the package even if it's been prepended with a self-extracting
+   executable.
+8. The same magic number: `F0 9F 8C 90 F0 9F 93 A6` (🌐📦 in UTF-8).
+
+The MIME type of this format is `application/package`. TODO: Is that right?
+
+Note that this top-level information is *not signed*, and so can't be trusted.
+Only information in the manifest and below can be trusted.
+
+The manifest and certificates are used to sign the contents of the package. The
+index is used when the package is stored on disk, to find resources quickly. And
+the start page should be loaded when a UA is navigated to the package itself.
+
+### Index
+
+The index is optional, and can be added by a client after the package is
+downloaded.
+
+It contains a series of lines (terminated by `\r\n`) of the form
+
+```
+URL offset length
+```
+
+Where offset and length are 64-bit integers, and the URLs are absolute. Offsets
+are interpreted relative to the first byte of the package. All resources in the
+package should be included in the index, even if they come from a different
+origin.
+
+TODO: Provide base URLs, maybe as INI-format sections.
+
+```
+https://example.org/index.html 7000 500
+https://example.org/img.png 7500 1000
+...
+```
+
+### Certificates
+
+The certificates block contains
+an
+[application/pkcs7-mime; smime-type=certs-only](https://tools.ietf.org/html/rfc5751) resource
+holding enough [X.509](https://tools.ietf.org/html/rfc5280) certificates that
+chains can be built from the certificates that sign the top-level
+and [sub-package](#sub-packages) manifests to root certificates recognized by
+the client.
+
+Requirements on the
+certificates' [Key Usage](https://tools.ietf.org/html/rfc5280#section-4.2.1.3)
+and [Extended Key Usage](https://tools.ietf.org/html/rfc5280#section-4.2.1.12)
+are TBD. It may or may not be important to prevent TLS serving certificates from
+being used to sign packages, in order to prevent cross-protocol attacks.
+
+### Manifest
+
+A package's manifest lists all of the resources included in that package, and
+any sub-packages the package depends on. It starts with at least the
+`Content-Type`, `Content-Location`, `Content-Length`, and `Date` headers, and
+must include one or more [signatures](#signatures).
+
+At least one of a manifest's signatures must be from a certificate that has a
+valid chain to a known root, and that is trusted to sign content from the
+[origin](https://html.spec.whatwg.org/multipage/browsers.html#concept-origin) of
+the manifest's `Content-Location`.
+
+If no signature gives the manifest authority to speak for its origin, or if any
+resource or sub-package doesn't match the description in the manifest, the whole
+package must fail to parse. TODO: Should there be a way to express that
+particular resources don't need to verify, in order to let the UA load the beginning of a package before the whole package has transferred?
+
+As a special case, if the package is being transferred from the manifest's
+origin under TLS, the UA may load it before checking that the resources match
+the manifest.
+
+TODO: Should we just extend
+the [Web App Manifest](https://www.w3.org/TR/appmanifest/), or does the fact
+that we're going to sign this rule out JSON?
+
+Resources are described by a line consisting of:
+
+```
+relative/url hashalgorithm-base64digest hashalgorithm2-base64digest2 ...
+```
+
+The URL is relative to the manifest's `Content-Location`.
+
+The hashes are in the format defined for the
+[`integrity` HTML attribute](https://w3c.github.io/webappsec-subresource-integrity/#the-integrity-attribute).
+This allows multiple hashes in order to provide agility in the face of future
+cryptographic discoveries. See also https://tools.ietf.org/html/rfc7696.
+
+Unlike [[SRI]], the hashes are computed over both the headers and body of the
+named resource, not just the body. Note: This will usually prevent a package
+from relying on some of its contents being transferred as normal network
+responses, unless its author can guarantee the network won't change or reorder
+the headers.
+
+TODO: Do we need the length to be shown in the manifest, or is its presence in
+the resource's `Content-Length` header, included in the hash, enough?
+
+
+#### Sub-packages
+
+There are three possible forms of dependencies on sub-packages, of which we
+allow two. Note that a sub-package is or can be protected by its
+own [signature](#signatures), so if the main package trusts the sub-package's
+server, it could avoid specifying a version of the sub-package at all. However,
+this opens the main package up to downgrade attacks, where the sub-package is
+replaced by an older, vulnerable version, so we don't allow this option.
+
+If the main package wants to load either the sub-package it was built with or
+any upgrade, it can specify the date of the original sub-package:
+
+```
+https://package/manifest/url Date: Tue, 07 Feb 2017 01:05:54 GMT
+```
+
+Constraining packages with their date makes it possible to link together
+sub-packages with common dependencies, even if the sub-packages were built at
+different times.
+
+If the main package wants to be certain it's loading the exact version of a
+sub-package that it was built with, it can constrain sub-package with a hash of its manifest:
+
+```
+https://package/manifest/url hashalgorithm-base64digest hashalgorithm2-base64digest2 ...
+```
+
+Note that because the sub-package may include sub-sub-packages by date, the top
+package may need to explicitly list those sub-sub-packages' hashes in order to
+be completely constrained.
+
+It should be possible to additionally constrain packages using semver, for the
+benefit of NPM and other packaging systems, but I haven't explored that
+extension here.
+
+
+#### Signatures
+
+A [manifest](#manifest) is signed by one or more `Signature` headers. The
+message to sign consists of the concatenation of all headers except any
+`Signature` headers, followed by the body of the manifest. A `Signature` header has the form:
+
+``` http
+Signature: keyId="cert1",algorithm="ed25519",signature="Base64(ed25519(privatekey(cert1), message))"
+```
+
+This is similar to the `Signature` header specified by
+https://tools.ietf.org/html/draft-cavage-http-signatures-06, except that we sign
+all headers instead of a specified subset, and we include the body instead of
+requiring an extra Digest header.
+
+TODO: We also need to define the format of the `keyId`, which must identify one
+of the certificates sent with the package. I don't know the best format for this
+ID.
+
+The algorithm must be one of the signature algorithms defined
+by [TLS1.3](https://tlswg.github.io/tls13-spec/#rfc.section.4.2.3), except for
+the ones marked "SHOULD NOT be offered". TODO: Limit to a smaller set? TODO:
+Identify algorithms by their enum value or some other identifier?
+
+Multiple `Signature` headers are allowed in order to
+allow [cryptographic agility](https://tools.ietf.org/html/rfc7696) and to allow
+multiple entities to sign a package, for example to express that the package was
+checked for malicious behavior by some authority in addition to its author.
+
+### Main content
+
+The main content of a package is a sequence of HTTP responses holding the
+manifests of sub-packages and the resources in the package and all of its
+sub-packages. These resources can appear in any order. Each response must
+include a `Content-Length` header so that the parser can identify the start of
+the next response.
+
+## Use cases
 
 Following are some example usages that correspond to these additions:
 
