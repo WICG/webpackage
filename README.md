@@ -73,28 +73,33 @@ integers representing a byte offset from the start of the initial magic number.
    executable.
 8. The same magic number: `F0 9F 8C 90 F0 9F 93 A6` (🌐📦 in UTF-8).
 
+All metadata sections and each resource in the main content is prefixed with its
+8-byte little-endian length.
+
 The MIME type of this format is `application/package`. TODO: Is that right?
 
 Note that this top-level information is *not signed*, and so can't be trusted.
 Only information in the manifest and below can be trusted.
 
 The manifest and certificates are used to sign the contents of the package. The
-index is used when the package is stored on disk, to find resources quickly. And
-the start page should be loaded when a UA is navigated to the package itself.
+index is used when the package is stored on disk, to find resources quickly.
 
 ### Index
 
 The index is optional, and can be added by a client after the package is
 downloaded.
 
-It contains a series of lines (terminated by `\r\n`) of the form
+It consists of its own 8-byte length, followed by a series of lines (terminated
+by `\r\n`) of the form
 
 ```
-URL offset length
+URL offset
 ```
 
-Where offset and length are 64-bit integers, and the URLs are absolute. Offsets
-are interpreted relative to the first byte of the package. All resources in the
+Where an offset is a 64-bit integer (written out as digits), and the URLs are
+absolute. Offsets are interpreted relative to the first byte of the package.
+There's no need to include a resource's length in the index because the offset
+points directly to the length at the start of the resource. All resources in the
 package should be included in the index, even if they come from a different
 origin.
 
@@ -108,7 +113,7 @@ https://example.org/img.png 7500 1000
 
 ### Certificates
 
-The certificates block contains
+The certificates block contains an 8-byte length followed by
 an
 [application/pkcs7-mime; smime-type=certs-only](https://tools.ietf.org/html/rfc5751) resource
 holding enough [X.509](https://tools.ietf.org/html/rfc5280) certificates that
@@ -125,9 +130,10 @@ being used to sign packages, in order to prevent cross-protocol attacks.
 ### Manifest
 
 A package's manifest lists all of the resources included in that package, and
-any sub-packages the package depends on. It starts with at least the
-`Content-Type`, `Content-Location`, `Content-Length`, and `Date` headers, and
-must include one or more [signatures](#signatures).
+any sub-packages the package depends on. It consists of an 8-byte length
+followed by an HTTP response including at least the `Content-Type`,
+`Content-Location`, and `Date` headers, and one or
+more [signatures](#signatures).
 
 At least one of a manifest's signatures must be from a certificate that has a
 valid chain to a known root, and that is trusted to sign content from the
@@ -160,14 +166,15 @@ The hashes are in the format defined for the
 This allows multiple hashes in order to provide agility in the face of future
 cryptographic discoveries. See also https://tools.ietf.org/html/rfc7696.
 
-Unlike [[SRI]], the hashes are computed over both the headers and body of the
-named resource, not just the body. Note: This will usually prevent a package
-from relying on some of its contents being transferred as normal network
-responses, unless its author can guarantee the network won't change or reorder
-the headers.
+The hashes are computed over the entire resource, including its length, HTTP
+headers, and body of the named resource. This differs
+from [SRI](https://w3c.github.io/webappsec-subresource-integrity), which only
+hashes the body. Note: This will usually prevent a package from relying on some
+of its contents being transferred as normal network responses, unless its author
+can guarantee the network won't change or reorder the headers.
 
-TODO: Do we need the length to be shown in the manifest, or is its presence in
-the resource's `Content-Length` header, included in the hash, enough?
+TODO: Do we need the length to be shown in the manifest, or is its presence at
+the beginning of the resource, included in the hash, enough?
 
 
 #### Sub-packages
@@ -209,8 +216,9 @@ extension here.
 #### Signatures
 
 A [manifest](#manifest) is signed by one or more `Signature` headers. The
-message to sign consists of the concatenation of all headers except any
-`Signature` headers, followed by the body of the manifest. A `Signature` header has the form:
+message to sign consists of the length, followed by the concatenation of all
+headers except any `Signature` headers, followed by the body of the manifest. A
+`Signature` header has the form:
 
 ``` http
 Signature: keyId="cert1",algorithm="ed25519",signature="Base64(ed25519(privatekey(cert1), message))"
@@ -237,11 +245,9 @@ checked for malicious behavior by some authority in addition to its author.
 
 ### Main content
 
-The main content of a package is a sequence of HTTP responses holding the
-manifests of sub-packages and the resources in the package and all of its
-sub-packages. These resources can appear in any order. Each response must
-include a `Content-Length` header so that the parser can identify the start of
-the next response.
+The main content of a package is a sequence of 8-byte-length-prefixed HTTP
+responses holding the manifests of sub-packages and the resources in the package
+and all of its sub-packages. These resources can appear in any order.
 
 ## Use cases
 
