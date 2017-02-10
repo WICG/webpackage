@@ -32,8 +32,8 @@ Note the address bar indicating google.com. Also, since the content of USA Today
   origin, the UA can load the package as it downloads.
 * **random-access**: When a package is stored on disk, the UA can access
   arbitrary resources without a linear scan.
-* **sub-packages**: A package from origin `A` can contain resources from origin
-  `B` that can make same-origin requests back to `B`.
+* **multiple-origins**: A package from origin `A` can contain resources from
+  origin `B` that can make same-origin requests back to `B`.
 * **crypto-agility**: Obsolete cryptographic algorithms can be replaced.
 * **cross-signatures**: Third-parties can vouch for packages by signing them.
 * **unsigned-content**: Alice can create their own package without a CA-signed
@@ -75,6 +75,8 @@ Note the address bar indicating google.com. Also, since the content of USA Today
 * **peer-streamed-loading**: When transferred over an unauthenticated
   connection, the UA can load a signed package as it downloads. This is ruled
   out by attacks involving dropped resources.
+* **drm**: Special support for blocking access to downloaded content based on
+  licensing.
 
 ## Proposal
 
