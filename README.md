@@ -49,35 +49,29 @@ signed manifests. The top-level manifest verifies the authenticity of resources
 from the overall package's origin and contains a list of sub-manifests which
 each verify a sub-package's resources.
 
-The physical structure follows. All "offsets" are 8-byte little-endian
-integers representing a byte offset from the start of the initial magic number.
+The physical structure follows. All "offsets" are 8-byte little-endian integers
+representing a byte offset from the start of the initial magic number. Other
+numbers are also 8-byte little-endian integers for simplicity.
 
 1. A magic number: `F0 9F 8C 90 F0 9F 93 A6` (🌐📦 in UTF-8).
-2. The length of the package (all bytes from the first of the initial magic
-   number to the last of the final magic number) as a little-endian 8-byte
-   integer.
-3. A 1-byte count of metadata sections followed by that many of the following
+2. An 8-byte count of main sections followed by that many of the following
    entries. Repeated entry IDs and non-monotonically-increasing offsets cause
    the package to fail to parse.
-   * The byte `01` indicating an [index](#index), followed by the offset of the
-     start of the index.
-   * The byte `02` indicating a block of [certificates](#certificates), followed
-     by the offset of the start of the certificates.
-   * The byte `03` indicating a [manifest](#manifest), followed by the offset of
-     the start of the manifest.
+   * The 8-byte tag `01` indicating an [index](#index), followed by the offset
+     of the start of the index.
+   * The 8-byte tag `02` indicating a block of [certificates](#certificates),
+     followed by the offset of the start of the certificates.
+   * The 8-byte tag `03` indicating a [manifest](#manifest), followed by the
+     offset of the start of the manifest.
+   * The 8-byte tag `04` indicating the [main content](#main-content) of the
+     package, followed by the offset of the start of the main content.
 
    Unknown entry IDs are assumed to be followed by an offset, and the pair must
    be ignored.
-4. The offset of the [main content](#main-content) of the package.
-5. The metadata sections promised above.
-6. A sequence of HTTP responses constituting the main content of the package.
-   Mismatches with the manifest usually cause the package to fail to parse, as
-   described in the [manifest](#manifest) section, but mismatches with the index
-   might not.
-7. The length of the package, repeated from earlier. This allows tools to
-   operate on the package even if it's been prepended with a self-extracting
-   executable.
-8. The same magic number: `F0 9F 8C 90 F0 9F 93 A6` (🌐📦 in UTF-8).
+3. The main sections promised above.
+4. The length of the package. This allows tools to operate on the package even
+   if it's been prepended with a self-extracting executable.
+5. The same magic number: `F0 9F 8C 90 F0 9F 93 A6` (🌐📦 in UTF-8).
 
 All metadata sections and each resource in the main content is prefixed with its
 8-byte little-endian length.
@@ -94,6 +88,9 @@ index is used when the package is stored on disk, to find resources quickly.
 
 The index is optional, and can be added by a client after the package is
 downloaded.
+
+TODO: Use more than a URL as the key to handle multiple different-type resources
+with, e.g. `Vary: Accept`. Consider a JSON-based format.
 
 It consists of its own 8-byte length, followed by a series of lines (terminated
 by `\r\n`) of the form
@@ -223,8 +220,12 @@ extension here.
 
 A [manifest](#manifest) is signed by one or more `Signature` headers. The
 message to sign consists of the length, followed by the concatenation of all
-headers except any `Signature` headers, followed by the body of the manifest. A
-`Signature` header has the form:
+headers except any `Signature` headers, followed by the body of the manifest.
+
+TODO: Consider wrapping the manifest into an `application/pkcs7-mime`
+signed-data structure instead of inventing our own `Signature` header.
+
+A `Signature` header has the form:
 
 ``` http
 Signature: keyId="cert1",algorithm="ed25519",signature="Base64(ed25519(privatekey(cert1), message))"
@@ -251,9 +252,19 @@ checked for malicious behavior by some authority in addition to its author.
 
 ### Main content
 
-The main content of a package is a sequence of 8-byte-length-prefixed HTTP
+The main content of a package is a sequence of HTTP
 responses holding the manifests of sub-packages and the resources in the package
 and all of its sub-packages. These resources can appear in any order.
+
+Each HTTP response consists of:
+1. The 8-byte length of the whole response. This up-front length may help
+   decoders farm parsing each resource out to a different thread.
+2. The 8-byte length of the headers. This is needed because HPACK headers rely
+   on HTTP2 framing to establish their length, and we're not using HTTP2 framing
+   here.
+3. [HPACK](http://httpwg.org/specs/rfc7541.html)-encoded headers. The dynamic
+   table is re-initialized for each resource.
+4. The response body.
 
 ## Use cases
 
