@@ -43,7 +43,13 @@ precision when we translate it to a spec.
 
 ### Overall format
 
-The package is structured as follows. All "offsets" are 8-byte little-endian
+The package is logically structured as a flat sequence of resources represented
+as HTTP responses, combined with an optional index and an optional tree of
+signed manifests. The top-level manifest verifies the authenticity of resources
+from the overall package's origin and contains a list of sub-manifests which
+each verify a sub-package's resources.
+
+The physical structure follows. All "offsets" are 8-byte little-endian
 integers representing a byte offset from the start of the initial magic number.
 
 1. A magic number: `F0 9F 8C 90 F0 9F 93 A6` (🌐📦 in UTF-8).
