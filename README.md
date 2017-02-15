@@ -28,10 +28,9 @@ Note the address bar indicating google.com. Also, since the content of USA Today
   a [PWA](https://developers.google.com/web/progressive-web-apps/checklist) from
   origin `O`, and transmit it to their peer Bob, and then Bob can install
   the PWA with a proof that it came from `O`.
-* **streamed-loading**: When a package is downloaded over TLS from its original
-  origin, the UA can load the package as it downloads.
 * **random-access**: When a package is stored on disk, the UA can access
   arbitrary resources without a linear scan.
+* **streamed-loading**: The UA can load a package as it downloads.
 * **multiple-origins**: A package from origin `A` can contain resources from
   origin `B` that can make same-origin requests back to `B`.
 * **crypto-agility**: Obsolete cryptographic algorithms can be replaced.
@@ -72,9 +71,6 @@ Note the address bar indicating google.com. Also, since the content of USA Today
 * **non-origin-identity**: A package can be primarily identified as coming from
   something other than a
   [Web Origin](https://html.spec.whatwg.org/multipage/browsers.html#concept-origin).
-* **peer-streamed-loading**: When transferred over an unauthenticated
-  connection, the UA can load a signed package as it downloads. This is ruled
-  out by attacks involving dropped resources.
 * **drm**: Special support for blocking access to downloaded content based on
   licensing.
 
