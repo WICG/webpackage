@@ -57,7 +57,8 @@ Note the address bar indicating google.com. Also, since the content of USA Today
 * **external-dependencies**: Sub-packages can be "external" to the main package,
   meaning the UA will need to either fetch them separately or already have them.
   ([#35, App Installer Story](https://github.com/dimich-g/webpackage/issues/35))
-* **self-extracting**: Wrap packages in self-extracting executables.
+* **self-extracting**: Wrap packages in self-extracting executables. This is
+  required for Node to use the format.
 * **optional-components**: A package can identify resources that don't need to
   be authenticated before the UA starts loading the package.
 * **unsigned-streamed-loading**: Unsigned packages can be loaded as they
