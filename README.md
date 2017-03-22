@@ -43,86 +43,206 @@ precision when we translate it to a spec.
 
 ### Overall format
 
-The package is logically structured as a flat sequence of resources represented
-as HTTP responses, combined with an optional index and an optional tree of
-signed manifests. The top-level manifest verifies the authenticity of resources
-from the overall package's origin and contains a list of sub-manifests which
-each verify a sub-package's resources.
+The package is a [CBOR-encoded data item](https://tools.ietf.org/html/rfc7049)
+with MIME type `application/package+cbor`. It logically contains a flat sequence
+of resources represented as HTTP responses. The package also includes metadata
+such as a manifest and an index to let consumers validate the resources and
+access them directly.
 
-The physical structure follows. All "offsets" are 8-byte little-endian integers
-representing a byte offset from the start of the initial magic number. Other
-numbers are also 8-byte little-endian integers for simplicity.
+The overall structure of the item is described by the following
+[CDDL](https://tools.ietf.org/html/draft-greevenbosch-appsawg-cbor-cddl):
 
-1. A magic number: `F0 9F 8C 90 F0 9F 93 A6` (🌐📦 in UTF-8).
-2. An 8-byte count of main sections followed by that many of the following
-   entries. Repeated entry IDs and non-monotonically-increasing offsets cause
-   the package to fail to parse.
-   * The 8-byte tag `01` indicating an [index](#index), followed by the offset
-     of the start of the index.
-   * The 8-byte tag `02` indicating a block of [certificates](#certificates),
-     followed by the offset of the start of the certificates.
-   * The 8-byte tag `03` indicating a [manifest](#manifest), followed by the
-     offset of the start of the manifest.
-   * The 8-byte tag `04` indicating the [main content](#main-content) of the
-     package, followed by the offset of the start of the main content.
+```cddl
+webpackage = [
+  magic1: h'F0 9F 8C 90 F0 9F 93 A6',  ; 🌐📦 in UTF-8.
+  section-offsets: { * (($section-name .within tstr) => offset) },
+  sections: ({ * $$section }) .within ({ * $section-name => any }),
+  length: uint,                        ; Total number of bytes in the package.
+  magic2: h'F0 9F 8C 90 F0 9F 93 A6',  ; 🌐📦 in UTF-8.
+]
 
-   Unknown entry IDs are assumed to be followed by an offset, and the pair must
-   be ignored.
-3. The main sections promised above.
-4. The length of the package. This allows tools to operate on the package even
-   if it's been prepended with a self-extracting executable.
-5. The same magic number: `F0 9F 8C 90 F0 9F 93 A6` (🌐📦 in UTF-8).
+; Offsets are measured from the first byte of the webpackage item to the first
+; byte of the target item.
+offset = uint
+```
 
-All metadata sections and each resource in the main content is prefixed with its
-8-byte little-endian length.
+Each section-offset points to a section with the same key, by holding the byte
+offset from the start of the webpackage item to the start of the section's name
+item.
 
-The MIME type of this format is `application/package`. TODO: Is that right?
+The length holds the total length in bytes of the `webpackage` item, which makes
+it possible to build self-extracting executables by appending a normal web
+package to the extractor executable.
+
+The defined section types are:
+
+* [`"content"`](#main-content): The only required section. Contains a sequence of
+  HTTP2 responses.
+* [`"index"`](#index): Contains offsets of each resource in the package. This
+  allows random access to the resources when the package is stored on disk.
+* [`"manifest"`](#manifest): Validates that resources came from the expected
+  source. May refer to other manifests among the responses.
+
+More sections may be defined later. If an unexpected section is encountered, it
+is ignored.
 
 Note that this top-level information is *not signed*, and so can't be trusted.
 Only information in the manifest and below can be trusted.
 
-The manifest and certificates are used to sign the contents of the package. The
-index is used when the package is stored on disk, to find resources quickly.
+### Main content
+
+The main content of a package is a sequence of HTTP request/response pairs
+holding the manifests of sub-packages and the resources in the package and all
+of its sub-packages. These resources can appear in any order.
+
+```cddl
+$section-name /= "content"
+$$section //= ("content" =>
+  {* resource-key => [response-headers: http-headers, body: bstr]}
+)
+
+resource-key = uri / http-headers
+
+; http-headers is a byte string in HPACK format (RFC7541).
+; The dynamic table begins empty for each instance of http-headers.
+http-headers = bstr
+```
+
+In addition to the CDDL constraints:
+
+* All byte strings must use a definite-length encoding so that package consumers
+  can parse the content directly instead of concatenating the indefinite-length
+  chunks first. The definite lengths here may also help a package consumer to
+  quickly send resources to other threads for parsing.
+* A `uri` `resource-key` is equivalent to an http-headers block with ":method"
+  set to "GET" and with ":scheme", ":authority", and ":path" headers set from
+  the URI as described
+  in
+  [RFC7540 section 8.1.2.3](https://tools.ietf.org/html/rfc7540#section-8.1.2.3).
+* The content map must not contain two `resource-key`s with the
+  same [header list](http://httpwg.org/specs/rfc7541.html#rfc.section.1.3) after
+  HPACK decoding.
+* The `resource-key` must not contain any headers that aren't either ":method",
+  ":authority", ":path", or listed in the
+  `response-headers`'
+  ["Vary" header](https://tools.ietf.org/html/rfc7231#section-7.1.4).
+
 
 ### Index
 
 The index is optional, and can be added by a client after the package is
 downloaded.
 
-TODO: Use more than a URL as the key to handle multiple different-type resources
-with, e.g. `Vary: Accept`. Consider a JSON-based format.
-
-It consists of its own 8-byte length, followed by a series of lines (terminated
-by `\r\n`) of the form
-
-```
-URL offset
+```cddl
+$section-name /= "index"
+$$section //= ("index" => index)
+index = {* resource-key => offset }
 ```
 
-Where an offset is a 64-bit integer (written out as digits), and the URLs are
-absolute. Offsets are interpreted relative to the first byte of the package.
-There's no need to include a resource's length in the index because the offset
-points directly to the length at the start of the resource. All resources in the
-package should be included in the index, even if they come from a different
-origin.
+Offsets point to the identical resource-key in the `"content"` section.
 
-TODO: Provide base URLs, maybe as INI-format sections.
+There's no need to include a resource's length in the index because the resource
+itself is encoded in 3 length-prefixed chunks. All resources in the package
+should be included in the single index, even if they come from different
+origins.
 
+TODO: Consider compression.
+
+TODO: Consider random access into large indices.
+
+
+
+### Manifest
+
+A package's manifest lists all of the resources included in that package, and
+any sub-packages the package depends on.
+
+```cddl
+$section-name /= "manifest"
+$$section //= ("manifest" => (COSE_Signed_manifest .within COSE_Sign))
+
+; COSE_Sign and COSE_Signature come from
+; https://tools.ietf.org/html/draft-ietf-cose-msg-24.
+
+; COSE_Signed_manifest specializes COSE_Sign for signing manifests
+; using certificates within the Web's PKI.
+COSE_Signed_manifest = [
+  protected: bstr .size 0,
+  unprotected: {
+    ? certificates: [+ certificate: certificate],
+  },
+  payload: bstr .cbor manifest,
+  signatures: [+ COSE_Signature]
+]
+
+manifest = {
+  metadata: manifest-metadata,
+  resources: [* [resource: resource-key, hashes: hashes]],
+  ? subpackages: [* subpackage],
+}
+
+manifest-metadata = {
+  date: time,
+  origin: uri,
+  * tstr => any,
+}
+
+hashes = {+ hash-algorithm => hash-value}
+; From https://www.w3.org/TR/CSP3/#grammardef-hash-algorithm.
+hash-algorithm /= "sha256" / "sha384" / "sha512"
+; Note that a hash value is not base64-encoded here, but it's marked so an
+; automated conversion to JSON would be so encoded.
+hash-value = #6.22(bstr)
+
+; X.509 format; see https://tools.ietf.org/html/rfc5280
+certificate = bstr
 ```
-https://example.org/index.html 7000 500
-https://example.org/img.png 7500 1000
-...
-```
 
-### Certificates
+The manifest is a signed collection of some metadata and a list of
+all [resources](#main-content) and [sub-packages](#sub-packages) contained in
+the package.
 
-The certificates block contains an 8-byte length followed by
-an
-[application/pkcs7-mime; smime-type=certs-only](https://tools.ietf.org/html/rfc5751) resource
-holding enough [X.509](https://tools.ietf.org/html/rfc5280) certificates that
-chains can be built from the certificates that sign the top-level
-and [sub-package](#sub-packages) manifests to root certificates recognized by
-the client.
+The metadata must include an absolute URL identifying
+the
+[origin](https://html.spec.whatwg.org/multipage/browsers.html#concept-origin)
+vouching for the package and the date the package was created. It may contain
+more keys defined in https://www.w3.org/TR/appmanifest/.
+
+Each signature must identify a corresponding certificate using the
+[`kid` field](https://tools.ietf.org/html/draft-ietf-cose-msg-24#section-3.1).
+TODO: How? https://tools.ietf.org/html/rfc5652#section-5.3 gives the signer a
+choice of issuerAndSerialNumber or subjectKeyIdentifier.
+
+The signature algorithm must be one of the signature algorithms defined
+by [TLS1.3](https://tlswg.github.io/tls13-spec/#rfc.section.4.2.3), except for
+the ones marked "SHOULD NOT be offered". TODO: Limit to a smaller set?
+
+At least one of a manifest's signatures must be from a certificate that has a
+valid chain to a known root, and that is trusted to sign content from the
+manifest's
+[origin](https://html.spec.whatwg.org/multipage/browsers.html#concept-origin).
+Other signatures can be used to
+allow [cryptographic agility](https://tools.ietf.org/html/rfc7696) and to allow
+multiple entities to sign a package, for example to express that the package was
+checked for malicious behavior by some authority in addition to its author.
+
+If no signature gives the manifest authority to speak for its origin, the whole
+package must fail to parse.
+
+As a special case, if the package is being transferred from the manifest's
+origin under TLS, the UA may load it without checking that its own resources match
+the manifest. The UA still needs to validate resources provided by sub-manifests.
+
+
+#### Certificates
+
+The `COSE_Signed_manifest.unprotected.certificates` array should contain enough
+X.509 certificates to chain, using the rules
+in [RFC5280](https://tools.ietf.org/html/rfc5280), to roots trusted by all
+expected consumers of the package.
+
+[Sub-packages](#sub-packages') manifests can contain their own certificates or
+can rely on certificates in their parent packages.
 
 Requirements on the
 certificates' [Key Usage](https://tools.ietf.org/html/rfc5280#section-4.2.1.3)
@@ -130,70 +250,55 @@ and [Extended Key Usage](https://tools.ietf.org/html/rfc5280#section-4.2.1.12)
 are TBD. It may or may not be important to prevent TLS serving certificates from
 being used to sign packages, in order to prevent cross-protocol attacks.
 
-### Manifest
 
-A package's manifest lists all of the resources included in that package, and
-any sub-packages the package depends on. It consists of an 8-byte length
-followed by an HTTP response including at least the `Content-Type`,
-`Content-Location`, and `Date` headers, and one or
-more [signatures](#signatures).
+#### Validating resources
 
-At least one of a manifest's signatures must be from a certificate that has a
-valid chain to a known root, and that is trusted to sign content from the
-[origin](https://html.spec.whatwg.org/multipage/browsers.html#concept-origin) of
-the manifest's `Content-Location`.
+For a resource to be valid, its hash needs to match all of the hashes provided
+in the manifest, although, like
+in [Subresource Integrity](https://www.w3.org/TR/SRI/#agility), the UA will only
+check one of these.
 
-If no signature gives the manifest authority to speak for its origin, or if any
-resource or sub-package doesn't match the description in the manifest, the whole
-package must fail to parse. TODO: Should there be a way to express that
-particular resources don't need to verify, in order to let the UA load the beginning of a package before the whole package has transferred?
+The hash of a resource is the hash of the byte string in
+the [`"content"`](#main-content) section from the start of the `resource-key` to
+the end of the `body`. This uses the literal bytes, without any transformation
+between equivalent forms of `resource-key`.
 
-As a special case, if the package is being transferred from the manifest's
-origin under TLS, the UA may load it before checking that the resources match
-the manifest.
-
-TODO: Should we just extend
-the [Web App Manifest](https://www.w3.org/TR/appmanifest/), or does the fact
-that we're going to sign this rule out JSON?
-
-Resources are described by a line consisting of:
-
-```
-relative/url hashalgorithm-base64digest hashalgorithm2-base64digest2 ...
-```
-
-The URL is relative to the manifest's `Content-Location`.
-
-The hashes are in the format defined for the
-[`integrity` HTML attribute](https://w3c.github.io/webappsec-subresource-integrity/#the-integrity-attribute).
-This allows multiple hashes in order to provide agility in the face of future
-cryptographic discoveries. See also https://tools.ietf.org/html/rfc7696.
-
-The hashes are computed over the entire resource, including its length, HTTP
-headers, and body of the named resource. This differs
-from [SRI](https://w3c.github.io/webappsec-subresource-integrity), which only
-hashes the body. Note: This will usually prevent a package from relying on some
-of its contents being transferred as normal network responses, unless its author
-can guarantee the network won't change or reorder the headers.
-
-TODO: Do we need the length to be shown in the manifest, or is its presence at
-the beginning of the resource, included in the hash, enough?
+This differs from [SRI](https://w3c.github.io/webappsec-subresource-integrity),
+which only hashes the body. Note: This will usually prevent a package from
+relying on some of its contents being transferred as normal network responses,
+unless its author can guarantee the network won't change or reorder the headers.
 
 
 #### Sub-packages
 
+A sub-package is represented by a [manifest](#manifest) file in
+the [`"content"`](#main-content) section, which contains hashes of resources
+from another origin. The sub-package's resources are not otherwise distinguished
+from the rest of the resources in the package. Sub-packages can form an
+arbitrarily-deep tree.
+
 There are three possible forms of dependencies on sub-packages, of which we
-allow two. Note that a sub-package is or can be protected by its
-own [signature](#signatures), so if the main package trusts the sub-package's
+allow two. Because a sub-package is protected by its
+own [signature](#signatures), if the main package trusts the sub-package's
 server, it could avoid specifying a version of the sub-package at all. However,
 this opens the main package up to downgrade attacks, where the sub-package is
 replaced by an older, vulnerable version, so we don't allow this option.
 
+```cddl
+subpackage = [
+  resource: resource-key,
+  validation: {
+    ? hash: hashes,
+    ? notbefore: time,
+  }
+]
+```
+
 If the main package wants to load either the sub-package it was built with or
 any upgrade, it can specify the date of the original sub-package:
 
-```
-https://package/manifest/url Date: Tue, 07 Feb 2017 01:05:54 GMT
+```cbor-diag
+[32("https://example.com/loginsdk.package"), {"notbefore": 1(1486429554)}]
 ```
 
 Constraining packages with their date makes it possible to link together
@@ -203,68 +308,18 @@ different times.
 If the main package wants to be certain it's loading the exact version of a
 sub-package that it was built with, it can constrain sub-package with a hash of its manifest:
 
-```
-https://package/manifest/url hashalgorithm-base64digest hashalgorithm2-base64digest2 ...
+```cbor-diag
+[32("https://example.com/loginsdk.package"),
+ {"hash": {"sha256": 22(b64'9qg0NGDuhsjeGwrcbaxMKZAvfzAHJ2d8L7NkDzXhgHk=')}}]
 ```
 
 Note that because the sub-package may include sub-sub-packages by date, the top
 package may need to explicitly list those sub-sub-packages' hashes in order to
 be completely constrained.
 
-It should be possible to additionally constrain packages using semver, for the
-benefit of NPM and other packaging systems, but I haven't explored that
-extension here.
+It should be possible to additionally constrain packages using semver instead of
+dates, but I haven't explored that extension here.
 
-
-#### Signatures
-
-A [manifest](#manifest) is signed by one or more `Signature` headers. The
-message to sign consists of the length, followed by the concatenation of all
-headers except any `Signature` headers, followed by the body of the manifest.
-
-TODO: Consider wrapping the manifest into an `application/pkcs7-mime`
-signed-data structure instead of inventing our own `Signature` header.
-
-A `Signature` header has the form:
-
-``` http
-Signature: keyId="cert1",algorithm="ed25519",signature="Base64(ed25519(privatekey(cert1), message))"
-```
-
-This is similar to the `Signature` header specified by
-https://tools.ietf.org/html/draft-cavage-http-signatures-06, except that we sign
-all headers instead of a specified subset, and we include the body instead of
-requiring an extra Digest header.
-
-TODO: We also need to define the format of the `keyId`, which must identify one
-of the certificates sent with the package. I don't know the best format for this
-ID.
-
-The algorithm must be one of the signature algorithms defined
-by [TLS1.3](https://tlswg.github.io/tls13-spec/#rfc.section.4.2.3), except for
-the ones marked "SHOULD NOT be offered". TODO: Limit to a smaller set? TODO:
-Identify algorithms by their enum value or some other identifier?
-
-Multiple `Signature` headers are allowed in order to
-allow [cryptographic agility](https://tools.ietf.org/html/rfc7696) and to allow
-multiple entities to sign a package, for example to express that the package was
-checked for malicious behavior by some authority in addition to its author.
-
-### Main content
-
-The main content of a package is a sequence of HTTP
-responses holding the manifests of sub-packages and the resources in the package
-and all of its sub-packages. These resources can appear in any order.
-
-Each HTTP response consists of:
-1. The 8-byte length of the whole response. This up-front length may help
-   decoders farm parsing each resource out to a different thread.
-2. The 8-byte length of the headers. This is needed because HPACK headers rely
-   on HTTP2 framing to establish their length, and we're not using HTTP2 framing
-   here.
-3. [HPACK](http://httpwg.org/specs/rfc7541.html)-encoded headers. The dynamic
-   table is re-initialized for each resource.
-4. The response body.
 
 ## Use cases
 
