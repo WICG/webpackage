@@ -218,21 +218,13 @@ any sub-packages the package depends on.
 
 ```cddl
 $section-name /= "manifest"
-$$section //= ("manifest" => (COSE_Signed_manifest .within COSE_Sign))
+$$section //= ("manifest" => signed-manifest)
 
-; COSE_Sign and COSE_Signature come from
-; https://tools.ietf.org/html/draft-ietf-cose-msg-24.
-
-; COSE_Signed_manifest specializes COSE_Sign for signing manifests
-; using certificates within the Web's PKI.
-COSE_Signed_manifest = [
-  protected: bstr .size 0,
-  unprotected: {
-    ? certificates: [+ certificate: certificate],
-  },
-  payload: bstr .cbor manifest,
-  signatures: [+ COSE_Signature]
-]
+signed-manifest = {
+  manifest: manifest,
+  certificates: [+ certificate],
+  signatures: [+ signature]
+}
 
 manifest = {
   metadata: manifest-metadata,
@@ -255,14 +247,21 @@ hash-value = #6.22(bstr)
 
 ; X.509 format; see https://tools.ietf.org/html/rfc5280
 certificate = bstr
+
+signature = {
+  ; RFC5280 says certificates can be identified by either the
+  ; issuer-name-and-serial-number or by the subject key identifier. However,
+  ; issuer names are complicated, and the subject key identifier only identifies
+  ; the public key, not the certificate, so we identify certificates by their
+  ; index in the certificates array instead.
+  keyIndex: uint,
+  signature: bstr,
+}
 ```
 
 The manifest is a signed collection of some metadata and a list of
 all [resources](#main-content) and [sub-packages](#sub-packages) contained in
-the package. This data is stored as the payload of
-a
-[COSE_Sign structure](https://tools.ietf.org/html/draft-ietf-cose-msg-24#section-4),
-signed as described in that specification with the refinements below.
+the package.
 
 The metadata must include an absolute URL identifying
 the
@@ -272,26 +271,29 @@ more keys defined in https://www.w3.org/TR/appmanifest/.
 
 #### Manifest signatures
 
-Each signature must identify a corresponding certificate using the
-[`kid` field](https://tools.ietf.org/html/draft-ietf-cose-msg-24#section-3.1).
-TODO: How? https://tools.ietf.org/html/rfc5652#section-5.3 gives the signer a
-choice of issuerAndSerialNumber or subjectKeyIdentifier.
-
-The signature algorithm must be one of the signature algorithms defined
-by [TLS1.3](https://tlswg.github.io/tls13-spec/#rfc.section.4.2.3), except for
-the ones marked "SHOULD NOT be offered". TODO: Limit to a smaller set?
-
-At least one of a manifest's signatures must be from a certificate that has a
-valid chain to a known root, and that is trusted to sign content from the
+The manifest is signed by a set of certificates, including at least one that is
+trusted to sign content from the
 manifest's
 [origin](https://html.spec.whatwg.org/multipage/browsers.html#concept-origin).
-Other signatures can be used to
-allow [cryptographic agility](https://tools.ietf.org/html/rfc7696) and to allow
-multiple entities to sign a package, for example to express that the package was
-checked for malicious behavior by some authority in addition to its author.
+Other certificates can sign to vouch for the package along other dimensions, for
+example that it was checked for malicious behavior by some authority.
 
-If no signature gives the manifest authority to speak for its origin, the whole
-package must fail to parse.
+The signed sequence of bytes is the concatenation of the following byte strings.
+This matches the TLS1.3 format to avoid cross-protocol attacks when TLS
+certificates are used to sign manifests.
+1. A string that consists of octet 32 (0x20) repeated 64 times.
+1. A context string: the ASCII encoding of "Web Package Manifest".
+1. A single 0 byte which serves as a separator.
+1. The bytes of the `manifest` CBOR item.
+
+Each signature uses the `keyIndex` field to identify the certificate used to
+generate it. This certificate in turn identifies a signing algorithm in its
+SubjectPublicKeyInfo. The signature does not separately encode the signing
+algorithm to avoid letting attackers choose a weaker signature algorithm.
+
+Further, the signing algorithm must be one of the SignatureScheme algorithms defined
+by [TLS1.3](https://tlswg.github.io/tls13-spec/#rfc.section.4.2.3), except for
+`rsa_pkcs1*` and the ones marked "SHOULD NOT be offered".
 
 As a special case, if the package is being transferred from the manifest's
 origin under TLS, the UA may load it without checking that its own resources match
@@ -300,8 +302,8 @@ the manifest. The UA still needs to validate resources provided by sub-manifests
 
 #### Certificates
 
-The `COSE_Signed_manifest.unprotected.certificates` array should contain enough
-X.509 certificates to chain, using the rules
+The `signed-manifest.certificates` array should contain enough
+X.509 certificates to chain from the signing certificates, using the rules
 in [RFC5280](https://tools.ietf.org/html/rfc5280), to roots trusted by all
 expected consumers of the package.
 
