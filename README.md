@@ -32,13 +32,13 @@ If the original origin signs a package, the contents can get full access to
 browser state and network requests for that origin. This lets people share full
 PWAs peer-to-peer.
 
-Local sharing tends to have persistent constraints on the amount of data
-transferred: each byte costs money. This means the client may be stuck with an
-outdated version of a package for a significant amount of time, including that
-package's vulnerabilities. It may be feasible to periodically check for:
-1. OCSP notification that a package's certificate has been revoked, and
-2. A yet-to-be-designed notification that the package is critically vulnerable
-   and needs to be disabled until it can be updated.
+Local sharing tends to be popular where connectivity to the web is expensive:
+each byte costs money. This means the client may be stuck with an outdated
+version of a package for a significant amount of time, including that package's
+vulnerabilities. It may be feasible to periodically check for OCSP notification
+that a package's certificate has been revoked. We also need to design a cheap
+notification that the package is critically vulnerable and needs to be disabled
+until it can be updated.
 
 ### Physical Web
 [Beacons](https://google.github.io/physical-web/) and other physical web devices often want to 'broadcast' various content locally. Today, they broadcast a URL and make the user's device go to a web site. This delivers the trusted content to the user's browser (user can observe the address bar to verify) and allow web apps to talk back to their services. It can be useful to be able to broadcast a package containing several pages or even a simple web app, even without a need to immediately have a Web connection - for example, via Bluetooth. If combined with signature from the publisher, the loaded pages may be treated as if they were loaded via TLS connection with a valid certificate, in terms of the [origin-based security model](https://tools.ietf.org/html/rfc6454). For example, they can use [`fetch()`](https://fetch.spec.whatwg.org/#fetch-api) against its service or use "Add To Homescreen" for the convenience of the user.
@@ -50,7 +50,7 @@ certificate could be compromised or a package could get out of date. We think
 there's no way to prevent a client from trusting its initial download of a
 package signed by a compromised certificate. When the client gets back to a
 public network, it should attempt to validate both the certificate and the
-package, likely by fetching the package's `Content-Location`.
+package using the mechanisms alluded to under [Local Sharing](#local-sharing).
 
 ### Content Distribution Networks and Web caches.
 The CDNs can provide service of hosting web content that should be delivered at scale. This includes both hosting subresources (JS libraries, images) as well as entire content ([Google AMP](https://developers.google.com/amp/cache/overview)) on network of servers, often provided as a service by 3rd party. Unfortunately, origin-based security model of the Web limits the ways a 3rd-party caches/servers can be used. Indeed, for example in case of hosting JS subresources, the original document must explicitly trust the CDN origin to serve the trusted script. The user agent must use protocol-based means to verify the subresource is coming from the trusted CDN. Another example is a CDN that caches the whole content. Because the origin of CDN is different from the origin of the site, the browser normally can't afford the origin treatment of the site to the loaded content. Look at how an article from USA Today is represented:
@@ -575,12 +575,7 @@ The example contains an HTML page and an image. The package is signed by the exa
 
 Important notes:
 
-1. The very first header in Package Header section of the package is
-   **Package-Signature**, a new header that contains a signed hash of the
-   Package Header section (not including Package-Signature header) and Content
-   Index. It also contains a reference (via urn:uuid: UUID-based URL) to the
-   part that contains the public key certificate (or if needed, a group of
-   certificates that chain to one or more root CAs).
+1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains a signed hash of the Package Header section (not including Package-Signature header) and Content Index. It also contains a reference (via urn:uuid: UUID-based URL) to the part that contains the public key certificate (or if needed, a chain of certificates to the root CA).
 2. The **certificate algorithm** must be encoded within the certificate that signed the package. The **algorithm** in **Package-Signature** is the hash algorithm used to sign the **Content Index** and produce the Package-Signature.
 3. The Content Index contains hashes of all parts of the package, so it is enough to validate the index to trust its hashes, then compute the hash of each part upon using it to validate each part. Hashes have the hash algorithm specified in front.
 4. Content Index Entry `part-location` and `part-size` must not refer to locations outside of the package which contains the entry or to locations within nested packages. They may refer to the boundaries of a nested package.
