@@ -1,58 +1,81 @@
 package webpack
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"hash"
 	"io"
-	"mime"
-	"net/textproto"
+	"net/url"
 	"os"
-	"path/filepath"
 )
 
 type PackPart struct {
-	headers   textproto.MIMEHeader
-	filename  string
-	file      *os.File
-	readIndex int64
+	url             *url.URL
+	requestHeaders  HttpHeaders
+	status          int
+	responseHeaders HttpHeaders
+	contentFilename string
+	content         []byte
 }
 
-func NewPackPart() *PackPart {
-	pp := new(PackPart)
-	pp.headers = make(textproto.MIMEHeader)
-	return pp
-}
-
-func (p *PackPart) Headers() *textproto.MIMEHeader {
-	h, err := p.HashContent(sha256.New())
-	if err == nil {
-		p.headers.Add("X-Content-Hash", h)
+func (p *PackPart) Hash() (s string, err error) {
+	h := sha256.New()
+	p.requestHeaders.WriteHttp1(h)
+	h.Write([]byte{0})
+	p.responseHeaders.WriteHttp1(h)
+	h.Write([]byte{0})
+	content, err := p.Content()
+	if err != nil {
+		return
 	}
-	return &p.headers
+	io.Copy(h, content)
+	return string(h.Sum(nil)), nil
 }
 
-func (p *PackPart) File() (*os.File, error) {
-	if p.file != nil {
-		return p.file, nil
-	}
-
-	if p.filename == "" {
-		return nil, errors.New("Part had no file and no filename.")
-	}
-	return os.Open(p.filename)
+type PackPartContent struct {
+	file    *os.File
+	content *bytes.Reader
 }
 
-func (p *PackPart) SetFilename(n string) {
-	p.filename = n
-	p.headers.Set("Content-Location", n)
-	p.headers.Set("Content-Type", mime.TypeByExtension(filepath.Ext(n)))
+func (c *PackPartContent) WriteTo(w io.Writer) (int64, error) {
+	if c.file != nil {
+		return io.Copy(w, c.file)
+	} else {
+		return io.Copy(w, c.content)
+	}
+}
+
+func (c *PackPartContent) Read(p []byte) (int, error) {
+	if c.file != nil {
+		return c.file.Read(p)
+	} else {
+		return c.content.Read(p)
+	}
+}
+
+func (c *PackPartContent) Close() {
+	if c.file != nil {
+		c.file.Close()
+	}
+}
+
+func (p *PackPart) Content() (*PackPartContent, error) {
+	if p.contentFilename != "" {
+		file, err := os.Open(p.contentFilename)
+		return &PackPartContent{file, nil}, err
+	}
+	if p.content != nil {
+		return &PackPartContent{nil, bytes.NewReader(p.content)}, nil
+	}
+	return nil, fmt.Errorf("Part %v had no filename and no content.", p.url)
 }
 
 func (p *PackPart) HashContent(h hash.Hash) (string, error) {
 	var result []byte
-	file, err := os.Open(p.filename)
+	file, err := os.Open(p.contentFilename)
 	if err != nil {
 		return "", err
 	}
