@@ -125,9 +125,9 @@ Each section-offset points to a section with the same key, by holding the byte
 offset from the start of the webpackage item to the start of the section's name
 item.
 
-The length holds the total length in bytes of the `webpackage` item, which makes
-it possible to build self-extracting executables by appending a normal web
-package to the extractor executable.
+The length holds the total length in bytes of the `webpackage` item and must be
+encoded in the uint64_t format, which makes it possible to build self-extracting
+executables by appending a normal web package to the extractor executable.
 
 The defined section types are:
 
@@ -384,47 +384,88 @@ package may need to explicitly list those sub-sub-packages' hashes in order to
 be completely constrained.
 
 
-## Use cases
+## Examples
 
 Following are some example usages that correspond to these additions:
 
-### Use Case: a couple of web pages with resources in a package.
+### Single site: a couple of web pages with resources in a package.
 The example web site contains two HTML pages and an image. This is straightforward case, demonstrating the following:
 
-1. See the [Package Header](https://w3ctag.github.io/packaging-on-the-web/#package-header) section at the beginning. It contains a Content-Location of the package, which also serves as base URL to resolve the relative URLs of the [parts](https://w3ctag.github.io/packaging-on-the-web/#parts). So far, this is straight example of the package per existing spec draft.
-2. The Package Header section also contains Date/Expires headers that specify when the package can be used by UA, similar to HTTP 1.1 [Expiration Model](https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.2). The actual expiration model is TBD and to be reflected in the spec.
-3. Note the "main resource" of the package specified by Link: header with **rel=describedby** in the Package Header section.
+1. The `section-offsets` section declares one main section starting 1 byte into
+   the `sections` item. (The 1 byte is the map header for the `sections` item.)
+2. The `index` maps [hpack](http://httpwg.org/specs/rfc7541.html)-encoded
+   headers for each resource to the start of that resource, measured relative to
+   the start of the `responses` item.
+3. Each resource contains `date`/`expires` headers that specify when the
+   resource can be used by UA, similar to HTTP 1.1
+   [Expiration Model](https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.2).
+   The actual expiration model is TBD and to be reflected in the spec. Note that
+   we haven't yet described a way to set an `expires` value for the whole
+   package at once.
+4. The length of the whole package always appears from the 10th to 18th bytes
+   before the end of the package, in big-endian format.
 
-```html
-Content-Type: application/package
-Content-Location: http://example.org/examplePack.pack
-Date: Wed, 15 Nov 2016 06:25:24 GMT
-Expires: Thu, 01 Jan 2017 16:00:00 GMT
-Link: </index.html>; rel=describedby
-
---j38n02qryf9n0eqny8cq0
-Content-Location: /index.html
-Content-Type: text/html
-
-<body>
-  <a href="otherPage.html">Other page</a>
-</body>
---j38n02qryf9n0eqny8cq0
-Content-Location: /otherPage.html
-Content-Type: text/html
-
-<body>
-  Hello World! <img src="images/world.png">
-</body>
---j38n02qryf9n0eqny8cq0
-Content-Location: /images/world.png
-Content-Type: image/png
-Transfer-Encoding: binary
-
-... binary png image ...
---j38n02qryf9n0eqny8cq0--
+```cbor-diag
+['🌐📦',
+    {"indexed-content": 1},
+    {"indexed-content":
+        [
+            [ # Index.
+                [hpack({
+                    :method: GET,
+                    :scheme: https
+                    :authority: example.com
+                    :path: /index.html
+                }), 1],
+                [hpack({
+                    :method: GET
+                    :scheme: https
+                    :authority: example.com
+                    :path: /otherPage.html
+                }), 121],
+                [hpack({
+                    :method: GET
+                    :scheme: https
+                    :authority: example.com
+                    :path: /images/world.png
+                }), 243]
+            ],
+            [ # Resources.
+                [
+                    hpack({
+                        :status: 200
+                        content-type: text/html
+                        date: Wed, 15 Nov 2016 06:25:24 GMT
+                        expires: Thu, 01 Jan 2017 16:00:00 GMT
+                    }),
+                    '<body>\n  <a href=\"otherPage.html\">Other page</a>\n</body>\n'
+                ],
+                [
+                    hpack({
+                        :status: 200
+                        content-type: text/html
+                        date: Wed, 15 Nov 2016 06:25:24 GMT
+                        expires: Thu, 01 Jan 2017 16:00:00 GMT
+                    }),
+                    '<body>\n  Hello World! <img src=\"images/world.png\">\n</body>\n'
+                ], [
+                    hpack({
+                        :status: 200
+                        content-type: image/png
+                        date: Wed, 15 Nov 2016 06:25:24 GMT
+                        expires: Thu, 01 Jan 2017 16:00:00 GMT
+                    }),
+                    '... binary png image ...'
+                ]
+            ]
+        ]
+    },
+    473,  # Always 8 bytes long.
+    '🌐📦'
+]
 ```
 
+**_Examples below here are out of date_**
 
 ### Use Case: a web page with a resources from the other origin.
 The example web site contains an HTML page and pulls a script from the well-known location (different origin). Note the usage of the nested package to contain a resource (JS library) from a separate origin, as well as the "forward declaration" of the package via **Link:** header. We propose the nested packages to be the only way to keep resources from the origins different from the Content-Location origin of the main package itself.
