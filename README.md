@@ -463,108 +463,62 @@ The example web site contains two HTML pages and an image. This is straightforwa
 ]
 ```
 
+### Multiple Origins: a web page with a resources from the other origin.
+
+The example web site contains an HTML page and pulls a script from the
+well-known location (different origin). Note that there's no need to distinguish
+the resources from other origins vs the ones from the main origin. Since none of
+them are signed, the browser won't treat any as
+[same-origin](https://html.spec.whatwg.org/multipage/browsers.html#same-origin)
+with their claimed origin.
+
+```cbor-diag
+['🌐📦',
+    {"indexed-content": 1},
+    {"indexed-content":
+        [
+            [
+                [hpack({
+                    :method: GET
+                    :scheme: https
+                    :authority: example.com
+                    :path: /index.html
+                }), 1],
+                [hpack({
+                    :method: GET
+                    :scheme: https
+                    :authority: ajax.googleapis.com
+                    :path: /ajax/libs/jquery/3.1.0/jquery.min.js
+                }), 179]
+            ],
+            [
+                [
+                    hpack({
+                        :status: 200
+                        content-type: text/html
+                        date: Wed, 15 Nov 2016 06:25:24 GMT
+                        expires: Thu, 01 Jan 2017 16:00:00 GMT
+                    }),
+                    '<head>\n<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js\"></script>\n<body>\n...\n</body>\n'
+                ],
+                [
+                    hpack({
+                        :status: 200
+                        content-type: text/html
+                        date: Wed, 15 Nov 2016 06:25:24 GMT
+                        expires: Thu, 01 Jan 2017 16:00:00 GMT
+                    }),
+                    '... some JS code ...\n'
+                ]
+            ]
+        ]
+    },
+    396,
+    '🌐📦'
+]
+```
+
 **_Examples below here are out of date_**
-
-### Use Case: a web page with a resources from the other origin.
-The example web site contains an HTML page and pulls a script from the well-known location (different origin). Note the usage of the nested package to contain a resource (JS library) from a separate origin, as well as the "forward declaration" of the package via **Link:** header. We propose the nested packages to be the only way to keep resources from the origins different from the Content-Location origin of the main package itself.
-
-There are a few things shown here:
-
-1. Note the nested package uses its own separate boundary string.
-2. The **scope=** attribute of the Link: header is used to resolve the "https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js" URL in the page to the package that contains it. The simple text match is used.
-3. The nested package from https://ajax.googleapis.com is used that contains the js file referenced by the main page. Note the package may contain other resources as well and can be signed by googleapis.com.
-4. Note the parts of this package is not signed (see below for optional signing) so when such package is opened by a browser, and index.html page is loaded, there is no way to validate the stated origin of https://example.com and the package should be treated as if it was local (file:) resource. This can be useful in many cases, but browsers should be careful to assign a unique origin to resources of such packages, as [discussed here](https://tools.ietf.org/html/rfc6454#section-4) for file: URLs.
-5. While the resources in such package may not be trusted, there can be many interesting use cases addressed by such easy-to-produce packages - peer-to-peer sharing of web pages' snapshots for example, which is mostly done today by capturing screenshot images and then sharing them via WhatsApp or similar.
-
-```html
-Content-Type: application/package
-Content-Location: https://example.org/examplePack.pack
-Link: </index.html>; rel=describedby
-Link: <https://ajax.googleapis.com/packs/jquery_3.1.0.pack>; rel=package; scope=/ajax/libs/jquery/3.1.0
-
---j38n02qryf9n0eqny8cq0
-Content-Location: /index.html
-Content-Type: text/html
-<head>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
-<body>
-...
-</body>
---j38n02qryf9n0eqny8cq0
-Content-Location: https://ajax.googleapis.com/packs/jquery_3.1.0.pack
-Content-Type: application/package
-
---klhfdlifhhiorefioeri1
-Content-Location: /ajax/libs/jquery/3.1.0/jquery.min.js
-Content-Type" application/javascript
-
-... some JS code ...
---klhfdlifhhiorefioeri1--
---j38n02qryf9n0eqny8cq0--
-```
-
-
-### Use case: Optional Content Index
-The package in this case contains a lot of pages with resources ("Encyclopedia in a file") or multiple sites (in subpackages). The proposed structure facilitates efficient access, assuming the whole package is available locally. Several important notes:
-
-1. The Link: header with **rel=index** declares a specified part to be a Content Index of the package. The **offset=12014** attribute specifies the octet offset/size from the beginning of the Package Header of the package to the Content Index part. That can be used in file-seek APIs to quickly read the part without a need to parse the potentially huge package itself.
-2. Content Index part is typically generated during package creation, it doesn't have a natural URL. We propose to use [`urn:uuid:`](https://tools.ietf.org/html/rfc4122) generated URLs (UUID-based, 128-bit) for such generated parts. The visibility scope of those URLs is limited similar to package boundaries, and is for the current package only.
-3. Content-type of the Content Index is application/package.index.
-4. The Content Index consists of the Content Index Entries (see below for the discussion of what they are).
-5. Content Index part may be compressed (as specified by Transfer-Encoding header).
-
-
-```html
-Content-Type: application/package
-Content-Location: http://example.org/examplePack.pack
-Link: </index.html>; rel=describedby
-Link: <urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479>; rel=index; offset=12014/2048
-
---j38n02qryf9n0eqny8cq0
-Content-Location: /index.html
-Content-Type: text/html
-
-<body>
-  <a href="otherPage.html">Other page</a>
-</body>
---j38n02qryf9n0eqny8cq0
-Content-Location: /otherPage.html
-Content-Type: text/html
-
-<body>
-  Hello World! <img src="images/world.png">
-</body>
---j38n02qryf9n0eqny8cq0
-Content-Location: /images/world.png
-Content-Type: image/png
-Transfer-Encoding: binary
-
-... binary png image ...
---j38n02qryf9n0eqny8cq0
-Content-Location: urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479
-Content-Type: application/package.index
-
-/index.html     sha384-Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7 153 215
-/otherPage.html sha384-8tnTXuiaAJuMLi9vy3DqFL3ky+er10rcgN1pbOxEbzJr7R/VqsVpcw+ThHmYcwiB 368 180
-/images/world.png     sha384-vy3DqFLi98t3ky+er10nTXuiaAJuMLrczJr7gNR/VqsVpcw+ThHmYcwiB1pbOxEb 548 1024
---j38n02qryf9n0eqny8cq0--
-```
-
-#### Content Index Entry
-Each Content Index entry is a line that looks like following:
-> /index.html sha384-Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7 153 215
-
-Where:
-
-```
-content-index-entry = part-id SP part-hash SP part-offset SP part-size CRLF
-  part-id = part-url [":" <headers that are mentioned in Vary: header of the part>]
-  part-hash = <hash-algorithm> "-" <hash of the part>
-  part-location = <octet offset of the part from the beginning of the current package>
-  part-size = <octet size of the part>
-```
-
-The **part-hash** is used in signing (see below) and can be optional (filled with 0x0 value) if signing is not used.
 
 ### Use Case: Signed package, one origin.
 The example contains an HTML page and an image. The package is signed by the example.com publisher, using the same private key that example.com uses for HTTPS. The signed package ensures the verification of the origin even if the package is stored in a local file or obtained via other insecure ways like HTTP, or hosted on another origin's server.
