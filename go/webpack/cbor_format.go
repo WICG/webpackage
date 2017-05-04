@@ -92,12 +92,20 @@ func WriteCbor(p *Package) (result []byte, err error) {
 func encodeResourceKey(part *PackPart) []byte {
 	var buf bytes.Buffer
 	encoder := hpack.NewEncoder(&buf)
-	encoder.WriteField(httpHeader(":method", "GET"))
-	encoder.WriteField(httpHeader(":scheme", part.url.Scheme))
-	encoder.WriteField(httpHeader(":authority", part.url.Host))
-	encoder.WriteField(httpHeader(":path", part.url.RequestURI()))
+	for _, field := range []hpack.HeaderField{
+		httpHeader(":method", "GET"),
+		httpHeader(":scheme", part.url.Scheme),
+		httpHeader(":authority", part.url.Host),
+		httpHeader(":path", part.url.RequestURI()),
+	} {
+		if err := encoder.WriteField(field); err != nil {
+			panic(err)
+		}
+	}
 	for _, field := range part.requestHeaders {
-		encoder.WriteField(field)
+		if err := encoder.WriteField(field); err != nil {
+			panic(err)
+		}
 	}
 	return buf.Bytes()
 }
@@ -105,9 +113,14 @@ func encodeResourceKey(part *PackPart) []byte {
 func encodeResponseHeaders(part *PackPart) []byte {
 	var buf bytes.Buffer
 	encoder := hpack.NewEncoder(&buf)
-	encoder.WriteField(httpHeader(":status", strconv.FormatInt(int64(part.status), 10)))
+	if err := encoder.WriteField(httpHeader(":status",
+		strconv.FormatInt(int64(part.status), 10))); err != nil {
+		panic(err)
+	}
 	for _, field := range part.responseHeaders {
-		encoder.WriteField(field)
+		if err := encoder.WriteField(field); err != nil {
+			panic(err)
+		}
 	}
 	return buf.Bytes()
 }

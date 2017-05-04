@@ -171,18 +171,18 @@ func (b *buffer) encodeSizedIntAt(offset int, size int, t Type, i uint64) {
 }
 
 func (item *compoundItem) AppendUint64(i uint64) {
-	item.encodeInt64(TypeUint, i)
+	item.encodeInt64(TypePosInt, i)
 }
 
 // Always uses the 8-byte encoding for this uint64.
 func (item *compoundItem) AppendFixedSizeUint64(i uint64) {
-	item.encodeSizedInt64(8, TypeUint, i)
+	item.encodeSizedInt64(8, TypePosInt, i)
 }
 func (item *compoundItem) AppendInt64(i int64) {
 	if i < 0 {
-		item.encodeInt64(TypeSint, uint64(-1-i))
+		item.encodeInt64(TypeNegInt, uint64(-1-i))
 	} else {
-		item.encodeInt64(TypeUint, uint64(i))
+		item.encodeInt64(TypePosInt, uint64(i))
 	}
 }
 
@@ -190,11 +190,11 @@ func (item *compoundItem) AppendInt64(i int64) {
 // .Complete() to fill in the value. Depending on the length of a pending
 // integer, usually via ByteLenSoFar(), causes a panic.
 func (item *compoundItem) AppendPendingUint() *PendingInt {
-	item.encodeInt(TypeUint, 0)
+	item.encodeInt(TypePosInt, 0)
 	result := &PendingInt{
 		buf:    item.buffer,
 		offset: len(item.bytes) - 1,
-		t:      TypeUint,
+		t:      TypePosInt,
 	}
 	if old := item.pending.ReplaceOrInsert(result); old != nil {
 		panic(fmt.Sprintf("Two pending values at the same offset: %#v", old))

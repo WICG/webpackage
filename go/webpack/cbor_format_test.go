@@ -54,7 +54,7 @@ func TestWriteCbor(t *testing.T) {
 		// section-offsets.
 		cbor.Encoded(cbor.TypeMap, 1),
 		cbor.Encoded(cbor.TypeText, 15), []byte("indexed-content"),
-		cbor.Encoded(cbor.TypeUint, 1),
+		cbor.Encoded(cbor.TypePosInt, 1),
 		// sections.
 		cbor.Encoded(cbor.TypeMap, 1),
 		cbor.Encoded(cbor.TypeText, 15), []byte("indexed-content"),
@@ -67,7 +67,7 @@ func TestWriteCbor(t *testing.T) {
 			":scheme", "https",
 			":authority", "example.com",
 			":path", "/index.html?query"),
-		[]byte{}, cbor.Encoded(cbor.TypeUint, 1),
+		[]byte{}, cbor.Encoded(cbor.TypePosInt, 1),
 		[]byte{}, // responses.
 		[]byte{}, cbor.Encoded(cbor.TypeArray, 1),
 		[]byte{}, cbor.Encoded(cbor.TypeArray, 2),
@@ -78,7 +78,7 @@ func TestWriteCbor(t *testing.T) {
 		[]byte{}, cbor.Encoded(cbor.TypeBytes, 30),
 		[]byte{}, []byte("I am example.com's index.html\n"),
 		// length.
-		cbor.EncodedFixedLen(8, cbor.TypeUint, len(cborPack)),
+		cbor.EncodedFixedLen(8, cbor.TypePosInt, len(cborPack)),
 		// magic2.
 		cbor.Encoded(cbor.TypeBytes, 8), []byte("🌐📦"),
 	}, []byte{}), cborPack)
