@@ -25,4 +25,7 @@ func main() {
 			log.Fatalf("Invalid input: %v", err)
 		}
 	}
+	if err := dec.Close(); err != nil {
+		log.Fatalf("Invalid input: %v", err)
+	}
 }
