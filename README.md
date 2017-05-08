@@ -15,11 +15,22 @@ like [Android Beam](https://en.wikipedia.org/wiki/Android_Beam) or with popular
 or [Xender](https://play.google.com/store/apps/details?id=cn.xender)).
 Typically, the locally stored media files and apps (APK files for Android for
 example) are shared this way. Extending sharing to bundles of content and web
-apps (Progressive Web Apps in particular) opens up new possibilities, especially
-if combined with a form of signing the content. Cryptographic signing could make
-it possible to afford the shared content the treatment normally reserved for the
-origin that content is claiming to be in - by verifying that the content indeed
-was produced by the holder of the corresponding certificate.
+apps (Progressive Web Apps in particular) opens up new possibilities:
+
+#### Unsigned snapshots
+
+Any client can snapshot the page they're currently reading. This is currently
+done mostly by capturing a screenshot or saving into a browser-specific format
+like [MHTML](https://tools.ietf.org/html/rfc2557)
+or [Web Archive](https://en.wikipedia.org/wiki/Webarchive), but these only
+support at most a single page per archive, and the second
+set [aren't supported by other browsers](https://xkcd.com/927/).
+
+#### Signed applications
+
+If the original origin signs a package, the contents can get full access to
+browser state and network requests for that origin. This lets people share full
+PWAs peer-to-peer.
 
 ### Physical Web
 [Beacons](https://google.github.io/physical-web/) and other physical web devices often want to 'broadcast' various content locally. Today, they broadcast a URL and make the user's device go to a web site. This delivers the trusted content to the user's browser (user can observe the address bar to verify) and allow web apps to talk back to their services. It can be useful to be able to broadcast a package containing several pages or even a simple web app, even without a need to immediately have a Web connection - for example, via Bluetooth. If combined with signature from the publisher, the loaded pages may be treated as if they were loaded via TLS connection with a valid certificate, in terms of the [origin-based security model](https://tools.ietf.org/html/rfc6454). For example, they can use [`fetch()`](https://fetch.spec.whatwg.org/#fetch-api) against its service or use "Add To Homescreen" for the convenience of the user.
