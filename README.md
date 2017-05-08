@@ -312,10 +312,11 @@ being used to sign packages, in order to prevent cross-protocol attacks.
 
 #### Validating resources
 
-For a resource to be valid, its hash needs to appear in the list for each
-`hash-algorithm` in `resource-hashes`, although, like
+For a resource to be valid, then for each `hash-algorithm => [hash-value]` in
+`resource-hashes`, the resource's hash using that algorithm needs to appear in
+that list of `hash-value`s. Like
 in [Subresource Integrity](https://www.w3.org/TR/SRI/#agility), the UA will only
-check one of these.
+check one of these, but it's up to the UA which one.
 
 The hash of a resource is the hash of the byte string consisting of the resolved
 and decoded `resource-key` from the index, concatenated with the bytes from the
