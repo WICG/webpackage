@@ -6,7 +6,20 @@ Some new use cases for Web technology have motivated thinking about a multi-reso
 
 ### Local Sharing
 
-Local sharing is quite popular, especially in Emerging Markets countries, due to cost and limitations on cellular data and relatively spotty WiFi availability. It is typically done over local Bluetooth/WiFi, by either built-in OS features like [Android Beam](https://en.wikipedia.org/wiki/Android_Beam) or with popular 3-rd party apps, such as [ShareIt](https://play.google.com/store/apps/details?id=com.lenovo.anyshare.gps) or [Xender](https://play.google.com/store/apps/details?id=cn.xender)). Typically, the locally stored media files and apps (APK files for Android for example) are shared this way. Extending sharing to bundles of content and web apps (Progressive Web Apps in particular) opens up new possibilities, especially if combined with a form of signing the content. Cryptographic signing could make it possible to afford the shared content the treatment normally reserved for the origin that content is claiming to be in - by verifying that the content indeed was produced by the holder of the corresponding certificate.
+Local sharing is quite popular, especially in Emerging Markets countries, due to
+cost and limitations on cellular data and relatively spotty WiFi availability.
+It is typically done over local Bluetooth/WiFi, by either built-in OS features
+like [Android Beam](https://en.wikipedia.org/wiki/Android_Beam) or with popular
+3-rd party apps, such as
+[ShareIt](https://play.google.com/store/apps/details?id=com.lenovo.anyshare.gps)
+or [Xender](https://play.google.com/store/apps/details?id=cn.xender)).
+Typically, the locally stored media files and apps (APK files for Android for
+example) are shared this way. Extending sharing to bundles of content and web
+apps (Progressive Web Apps in particular) opens up new possibilities, especially
+if combined with a form of signing the content. Cryptographic signing could make
+it possible to afford the shared content the treatment normally reserved for the
+origin that content is claiming to be in - by verifying that the content indeed
+was produced by the holder of the corresponding certificate.
 
 ### Physical Web
 [Beacons](https://google.github.io/physical-web/) and other physical web devices often want to 'broadcast' various content locally. Today, they broadcast a URL and make the user's device go to a web site. This delivers the trusted content to the user's browser (user can observe the address bar to verify) and allow web apps to talk back to their services. It can be useful to be able to broadcast a package containing several pages or even a simple web app, even without a need to immediately have a Web connection - for example, via Bluetooth. If combined with signature from the publisher, the loaded pages may be treated as if they were loaded via TLS connection with a valid certificate, in terms of the [origin-based security model](https://tools.ietf.org/html/rfc6454). For example, they can use [`fetch()`](https://fetch.spec.whatwg.org/#fetch-api) against its service or use "Add To Homescreen" for the convenience of the user.
