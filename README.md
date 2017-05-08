@@ -192,6 +192,10 @@ In addition to the CDDL constraints:
   ":scheme", ":authority", ":path", or listed in the
   `response-headers`'
   ["Vary" header](https://tools.ietf.org/html/rfc7231#section-7.1.4).
+* The `resource-key` must contain at most one of each ":method", ":scheme",
+  ":authority", ":path" header, in that order, before any other headers.
+  Resolving the `resource-key` fills in any missing pseudo-headers from that
+  set, ensuring that all resolved keys have exactly one of each.
 
 The optional `length` field in the index entries is redundant with the length
 prefixes on the `response-headers` and `body` in the content, but it can be used
@@ -318,8 +322,9 @@ and decoded `resource-key` from the index, concatenated with the bytes from the
 start of that resource's `response-headers` to the end of its `body`. The
 resolved and decoded `resource-key` is a Canonical CBOR array consisting of
 alternating header names and values encoded as byte strings, in the order they
-appear in the `resource-key` except that the ":method", ":scheme", ":authority",
-and ":path" pseudo-headers appear first and in that order.
+appear in the `resource-key`. As described in [Main content](#main-content), the
+":method", ":scheme", ":authority", and ":path" pseudo-headers appear first and
+in that order.
 
 This differs from [SRI](https://w3c.github.io/webappsec-subresource-integrity),
 which only hashes the body. Note: This will usually prevent a package from
