@@ -37,6 +37,25 @@ func TestParseText(t *testing.T) {
 	assert.Equal(string(bytes), "I am example.com's index.html\n")
 }
 
+func TestParseTextVaryHeader(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	varyValid, err := ParseText("testdata/vary_header.manifest")
+	require.NoError(err)
+	require.Len(varyValid.parts, 1)
+
+	index := varyValid.parts[0]
+	assert.Equal(HttpHeaders{
+		httpHeader("allowed", "value"),
+	}, index.requestHeaders)
+}
+
+func TestParseTextRequestHeaderNotInVary(t *testing.T) {
+	_, err := ParseText("testdata/request_header_not_in_vary.manifest")
+	assert.Error(t, err)
+}
+
 func staticUrl(s string) (u *url.URL) {
 	u, err := url.Parse(s)
 	if err != nil {

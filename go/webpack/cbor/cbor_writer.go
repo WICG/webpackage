@@ -39,6 +39,9 @@ type PendingInt struct {
 	t      Type
 }
 
+// btree.Item interface. This sorts the PendingInts by their offset within the
+// btree, which lets us efficiently traverse the PendingInts within a given
+// range of the buffer.
 func (p *PendingInt) Less(than btree.Item) bool {
 	return p.offset < than.(*PendingInt).offset
 }

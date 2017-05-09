@@ -2,12 +2,14 @@ package webpack
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 )
 
@@ -73,6 +75,9 @@ func ParseText(manifestFilename string) (Package, error) {
 			}
 			responseHeaders = append(responseHeaders, header)
 		}
+		if err := checkRequestHeadersInVary(requestHeaders, responseHeaders); err != nil {
+			return Package{}, err
+		}
 
 		// Body
 		if !lines.Scan() {
@@ -91,6 +96,36 @@ func ParseText(manifestFilename string) (Package, error) {
 	}
 
 	return Package{Manifest{}, parts, nil, nil}, lines.Err()
+}
+
+// Used to split the Vary: header into the names of allowed request headers.
+var varySeparator *regexp.Regexp = regexp.MustCompile(`\s*,\s*`)
+
+// Returns non-nil if there's a request header that doesn't appear in the Vary
+// response header.
+func checkRequestHeadersInVary(requestHeaders, responseHeaders HttpHeaders) error {
+	varyHeader := ""
+	vary := make(map[string]bool)
+	for _, header := range responseHeaders {
+		if header.Name == "vary" {
+			if header.Value == "*" {
+				return errors.New("Cannot have a Vary header of '*'.")
+			}
+			varyHeader = header.Value
+			for _, allowedHeader := range varySeparator.Split(varyHeader, -1) {
+				vary[allowedHeader] = true
+			}
+			break
+		}
+	}
+
+	for _, header := range requestHeaders {
+		if !vary[header.Name] {
+			return fmt.Errorf("Can't include request header %q that's not in Vary header: %q", header.Name, varyHeader)
+		}
+	}
+
+	return nil
 }
 
 // Writes the manifest to base.manifest and the content bodies to base/scheme/domain/path.

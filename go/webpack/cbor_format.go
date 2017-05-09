@@ -16,6 +16,7 @@ import (
 )
 
 func ParseCbor(packageFilename string) (Package, error) {
+	panic("Unimplemented")
 	pack, err := ioutil.ReadFile(packageFilename)
 	if err != nil {
 		return Package{}, err
@@ -38,7 +39,11 @@ func WriteCbor(p *Package) (result []byte, err error) {
 	cborPackage := cbor.New()
 
 	arr := cborPackage.AppendArray(5)
-	arr.AppendBytes([]byte{0xF0, 0x9F, 0x8C, 0x90, 0xF0, 0x9F, 0x93, 0xA6})
+
+	// "🌐📦" in UTF-8.
+	var magicNumber = []byte{0xF0, 0x9F, 0x8C, 0x90, 0xF0, 0x9F, 0x93, 0xA6}
+
+	arr.AppendBytes(magicNumber)
 	sectionOffsets := arr.AppendMap(1)
 	sectionOffsets.AppendUtf8S("indexed-content")
 	// "indexed-content" will appear at the start of the 'sections' map.
@@ -84,7 +89,7 @@ func WriteCbor(p *Package) (result []byte, err error) {
 	indexedContent.Finish()
 	sections.Finish()
 	arr.AppendFixedSizeUint64(uint64(arr.ByteLenSoFar() + 18))
-	arr.AppendBytes([]byte{0xF0, 0x9F, 0x8C, 0x90, 0xF0, 0x9F, 0x93, 0xA6})
+	arr.AppendBytes(magicNumber)
 	arr.Finish()
 	return cborPackage.Finish(), err
 }
