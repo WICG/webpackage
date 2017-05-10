@@ -8,8 +8,9 @@
 //     * 2 & 3: Byte and UTF-8 strings, with minimal encoding for lengths.
 //     * 4 & 5: Arrays and maps, with the number of elements known at the start
 //              of the container, encoded minimally.
-//  * Unsigned integers whose value isn't known when they're first inserted.
+//  * Pre-encoded items, by copying from a Reader.
 //  * Retrieval of the current byte offset within an array or map.
+//  * Items that don't fit in memory.
 //
 // Unsupported:
 //  * Negative integers (major type 1) between -2^63-1 and -2^64 inclusive,
