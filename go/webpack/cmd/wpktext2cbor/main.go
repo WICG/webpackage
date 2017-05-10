@@ -42,16 +42,8 @@ func main() {
 		Error.Fatal(err)
 	}
 
-	cbor, err := webpack.WriteCbor(&pack)
+	err = webpack.WriteCbor(&pack, out)
 	if err != nil {
 		Error.Fatal(err)
-	}
-
-	n, err := out.Write(cbor)
-	if err != nil {
-		Error.Fatal(err)
-	}
-	if n != len(cbor) {
-		Error.Fatal("Failed to write the whole package.")
 	}
 }

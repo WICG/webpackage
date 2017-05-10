@@ -35,8 +35,22 @@ func parseIndexedContent(reader *bytes.Reader, parts []*PackPart) error {
 	panic("Not implemented")
 }
 
-func WriteCbor(p *Package) (result []byte, err error) {
-	cborPackage := cbor.New()
+func WriteCbor(p *Package, to io.Writer) error {
+	// Write the indexed-content/responses array first in order to compute
+	// the offsets of each response within it.
+	responsesFile, err := ioutil.TempFile("", "webpack-responses")
+	if err != nil {
+		return err
+	}
+	defer responsesFile.Close()
+	defer os.Remove(responsesFile.Name())
+
+	partOffsets, err := writeCborResourceBodies(p, responsesFile)
+	if err != nil {
+		return err
+	}
+
+	cborPackage := cbor.New(to)
 
 	arr := cborPackage.AppendArray(5)
 
@@ -44,33 +58,69 @@ func WriteCbor(p *Package) (result []byte, err error) {
 	var magicNumber = []byte{0xF0, 0x9F, 0x8C, 0x90, 0xF0, 0x9F, 0x93, 0xA6}
 
 	arr.AppendBytes(magicNumber)
+
+	// section-offsets:
 	sectionOffsets := arr.AppendMap(1)
 	sectionOffsets.AppendUtf8S("indexed-content")
 	// "indexed-content" will appear at the start of the 'sections' map.
-	indexedContentOffset := sectionOffsets.AppendPendingUint()
+	const indexedContentOffset = 1
+	sectionOffsets.AppendUint64(indexedContentOffset)
 	sectionOffsets.Finish()
 
 	sections := arr.AppendMap(1)
-	indexedContentOffset.Complete(uint64(sections.ByteLenSoFar()))
+
+	// indexed-content major section:
+	if sections.ByteLenSoFar() != indexedContentOffset {
+		panic(fmt.Sprintf("Wrote incorrect offset (%v) for indexed-content section actually at offset %v",
+			indexedContentOffset, sections.ByteLenSoFar()))
+	}
 	sections.AppendUtf8S("indexed-content")
 	indexedContent := sections.AppendArray(2)
-	index := indexedContent.AppendArray(len(p.parts))
-	pendingOffsets := make(map[*PackPart]*cbor.PendingInt, len(p.parts))
+
+	// Write the requests and the byte offsets to their responses into the
+	// index.
+	index := indexedContent.AppendArray(uint64(len(p.parts)))
 	for _, part := range p.parts {
 		arr := index.AppendArray(2)
 		arr.AppendBytes(encodeResourceKey(part))
-		pendingOffsets[part] = arr.AppendPendingUint()
+		partOffset, ok := partOffsets[part]
+		if !ok {
+			panic(fmt.Sprintf("%p missing from %v", part, partOffsets))
+		}
+		arr.AppendUint64(partOffset)
 		arr.Finish()
 	}
 	index.Finish()
-	responses := indexedContent.AppendArray(len(p.parts))
-	for _, part := range p.parts {
-		pendingOffset, ok := pendingOffsets[part]
-		if !ok {
-			panic(fmt.Sprintf("%p missing from %v", part, pendingOffsets))
+
+	{
+		// Append the whole responses array to indexed-content.
+		offset, err := responsesFile.Seek(0, io.SeekStart)
+		if err != nil {
+			return err
 		}
-		pendingOffset.Complete(uint64(responses.ByteLenSoFar()))
-		delete(pendingOffsets, part)
+		if offset != 0 {
+			panic(fmt.Sprintf("Seek to start seeked to %v instead.", offset))
+		}
+		indexedContent.AppendSerializedItem(responsesFile)
+	}
+	indexedContent.Finish()
+	sections.Finish()
+
+	// The whole size of the package is the size to here, plus two 8-byte
+	// items and their 1-byte headers.
+	arr.AppendFixedSizeUint64(uint64(arr.ByteLenSoFar() + 18))
+	arr.AppendBytes(magicNumber)
+	arr.Finish()
+	return cborPackage.Finish()
+}
+
+// Returns a map from parts to their byte offsets within this item.
+func writeCborResourceBodies(p *Package, to io.Writer) (partOffsets map[*PackPart]uint64, err error) {
+	partOffsets = make(map[*PackPart]uint64)
+	cbor := cbor.New(to)
+	responses := cbor.AppendArray(uint64(len(p.parts)))
+	for _, part := range p.parts {
+		partOffsets[part] = uint64(responses.ByteLenSoFar())
 
 		arr := responses.AppendArray(2)
 		arr.AppendBytes(encodeResponseHeaders(part))
@@ -86,12 +136,8 @@ func WriteCbor(p *Package) (result []byte, err error) {
 		arr.Finish()
 	}
 	responses.Finish()
-	indexedContent.Finish()
-	sections.Finish()
-	arr.AppendFixedSizeUint64(uint64(arr.ByteLenSoFar() + 18))
-	arr.AppendBytes(magicNumber)
-	arr.Finish()
-	return cborPackage.Finish(), err
+	cbor.Finish()
+	return
 }
 
 func encodeResourceKey(part *PackPart) []byte {

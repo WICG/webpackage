@@ -43,7 +43,8 @@ func TestWriteCbor(t *testing.T) {
 		},
 	}
 
-	cborPack, err := WriteCbor(&pack)
+	var cborPack bytes.Buffer
+	err := WriteCbor(&pack, &cborPack)
 	assert.NoError(t, err)
 
 	assert.Equal(t, bytes.Join([][]byte{
@@ -78,8 +79,8 @@ func TestWriteCbor(t *testing.T) {
 		[]byte{}, cbor.Encoded(cbor.TypeBytes, 30),
 		[]byte{}, []byte("I am example.com's index.html\n"),
 		// length.
-		cbor.EncodedFixedLen(8, cbor.TypePosInt, len(cborPack)),
+		cbor.EncodedFixedLen(8, cbor.TypePosInt, len(cborPack.Bytes())),
 		// magic2.
 		cbor.Encoded(cbor.TypeBytes, 8), []byte("🌐📦"),
-	}, []byte{}), cborPack)
+	}, []byte{}), cborPack.Bytes())
 }
