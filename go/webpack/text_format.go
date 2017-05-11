@@ -19,7 +19,10 @@ func ParseText(manifestFilename string) (Package, error) {
 	if err != nil {
 		return Package{}, err
 	}
-	manifest := bufio.NewReader(manifestFile)
+	return ParseTextContent(contentBase, manifestFile)
+}
+
+func ParseTextContent(baseDir string, manifest io.Reader) (Package, error) {
 	lines := bufio.NewScanner(manifest)
 	for lines.Scan() {
 		line := lines.Text()
@@ -84,7 +87,7 @@ func ParseText(manifestFilename string) (Package, error) {
 			return Package{}, fmt.Errorf("Missing body for resource %q", url)
 		}
 		relativeFilename := lines.Text()
-		filename := path.Join(contentBase, relativeFilename)
+		filename := path.Join(baseDir, relativeFilename)
 		// Trailing blank line is optional.
 		lines.Scan()
 		line := lines.Text()
