@@ -41,7 +41,17 @@ func TestParseTextVaryHeader(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	varyValid, err := ParseText("testdata/vary_header.manifest")
+	varyValid, err := ParseTextContent("testdata/", strings.NewReader(`[Content]
+https://example.com/index.html
+Allowed: value
+
+200
+Content-Type: text/html
+Expires: Mon, 1 Jan 2018 01:00:00 GMT
+Vary: allowed
+
+content/example.com/index.html
+`))
 	require.NoError(err)
 	require.Len(varyValid.parts, 1)
 
@@ -52,7 +62,17 @@ func TestParseTextVaryHeader(t *testing.T) {
 }
 
 func TestParseTextRequestHeaderNotInVary(t *testing.T) {
-	_, err := ParseText("testdata/request_header_not_in_vary.manifest")
+	_, err := ParseTextContent("testdata/", strings.NewReader(`[Content]
+https://example.com/index.html
+DisAllowed: value
+
+200
+Content-Type: text/html
+Expires: Mon, 1 Jan 2018 01:00:00 GMT
+Vary: allowed
+
+content/example.com/index.html
+`))
 	assert.Error(t, err)
 }
 
