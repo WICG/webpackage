@@ -1,0 +1,10 @@
+[Content]
+https://example.com/index.html
+DisAllowed: value
+
+200
+Content-Type: text/html
+Expires: Mon, 1 Jan 2018 01:00:00 GMT
+Vary: allowed
+
+content/example.com/index.html
