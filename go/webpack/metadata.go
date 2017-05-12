@@ -6,6 +6,6 @@ import (
 )
 
 type Metadata struct {
-	origin url.URL
+	origin *url.URL
 	date   time.Time
 }
