@@ -38,14 +38,14 @@ func parseIndexedContent(reader *bytes.Reader, parts []*PackPart) error {
 func WriteCbor(p *Package, to io.Writer) error {
 	// Write the indexed-content/responses array first in order to compute
 	// the offsets of each response within it.
-	responsesFile, err := ioutil.TempFile("", "webpack-responses")
+	tempResponsesFile, err := ioutil.TempFile("", "webpack-responses")
 	if err != nil {
 		return err
 	}
-	defer responsesFile.Close()
-	defer os.Remove(responsesFile.Name())
+	defer os.Remove(tempResponsesFile.Name())
+	defer tempResponsesFile.Close()
 
-	partOffsets, err := writeCborResourceBodies(p, responsesFile)
+	partOffsets, err := writeCborResourceBodies(p, tempResponsesFile)
 	if err != nil {
 		return err
 	}
@@ -92,17 +92,16 @@ func WriteCbor(p *Package, to io.Writer) error {
 	}
 	index.Finish()
 
-	{
-		// Append the whole responses array to indexed-content.
-		offset, err := responsesFile.Seek(0, io.SeekStart)
-		if err != nil {
-			return err
-		}
-		if offset != 0 {
-			panic(fmt.Sprintf("Seek to start seeked to %v instead.", offset))
-		}
-		indexedContent.AppendSerializedItem(responsesFile)
+	// Append the whole responses array to indexed-content.
+	offset, err := tempResponsesFile.Seek(0, io.SeekStart)
+	if err != nil {
+		return err
 	}
+	if offset != 0 {
+		panic(fmt.Sprintf("Seek to start seeked to %v instead.", offset))
+	}
+	indexedContent.AppendSerializedItem(tempResponsesFile)
+
 	indexedContent.Finish()
 	sections.Finish()
 
