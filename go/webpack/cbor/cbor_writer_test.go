@@ -32,6 +32,7 @@ func newBufferCbor() *bufferCbor {
 	result.TopLevel = cbor.New(&result.Buffer)
 	return result
 }
+
 func (c *bufferCbor) Finish() []byte {
 	c.TopLevel.Finish()
 	return c.Buffer.Bytes()
