@@ -2,6 +2,7 @@ package webpack
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -49,7 +50,9 @@ func ParseTextContent(baseDir string, manifestReader io.Reader) (pack Package, e
 }
 
 func parseTextManifest(lines *bufio.Scanner, baseDir string) (Manifest, error) {
-	manifest := Manifest{}
+	manifest := Manifest{
+		metadata: Metadata{otherFields: make(map[string]interface{})},
+	}
 	for lines.Scan() {
 		line := lines.Text()
 		if line == "" {
@@ -106,6 +109,13 @@ func parseTextManifest(lines *bufio.Scanner, baseDir string) (Manifest, error) {
 				return manifest, err
 			}
 			manifest.metadata.origin = origin
+		default:
+			var jsonValue interface{}
+			err := json.Unmarshal([]byte(header.Value), &jsonValue)
+			if err != nil {
+				return manifest, err
+			}
+			manifest.metadata.otherFields[header.Name] = jsonValue
 		}
 	}
 	return manifest, nil
