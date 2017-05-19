@@ -110,6 +110,7 @@ sign-with: pki/example.com.cert; pki/example.com.key
 certificate-chain: pki/intermediate1.cert
 date: Fri, 12 May 2017 10:00:00 GMT
 origin: https://example.com
+unknown: "value"
 
 [Content]
 https://example.com/index.html
@@ -126,6 +127,8 @@ content/example.com/index.html
 	assert.Equal(time.Date(2017, time.May, 12, 10, 0, 0, 0, time.UTC),
 		manifest.metadata.date)
 	assert.Equal(staticUrl("https://example.com"), manifest.metadata.origin)
+	assert.Equal(map[string]interface{}{"unknown": "value"},
+		manifest.metadata.otherFields)
 
 	if assert.Len(manifest.signatures, 1) {
 		signature := manifest.signatures[0]

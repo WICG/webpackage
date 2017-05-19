@@ -6,6 +6,7 @@ import (
 )
 
 type Metadata struct {
-	origin *url.URL
-	date   time.Time
+	origin      *url.URL
+	date        time.Time
+	otherFields map[string]interface{}
 }
