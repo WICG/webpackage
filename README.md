@@ -384,7 +384,12 @@ be completely constrained.
 
 ## Examples
 
-Following are some example usages that correspond to these additions:
+Following are some example usages that correspond to these additions.
+The packages are written in
+[CBOR's extended diagnostic notation](https://tools.ietf.org/html/draft-greevenbosch-appsawg-cbor-cddl-10#appendix-G),
+with an extension that `hpack({key:value,...})` is
+an [hpack](https://tools.ietf.org/html/rfc7541) encoding of the described
+headers.
 
 ### Single site: a couple of web pages with resources in a package.
 The example web site contains two HTML pages and an image. This is straightforward case, demonstrating the following:
