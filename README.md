@@ -579,7 +579,7 @@ Important notes:
 
 1. Nested package with the JS library, obtained from googleapis.com, is separately signed by googleapis.com
 2. Nested packages may have their own signatures and Content Index.  They can be included verbatim as a [part](https://w3ctag.github.io/packaging-on-the-web/#parts) of the outer package. Therefore, their index entries will be relative to the inner package.  This does mean that accessing a part of a nested package will require multiple index lookups depending on how deeply nested a package is, as it will be necessary to locate the inner package using the outer package's Content Index.
-3. Alternative for example.com would be to include the JS library into its own package and sign it as part of example.com, but this is useful example on how the nested signed package looks like.
+3. Alternative for example.com would be to include the JS library into its own package and sign it as part of example.com, but having googleapis.com sign the package allows it same-origin access to googleapis.com.
 4. The nested package has been indented for illustration purposes but would not be in an actual package.
 
 
@@ -635,6 +635,47 @@ Content-Type: application/pkcs7-mime
 --j38n02qryf9n0eqny8cq0--
 
 ```
+
+## Open Questions
+
+### Allow streamed loading?
+
+Obviously loading a package will be faster if the UA can start parsing resources
+before finishing the download. However, this allows the server to omit resources
+that would be at the end of the package, which can open the site to semantic
+attacks, for example where it's coded resiliently against failed resource loads
+(oops), and the attacker drops `encryption.js`.
+
+This argues for requiring that all signatures are checked before loading any
+resources, which means we can delay sending them until the end of the file.
+Similarly, the index can live at the end of the file, since it's only used
+on-disk, after the package is loaded.
+
+When downloading the package for the first time from its original server, TLS
+proves that the content is as expected, so it *is* safe to load the resources
+eagerly. During this initial parse, we read the package linearly, so again we
+don't need the index up front.
+
+### Sign the content of nested packages, or only sign the URL or manifest?
+
+A nested package will have its own signature from its own origin. The top-level
+package needs to say "these URLs are included", and there needs to be a
+top-level index saying where in the file the URLs are defined, but the web
+security model doesn't allow a top-level resource to precisely constrain the
+content of sub-resources, except by new mechanisms like SRI.
+
+Signing the content or URL is simpler than signing the manifest.
+
+### Sign a manifest with hashes of each resource, or sign the package as a block?
+
+Signing the package as a block gives a simpler implementation, and doesn't
+expose the implementation to parsing unverified content. APKs do this. However,
+the implementation has to be secure against even signed content, since evil.com
+can get certificates.
+
+Signing a manifest allows clients to reorder packages, which would be useful for
+deeply-nested packages that happen to share dependencies.
+
 
 ##FAQ
 
