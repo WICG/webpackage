@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseCbor(t *testing.T) {
+func TestParseCBOR(t *testing.T) {
 }
 
 func hpackByteArray(headersAndValues ...string) []byte {
@@ -27,14 +27,14 @@ func hpackByteArray(headersAndValues ...string) []byte {
 	return append(cbor.Encoded(cbor.TypeBytes, len(result)), result...)
 }
 
-func TestWriteCbor(t *testing.T) {
+func TestWriteCBOR(t *testing.T) {
 	pack := Package{
 		parts: []*PackPart{
 			&PackPart{
 				url:            staticUrl("https://example.com/index.html?query"),
-				requestHeaders: HttpHeaders{},
+				requestHeaders: HTTPHeaders{},
 				status:         200,
-				responseHeaders: HttpHeaders{
+				responseHeaders: HTTPHeaders{
 					httpHeader("Content-Type", "text/html"),
 					httpHeader("Expires", "Mon, 1 Jan 2018 01:00:00 GMT"),
 				},
@@ -44,7 +44,7 @@ func TestWriteCbor(t *testing.T) {
 	}
 
 	var cborPack bytes.Buffer
-	err := WriteCbor(&pack, &cborPack)
+	err := WriteCBOR(&pack, &cborPack)
 	assert.NoError(t, err)
 
 	assert.Equal(t, bytes.Join([][]byte{

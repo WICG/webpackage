@@ -1,5 +1,5 @@
-// Decodes hex-encoded HPACK data given as command-line arguments into
-// Name: Value pairs written to stdout.
+// hpackdec decodes hex-encoded HPACK data given as hex-encoded command-line
+// arguments into Name: Value pairs written to stdout.
 package main
 
 import (

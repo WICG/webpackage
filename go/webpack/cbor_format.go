@@ -15,7 +15,7 @@ import (
 	"github.com/dimich-g/webpackage/go/webpack/cbor"
 )
 
-func ParseCbor(packageFilename string) (Package, error) {
+func ParseCBOR(packageFilename string) (Package, error) {
 	panic("Unimplemented")
 	pack, err := ioutil.ReadFile(packageFilename)
 	if err != nil {
@@ -35,7 +35,7 @@ func parseIndexedContent(reader *bytes.Reader, parts []*PackPart) error {
 	panic("Not implemented")
 }
 
-func WriteCbor(p *Package, to io.Writer) error {
+func WriteCBOR(p *Package, to io.Writer) error {
 	// Write the indexed-content/responses array first in order to compute
 	// the offsets of each response within it.
 	tempResponsesFile, err := ioutil.TempFile("", "webpack-responses")
@@ -45,7 +45,7 @@ func WriteCbor(p *Package, to io.Writer) error {
 	defer os.Remove(tempResponsesFile.Name())
 	defer tempResponsesFile.Close()
 
-	partOffsets, err := writeCborResourceBodies(p, tempResponsesFile)
+	partOffsets, err := writeCBORResourceBodies(p, tempResponsesFile)
 	if err != nil {
 		return err
 	}
@@ -113,9 +113,10 @@ func WriteCbor(p *Package, to io.Writer) error {
 	return cborPackage.Finish()
 }
 
-// Returns a map from parts to their byte offsets within this item.
-func writeCborResourceBodies(p *Package, to io.Writer) (partOffsets map[*PackPart]uint64, err error) {
-	partOffsets = make(map[*PackPart]uint64)
+// writeCBORResourceBodies returns a map from parts to their byte offsets within
+// this item.
+func writeCBORResourceBodies(p *Package, to io.Writer) (map[*PackPart]uint64, error) {
+	partOffsets := make(map[*PackPart]uint64)
 	cbor := cbor.New(to)
 	responses := cbor.AppendArray(uint64(len(p.parts)))
 	for _, part := range p.parts {
@@ -136,7 +137,7 @@ func writeCborResourceBodies(p *Package, to io.Writer) (partOffsets map[*PackPar
 	}
 	responses.Finish()
 	cbor.Finish()
-	return
+	return partOffsets, nil
 }
 
 func encodeResourceKey(part *PackPart) []byte {
@@ -175,44 +176,44 @@ func encodeResponseHeaders(part *PackPart) []byte {
 	return buf.Bytes()
 }
 
-func writeCborPart(w *bufio.Writer, base string, part *PackPart) (err error) {
-	if _, err = io.WriteString(w, part.url.String()); err != nil {
-		return
+func writeCBORPart(w *bufio.Writer, base string, part *PackPart) error {
+	if _, err := io.WriteString(w, part.url.String()); err != nil {
+		return err
 	}
-	if err = part.requestHeaders.WriteHttp1(w); err != nil {
-		return
+	if err := part.requestHeaders.WriteHTTP1(w); err != nil {
+		return err
 	}
-	if _, err = io.WriteString(w, "\r\n"); err != nil {
-		return
+	if _, err := io.WriteString(w, "\r\n"); err != nil {
+		return err
 	}
-	if err = part.responseHeaders.WriteHttp1(w); err != nil {
-		return
+	if err := part.responseHeaders.WriteHTTP1(w); err != nil {
+		return err
 	}
 
 	// Write the content to a file under base/.
 	relativeOutContentFilename := filepath.Join(part.url.Scheme, part.url.Host,
 		part.url.Path+part.url.RawQuery)
 	outContentFilename := filepath.Join(base, relativeOutContentFilename)
-	if err = os.MkdirAll(filepath.Dir(outContentFilename), 0755); err != nil {
-		return
+	if err := os.MkdirAll(filepath.Dir(outContentFilename), 0755); err != nil {
+		return err
 	}
 	outContentFile, err := os.Create(outContentFilename)
 	if err != nil {
-		return
+		return err
 	}
 	defer outContentFile.Close()
 	inContent, err := part.Content()
 	if err != nil {
-		return
+		return err
 	}
 	defer inContent.Close()
 	io.Copy(outContentFile, inContent)
 
 	if _, err = io.WriteString(w, relativeOutContentFilename); err != nil {
-		return
+		return err
 	}
 	if _, err = io.WriteString(w, "\r\n"); err != nil {
-		return
+		return err
 	}
-	return
+	return nil
 }

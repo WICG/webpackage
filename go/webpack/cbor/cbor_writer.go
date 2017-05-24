@@ -8,8 +8,8 @@ import (
 	"unicode/utf8"
 )
 
-// Returns the array of bytes that prefix a CBOR item of type t with either
-// value or length "value", depending on the type.
+// Encoded returns the array of bytes that prefix a CBOR item of type t with
+// either value or length "value", depending on the type.
 func Encoded(t Type, value int) []byte {
 	var buffer bytes.Buffer
 	item := New(&buffer)
@@ -18,7 +18,8 @@ func Encoded(t Type, value int) []byte {
 	return buffer.Bytes()
 }
 
-// Like Encoded(), but always uses the size-byte encoding of value.
+// EncodedFixedLen is like Encoded(), but always uses the size-byte encoding of
+// value.
 func EncodedFixedLen(size int, t Type, value int) []byte {
 	var buffer bytes.Buffer
 	item := New(&buffer)
@@ -29,7 +30,7 @@ func EncodedFixedLen(size int, t Type, value int) []byte {
 
 type countingWriter struct {
 	w *bufio.Writer
-	// Counts the total number of bytes written to w.
+	// bytes counts the total number of bytes written to w.
 	bytes uint64
 }
 
@@ -37,10 +38,10 @@ func newCountingWriter(to io.Writer) *countingWriter {
 	return &countingWriter{w: bufio.NewWriter(to)}
 }
 
-func (cw *countingWriter) Write(p []byte) (nn int, err error) {
-	nn, err = cw.w.Write(p)
+func (cw *countingWriter) Write(p []byte) (int, error) {
+	nn, err := cw.w.Write(p)
 	cw.bytes += uint64(nn)
-	return
+	return nn, err
 }
 
 func (cw *countingWriter) Flush() error {
@@ -63,23 +64,24 @@ type TopLevel struct {
 	compoundItem
 }
 
-// Returns a new CBOR top-level item for the caller to write into. Call
-// .Finish() to check for well-formed-ness and flush the serialization to the
-// Writer.
+// New returns a new CBOR top-level item for the caller to write into. Call
+// .Finish() when serialization is complete.
 func New(to io.Writer) *TopLevel {
 	result := &TopLevel{}
 	result.countingWriter = newCountingWriter(to)
 	return result
 }
 
-func (c *TopLevel) Finish() (err error) {
+// Finish checks for well-formed-ness and flushes the serialization to the
+// Writer passed to New.
+func (c *TopLevel) Finish() error {
 	if c.activeChild != nil {
 		panic(fmt.Sprintf("Must finish child %v before its parent %v.",
 			c.activeChild, c))
 	}
-	err = c.Flush()
+	err := c.Flush()
 	c.countingWriter = nil
-	return
+	return err
 }
 
 func encodedSize(i uint64) int {
@@ -130,7 +132,7 @@ func (item *compoundItem) AppendUint64(i uint64) {
 	item.encodeInt64(TypePosInt, i)
 }
 
-// Always uses the 8-byte encoding for this uint64.
+// AppendFixedSizeUint64 always uses the 8-byte encoding for this uint64.
 func (item *compoundItem) AppendFixedSizeUint64(i uint64) {
 	item.encodeSizedInt64(8, TypePosInt, i)
 }
@@ -147,7 +149,7 @@ func (item *compoundItem) AppendBytes(bs []byte) {
 	item.Write(bs)
 }
 
-// This function checks that bs holds valid UTF-8.
+// AppendUtf8 checks that bs holds valid UTF-8.
 func (item *compoundItem) AppendUtf8(bs []byte) {
 	if !utf8.Valid(bs) {
 		panic(fmt.Sprintf("Invalid UTF-8 in %q.", bs))
@@ -160,7 +162,7 @@ func (item *compoundItem) AppendUtf8S(str string) {
 	item.AppendUtf8([]byte(str))
 }
 
-// ByteLenSoFar() returns the number of bytes from the start of item's encoding.
+// ByteLenSoFar returns the number of bytes from the start of item's encoding.
 func (item *compoundItem) ByteLenSoFar() uint64 {
 	return item.bytes - item.startOffset
 }
@@ -175,10 +177,10 @@ type Array struct {
 	expectedSize uint64
 }
 
-func (item *compoundItem) AppendArray(expectedSize uint64) (a *Array) {
+func (item *compoundItem) AppendArray(expectedSize uint64) *Array {
 	startOffset := item.bytes
 	item.encodeInt64(TypeArray, expectedSize)
-	a = &Array{
+	a := &Array{
 		compoundItem: compoundItem{
 			countingWriter: item.countingWriter,
 			parent:         item,
@@ -188,7 +190,7 @@ func (item *compoundItem) AppendArray(expectedSize uint64) (a *Array) {
 		expectedSize: expectedSize,
 	}
 	item.activeChild = &a.compoundItem
-	return
+	return a
 }
 
 func (a *Array) Finish() {

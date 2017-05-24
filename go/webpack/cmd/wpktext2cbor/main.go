@@ -42,7 +42,7 @@ func main() {
 		Error.Fatal(err)
 	}
 
-	err = webpack.WriteCbor(&pack, out)
+	err = webpack.WriteCBOR(&pack, out)
 	if err != nil {
 		Error.Fatal(err)
 	}
