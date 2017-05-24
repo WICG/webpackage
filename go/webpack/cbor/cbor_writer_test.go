@@ -122,13 +122,13 @@ func TestString(t *testing.T) {
 	}
 	for _, test := range utf8tests {
 		c = newBufferCBOR()
-		c.AppendUtf8([]byte(test.s))
+		c.AppendUTF8([]byte(test.s))
 		assert.Equal(fromHex(test.encoding), c.Finish(), test.s)
 	}
 
 	assert.Panics(func() {
 		c := newBufferCBOR()
-		c.AppendUtf8([]byte{0xff})
+		c.AppendUTF8([]byte{0xff})
 	})
 }
 
@@ -198,9 +198,9 @@ func TestMaps(t *testing.T) {
 
 	c = newBufferCBOR()
 	m = c.AppendMap(2)
-	m.AppendUtf8S("a")
+	m.AppendUTF8S("a")
 	m.AppendInt64(1)
-	m.AppendUtf8S("b")
+	m.AppendUTF8S("b")
 	arr := m.AppendArray(2)
 	arr.AppendInt64(2)
 	arr.AppendInt64(3)
@@ -211,10 +211,10 @@ func TestMaps(t *testing.T) {
 
 	c = newBufferCBOR()
 	a := c.AppendArray(2)
-	a.AppendUtf8S("a")
+	a.AppendUTF8S("a")
 	m = a.AppendMap(1)
-	m.AppendUtf8S("b")
-	m.AppendUtf8S("c")
+	m.AppendUTF8S("b")
+	m.AppendUTF8S("c")
 	m.Finish()
 	a.Finish()
 	assert.Equal(fromHex("82 6161 a1 6162 6163"), c.Finish(),
@@ -222,16 +222,16 @@ func TestMaps(t *testing.T) {
 
 	c = newBufferCBOR()
 	m = c.AppendMap(5)
-	m.AppendUtf8S("a")
-	m.AppendUtf8S("A")
-	m.AppendUtf8S("b")
-	m.AppendUtf8S("B")
-	m.AppendUtf8S("c")
-	m.AppendUtf8S("C")
-	m.AppendUtf8S("d")
-	m.AppendUtf8S("D")
-	m.AppendUtf8S("e")
-	m.AppendUtf8S("E")
+	m.AppendUTF8S("a")
+	m.AppendUTF8S("A")
+	m.AppendUTF8S("b")
+	m.AppendUTF8S("B")
+	m.AppendUTF8S("c")
+	m.AppendUTF8S("C")
+	m.AppendUTF8S("d")
+	m.AppendUTF8S("D")
+	m.AppendUTF8S("e")
+	m.AppendUTF8S("E")
 	m.Finish()
 	assert.Equal(fromHex("a5 6161 6141 6162 6142 6163 6143 6164 6144 6165 6145"),
 		c.Finish(), `{"a": "A", "b": "B", "c": "C", "d": "D", "e": "E"}`)

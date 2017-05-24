@@ -149,8 +149,8 @@ func (item *compoundItem) AppendBytes(bs []byte) {
 	item.Write(bs)
 }
 
-// AppendUtf8 checks that bs holds valid UTF-8.
-func (item *compoundItem) AppendUtf8(bs []byte) {
+// AppendUTF8 checks that bs holds valid UTF-8.
+func (item *compoundItem) AppendUTF8(bs []byte) {
 	if !utf8.Valid(bs) {
 		panic(fmt.Sprintf("Invalid UTF-8 in %q.", bs))
 	}
@@ -158,8 +158,8 @@ func (item *compoundItem) AppendUtf8(bs []byte) {
 	item.Write(bs)
 }
 
-func (item *compoundItem) AppendUtf8S(str string) {
-	item.AppendUtf8([]byte(str))
+func (item *compoundItem) AppendUTF8S(str string) {
+	item.AppendUTF8([]byte(str))
 }
 
 // ByteLenSoFar returns the number of bytes from the start of item's encoding.
