@@ -61,7 +61,7 @@ func WriteCBOR(p *Package, to io.Writer) error {
 
 	// section-offsets:
 	sectionOffsets := arr.AppendMap(1)
-	sectionOffsets.AppendUtf8S("indexed-content")
+	sectionOffsets.AppendUTF8S("indexed-content")
 	// "indexed-content" will appear at the start of the 'sections' map.
 	const indexedContentOffset = 1
 	sectionOffsets.AppendUint64(indexedContentOffset)
@@ -74,7 +74,7 @@ func WriteCBOR(p *Package, to io.Writer) error {
 		panic(fmt.Sprintf("Wrote incorrect offset (%v) for indexed-content section actually at offset %v",
 			indexedContentOffset, sections.ByteLenSoFar()))
 	}
-	sections.AppendUtf8S("indexed-content")
+	sections.AppendUTF8S("indexed-content")
 	indexedContent := sections.AppendArray(2)
 
 	// Write the requests and the byte offsets to their responses into the
