@@ -99,6 +99,10 @@ Note the address bar indicating google.com. Also, since the content of USA Today
 * **drm**: Special support for blocking access to downloaded content based on
   licensing.
 
+### Self Extracting Binaries
+
+Projects that ship runtimes such as [Node.js](https://nodejs.org) and [Electron](https://github.com/electron/electron) are able to create self extracting binaries by concatenating a package (such as [ASAR](https://github.com/electron/asar) or [ZIP](https://support.pkware.com/display/PKZIP/APPNOTE) files) onto an existing binary executable. By having the package at the end of file, there is not well defined start of package and the start of the package must be found by searching. In addition, for signed binaries the package must sign both its content, and the binary it is attached to in order to verify the entirety of the executable. By standardizing the packaging format, new opportunities for distribution can be opened up.
+
 ## Proposal
 
 We propose to introduce a packaging format for the Web that would be able to contain multiple resources (HTML, CSS, Images, Media files, JS files etc) in a "bundle". That bundle can be distributed as regular Web resource (over HTTP[S]) and also by non-Web means, which includes local storage, local sharing, non-HTTP protocols like Bluetooth, etc. Being a single "bundle", it facilitates various modes of transfer. The **packages may be nested**, providing natural way to represent the bundles of resources corresponding to different origins and sites.
@@ -659,6 +663,49 @@ Content-Type: application/pkcs7-mime
 --j38n02qryf9n0eqny8cq0--
 
 ```
+
+### Use Case: Signed self extracting binary
+
+Lets create a self extracting binary by extending the example mentioned above with a signed package. In order to do this, we need to add a trailer for Package-Length in order to allow the runtime to find the start of the package. In addition for signing purposes we must add and Executable-Signature header to the package. By keeping our Executable-Signature separate from our Package-Signature it is possible to update a runtime without completely downloading a new package.
+
+Important notes:
+
+1. Package-Length must be in the Trailers for the package.
+2. Executable-Signature must use the same certificate as Package-Signature.
+3. Executable-Signature must be validated within nested packages but may not be the same as outer packages if they intend to be extracted.
+
+```html
+... binary with ability to self extract trailing webpackage ...
+Package-Signature: Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7; algorithm=ecdsa-with-sha384;
+Executable-Signature: Mj9wz3ErG8uoUYvjbBKvNM3lz+fs10sdhOS/WrtWqdx+UiInZdxjC1qcPyFczKs7; algorithm=ecdsa-with-sha384; certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479certificate=cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
+Content-Type: application/package
+Content-Location: http://example.org/examplePack.pack
+Trailer: Package-Length
+Link: </index.html>; rel=describedby
+Link: <cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a>; rel=index; offset=12014/2048
+
+--j38n02qryf9n0eqny8cq0
+Content-Location: /index.html
+Content-Type: text/html
+
+<body>
+  Hello World!
+</body>
+--j38n02qryf9n0eqny8cq0
+Content-Location: cid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
+Content-Type: application/index
+
+
+/index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
+--j38n02qryf9n0eqny8cq0
+Content-Location: cid:f47ac10b-58cc-4372-a567-0e02b2c3d479
+Content-Type: application/pkcs7-mime
+
+... certificate (or a chain) in any of the
+--j38n02qryf9n0eqny8cq0--
+Package-Length: ... octet size of the webpackage including all headers, bodies, trailers, and boundaries 
+```
+
 
 ##FAQ
 
