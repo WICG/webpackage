@@ -48,16 +48,19 @@ func (cw *countingWriter) Flush() error {
 	return cw.w.Flush()
 }
 
-type compoundItem struct {
+type item struct {
 	*countingWriter
 	// nil for the root.
 	parent *compoundItem
 	// nil for the leaf-most active child.
-	activeChild *compoundItem
-	// How many elements have been added to this item so far.
-	elements uint64
+	activeChild *item
 	// The byte offset within the buffer at which this item starts.
 	startOffset uint64
+}
+type compoundItem struct {
+	item
+	// How many elements have been added to this item so far.
+	elements uint64
 }
 
 type TopLevel struct {
@@ -150,6 +153,47 @@ func (ci *compoundItem) AppendBytes(bs []byte) {
 	ci.Write(bs)
 }
 
+type BytesWriter struct {
+	item
+	remainingSize int64
+}
+
+func (bw *BytesWriter) Write(p []byte) (int, error) {
+	n, err := bw.item.Write(p)
+	bw.remainingSize -= int64(n)
+	if bw.remainingSize < 0 {
+		panic(fmt.Sprintf("Wrote too many bytes to a fixed-size field, by %v.",
+			-bw.remainingSize))
+	}
+	return n, err
+}
+
+func (bw *BytesWriter) Finish() {
+	if bw.remainingSize != 0 {
+		panic(fmt.Sprintf("Wrote too few bytes to a fixed-size field, by %v.",
+			bw.remainingSize))
+	}
+	bw.parent.activeChild = nil
+	bw.countingWriter = nil
+}
+
+// AppendBytesWriter lets the caller write n bytes into a CBOR bytestring, with
+// its size set by n. This doesn't necessarily materialize the whole thing in
+// memory at once.
+func (ci *compoundItem) AppendBytesWriter(n int64) *BytesWriter {
+	ci.encodeInt64(TypeBytes, uint64(n))
+	bw := &BytesWriter{
+		item: item{
+			countingWriter: ci.countingWriter,
+			parent:         ci,
+			startOffset:    ci.bytes,
+		},
+		remainingSize: n,
+	}
+	ci.activeChild = &bw.item
+	return bw
+}
+
 // AppendUTF8 checks that bs holds valid UTF-8.
 func (ci *compoundItem) AppendUTF8(bs []byte) {
 	if !utf8.Valid(bs) {
@@ -183,14 +227,16 @@ func (ci *compoundItem) AppendArray(expectedSize uint64) *Array {
 	ci.encodeInt64(TypeArray, expectedSize)
 	a := &Array{
 		compoundItem: compoundItem{
-			countingWriter: ci.countingWriter,
-			parent:         ci,
-			elements:       0,
-			startOffset:    startOffset,
+			item: item{
+				countingWriter: ci.countingWriter,
+				parent:         ci,
+				startOffset:    startOffset,
+			},
+			elements: 0,
 		},
 		expectedSize: expectedSize,
 	}
-	ci.activeChild = &a.compoundItem
+	ci.activeChild = &a.item
 	return a
 }
 
@@ -217,14 +263,16 @@ func (ci *compoundItem) AppendMap(expectedSize uint64) *Map {
 	ci.encodeInt64(TypeMap, expectedSize)
 	m := &Map{
 		compoundItem: compoundItem{
-			countingWriter: ci.countingWriter,
-			parent:         ci,
-			elements:       0,
-			startOffset:    startOffset,
+			item: item{
+				countingWriter: ci.countingWriter,
+				parent:         ci,
+				startOffset:    startOffset,
+			},
+			elements: 0,
 		},
 		expectedSize: expectedSize,
 	}
-	ci.activeChild = &m.compoundItem
+	ci.activeChild = &m.item
 	return m
 }
 
