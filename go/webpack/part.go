@@ -3,11 +3,9 @@ package webpack
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
-	"errors"
 	"fmt"
-	"hash"
 	"io"
+	"io/ioutil"
 	"net/url"
 	"os"
 )
@@ -36,58 +34,33 @@ func (p *PackPart) Hash() (string, error) {
 }
 
 type PackPartContent struct {
-	file    *os.File
-	content *bytes.Reader
+	io.ReadCloser
+	// size is the number of bytes that will be returned by the Reader.
+	size int64
 }
 
-func (c *PackPartContent) WriteTo(w io.Writer) (int64, error) {
-	if c.file != nil {
-		return io.Copy(w, c.file)
-	} else {
-		return io.Copy(w, c.content)
-	}
-}
-
-func (c *PackPartContent) Read(p []byte) (int, error) {
-	if c.file != nil {
-		return c.file.Read(p)
-	} else {
-		return c.content.Read(p)
-	}
-}
-
-func (c *PackPartContent) Close() {
-	if c.file != nil {
-		c.file.Close()
-	}
+func (c *PackPartContent) Size() int64 {
+	return c.size
 }
 
 func (p *PackPart) Content() (*PackPartContent, error) {
 	if p.contentFilename != "" {
 		file, err := os.Open(p.contentFilename)
-		return &PackPartContent{file, nil}, err
+		if err != nil {
+			return nil, err
+		}
+		stat, err := file.Stat()
+		if err != nil {
+			file.Close()
+			return nil, err
+		}
+		return &PackPartContent{file, stat.Size()}, err
 	}
 	if p.content != nil {
-		return &PackPartContent{nil, bytes.NewReader(p.content)}, nil
+		return &PackPartContent{
+			ReadCloser: ioutil.NopCloser(bytes.NewReader(p.content)),
+			size:       int64(len(p.content)),
+		}, nil
 	}
 	return nil, fmt.Errorf("Part %v had no filename and no content.", p.url)
-}
-
-func (p *PackPart) HashContent(h hash.Hash) (string, error) {
-	var result []byte
-	file, err := os.Open(p.contentFilename)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	if _, err := io.Copy(h, file); err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(h.Sum(result)), nil
-}
-
-func (part *PackPart) Read(p []byte) (n int, err error) {
-	return 0, errors.New("Unimplemented.")
 }

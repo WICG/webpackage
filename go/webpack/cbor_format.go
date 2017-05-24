@@ -128,11 +128,11 @@ func writeCBORResourceBodies(p *Package, to io.Writer) (map[*PackPart]uint64, er
 		if err != nil {
 			return nil, err
 		}
-		contentBytes, err := ioutil.ReadAll(content)
-		if err != nil {
+		mainContent := arr.AppendBytesWriter(content.Size())
+		if _, err := io.Copy(mainContent, content); err != nil {
 			return nil, err
 		}
-		arr.AppendBytes(contentBytes)
+		mainContent.Finish()
 		arr.Finish()
 	}
 	responses.Finish()
