@@ -25,7 +25,7 @@ func TestParseText(t *testing.T) {
 
 	assert.Len(index.requestHeaders, 0)
 	assert.Equal(200, index.status)
-	assert.Equal(HttpHeaders{
+	assert.Equal(HTTPHeaders{
 		httpHeader("content-type", "text/html"),
 		httpHeader("expires", "Mon, 1 Jan 2018 01:00:00 GMT"),
 	}, index.responseHeaders)
@@ -56,7 +56,7 @@ content/example.com/index.html
 	require.Len(varyValid.parts, 1)
 
 	index := varyValid.parts[0]
-	assert.Equal(HttpHeaders{
+	assert.Equal(HTTPHeaders{
 		httpHeader("allowed", "value"),
 	}, index.requestHeaders)
 }
@@ -76,12 +76,12 @@ content/example.com/index.html
 	assert.Error(t, err)
 }
 
-func staticUrl(s string) (u *url.URL) {
+func staticUrl(s string) *url.URL {
 	u, err := url.Parse(s)
 	if err != nil {
 		panic(err)
 	}
-	return
+	return u
 }
 
 func TestWriteText(t *testing.T) {
@@ -93,9 +93,9 @@ func TestWriteText(t *testing.T) {
 		parts: []*PackPart{
 			&PackPart{
 				url:            staticUrl("https://example.com/index.html"),
-				requestHeaders: HttpHeaders{},
+				requestHeaders: HTTPHeaders{},
 				status:         200,
-				responseHeaders: HttpHeaders{
+				responseHeaders: HTTPHeaders{
 					httpHeader("Content-Type", "text/html"),
 					httpHeader("Expires", "Mon, 1 Jan 2018 01:00:00 GMT"),
 				},

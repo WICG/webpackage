@@ -14,22 +14,22 @@ import (
 
 type PackPart struct {
 	url             *url.URL
-	requestHeaders  HttpHeaders
+	requestHeaders  HTTPHeaders
 	status          int
-	responseHeaders HttpHeaders
+	responseHeaders HTTPHeaders
 	contentFilename string
 	content         []byte
 }
 
-func (p *PackPart) Hash() (s string, err error) {
+func (p *PackPart) Hash() (string, error) {
 	h := sha256.New()
-	p.requestHeaders.WriteHttp1(h)
+	p.requestHeaders.WriteHTTP1(h)
 	h.Write([]byte{0})
-	p.responseHeaders.WriteHttp1(h)
+	p.responseHeaders.WriteHTTP1(h)
 	h.Write([]byte{0})
 	content, err := p.Content()
 	if err != nil {
-		return
+		return "", err
 	}
 	io.Copy(h, content)
 	return string(h.Sum(nil)), nil

@@ -1,4 +1,4 @@
-// Defines a parser and encoder for a subset of CBOR, RFC7049.
+// Package cbor defines a parser and encoder for a subset of CBOR, RFC7049.
 //
 // Supported:
 //  * Major types:

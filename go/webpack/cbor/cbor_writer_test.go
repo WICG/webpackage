@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Converts strings of the form "12 34  5678 9a" to byte slices.
+// fromHex converts strings of the form "12 34  5678 9a" to byte slices.
 func fromHex(h string) []byte {
 	bytes, err := hex.DecodeString(strings.Replace(h, " ", "", -1))
 	if err != nil {
@@ -20,20 +20,20 @@ func fromHex(h string) []byte {
 	return bytes
 }
 
-// Combines a CBOR item with an in-memory Writer, to make it easier to get byte
-// sequences out while testing.
-type bufferCbor struct {
+// A bufferCBOR combines a CBOR item with an in-memory Writer, to make it easier
+// to get byte sequences out while testing.
+type bufferCBOR struct {
 	*cbor.TopLevel
 	bytes.Buffer
 }
 
-func newBufferCbor() *bufferCbor {
-	result := &bufferCbor{}
+func newBufferCBOR() *bufferCBOR {
+	result := &bufferCBOR{}
 	result.TopLevel = cbor.New(&result.Buffer)
 	return result
 }
 
-func (c *bufferCbor) Finish() []byte {
+func (c *bufferCBOR) Finish() []byte {
 	c.TopLevel.Finish()
 	return c.Buffer.Bytes()
 }
@@ -64,24 +64,24 @@ func TestIntegers(t *testing.T) {
 		{-9223372036854775808, "3b7fffffffffffffff"},
 	}
 	for _, test := range inttests {
-		c := newBufferCbor()
+		c := newBufferCBOR()
 		c.AppendInt64(test.i)
 		assert.Equal(fromHex(test.encoding), c.Finish(),
 			fmt.Sprintf("%v", test.i))
 
 		if test.i >= 0 {
-			c = newBufferCbor()
+			c = newBufferCBOR()
 			c.AppendUint64(uint64(test.i))
 			assert.Equal(fromHex(test.encoding), c.Finish(),
 				fmt.Sprintf("Unsigned %v", test.i))
 		}
 	}
 
-	c := newBufferCbor()
+	c := newBufferCBOR()
 	c.AppendUint64(18446744073709551615)
 	assert.Equal(fromHex("1bffffffffffffffff"), c.Finish())
 
-	c = newBufferCbor()
+	c = newBufferCBOR()
 	c.AppendFixedSizeUint64(1)
 	assert.Equal(fromHex("1b0000000000000001"), c.Finish())
 }
@@ -89,15 +89,15 @@ func TestIntegers(t *testing.T) {
 func TestString(t *testing.T) {
 	assert := assert.New(t)
 
-	c := newBufferCbor()
+	c := newBufferCBOR()
 	c.AppendBytes([]byte{})
 	assert.Equal(fromHex("40"), c.Finish())
 
-	c = newBufferCbor()
+	c = newBufferCBOR()
 	c.AppendBytes([]byte{0xab})
 	assert.Equal(fromHex("41ab"), c.Finish())
 
-	c = newBufferCbor()
+	c = newBufferCBOR()
 	bytes := make([]byte, 24)
 	for i := range bytes {
 		bytes[i] = byte(i)
@@ -121,13 +121,13 @@ func TestString(t *testing.T) {
 		{"\U00010151", "64f0908591"},
 	}
 	for _, test := range utf8tests {
-		c = newBufferCbor()
+		c = newBufferCBOR()
 		c.AppendUtf8([]byte(test.s))
 		assert.Equal(fromHex(test.encoding), c.Finish(), test.s)
 	}
 
 	assert.Panics(func() {
-		c := newBufferCbor()
+		c := newBufferCBOR()
 		c.AppendUtf8([]byte{0xff})
 	})
 }
@@ -135,12 +135,12 @@ func TestString(t *testing.T) {
 func TestArrays(t *testing.T) {
 	assert := assert.New(t)
 
-	c := newBufferCbor()
+	c := newBufferCBOR()
 	arr := c.AppendArray(0)
 	arr.Finish()
 	assert.Equal(fromHex("80"), c.Finish())
 
-	c = newBufferCbor()
+	c = newBufferCBOR()
 	arr = c.AppendArray(3)
 	arr.AppendInt64(1)
 	arr.AppendInt64(2)
@@ -148,7 +148,7 @@ func TestArrays(t *testing.T) {
 	arr.Finish()
 	assert.Equal(fromHex("83 01 02 03"), c.Finish(), "[1, 2, 3]")
 
-	c = newBufferCbor()
+	c = newBufferCBOR()
 	arr = c.AppendArray(3)
 	arr.AppendInt64(1)
 	nest1 := arr.AppendArray(2)
@@ -163,7 +163,7 @@ func TestArrays(t *testing.T) {
 	assert.Equal(fromHex("83 01 82 02 03 82 04 05"), c.Finish(),
 		"[1, [2, 3], [4, 5]]")
 
-	c = newBufferCbor()
+	c = newBufferCBOR()
 	arr = c.AppendArray(25)
 	for i := int64(1); i <= 25; i++ {
 		arr.AppendInt64(i)
@@ -173,7 +173,7 @@ func TestArrays(t *testing.T) {
 		c.Finish(), "[1, ..., 25]")
 
 	assert.Panics(func() {
-		c := newBufferCbor()
+		c := newBufferCBOR()
 		arr := c.AppendArray(2)
 		arr.Finish()
 	})
@@ -182,12 +182,12 @@ func TestArrays(t *testing.T) {
 func TestMaps(t *testing.T) {
 	assert := assert.New(t)
 
-	c := newBufferCbor()
+	c := newBufferCBOR()
 	m := c.AppendMap(0)
 	m.Finish()
 	assert.Equal(fromHex("a0"), c.Finish(), "{}")
 
-	c = newBufferCbor()
+	c = newBufferCBOR()
 	m = c.AppendMap(2)
 	m.AppendInt64(1)
 	m.AppendInt64(2)
@@ -196,7 +196,7 @@ func TestMaps(t *testing.T) {
 	m.Finish()
 	assert.Equal(fromHex("a2 01 02 03 04"), c.Finish(), "{1: 2, 3: 4}")
 
-	c = newBufferCbor()
+	c = newBufferCBOR()
 	m = c.AppendMap(2)
 	m.AppendUtf8S("a")
 	m.AppendInt64(1)
@@ -209,7 +209,7 @@ func TestMaps(t *testing.T) {
 	assert.Equal(fromHex("a2 6161 01 6162 82 02 03"), c.Finish(),
 		`{"a": 1, "b": [2, 3]}`)
 
-	c = newBufferCbor()
+	c = newBufferCBOR()
 	a := c.AppendArray(2)
 	a.AppendUtf8S("a")
 	m = a.AppendMap(1)
@@ -220,7 +220,7 @@ func TestMaps(t *testing.T) {
 	assert.Equal(fromHex("82 6161 a1 6162 6163"), c.Finish(),
 		`["a", {"b": "c"}]`)
 
-	c = newBufferCbor()
+	c = newBufferCBOR()
 	m = c.AppendMap(5)
 	m.AppendUtf8S("a")
 	m.AppendUtf8S("A")
@@ -240,7 +240,7 @@ func TestMaps(t *testing.T) {
 func TestByteLenSoFar(t *testing.T) {
 	assert := assert.New(t)
 
-	c := newBufferCbor()
+	c := newBufferCBOR()
 	arr := c.AppendArray(3)
 	arr.AppendInt64(1)
 	assert.EqualValues(2, arr.ByteLenSoFar())
@@ -267,7 +267,7 @@ func TestByteLenSoFar(t *testing.T) {
 func TestAppendSerializedItem(t *testing.T) {
 	assert := assert.New(t)
 
-	c := newBufferCbor()
+	c := newBufferCBOR()
 	arr := c.AppendArray(2)
 	arr.AppendSerializedItem(bytes.NewBuffer(fromHex("82 01 02")))
 	arr.AppendUint64(0x73)
