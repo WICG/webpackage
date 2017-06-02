@@ -11,12 +11,26 @@ import (
 )
 
 type PackPart struct {
-	url             *url.URL
-	requestHeaders  HTTPHeaders
-	status          int
+	// requestHeaders include the 4 pseudoheaders in
+	// http://httpwg.org/specs/rfc7540.html#rfc.section.8.1.2.3 that include
+	// the URL.
+	requestHeaders HTTPHeaders
+	// responseHeaders include the :status pseudoheader.
 	responseHeaders HTTPHeaders
 	contentFilename string
 	content         []byte
+}
+
+func (p *PackPart) URL() (*url.URL, error) {
+	if p.requestHeaders[1].Name != ":scheme" ||
+		p.requestHeaders[2].Name != ":authority" ||
+		p.requestHeaders[3].Name != ":path" {
+		panic(fmt.Sprintf("Request headers don't include the expected pseudoheaders: %#v", p.requestHeaders))
+	}
+	url, err := url.Parse(p.requestHeaders[3].Value)
+	url.Scheme = p.requestHeaders[1].Value
+	url.Host = p.requestHeaders[2].Value
+	return url, err
 }
 
 func (p *PackPart) Hash() (string, error) {
@@ -62,5 +76,5 @@ func (p *PackPart) Content() (*PackPartContent, error) {
 			size:       int64(len(p.content)),
 		}, nil
 	}
-	return nil, fmt.Errorf("Part %v had no filename and no content.", p.url)
+	return nil, fmt.Errorf("Part %v had no filename and no content.", *p)
 }

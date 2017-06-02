@@ -133,7 +133,12 @@ func parseTextParts(lines *bufio.Scanner, baseDir string) ([]*PackPart, error) {
 		if !url.IsAbs() {
 			return nil, fmt.Errorf("Resource URLs must be absolute: %q", lines.Text())
 		}
-		requestHeaders := make(HTTPHeaders, 0)
+		requestHeaders := HTTPHeaders{
+			httpHeader(":method", "GET"),
+			httpHeader(":scheme", url.Scheme),
+			httpHeader(":authority", url.Host),
+			httpHeader(":path", url.RequestURI()),
+		}
 		for lines.Scan() {
 			line := lines.Text()
 			if line == "" {
@@ -157,7 +162,7 @@ func parseTextParts(lines *bufio.Scanner, baseDir string) ([]*PackPart, error) {
 		if status < 100 || status > 999 {
 			return nil, fmt.Errorf("Invalid status code: %d must be a 3-digit integer.", status)
 		}
-		responseHeaders := make(HTTPHeaders, 0)
+		responseHeaders := HTTPHeaders{httpHeader(":status", strconv.FormatInt(int64(status), 10))}
 		for lines.Scan() {
 			line := lines.Text()
 			if line == "" {
@@ -186,7 +191,7 @@ func parseTextParts(lines *bufio.Scanner, baseDir string) ([]*PackPart, error) {
 			return nil, fmt.Errorf("Body should be a single line: %q", line)
 		}
 
-		parts = append(parts, &PackPart{url, requestHeaders, status, responseHeaders, filename, nil})
+		parts = append(parts, &PackPart{requestHeaders, responseHeaders, filename, nil})
 	}
 	return parts, nil
 }
@@ -209,7 +214,7 @@ func checkRequestHeadersInVary(requestHeaders, responseHeaders HTTPHeaders) erro
 		}
 	}
 
-	for _, header := range requestHeaders {
+	for _, header := range requestHeaders[4:] {
 		if !vary[header.Name] {
 			return fmt.Errorf("Can't include request header %q that's not in Vary header: %q", header.Name, varyHeader)
 		}
@@ -240,23 +245,27 @@ func WriteTextTo(base string, p *Package) error {
 	return nil
 }
 
-func writePart(w *bufio.Writer, base string, part *PackPart) error {
-	if _, err := io.WriteString(w, part.url.String()); err != nil {
+func writePart(w *bufio.Writer, base string, part *PackPart) (err error) {
+	partURL, err := part.URL()
+	if err != nil {
 		return err
 	}
-	if err := part.requestHeaders.WriteHTTP1(w); err != nil {
-		return err
+	if _, err = io.WriteString(w, partURL.String()); err != nil {
+		return
+	}
+	if err = part.requestHeaders[4:].WriteHTTP1(w); err != nil {
+		return
 	}
 	if _, err := io.WriteString(w, "\r\n"); err != nil {
 		return err
 	}
-	if err := part.responseHeaders.WriteHTTP1(w); err != nil {
-		return err
+	if err = part.responseHeaders[1:].WriteHTTP1(w); err != nil {
+		return
 	}
 
 	// Write the content to a file under base/.
-	relativeOutContentFilename := filepath.Join(part.url.Scheme, part.url.Host,
-		part.url.Path+part.url.RawQuery)
+	relativeOutContentFilename := filepath.Join(partURL.Scheme, partURL.Host,
+		partURL.Path+partURL.RawQuery)
 	outContentFilename := filepath.Join(base, relativeOutContentFilename)
 	if err := os.MkdirAll(filepath.Dir(outContentFilename), 0755); err != nil {
 		return err
