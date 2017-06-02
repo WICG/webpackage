@@ -100,27 +100,27 @@ func encodedSize(i uint64) int {
 	return 8
 }
 
-func (item *compoundItem) encodeInt(t Type, i int) {
-	item.encodeInt64(t, uint64(i))
+func (ci *compoundItem) encodeInt(t Type, i int) {
+	ci.encodeInt64(t, uint64(i))
 }
-func (item *compoundItem) encodeInt64(t Type, i uint64) {
-	item.encodeSizedInt64(encodedSize(i), t, i)
+func (ci *compoundItem) encodeInt64(t Type, i uint64) {
+	ci.encodeSizedInt64(encodedSize(i), t, i)
 }
-func (item *compoundItem) encodeSizedInt64(size int, t Type, i uint64) {
-	item.elements++
+func (ci *compoundItem) encodeSizedInt64(size int, t Type, i uint64) {
+	ci.elements++
 
 	switch size {
 	case 0:
-		item.Write([]byte{byte(t) | byte(i)})
+		ci.Write([]byte{byte(t) | byte(i)})
 	case 1:
-		item.Write([]byte{byte(t) | 24, byte(i)})
+		ci.Write([]byte{byte(t) | 24, byte(i)})
 	case 2:
-		item.Write([]byte{byte(t) | 25, byte(i >> 8), byte(i)})
+		ci.Write([]byte{byte(t) | 25, byte(i >> 8), byte(i)})
 	case 4:
-		item.Write([]byte{byte(t) | 26,
+		ci.Write([]byte{byte(t) | 26,
 			byte(i >> 24), byte(i >> 16), byte(i >> 8), byte(i)})
 	case 8:
-		item.Write([]byte{byte(t) | 27,
+		ci.Write([]byte{byte(t) | 27,
 			byte(i >> 56), byte(i >> 48), byte(i >> 40), byte(i >> 32),
 			byte(i >> 24), byte(i >> 16), byte(i >> 8), byte(i)})
 	default:
@@ -128,48 +128,49 @@ func (item *compoundItem) encodeSizedInt64(size int, t Type, i uint64) {
 	}
 }
 
-func (item *compoundItem) AppendUint64(i uint64) {
-	item.encodeInt64(TypePosInt, i)
+func (ci *compoundItem) AppendUint64(i uint64) {
+	ci.encodeInt64(TypePosInt, i)
 }
 
 // AppendFixedSizeUint64 always uses the 8-byte encoding for this uint64.
-func (item *compoundItem) AppendFixedSizeUint64(i uint64) {
-	item.encodeSizedInt64(8, TypePosInt, i)
+func (ci *compoundItem) AppendFixedSizeUint64(i uint64) {
+	ci.encodeSizedInt64(8, TypePosInt, i)
 }
-func (item *compoundItem) AppendInt64(i int64) {
+
+func (ci *compoundItem) AppendInt64(i int64) {
 	if i < 0 {
-		item.encodeInt64(TypeNegInt, uint64(-1-i))
+		ci.encodeInt64(TypeNegInt, uint64(-1-i))
 	} else {
-		item.encodeInt64(TypePosInt, uint64(i))
+		ci.encodeInt64(TypePosInt, uint64(i))
 	}
 }
 
-func (item *compoundItem) AppendBytes(bs []byte) {
-	item.encodeInt(TypeBytes, len(bs))
-	item.Write(bs)
+func (ci *compoundItem) AppendBytes(bs []byte) {
+	ci.encodeInt(TypeBytes, len(bs))
+	ci.Write(bs)
 }
 
 // AppendUTF8 checks that bs holds valid UTF-8.
-func (item *compoundItem) AppendUTF8(bs []byte) {
+func (ci *compoundItem) AppendUTF8(bs []byte) {
 	if !utf8.Valid(bs) {
 		panic(fmt.Sprintf("Invalid UTF-8 in %q.", bs))
 	}
-	item.encodeInt(TypeText, len(bs))
-	item.Write(bs)
+	ci.encodeInt(TypeText, len(bs))
+	ci.Write(bs)
 }
 
-func (item *compoundItem) AppendUTF8S(str string) {
-	item.AppendUTF8([]byte(str))
+func (ci *compoundItem) AppendUTF8S(str string) {
+	ci.AppendUTF8([]byte(str))
 }
 
 // ByteLenSoFar returns the number of bytes from the start of item's encoding.
-func (item *compoundItem) ByteLenSoFar() uint64 {
-	return item.bytes - item.startOffset
+func (ci *compoundItem) ByteLenSoFar() uint64 {
+	return ci.bytes - ci.startOffset
 }
 
-func (item *compoundItem) AppendSerializedItem(r io.Reader) {
-	item.elements++
-	io.Copy(item, r)
+func (ci *compoundItem) AppendSerializedItem(r io.Reader) {
+	ci.elements++
+	io.Copy(ci, r)
 }
 
 type Array struct {
@@ -177,19 +178,19 @@ type Array struct {
 	expectedSize uint64
 }
 
-func (item *compoundItem) AppendArray(expectedSize uint64) *Array {
-	startOffset := item.bytes
-	item.encodeInt64(TypeArray, expectedSize)
+func (ci *compoundItem) AppendArray(expectedSize uint64) *Array {
+	startOffset := ci.bytes
+	ci.encodeInt64(TypeArray, expectedSize)
 	a := &Array{
 		compoundItem: compoundItem{
-			countingWriter: item.countingWriter,
-			parent:         item,
+			countingWriter: ci.countingWriter,
+			parent:         ci,
 			elements:       0,
 			startOffset:    startOffset,
 		},
 		expectedSize: expectedSize,
 	}
-	item.activeChild = &a.compoundItem
+	ci.activeChild = &a.compoundItem
 	return a
 }
 
@@ -211,19 +212,19 @@ type Map struct {
 	expectedSize uint64
 }
 
-func (item *compoundItem) AppendMap(expectedSize uint64) *Map {
-	startOffset := item.bytes
-	item.encodeInt64(TypeMap, expectedSize)
+func (ci *compoundItem) AppendMap(expectedSize uint64) *Map {
+	startOffset := ci.bytes
+	ci.encodeInt64(TypeMap, expectedSize)
 	m := &Map{
 		compoundItem: compoundItem{
-			countingWriter: item.countingWriter,
-			parent:         item,
+			countingWriter: ci.countingWriter,
+			parent:         ci,
 			elements:       0,
 			startOffset:    startOffset,
 		},
 		expectedSize: expectedSize,
 	}
-	item.activeChild = &m.compoundItem
+	ci.activeChild = &m.compoundItem
 	return m
 }
 
