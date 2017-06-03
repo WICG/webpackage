@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"sort"
 	"unicode/utf8"
 )
 
@@ -217,6 +218,42 @@ func (ci *compoundItem) AppendSerializedItem(r io.Reader) {
 	io.Copy(ci, r)
 }
 
+// AppendGeneric converts a value produced by json.Unmarshal to cbor.
+func (ci *compoundItem) AppendGeneric(v interface{}) {
+	switch v := v.(type) {
+	case string:
+		ci.AppendUTF8S(v)
+	case float64:
+		if float64(uint64(v)) == v {
+			ci.AppendUint64(uint64(v))
+		} else if float64(int64(v)) == v {
+			ci.AppendInt64(int64(v))
+		} else {
+			panic(fmt.Sprintf("cbor floats aren't supported yet: %#v", v))
+		}
+	case []interface{}:
+		arr := ci.AppendArray(uint64(len(v)))
+		for _, elem := range v {
+			arr.AppendGeneric(elem)
+		}
+		arr.Finish()
+	case map[string]interface{}:
+		keys := make([]string, 0, len(v))
+		for key, _ := range v {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		m := ci.AppendMap(uint64(len(keys)))
+		for _, key := range keys {
+			m.AppendUTF8S(key)
+			m.AppendGeneric(v[key])
+		}
+		m.Finish()
+	default:
+		panic(fmt.Sprintf("unsupported cbor value: %#v", v))
+	}
+}
+
 type Array struct {
 	compoundItem
 	expectedSize uint64
@@ -290,4 +327,37 @@ func (m *Map) Finish() {
 	}
 	m.parent.activeChild = nil
 	m.countingWriter = nil
+}
+
+type Tagged struct {
+	compoundItem
+}
+
+func (ci *compoundItem) AppendTag(tag uint64) *Tagged {
+	startOffset := ci.bytes
+	ci.encodeInt64(TypeTag, tag)
+	t := &Tagged{
+		compoundItem: compoundItem{
+			item: item{
+				countingWriter: ci.countingWriter,
+				parent:         ci,
+				startOffset:    startOffset,
+			},
+			elements: 0,
+		},
+	}
+	ci.activeChild = &t.item
+	return t
+}
+
+func (t *Tagged) Finish() {
+	if t.activeChild != nil {
+		panic(fmt.Sprintf("Must finish child %v before its parent %v.",
+			t.activeChild, t))
+	}
+	if t.elements != 1 {
+		panic("A tag must only tag 1 value.")
+	}
+	t.parent.activeChild = nil
+	t.countingWriter = nil
 }
