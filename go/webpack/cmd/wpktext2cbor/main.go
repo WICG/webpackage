@@ -2,11 +2,15 @@
 package main
 
 import (
+	"bufio"
 	"flag"
+	"fmt"
 	"log"
 	"os"
+	"syscall"
 
 	"github.com/WICG/webpackage/go/webpack"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var (
@@ -40,6 +44,29 @@ func main() {
 	pack, err := webpack.ParseText(*manifestFilename)
 	if err != nil {
 		Error.Fatal(err)
+	}
+
+	for i := range pack.Manifest.Signatures {
+		signWith := &pack.Manifest.Signatures[i]
+		if signWith.KeyFilename == "" {
+			fmt.Printf("Where is the signing key for %s? ", signWith.CertFilename)
+			keyFilename, err := bufio.NewReader(os.Stdin).ReadString('\n')
+			if err != nil {
+				Error.Fatal(err)
+			}
+			signWith.LoadKey(keyFilename)
+		}
+		if signWith.Key == nil {
+			fmt.Printf("%s is encrypted. Please enter its password: ", signWith.KeyFilename)
+			password, err := terminal.ReadPassword(int(syscall.Stdin))
+			fmt.Println()
+			if err != nil {
+				Error.Fatal(err)
+			}
+			if err := signWith.GivePassword(password); err != nil {
+				Error.Fatal(err)
+			}
+		}
 	}
 
 	err = webpack.WriteCBOR(&pack, out)

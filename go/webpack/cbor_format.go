@@ -300,6 +300,9 @@ func writeCBORSignedManifest(p *Package, partInfo map[*PackPart]PartInfo, to io.
 		signature.AppendUTF8S("keyIndex")
 		signature.AppendUint64(uint64(i))
 		signature.AppendUTF8S("signature")
+		if signWith.Key == nil {
+			return 0, fmt.Errorf("Missing key for %#v", signWith)
+		}
 		sigBytes, err := Sign(signWith.Key, manifestCbor.Bytes())
 		if err != nil {
 			return 0, err
