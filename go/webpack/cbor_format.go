@@ -28,7 +28,7 @@ func ParseCBOR(packageFilename string) (Package, error) {
 		return Package{}, err
 	}
 
-	return Package{Manifest{}, parts, nil, nil}, nil
+	return Package{Manifest{}, parts}, nil
 }
 
 func parseIndexedContent(reader *bytes.Reader, parts []*PackPart) error {
