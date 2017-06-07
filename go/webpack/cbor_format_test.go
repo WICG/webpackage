@@ -55,15 +55,15 @@ func hpackDecode(t *testing.T, encoded []byte) HTTPHeaders {
 
 func TestWriteCBOR(t *testing.T) {
 	pack := Package{
-		parts: []*PackPart{
+		Parts: []*PackPart{
 			&PackPart{
-				requestHeaders: HTTPHeaders{
+				RequestHeaders: HTTPHeaders{
 					httpHeader(":method", "GET"),
 					httpHeader(":scheme", "https"),
 					httpHeader(":authority", "example.com"),
 					httpHeader(":path", "/index.html?query"),
 				},
-				responseHeaders: HTTPHeaders{
+				ResponseHeaders: HTTPHeaders{
 					httpHeader(":status", "200"),
 					httpHeader("Content-Type", "text/html"),
 					httpHeader("Expires", "Mon, 1 Jan 2018 01:00:00 GMT"),
@@ -154,24 +154,24 @@ func TestWriteCBORManifest(t *testing.T) {
 	require.NoError(signWithServerCert.GivePassword(bytes.TrimSpace(mustReadFile("testdata/pki/example.com.password"))))
 
 	pack := Package{
-		manifest: Manifest{
-			metadata: Metadata{
-				date:   time.Date(2017, 5, 20, 10, 0, 0, 0, time.UTC),
-				origin: staticUrl("https://example.com"),
+		Manifest: Manifest{
+			Metadata: Metadata{
+				Date:   time.Date(2017, 5, 20, 10, 0, 0, 0, time.UTC),
+				Origin: staticUrl("https://example.com"),
 			},
-			signatures:   []SignWith{signWithServerCert},
-			certificates: []*x509.Certificate{intermediateCert},
-			hashTypes:    []crypto.Hash{crypto.SHA256, crypto.SHA512},
+			Signatures:   []SignWith{signWithServerCert},
+			Certificates: []*x509.Certificate{intermediateCert},
+			HashTypes:    []crypto.Hash{crypto.SHA256, crypto.SHA512},
 		},
-		parts: []*PackPart{
+		Parts: []*PackPart{
 			&PackPart{
-				requestHeaders: HTTPHeaders{
+				RequestHeaders: HTTPHeaders{
 					httpHeader(":method", "GET"),
 					httpHeader(":scheme", "https"),
 					httpHeader(":authority", "example.com"),
 					httpHeader(":path", "/index.html?query"),
 				},
-				responseHeaders: HTTPHeaders{
+				ResponseHeaders: HTTPHeaders{
 					httpHeader(":status", "200"),
 					httpHeader("Content-Type", "text/html"),
 					httpHeader("Expires", "Mon, 1 Jan 2018 01:00:00 GMT"),

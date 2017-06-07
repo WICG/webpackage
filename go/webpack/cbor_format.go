@@ -47,7 +47,7 @@ func WriteCBOR(p *Package, to io.Writer) error {
 		return err
 	}
 
-	haveManifest := len(p.manifest.signatures) > 0
+	haveManifest := len(p.Manifest.Signatures) > 0
 	manifestLength := uint64(0)
 	var tempManifestFile *os.File
 	if haveManifest {
@@ -122,10 +122,10 @@ func WriteCBOR(p *Package, to io.Writer) error {
 
 	// Write the requests and the byte offsets to their responses into the
 	// index.
-	index := indexedContent.AppendArray(uint64(len(p.parts)))
-	for _, part := range p.parts {
+	index := indexedContent.AppendArray(uint64(len(p.Parts)))
+	for _, part := range p.Parts {
 		arr := index.AppendArray(2)
-		arr.AppendBytes(part.requestHeaders.EncodeHPACK())
+		arr.AppendBytes(part.RequestHeaders.EncodeHPACK())
 		partInf, ok := partInfo[part]
 		if !ok {
 			panic(fmt.Sprintf("%p missing from %v", part, partInfo))
@@ -166,9 +166,9 @@ type PartInfo struct {
 func writeCBORResourceBodies(p *Package, to io.Writer) (map[*PackPart]PartInfo, error) {
 	partInfo := make(map[*PackPart]PartInfo)
 	cbor := cbor.New(to)
-	responses := cbor.AppendArray(uint64(len(p.parts)))
-	for _, part := range p.parts {
-		info, err := writeCborResourceBody(part, responses, &p.manifest)
+	responses := cbor.AppendArray(uint64(len(p.Parts)))
+	for _, part := range p.Parts {
+		info, err := writeCborResourceBody(part, responses, &p.Manifest)
 		if err != nil {
 			return nil, err
 		}
@@ -186,14 +186,14 @@ func writeCborResourceBody(part *PackPart, responses *cbor.Array, manifest *Mani
 		hashes: make(map[crypto.Hash][]byte),
 	}
 	// Hashes will include all request headers, response headers, and the bodies.
-	hashWriter, hashers := MultiHasher(manifest.hashTypes)
+	hashWriter, hashers := MultiHasher(manifest.HashTypes)
 	hashCbor := cbor.New(hashWriter)
 	hashCborArray := hashCbor.AppendArray(3)
-	part.requestHeaders.EncodeToCBOR(hashCborArray)
-	part.responseHeaders.EncodeToCBOR(hashCborArray)
+	part.RequestHeaders.EncodeToCBOR(hashCborArray)
+	part.ResponseHeaders.EncodeToCBOR(hashCborArray)
 
 	arr := responses.AppendArray(2)
-	arr.AppendBytes(part.responseHeaders.EncodeHPACK())
+	arr.AppendBytes(part.ResponseHeaders.EncodeHPACK())
 	content, err := part.Content()
 	if err != nil {
 		return info, err
@@ -241,7 +241,7 @@ func writeCBORSignedManifest(p *Package, partInfo map[*PackPart]PartInfo, to io.
 
 	manifest.AppendUTF8S("metadata")
 	metadataKeys := []string{"origin", "date"}
-	for key, _ := range p.manifest.metadata.otherFields {
+	for key, _ := range p.Manifest.Metadata.OtherFields {
 		metadataKeys = append(metadataKeys, key)
 	}
 	sort.Slice(metadataKeys, func(i, j int) bool {
@@ -253,22 +253,22 @@ func writeCBORSignedManifest(p *Package, partInfo map[*PackPart]PartInfo, to io.
 		switch key {
 		case "origin":
 			uri := metadata.AppendTag(cbor.TagURI)
-			uri.AppendUTF8S(p.manifest.metadata.origin.String())
+			uri.AppendUTF8S(p.Manifest.Metadata.Origin.String())
 			uri.Finish()
 		case "date":
 			time := metadata.AppendTag(cbor.TagTime)
-			time.AppendInt64(p.manifest.metadata.date.Unix())
+			time.AppendInt64(p.Manifest.Metadata.Date.Unix())
 			time.Finish()
 		default:
-			metadata.AppendGeneric(p.manifest.metadata.otherFields[key])
+			metadata.AppendGeneric(p.Manifest.Metadata.OtherFields[key])
 		}
 	}
 
 	metadata.Finish()
 
 	manifest.AppendUTF8S("resource-hashes")
-	resourceHashes := manifest.AppendMap(uint64(len(p.manifest.hashTypes)))
-	for _, hashType := range p.manifest.hashTypes {
+	resourceHashes := manifest.AppendMap(uint64(len(p.Manifest.HashTypes)))
+	for _, hashType := range p.Manifest.HashTypes {
 		resourceHashes.AppendUTF8S(HashName(hashType))
 		hashes := make([][]byte, 0, len(partInfo))
 		for _, part := range partInfo {
@@ -294,13 +294,13 @@ func writeCBORSignedManifest(p *Package, partInfo map[*PackPart]PartInfo, to io.
 	signedManifest.AppendSerializedItem(bytes.NewReader(manifestCbor.Bytes()))
 
 	signedManifest.AppendUTF8S("signatures")
-	signatureArray := signedManifest.AppendArray(uint64(len(p.manifest.signatures)))
-	for i, signWith := range p.manifest.signatures {
+	signatureArray := signedManifest.AppendArray(uint64(len(p.Manifest.Signatures)))
+	for i, signWith := range p.Manifest.Signatures {
 		signature := signatureArray.AppendMap(2)
 		signature.AppendUTF8S("keyIndex")
 		signature.AppendUint64(uint64(i))
 		signature.AppendUTF8S("signature")
-		sigBytes, err := Sign(signWith.key, manifestCbor.Bytes())
+		sigBytes, err := Sign(signWith.Key, manifestCbor.Bytes())
 		if err != nil {
 			return 0, err
 		}
@@ -311,11 +311,11 @@ func writeCBORSignedManifest(p *Package, partInfo map[*PackPart]PartInfo, to io.
 
 	signedManifest.AppendUTF8S("certificates")
 	// The certificate array contains both the signing certificates and their chains.
-	certificateArray := signedManifest.AppendArray(uint64(len(p.manifest.signatures) + len(p.manifest.certificates)))
-	for _, signWith := range p.manifest.signatures {
-		certificateArray.AppendBytes(signWith.certificate.Raw)
+	certificateArray := signedManifest.AppendArray(uint64(len(p.Manifest.Signatures) + len(p.Manifest.Certificates)))
+	for _, signWith := range p.Manifest.Signatures {
+		certificateArray.AppendBytes(signWith.Certificate.Raw)
 	}
-	for _, cert := range p.manifest.certificates {
+	for _, cert := range p.Manifest.Certificates {
 		certificateArray.AppendBytes(cert.Raw)
 	}
 	certificateArray.Finish()

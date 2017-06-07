@@ -50,7 +50,7 @@ func ParseTextContent(baseDir string, manifestReader io.Reader) (pack Package, e
 
 func parseTextManifest(lines *bufio.Scanner, baseDir string) (Manifest, error) {
 	manifest := Manifest{
-		metadata: Metadata{otherFields: make(map[string]interface{})},
+		Metadata: Metadata{OtherFields: make(map[string]interface{})},
 	}
 	for lines.Scan() {
 		line := lines.Text()
@@ -68,10 +68,10 @@ func parseTextManifest(lines *bufio.Scanner, baseDir string) (Manifest, error) {
 				if hash, err := parseHashName(name); err != nil {
 					return manifest, err
 				} else {
-					manifest.hashTypes = append(manifest.hashTypes, hash)
+					manifest.HashTypes = append(manifest.HashTypes, hash)
 				}
 			}
-			SortHashByCBOR(manifest.hashTypes)
+			SortHashByCBOR(manifest.HashTypes)
 		case "sign-with":
 			cert_key := semicolonSeparator.Split(header.Value, -1)
 			var certFilename, keyFilename string
@@ -88,10 +88,10 @@ func parseTextManifest(lines *bufio.Scanner, baseDir string) (Manifest, error) {
 			if err != nil {
 				return manifest, err
 			}
-			manifest.signatures = append(manifest.signatures, signWith)
+			manifest.Signatures = append(manifest.Signatures, signWith)
 		case "certificate-chain":
 			filename := filepath.Join(baseDir, header.Value)
-			if err := LoadCertificatesFromFile(filename, &manifest.certificates); err != nil {
+			if err := LoadCertificatesFromFile(filename, &manifest.Certificates); err != nil {
 				return manifest, err
 			}
 		case "date":
@@ -99,20 +99,20 @@ func parseTextManifest(lines *bufio.Scanner, baseDir string) (Manifest, error) {
 			if err != nil {
 				return manifest, err
 			}
-			manifest.metadata.date = date
+			manifest.Metadata.Date = date
 		case "origin":
 			origin, err := url.Parse(header.Value)
 			if err != nil {
 				return manifest, err
 			}
-			manifest.metadata.origin = origin
+			manifest.Metadata.Origin = origin
 		default:
 			var jsonValue interface{}
 			err := json.Unmarshal([]byte(header.Value), &jsonValue)
 			if err != nil {
 				return manifest, err
 			}
-			manifest.metadata.otherFields[header.Name] = jsonValue
+			manifest.Metadata.OtherFields[header.Name] = jsonValue
 		}
 	}
 	return manifest, nil
@@ -131,7 +131,7 @@ func parseTextParts(lines *bufio.Scanner, baseDir string) ([]*PackPart, error) {
 		if !url.IsAbs() {
 			return nil, fmt.Errorf("Resource URLs must be absolute: %q", lines.Text())
 		}
-		part.requestHeaders = HTTPHeaders{
+		part.RequestHeaders = HTTPHeaders{
 			httpHeader(":method", "GET"),
 			httpHeader(":scheme", url.Scheme),
 			httpHeader(":authority", url.Host),
@@ -146,7 +146,7 @@ func parseTextParts(lines *bufio.Scanner, baseDir string) ([]*PackPart, error) {
 			if err != nil {
 				return nil, err
 			}
-			part.requestHeaders = append(part.requestHeaders, header)
+			part.RequestHeaders = append(part.RequestHeaders, header)
 		}
 
 		// Response
@@ -160,7 +160,7 @@ func parseTextParts(lines *bufio.Scanner, baseDir string) ([]*PackPart, error) {
 		if status < 100 || status > 999 {
 			return nil, fmt.Errorf("Invalid status code: %d must be a 3-digit integer.", status)
 		}
-		part.responseHeaders = HTTPHeaders{httpHeader(":status", strconv.FormatInt(int64(status), 10))}
+		part.ResponseHeaders = HTTPHeaders{httpHeader(":status", strconv.FormatInt(int64(status), 10))}
 		for lines.Scan() {
 			line := lines.Text()
 			if line == "" {
@@ -170,7 +170,7 @@ func parseTextParts(lines *bufio.Scanner, baseDir string) ([]*PackPart, error) {
 			if err != nil {
 				return nil, err
 			}
-			part.responseHeaders = append(part.responseHeaders, header)
+			part.ResponseHeaders = append(part.ResponseHeaders, header)
 		}
 		if err := checkRequestHeadersInVary(part); err != nil {
 			return nil, err
@@ -199,7 +199,7 @@ func parseTextParts(lines *bufio.Scanner, baseDir string) ([]*PackPart, error) {
 func checkRequestHeadersInVary(part *PackPart) error {
 	varyHeader := ""
 	vary := make(map[string]bool)
-	for _, header := range part.responseHeaders {
+	for _, header := range part.ResponseHeaders {
 		if header.Name == "vary" {
 			if header.Value == "*" {
 				return errors.New("Cannot have a Vary header of '*'.")
@@ -235,7 +235,7 @@ func WriteTextTo(base string, p *Package) error {
 	if _, err = w.WriteString("[Content]\r\n"); err != nil {
 		return err
 	}
-	for _, part := range p.parts {
+	for _, part := range p.Parts {
 		if err = writePart(w, base, part); err != nil {
 			return err
 		}

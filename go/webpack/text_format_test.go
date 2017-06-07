@@ -23,15 +23,15 @@ func TestParseText(t *testing.T) {
 
 	unsignedSingleFile, err := ParseText("testdata/unsigned_single_file.manifest")
 	require.NoError(err)
-	assert.Len(unsignedSingleFile.parts, 1, "Wrong number of parts.")
+	assert.Len(unsignedSingleFile.Parts, 1, "Wrong number of parts.")
 
-	index := unsignedSingleFile.parts[0]
+	index := unsignedSingleFile.Parts[0]
 	assert.Equal(HTTPHeaders{
 		httpHeader(":method", "GET"),
 		httpHeader(":scheme", "https"),
 		httpHeader(":authority", "example.com"),
 		httpHeader(":path", "/index.html"),
-	}, index.requestHeaders)
+	}, index.RequestHeaders)
 
 	if url, err := index.URL(); assert.NoError(err) {
 		assert.Equal(*staticUrl("https://example.com/index.html"), *url)
@@ -41,7 +41,7 @@ func TestParseText(t *testing.T) {
 		httpHeader(":status", "200"),
 		httpHeader("content-type", "text/html"),
 		httpHeader("expires", "Mon, 1 Jan 2018 01:00:00 GMT"),
-	}, index.responseHeaders)
+	}, index.ResponseHeaders)
 
 	content, err := index.Content()
 	require.NoError(err)
@@ -66,9 +66,9 @@ Vary: allowed
 content/example.com/index.html
 `))
 	require.NoError(err)
-	require.Len(varyValid.parts, 1)
+	require.Len(varyValid.Parts, 1)
 
-	index := varyValid.parts[0]
+	index := varyValid.Parts[0]
 	assert.Equal(HTTPHeaders{
 		httpHeader("allowed", "value"),
 	}, index.NonPseudoRequestHeaders())
@@ -130,40 +130,40 @@ Expires: Mon, 1 Jan 2018 01:00:00 GMT
 content/example.com/index.html
 `))
 	require.NoError(err)
-	manifest := manifestPackage.manifest
+	manifest := manifestPackage.Manifest
 
 	assert.Equal(time.Date(2017, time.May, 12, 10, 0, 0, 0, time.UTC),
-		manifest.metadata.date)
-	assert.Equal(staticUrl("https://example.com"), manifest.metadata.origin)
+		manifest.Metadata.Date)
+	assert.Equal(staticUrl("https://example.com"), manifest.Metadata.Origin)
 	assert.Equal(map[string]interface{}{"unknown": "value"},
-		manifest.metadata.otherFields)
+		manifest.Metadata.OtherFields)
 
-	if assert.Len(manifest.signatures, 1) {
-		signature := manifest.signatures[0]
-		assert.NoError(signature.certificate.VerifyHostname("example.com"))
-		_, err = signature.certificate.Verify(x509.VerifyOptions{
+	if assert.Len(manifest.Signatures, 1) {
+		signature := manifest.Signatures[0]
+		assert.NoError(signature.Certificate.VerifyHostname("example.com"))
+		_, err = signature.Certificate.Verify(x509.VerifyOptions{
 			DNSName:       "example.com",
 			Roots:         poolOf(root1),
-			Intermediates: poolOf(manifest.certificates...),
+			Intermediates: poolOf(manifest.Certificates...),
 			CurrentTime:   time.Date(2017, time.May, 17, 0, 0, 0, 0, time.UTC),
 			KeyUsages:     []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		})
 		assert.NoError(err)
 
-		assert.Nil(signature.key)
+		assert.Nil(signature.Key)
 		password, err := ioutil.ReadFile("testdata/pki/example.com.password")
 		if assert.NoError(err) &&
 			assert.NoError(signature.GivePassword(bytes.TrimSpace(password))) {
-			assert.IsType(&ecdsa.PrivateKey{}, signature.key)
+			assert.IsType(&ecdsa.PrivateKey{}, signature.Key)
 		}
 	}
 
-	assert.Equal([]crypto.Hash{crypto.SHA256, crypto.SHA384}, manifest.hashTypes)
-	assert.Len(manifest.subpackages, 0)
+	assert.Equal([]crypto.Hash{crypto.SHA256, crypto.SHA384}, manifest.HashTypes)
+	assert.Len(manifest.Subpackages, 0)
 
 	// Quickly check that the manifest didn't prevent the [Content] section
 	// from parsing.
-	assert.Len(manifestPackage.parts, 1, "Wrong number of parts.")
+	assert.Len(manifestPackage.Parts, 1, "Wrong number of parts.")
 }
 
 func staticUrl(s string) *url.URL {
@@ -179,16 +179,16 @@ func TestWriteText(t *testing.T) {
 	require := require.New(t)
 
 	pack := Package{
-		manifest: Manifest{},
-		parts: []*PackPart{
+		Manifest: Manifest{},
+		Parts: []*PackPart{
 			&PackPart{
-				requestHeaders: HTTPHeaders{
+				RequestHeaders: HTTPHeaders{
 					httpHeader(":method", "GET"),
 					httpHeader(":scheme", "https"),
 					httpHeader(":authority", "example.com"),
 					httpHeader(":path", "/index.html"),
 				},
-				responseHeaders: HTTPHeaders{
+				ResponseHeaders: HTTPHeaders{
 					httpHeader(":status", "200"),
 					httpHeader("Content-Type", "text/html"),
 					httpHeader("Expires", "Mon, 1 Jan 2018 01:00:00 GMT"),

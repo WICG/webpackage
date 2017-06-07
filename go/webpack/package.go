@@ -4,6 +4,6 @@
 package webpack
 
 type Package struct {
-	manifest Manifest
-	parts    []*PackPart
+	Manifest Manifest
+	Parts    []*PackPart
 }

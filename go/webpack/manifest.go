@@ -9,17 +9,19 @@ import (
 )
 
 type Manifest struct {
-	metadata     Metadata
-	signatures   []SignWith
-	certificates []*x509.Certificate
-	hashTypes    []crypto.Hash
-	subpackages  []string
+	Metadata     Metadata
+	Signatures   []SignWith
+	Certificates []*x509.Certificate
+	HashTypes    []crypto.Hash
+	Subpackages  []string
 }
 
 type SignWith struct {
-	certificate *x509.Certificate
-	pemKey      *pem.Block
-	key         crypto.Signer
+	CertFilename string
+	Certificate  *x509.Certificate
+	KeyFilename  string
+	pemKey       *pem.Block
+	Key          crypto.Signer
 }
 
 // Loads a certificate and its key from two PEM files. The key can be PKCS#1,
@@ -36,7 +38,7 @@ func LoadSignWith(certFilename, keyFilename string) (result SignWith, err error)
 	if len(certs) == 0 {
 		return result, fmt.Errorf("no certificates found in %q.", certFilename)
 	}
-	result.certificate = certs[0]
+	result.Certificate = certs[0]
 	if keyFilename == "" {
 		// Without a key, stop after loading the certificate.
 		return result, nil
@@ -48,7 +50,7 @@ func LoadSignWith(certFilename, keyFilename string) (result SignWith, err error)
 		if result.pemKey.Type == "ENCRYPTED PRIVATE KEY" {
 			return result, errors.New("Go cannot decrypt PKCS#8-format encrypted keys.")
 		}
-		if result.key, err = ParsePrivateKey(result.certificate, result.pemKey.Bytes); err != nil {
+		if result.Key, err = ParsePrivateKey(result.Certificate, result.pemKey.Bytes); err != nil {
 			return result, err
 		}
 	}
@@ -59,7 +61,7 @@ func LoadSignWith(certFilename, keyFilename string) (result SignWith, err error)
 // If the key loaded into s was encrypted, the caller needs to supply a password
 // for it.
 func (s *SignWith) GivePassword(password []byte) error {
-	if s.key != nil {
+	if s.Key != nil {
 		return errors.New("Key isn't encrypted.")
 	}
 	if !x509.IsEncryptedPEMBlock(s.pemKey) {
@@ -69,10 +71,10 @@ func (s *SignWith) GivePassword(password []byte) error {
 	if err != nil {
 		return err
 	}
-	key, err := ParsePrivateKey(s.certificate, keyDer)
+	key, err := ParsePrivateKey(s.Certificate, keyDer)
 	if err != nil {
 		return err
 	}
-	s.key = key
+	s.Key = key
 	return nil
 }
