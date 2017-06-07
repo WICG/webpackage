@@ -98,7 +98,7 @@ func ParseTextContent(baseDir string, manifest io.Reader) (Package, error) {
 		parts = append(parts, &PackPart{url, requestHeaders, status, responseHeaders, filename, nil})
 	}
 
-	return Package{Manifest{}, parts, nil, nil}, lines.Err()
+	return Package{Manifest{}, parts}, lines.Err()
 }
 
 // varySeparator is used to split the Vary: header into the names of allowed
