@@ -363,14 +363,30 @@ that list of `hash-value`s. Like
 in [Subresource Integrity](https://www.w3.org/TR/SRI/#agility), the UA will only
 check one of these, but it's up to the UA which one.
 
-The hash of a resource is the hash of the byte string consisting of the resolved
-and decoded `resource-key` from the index, concatenated with the bytes from the
-start of that resource's `response-headers` to the end of its `body`. The
-resolved and decoded `resource-key` is a Canonical CBOR array consisting of
-alternating header names and values encoded as byte strings, in the order they
-appear in the `resource-key`. As described in [Main content](#main-content), the
-":method", ":scheme", ":authority", and ":path" pseudo-headers appear first and
-in that order.
+The hash of a resource is the hash of its Canonical CBOR encoding using the
+following CDDL. Headers are decompressed before being encoded and hashed.
+
+``` cddl
+resource = [
+  request: [
+    ':method', bstr,
+    ':scheme', bstr,
+    ':authority', bstr,
+    ':path', bstr,
+    * (header-name, header-value: bstr)
+  ],
+  response-headers: [
+    ':status', bstr,
+    * (header-name, header-value: bstr)
+  ],
+  response-body: bstr
+]
+
+# Headers must be lower-case ascii per
+# http://httpwg.org/specs/rfc7540.html#rfc.section.8.1.2, and only
+# pseudo-headers can include ":".
+header-name = bstr .regexp "[\x21-\x39\x3b-\x40\x5b-\x7e]+"
+```
 
 This differs from [SRI](https://w3c.github.io/webappsec-subresource-integrity),
 which only hashes the body. Note: This will usually prevent a package from
