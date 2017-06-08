@@ -32,8 +32,25 @@ If the original origin signs a package, the contents can get full access to
 browser state and network requests for that origin. This lets people share full
 PWAs peer-to-peer.
 
+Local sharing tends to be popular where connectivity to the web is expensive:
+each byte costs money. This means the client may be stuck with an outdated
+version of a package for a significant amount of time, including that package's
+vulnerabilities. It may be feasible to periodically check for OCSP notification
+that a package's certificate has been revoked. We also need to design a cheap
+notification that the package is critically vulnerable and needs to be disabled
+until it can be updated.
+
 ### Physical Web
 [Beacons](https://google.github.io/physical-web/) and other physical web devices often want to 'broadcast' various content locally. Today, they broadcast a URL and make the user's device go to a web site. This delivers the trusted content to the user's browser (user can observe the address bar to verify) and allow web apps to talk back to their services. It can be useful to be able to broadcast a package containing several pages or even a simple web app, even without a need to immediately have a Web connection - for example, via Bluetooth. If combined with signature from the publisher, the loaded pages may be treated as if they were loaded via TLS connection with a valid certificate, in terms of the [origin-based security model](https://tools.ietf.org/html/rfc6454). For example, they can use [`fetch()`](https://fetch.spec.whatwg.org/#fetch-api) against its service or use "Add To Homescreen" for the convenience of the user.
+
+Physical web beacons may be located in a place that has no connectivity, and
+their owner may only visit to update them as often as their battery needs
+replacement: annually or less often. This leaves a large window during which a
+certificate could be compromised or a package could get out of date. We think
+there's no way to prevent a client from trusting its initial download of a
+package signed by a compromised certificate. When the client gets back to a
+public network, it should attempt to validate both the certificate and the
+package using the mechanisms alluded to under [Local Sharing](#local-sharing).
 
 ### Content Distribution Networks and Web caches.
 The CDNs can provide service of hosting web content that should be delivered at scale. This includes both hosting subresources (JS libraries, images) as well as entire content ([Google AMP](https://developers.google.com/amp/cache/overview)) on network of servers, often provided as a service by 3rd party. Unfortunately, origin-based security model of the Web limits the ways a 3rd-party caches/servers can be used. Indeed, for example in case of hosting JS subresources, the original document must explicitly trust the CDN origin to serve the trusted script. The user agent must use protocol-based means to verify the subresource is coming from the trusted CDN. Another example is a CDN that caches the whole content. Because the origin of CDN is different from the origin of the site, the browser normally can't afford the origin treatment of the site to the loaded content. Look at how an article from USA Today is represented:
@@ -43,6 +60,10 @@ The CDNs can provide service of hosting web content that should be delivered at 
 Note the address bar indicating google.com. Also, since the content of USA Today is hosted in an iframe, it can't use all the functionality typically afforded to a top-level document:
 - Can't request permissions
 - Can't be added to homescreen
+
+Packages served to CDNs can staple an OCSP response and have a short expiration
+time, avoiding the above problems with outdated packages.
+
 
 ## Goals and non-goals
 
@@ -697,8 +718,15 @@ This is due to two main use cases of package loading:
 1. Loading the package from Web as part of the page or some other resource. In this case, the package is streamed from the server and **boundaries** allow to parse the package as it comes in and start using subresources as fast as possible. If the package has to be signed though, the package in its entirety has to be loaded first.
 2. Loading a (potentially large) package offline. In that case, it is important to provide a fast access to subresources as they are requested, w/o unpacking the package (it takes double the storage at least to unpack and significant time). Using direct byte-offset Content Index allows to directly access resources in a potentially large package.
 
-### Is the certificate supplied by package a full chain to the known CA root?
+### Does the package supply a full chain of certificates to a known CA root?
 
-Not necessarily. To quote one of the Chrome security engineers, "because different devices have different sets of roots in their trust stores, it's not always the case that there is a single "correct" set of certificates to send that will work best for all clients. Instead, for compatibility, sites will sometimes send a set of certificates and rely on clients to dynamically fetch additional intermediates when needed". We suspect that to be an interesting issue since offline validation would need a full chain. Browsers (at least Chrome) are implementing automatic fetching of intermediate certificates but for this to work they have to be online. This will probably become a matter of best practices when creating the packaging format, possibly with validation by the packaging tool.
+Not necessarily. Different devices have different sets of roots in their trust
+stores, so there is not a single "correct" set of certificates to send that will
+work best for all clients. Instead, for compatibility, packages may need to
+include a set of certificates from which chains can be built to multiple roots,
+or rely on clients to dynamically fetch additional intermediates when needed.
 
+This becomes a tradeoff between the package size vs the set of clients that can
+validate the signature offline. We expect that packaging tools will allow their
+users to configure this tradeoff in appropriate ways.
 
