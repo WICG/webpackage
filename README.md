@@ -432,9 +432,13 @@ be completely constrained.
 Following are some example usages that correspond to these additions.
 The packages are written in
 [CBOR's extended diagnostic notation](https://tools.ietf.org/html/draft-greevenbosch-appsawg-cbor-cddl-10#appendix-G),
-with an extension that `hpack({key:value,...})` is
-an [hpack](https://tools.ietf.org/html/rfc7541) encoding of the described
-headers.
+with the extensions that:
+1. `hpack({key:value,...})` is an [hpack](https://tools.ietf.org/html/rfc7541)
+   encoding of the described headers.
+2. `DER(...)` is the DER encoding of a certificate described partially by the
+   contents of the `...`.
+
+All examples are available in the [examples](examples) directory.
 
 ### Single site: a couple of web pages with resources in a package.
 The example web site contains two HTML pages and an image. This is straightforward case, demonstrating the following:
@@ -568,53 +572,176 @@ with their claimed origin.
 ]
 ```
 
-**_Examples below here are out of date_**
-
 ### Use Case: Signed package, one origin.
-The example contains an HTML page and an image. The package is signed by the example.com publisher, using the same private key that example.com uses for HTTPS. The signed package ensures the verification of the origin even if the package is stored in a local file or obtained via other insecure ways like HTTP, or hosted on another origin's server.
+The example contains example.com/index.html. The package is signed by the
+example.com publisher, using the same private key that example.com uses for
+HTTPS. The signed package ensures the verification of the origin even if the
+package is stored in a local file or obtained via other insecure ways like HTTP,
+or hosted on another origin's server.
 
-Important notes:
+Some interesting things to notice in this package:
 
-1. The very first header in Package Header section of the package is **Package-Signature**, a new header that contains a signed hash of the Package Header section (not including Package-Signature header) and Content Index. It also contains a reference (via urn:uuid: UUID-based URL) to the part that contains the public key certificate (or if needed, a chain of certificates to the root CA).
-2. The **certificate algorithm** must be encoded within the certificate that signed the package. The **algorithm** in **Package-Signature** is the hash algorithm used to sign the **Content Index** and produce the Package-Signature.
-3. The Content Index contains hashes of all parts of the package, so it is enough to validate the index to trust its hashes, then compute the hash of each part upon using it to validate each part. Hashes have the hash algorithm specified in front.
-4. Content Index Entry `part-location` and `part-size` must not refer to locations outside of the package which contains the entry or to locations within nested packages. They may refer to the boundaries of a nested package.
-5. The inclusion of certificate makes it possible to validate the package offline (certificate revocation aside, this can be done out-of-band when device is actually online).
-6. Certificate is included as a standard DER-encoded resource (with proper Content-type) corresponding to a [X.509 certificate](https://tools.ietf.org/html/rfc5280). The policies for verifying the validity of the certificate are left up to the host environment. There are no requirements on any fields in the certificate such as [Key Usage](https://tools.ietf.org/html/rfc5280#section-4.2.1.3); this also is left up to the host environment.
+1. The `"manifest"` map contains `"certificates"` and `"signatures"` arrays
+   describing how the manifest is signed.
+2. The signature identifies the first element of `"certificates"` as the signing
+   certificate.
+3. The elements of `"certificates"` are
+   DER-encoded [X.509 certificates](https://tools.ietf.org/html/rfc5280).
+   The [signing certificate](go/webpack/testdata/pki/example.com.cert) is
+   trusted for `example.com`, and that certificate chains,
+   using [other elements](go/webpack/testdata/pki/intermediate1.cert) of
+   `"certificates"`, to
+   a [trusted root certificate](go/webpack/testdata/pki/root1.cert). The chain
+   is built and trusted in the same way as TLS chains during normal web
+   browsing.
+4. The signature algorithm is determined by the signing certificate's public key
+   type, `prime256v1`, and isn't encoded separately in the signature block.
+5. The manifest contains a `"resource-hashes"` block, which contains the hashes,
+   using the SHA384 algorithm in this case, of all resources in the package.
+   Unlike in
+   [Subresource Integrity](https://w3c.github.io/webappsec-subresource-integrity/),
+   the hashes include the request and response headers.
+6. The inclusion of a certificate chain makes it possible to validate the
+   package offline. Browsers detect revoked certificates and packages with known
+   vulnerabilities by looking for separately signed files containing OCSP and
+   recency information, but this package does not demonstrate how to attach
+   those.
 
-```html
-Package-Signature: Li9vy3DqF8tnTXuiaAJuML3ky+er10rcgNR/VqsVpcw+ThHmYcwiB1pbOxEbzJr7; algorithm: sha384; certificate=urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479
-Content-Type: application/package
-Content-Location: http://example.org/examplePack.pack
-Link: </index.html>; rel=describedby
-Link: <urn:uuid:d479c10b-58cc-4243-97a5-0e02b2c3f47a>; rel=index; offset=12014/2048
-
---j38n02qryf9n0eqny8cq0
-Content-Location: /index.html
-Content-Type: text/html
-
-<body>
-  Hello World!
-</body>
---j38n02qryf9n0eqny8cq0
-Content-Location: urn:uuid:d479c10b-58cc-4243-97a5-0e02b2c3f47a
-Content-Type: application/package.index
-
-/index.html sha384-WeF0h3dEjGnea4ANejO7+5/xtGPkQ1TDVTvNucZm+pASWjx5+QOXvfX2oT3oKGhP 153 215
---j38n02qryf9n0eqny8cq0
-Content-Location: urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479
-Content-Type: application/pkcs7-mime
-
-... certificate (or a chain) in any of the
---j38n02qryf9n0eqny8cq0--
+```cbor-diag
+[
+  '🌐📦',
+  {
+    "manifest": 1,
+    "indexed-content": 2057
+  },
+  {
+    "manifest": {
+      "manifest": {
+        "metadata": {
+          "date": 1(1494583200),
+          "origin": 32("https://example.com")
+        },
+        "resource-hashes": {
+          "sha384": [
+            h'3C3A03F7C3FC99494F6AAA25C3D11DA3C0D7097ABBF5A9476FB64741A769984E8B6801E71BB085E25D7134287B99BAAB',
+            h'5AA8B83EE331F5F7D1EF2DF9B5AFC8B3A36AEC953F2715CE33ECCECD58627664D53241759778A8DC27BCAAE20F542F9F',
+            h'D5B2A3EA8FE401F214DA8E3794BE97DE9666BAF012A4B515B8B67C85AAB141F8349C4CD4EE788C2B7A6D66177BC68171'
+          ]
+        }
+      },
+      "signatures": [
+        {
+          "keyIndex": 0,
+          "signature": h'3044022015B1C8D46E4C6588F73D9D894D05377F382C4BC56E7CDE41ACEC1D81BF1EBF7E02204B812DACD001E0FD4AF968CF28EC6152299483D6D14D5DBE23FC1284ABB7A359'
+        }
+      ],
+      "certificates": [
+        DER(
+          Certificate:
+              ...
+              Signature Algorithm: ecdsa-with-SHA256
+                  Issuer: C=US, O=Honest Achmed's, CN=Honest Achmed's Test Intermediate CA
+                  Validity
+                      Not Before: May 10 00:00:00 2017 GMT
+                      Not After : May 18 00:10:36 2018 GMT
+                  Subject: C=US, O=Test Example, CN=example.com
+                  Subject Public Key Info:
+                      Public Key Algorithm: id-ecPublicKey
+                          Public-Key: (256 bit)
+                          pub:
+                              ...
+                          ASN1 OID: prime256v1
+                  ...
+        ),
+        DER(
+          Certificate:
+              ...
+              Signature Algorithm: sha256WithRSAEncryption
+                  Issuer: C=US, O=Honest Achmed's, CN=Honest Achmed's Test Root CA
+                  Validity
+                      Not Before: May 10 00:00:00 2017 GMT
+                      Not After : May 18 00:10:36 2018 GMT
+                  Subject: C=US, O=Honest Achmed's, CN=Honest Achmed's Test Intermediate CA
+                  Subject Public Key Info:
+                      Public Key Algorithm: id-ecPublicKey
+                          Public-Key: (521 bit)
+                          pub:
+                              ...
+                          ASN1 OID: secp521r1
+                  ...
+        )
+      ]
+    },
+    "indexed-content": [
+      [
+        [ hpack({
+            :method: GET
+            :scheme: https
+            :authority: example.com
+            :path: /index.html
+          }), 1]
+        [ hpack({
+            :method: GET
+            :scheme: https
+            :authority: example.com
+            :path: /otherPage.html
+          }), 121],
+        [ hpack({
+            :method: GET
+            :scheme: https
+            :authority: example.com
+            :path: /images/world.png
+          }), 243]
+        ],
+      ],
+      [
+        [ hpack({
+            :status: 200
+            content-type: text/html
+            date: Wed, 15 Nov 2016 06:25:24 GMT
+            expires: Thu, 01 Jan 2017 16:00:00 GMT
+          }),
+          '<body>\n  <a href=\"otherPage.html\">Other page</a>\n</body>\n'
+        ]
+        [ hpack({
+            :status: 200
+            content-type: text/html
+            date: Wed, 15 Nov 2016 06:25:24 GMT
+            expires: Thu, 01 Jan 2017 16:00:00 GMT
+          }),
+          '<body>\n  Hello World! <img src=\"images/world.png\">\n</body>\n'
+        ],
+        [ hpack({
+            :status: 200
+            content-type: image/png
+            date: Wed, 15 Nov 2016 06:25:24 GMT
+            expires: Thu, 01 Jan 2017 16:00:00 GMT
+          }),
+          '... binary png image ...'
+        ]
+      ]
+    ]
+  },
+  2541,
+  '🌐📦'
+]
 ```
 
 The process of validation:
 
-1. Validate the signature provided by Package-Signature header, using provided public key cert and content of application/package.index part of the package.
-2. That establishes authenticity and integrity of the Content Index that contains hashes of all the parts int he package.
-2. When a part is loaded, compute its hash and compare it with the hash in the Content Index. If they match, the part is deemed validated.
+1. Verify that certificates identified by signature elements chain to trusted roots.
+2. Find the subset of the signatures that correctly sign the manifest's bytes
+   using their identified certificates' public keys.
+3. Parse the manifest and find its claimed origin.
+4. Verify that at least one correct signature identifies a certificate that's
+   trusted for use by that origin.
+5. When loading a resource, pick the strongest hash function in the
+   `"resource-hashes"` map, and use that to hash the Canonical CBOR
+   representation of its request headers, response headers, and body. Verify
+   that the resulting digest appears in that array in the `"resource-hashes"`
+   map.
 
+**_Examples below here are out of date_**
 
 ### Use Case: Signed package, 2 origins
 
