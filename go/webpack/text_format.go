@@ -94,7 +94,7 @@ func parseTextManifest(lines *bufio.Scanner, baseDir string) (Manifest, error) {
 			manifest.signatures = append(manifest.signatures, signWith)
 		case "certificate-chain":
 			filename := filepath.Join(baseDir, header.Value)
-			if err := LoadCertificatesInto(filename, &manifest.certificates); err != nil {
+			if err := LoadCertificatesFromFile(filename, &manifest.certificates); err != nil {
 				return manifest, err
 			}
 		case "date":

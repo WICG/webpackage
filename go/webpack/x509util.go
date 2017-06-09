@@ -13,7 +13,7 @@ import (
 )
 
 // Parses a sequence of x509 certificates from filename.
-func LoadCertificatesInto(filename string, certs *[]*x509.Certificate) error {
+func LoadCertificatesFromFile(filename string, certs *[]*x509.Certificate) error {
 	pemData, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
