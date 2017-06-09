@@ -30,7 +30,7 @@ type SignWith struct {
 // encrypted, it can be decrypted with result.GivePassword().
 func LoadSignWith(certFilename, keyFilename string) (result SignWith, err error) {
 	var certs []*x509.Certificate
-	if err = LoadCertificatesInto(certFilename, &certs); err != nil {
+	if err = LoadCertificatesFromFile(certFilename, &certs); err != nil {
 		return result, err
 	}
 	if len(certs) == 0 {

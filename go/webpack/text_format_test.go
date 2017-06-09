@@ -83,7 +83,7 @@ content/example.com/index.html
 
 func mustLoadCertificate(filename string) *x509.Certificate {
 	var certs []*x509.Certificate
-	err := LoadCertificatesInto(filename, &certs)
+	err := LoadCertificatesFromFile(filename, &certs)
 	if err != nil {
 		panic(err)
 	}
