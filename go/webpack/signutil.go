@@ -3,6 +3,7 @@ package webpack
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/asn1"
@@ -12,11 +13,9 @@ import (
 )
 
 // Sign() signs message using a TLS1.3 algorithm chosen depending on pk:
-//   RSA <= 3072 bits:    rsa_pss_sha256
-//   RSA, 3073-7680 bits: rsa_pss_sha384
+//   RSA, 2048 bits:    rsa_pss_sha256
 //   secp256r1:           ecdsa_secp256r1_sha256
 //   secp384r1:           ecdsa_secp384r1_sha384
-//   secp521r1:           ecdsa_secp521r1_sha512
 func Sign(pk crypto.PrivateKey, message []byte) ([]byte, error) {
 	signer, err := signerForPrivateKey(pk)
 	if err != nil {
@@ -42,22 +41,18 @@ type messageSigner interface {
 func signerForPrivateKey(pk crypto.PrivateKey) (messageSigner, error) {
 	switch pk := pk.(type) {
 	case *rsa.PrivateKey:
-		switch bits := pk.N.BitLen(); {
-		case bits <= 3072:
+		switch bits := pk.N.BitLen(); bits {
+		case 2048:
 			return rsaPSSSigner{pk, crypto.SHA256}, nil
-		case bits <= 7680:
-			return rsaPSSSigner{pk, crypto.SHA384}, nil
 		default:
-			return nil, fmt.Errorf("RSA key too big: %v bits", bits)
+			return nil, fmt.Errorf("unsupported RSA key size: %v bits", bits)
 		}
 	case *ecdsa.PrivateKey:
 		switch name := pk.Curve.Params().Name; name {
-		case "P-256":
+		case elliptic.P256().Params().Name:
 			return ecdsaSigner{pk, crypto.SHA256}, nil
-		case "P-384":
+		case elliptic.P384().Params().Name:
 			return ecdsaSigner{pk, crypto.SHA384}, nil
-		case "P-521":
-			return ecdsaSigner{pk, crypto.SHA512}, nil
 		default:
 			return nil, fmt.Errorf("unknown ECDSA curve: %v", name)
 		}

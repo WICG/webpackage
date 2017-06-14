@@ -297,7 +297,8 @@ signature = {
   ; the public key, not the certificate, so we identify certificates by their
   ; index in the certificates array instead.
   keyIndex: uint,
-  ; Encoded as described in TLS 1.3.
+  ; Encoded as described in TLS 1.3,
+  ; https://tlswg.github.io/tls13-spec/#signature-algorithms.
   signature: bstr,
 }
 ```
@@ -330,11 +331,18 @@ generate it.
 The [TLS 1.3 signing algorithm](https://tlswg.github.io/tls13-spec/#rfc.section.4.2.3)
 is determined from the certificate's public key type:
 
-* RSA <= 3072 bits: rsa_pss_sha256
-* RSA, 3073-7680 bits: rsa_pss_sha384
+* RSA, 2048 bits: rsa_pss_sha256
 * secp256r1: ecdsa_secp256r1_sha256
 * secp384r1: ecdsa_secp384r1_sha384
-* secp521r1: ecdsa_secp521r1_sha512
+
+The following key types are not supported, for the mentioned reason:
+
+* secp521r1: [Chrome doesn't support this curve](https://crbug.com/477623), so
+  certificates aren't using it on the web.
+* ed25519 and ed448:
+  The [RFC](https://tools.ietf.org/html/draft-josefsson-tls-ed25519) for using
+  these in certificates isn't yet final.
+* RSA != 2048: Only 4096 has measurable usage, and it's very low.
 
 As a special case, if the package is being transferred from the manifest's
 origin under TLS, the UA may load it without checking that its own resources match
