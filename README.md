@@ -101,7 +101,7 @@ time, avoiding the above problems with outdated packages.
 * **stored-compression**: Storing a package on disk takes as few bytes as possible.
 * **external-dependencies**: Sub-packages can be "external" to the main package,
   meaning the UA will need to either fetch them separately or already have them.
-  ([#35, App Installer Story](https://github.com/dimich-g/webpackage/issues/35))
+  ([#35, App Installer Story](https://github.com/WICG/webpackage/issues/35))
 * **self-extracting**: Wrap packages in self-extracting executables. This is
   required for Node to use the format.
 * **optional-components**: A package can identify resources that don't need to
@@ -113,7 +113,7 @@ time, avoiding the above problems with outdated packages.
 
 * **confidential**: Store confidential data.
 * **streamed-generation**: Generate packages on the fly.
-  ([#6](https://github.com/dimich-g/webpackage/issues/6#issuecomment-275746125))
+  ([#6](https://github.com/WICG/webpackage/issues/6#issuecomment-275746125))
 * **non-origin-identity**: A package can be primarily identified as coming from
   something other than a
   [Web Origin](https://html.spec.whatwg.org/multipage/browsers.html#concept-origin).

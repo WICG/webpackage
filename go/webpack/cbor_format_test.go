@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/net/http2/hpack"
 
-	"github.com/dimich-g/webpackage/go/webpack/cbor"
+	"github.com/WICG/webpackage/go/webpack/cbor"
 	"github.com/stretchr/testify/assert"
 )
 
