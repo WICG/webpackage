@@ -71,7 +71,7 @@ content/example.com/index.html
 	index := varyValid.parts[0]
 	assert.Equal(HTTPHeaders{
 		httpHeader("allowed", "value"),
-	}, index.requestHeaders[4:])
+	}, index.NonPseudoRequestHeaders())
 }
 
 func TestParseTextRequestHeaderNotInVary(t *testing.T) {

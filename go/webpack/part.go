@@ -33,6 +33,16 @@ func (p *PackPart) URL() (*url.URL, error) {
 	return url, err
 }
 
+func (p *PackPart) NonPseudoRequestHeaders() HTTPHeaders {
+	// There are 4 pseudo-headers in the request.
+	return p.requestHeaders[4:]
+}
+
+func (p *PackPart) NonPseudoResponseHeaders() HTTPHeaders {
+	// There's 1 pseudo-header, :status, in the response.
+	return p.responseHeaders[1:]
+}
+
 func (p *PackPart) Hash() (string, error) {
 	h := sha256.New()
 	p.requestHeaders.WriteHTTP1(h)
