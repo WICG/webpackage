@@ -297,6 +297,7 @@ signature = {
   ; the public key, not the certificate, so we identify certificates by their
   ; index in the certificates array instead.
   keyIndex: uint,
+  ; Encoded as described in TLS 1.3.
   signature: bstr,
 }
 ```
@@ -325,13 +326,15 @@ certificates are used to sign manifests.
 1. The bytes of the `manifest` CBOR item.
 
 Each signature uses the `keyIndex` field to identify the certificate used to
-generate it. This certificate in turn identifies a signing algorithm in its
-SubjectPublicKeyInfo. The signature does not separately encode the signing
-algorithm to avoid letting attackers choose a weaker signature algorithm.
+generate it.
+The [TLS 1.3 signing algorithm](https://tlswg.github.io/tls13-spec/#rfc.section.4.2.3)
+is determined from the certificate's public key type:
 
-Further, the signing algorithm must be one of the SignatureScheme algorithms defined
-by [TLS1.3](https://tlswg.github.io/tls13-spec/#rfc.section.4.2.3), except for
-`rsa_pkcs1*` and the ones marked "SHOULD NOT be offered".
+* RSA <= 3072 bits: rsa_pss_sha256
+* RSA, 3073-7680 bits: rsa_pss_sha384
+* secp256r1: ecdsa_secp256r1_sha256
+* secp384r1: ecdsa_secp384r1_sha384
+* secp521r1: ecdsa_secp521r1_sha512
 
 As a special case, if the package is being transferred from the manifest's
 origin under TLS, the UA may load it without checking that its own resources match
