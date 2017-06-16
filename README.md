@@ -1,6 +1,34 @@
 # Web Packaging Format Explainer
 This document intends to list use cases motivating the improvements of the current [Web Packaging Draft](https://w3ctag.github.io/packaging-on-the-web/). It serves similar role as typical "Introduction" or "Using" and other non-normative sections of specs.
 
+## Building this repository
+
+### Internet Draft
+
+This is also the working area for the internet-draft on "Web Packaging".
+
+* [Editor's copy](https://WICG.github.io/webpackage/)
+* [Individual Draft](https://tools.ietf.org/html/draft-yasskin-dispatch-web-packaging)
+* [Compare Individual Draft and Editor's copy](https://tools.ietf.org/rfcdiff?url1=https://tools.ietf.org/id/draft-yasskin-dispatch-web-packaging.txt&url2=https://WICG.github.io/webpackage/draft-yasskin-dispatch-web-packaging.txt)
+
+
+#### Building the Draft
+
+Formatted text and HTML versions of the draft can be built using `make`.
+
+```sh
+$ make
+```
+
+This requires that you have the necessary software installed.  See
+[the instructions](https://github.com/martinthomson/i-d-template/blob/master/doc/SETUP.md).
+
+### Packaging tool.
+
+Install this with `go install
+github.com/WICG/webpackage/tree/internet-draft/go/webpack/cmd/wpktext2cbor`.
+This tool is not yet documented well.
+
 ## Background
 Some new use cases for Web technology have motivated thinking about a multi-resource packaging format. Those new opportunity include:
 
