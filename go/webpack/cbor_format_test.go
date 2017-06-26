@@ -31,10 +31,14 @@ func TestWriteCBOR(t *testing.T) {
 	pack := Package{
 		parts: []*PackPart{
 			&PackPart{
-				url:            staticUrl("https://example.com/index.html?query"),
-				requestHeaders: HTTPHeaders{},
-				status:         200,
+				requestHeaders: HTTPHeaders{
+					httpHeader(":method", "GET"),
+					httpHeader(":scheme", "https"),
+					httpHeader(":authority", "example.com"),
+					httpHeader(":path", "/index.html?query"),
+				},
 				responseHeaders: HTTPHeaders{
+					httpHeader(":status", "200"),
 					httpHeader("Content-Type", "text/html"),
 					httpHeader("Expires", "Mon, 1 Jan 2018 01:00:00 GMT"),
 				},

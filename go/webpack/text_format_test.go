@@ -26,11 +26,19 @@ func TestParseText(t *testing.T) {
 	assert.Len(unsignedSingleFile.parts, 1, "Wrong number of parts.")
 
 	index := unsignedSingleFile.parts[0]
-	assert.Equal(*staticUrl("https://example.com/index.html"), *index.url)
-
-	assert.Len(index.requestHeaders, 0)
-	assert.Equal(200, index.status)
 	assert.Equal(HTTPHeaders{
+		httpHeader(":method", "GET"),
+		httpHeader(":scheme", "https"),
+		httpHeader(":authority", "example.com"),
+		httpHeader(":path", "/index.html"),
+	}, index.requestHeaders)
+
+	if url, err := index.URL(); assert.NoError(err) {
+		assert.Equal(*staticUrl("https://example.com/index.html"), *url)
+	}
+
+	assert.Equal(HTTPHeaders{
+		httpHeader(":status", "200"),
 		httpHeader("content-type", "text/html"),
 		httpHeader("expires", "Mon, 1 Jan 2018 01:00:00 GMT"),
 	}, index.responseHeaders)
@@ -63,7 +71,7 @@ content/example.com/index.html
 	index := varyValid.parts[0]
 	assert.Equal(HTTPHeaders{
 		httpHeader("allowed", "value"),
-	}, index.requestHeaders)
+	}, index.NonPseudoRequestHeaders())
 }
 
 func TestParseTextRequestHeaderNotInVary(t *testing.T) {
@@ -174,10 +182,14 @@ func TestWriteText(t *testing.T) {
 		manifest: Manifest{},
 		parts: []*PackPart{
 			&PackPart{
-				url:            staticUrl("https://example.com/index.html"),
-				requestHeaders: HTTPHeaders{},
-				status:         200,
+				requestHeaders: HTTPHeaders{
+					httpHeader(":method", "GET"),
+					httpHeader(":scheme", "https"),
+					httpHeader(":authority", "example.com"),
+					httpHeader(":path", "/index.html"),
+				},
 				responseHeaders: HTTPHeaders{
+					httpHeader(":status", "200"),
 					httpHeader("Content-Type", "text/html"),
 					httpHeader("Expires", "Mon, 1 Jan 2018 01:00:00 GMT"),
 				},

@@ -1,6 +1,7 @@
 package webpack
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -34,6 +35,13 @@ func (headers HTTPHeaders) WriteHTTP1(f io.Writer) error {
 	return nil
 }
 
-func (HTTPHeaders) WriteHPACK(f io.Writer) {
-	panic("Unimplemented")
+func (h HTTPHeaders) EncodeHPACK() []byte {
+	var buf bytes.Buffer
+	encoder := hpack.NewEncoder(&buf)
+	for _, field := range h {
+		if err := encoder.WriteField(field); err != nil {
+			panic(err)
+		}
+	}
+	return buf.Bytes()
 }

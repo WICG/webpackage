@@ -1,16 +1,11 @@
 package webpack
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strconv"
-
-	"golang.org/x/net/http2/hpack"
 
 	"github.com/WICG/webpackage/go/webpack/cbor"
 )
@@ -82,7 +77,7 @@ func WriteCBOR(p *Package, to io.Writer) error {
 	index := indexedContent.AppendArray(uint64(len(p.parts)))
 	for _, part := range p.parts {
 		arr := index.AppendArray(2)
-		arr.AppendBytes(encodeResourceKey(part))
+		arr.AppendBytes(part.requestHeaders.EncodeHPACK())
 		partOffset, ok := partOffsets[part]
 		if !ok {
 			panic(fmt.Sprintf("%p missing from %v", part, partOffsets))
@@ -123,7 +118,7 @@ func writeCBORResourceBodies(p *Package, to io.Writer) (map[*PackPart]uint64, er
 		partOffsets[part] = uint64(responses.ByteLenSoFar())
 
 		arr := responses.AppendArray(2)
-		arr.AppendBytes(encodeResponseHeaders(part))
+		arr.AppendBytes(part.responseHeaders.EncodeHPACK())
 		content, err := part.Content()
 		if err != nil {
 			return nil, err
@@ -138,82 +133,4 @@ func writeCBORResourceBodies(p *Package, to io.Writer) (map[*PackPart]uint64, er
 	responses.Finish()
 	cbor.Finish()
 	return partOffsets, nil
-}
-
-func encodeResourceKey(part *PackPart) []byte {
-	var buf bytes.Buffer
-	encoder := hpack.NewEncoder(&buf)
-	for _, field := range []hpack.HeaderField{
-		httpHeader(":method", "GET"),
-		httpHeader(":scheme", part.url.Scheme),
-		httpHeader(":authority", part.url.Host),
-		httpHeader(":path", part.url.RequestURI()),
-	} {
-		if err := encoder.WriteField(field); err != nil {
-			panic(err)
-		}
-	}
-	for _, field := range part.requestHeaders {
-		if err := encoder.WriteField(field); err != nil {
-			panic(err)
-		}
-	}
-	return buf.Bytes()
-}
-
-func encodeResponseHeaders(part *PackPart) []byte {
-	var buf bytes.Buffer
-	encoder := hpack.NewEncoder(&buf)
-	if err := encoder.WriteField(httpHeader(":status",
-		strconv.FormatInt(int64(part.status), 10))); err != nil {
-		panic(err)
-	}
-	for _, field := range part.responseHeaders {
-		if err := encoder.WriteField(field); err != nil {
-			panic(err)
-		}
-	}
-	return buf.Bytes()
-}
-
-func writeCBORPart(w *bufio.Writer, base string, part *PackPart) error {
-	if _, err := io.WriteString(w, part.url.String()); err != nil {
-		return err
-	}
-	if err := part.requestHeaders.WriteHTTP1(w); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(w, "\r\n"); err != nil {
-		return err
-	}
-	if err := part.responseHeaders.WriteHTTP1(w); err != nil {
-		return err
-	}
-
-	// Write the content to a file under base/.
-	relativeOutContentFilename := filepath.Join(part.url.Scheme, part.url.Host,
-		part.url.Path+part.url.RawQuery)
-	outContentFilename := filepath.Join(base, relativeOutContentFilename)
-	if err := os.MkdirAll(filepath.Dir(outContentFilename), 0755); err != nil {
-		return err
-	}
-	outContentFile, err := os.Create(outContentFilename)
-	if err != nil {
-		return err
-	}
-	defer outContentFile.Close()
-	inContent, err := part.Content()
-	if err != nil {
-		return err
-	}
-	defer inContent.Close()
-	io.Copy(outContentFile, inContent)
-
-	if _, err = io.WriteString(w, relativeOutContentFilename); err != nil {
-		return err
-	}
-	if _, err = io.WriteString(w, "\r\n"); err != nil {
-		return err
-	}
-	return nil
 }
