@@ -267,9 +267,9 @@ source="jyasskin"} The decoded `resource-key`s are header lists
 The parser MUST fail if any of the following is true:
 
 1. HPACK decoding encountered an error.
-1. Any `resource-key`'s first four headers are not named ":method",
-   ":scheme", ":authority", and ":path", in that order.
-1. The value of any ":method" is not "GET".
+1. Any `resource-key`'s first three headers are not named ":scheme",
+   ":authority", and ":path", in that order. Note that ":method" is
+   intentionally omitted because only the GET method is meaningful.
 1. Any of the pseudo-headers' values violates a requirement in Section
    8.1.2.3 of {{!HTTP2=RFC7540}}.
 1. Any `resource-key` has a non-pseudo-header name that includes the
@@ -493,10 +493,10 @@ The parser MUST fail if any of the following is true:
    8.1.2.3 of {{!HTTP2=RFC7540}}.
 1. Any other header name includes the ":" character or is not
    lower-case ascii ({{HTTP2}}, Section 8.1.2).
-1. The *header-list* contains any header names other than ":method",
-   ":scheme", ":authority", ":path", and either `response-headers` has
-   no "vary" header (Section 7.1.4 of {{!RFC7231}}) or these header
-   names aren't listed in it.
+1. The *header-list* contains any header names other than ":scheme",
+   ":authority", ":path", and either `response-headers` has no "vary"
+   header (Section 7.1.4 of {{!RFC7231}}) or these header names aren't
+   listed in it.
 
 Let *origin* be the Web Origin {{!RFC6454}} of *header-list*'s ":scheme" and
 ":authority" headers.
