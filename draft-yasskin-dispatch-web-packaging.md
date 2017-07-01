@@ -23,11 +23,6 @@ normative:
   CBOR: RFC7049
   CDDL: I-D.greevenbosch-appsawg-cbor-cddl
   appmanifest: W3C.WD-appmanifest-20170608
-  HTML:
-    target: https://html.spec.whatwg.org/multipage/
-    title: HTML
-    author:
-      org: WHATWG
   SRI: W3C.REC-SRI-20160623
 
 informative:
@@ -36,8 +31,8 @@ informative:
 --- abstract
 
 Web Packages provide a way to bundle up groups of web resources to
-transmit them together. These bundles can then be signed to establish
-their authenticity.
+transmit them together. These bundles can be signed to establish their
+authenticity.
 
 --- middle
 
@@ -65,8 +60,9 @@ Use Cases    {#use-cases}
 People with expensive or intermittent internet connections are used
 to sharing files via P2P links and shared SD cards. They should be
 able to install web applications they received this way. Installing a
-web application requires a TLS-type guarantee that it came from and
-can use data owned by a particular origin.
+web application requires a guarantee of the same kind as an HTTPS
+connection that it came from and can use data owned by a particular
+origin.
 
 ### Snapshot packages
 
@@ -143,12 +139,20 @@ specification to return data.
 
 ~~~~~ cddl
 webpackage = [
-  magic1: h'F0 9F 8C 90 F0 9F 93 A6',  ; 🌐📦 in UTF-8.
+  ; 🌐📦 in UTF-8.
+  magic1: h'F0 9F 8C 90 F0 9F 93 A6',
   section-offsets: { * (($section-name .within tstr) => uint) },
   sections: [ *$section ],
-  length: uint,                        ; Total number of bytes in the package.
-  magic2: h'F0 9F 8C 90 F0 9F 93 A6',  ; 🌐📦 in UTF-8.
+  length: uint,  ; Total number of bytes in the package.
+  ; 🌐📦 in UTF-8.
+  magic2: h'F0 9F 8C 90 F0 9F 93 A6',
 ]
+
+$section-name /= "indexed-content" / "manifest"
+
+$section /= indexed-content / signed-manifest
+
+indexed-content = [index, [*response]]
 ~~~~~
 
 The parser MAY begin parsing at either the [beginning](#from-start)
@@ -167,8 +171,10 @@ To parse from the end, the parser MUST load the last 18 bytes as the following
 
 ~~~~~ cddl
 tail = (
-  length: uint,                        ; Total number of bytes in the package.
-  magic2: h'F0 9F 8C 90 F0 9F 93 A6',  ; 🌐📦 in UTF-8.
+  ; Total number of bytes in the package.
+  length: uint,
+  ; 🌐📦 in UTF-8.
+  magic2: h'F0 9F 8C 90 F0 9F 93 A6',
 )
 ~~~~~
 
@@ -239,16 +245,11 @@ array), the parser MUST fail.
 Load a CBOR item starting at *index-start* + 1 as the `index` array in the following CDDL:
 
 ~~~~~ cddl
-$section-name /= "indexed-content"
-$section /= index
-
 index = [* [resource-key: http-headers,
             offset: uint,
             ? length: uint] ]
 
 ; http-headers is a byte string in HPACK format (RFC7541).
-; The dynamic table begins empty for each instance of
-; http-headers.
 http-headers = bstr
 ~~~~~
 
@@ -312,9 +313,6 @@ Load one CBOR item starting at *manifest-start* as a `signed-manifest` from the
 following CDDL:
 
 ~~~~~ cddl
-$section-name /= "manifest"
-$section /= signed-manifest
-
 signed-manifest = {
   manifest: manifest,
   certificates: [+ certificate],
@@ -342,8 +340,8 @@ hash-value = bstr
 certificate = bstr
 
 signature = {
-  ; This is the index of the certificate within the certificates array to use
-  ; to validate the signature.
+  ; This is the index of the certificate within the
+  ; certificates array to use to validate the signature.
   keyIndex: uint,
   signature: bstr,
 }
@@ -371,7 +369,8 @@ For each element *signature* of `signatures`:
 1. Let *certificate* be `certificates`\[*signature*\["keyIndex"]].
 
 1. The parser MUST define a partial function from public key types to signing
-   algorithms, with the following map as a subset:
+   algorithms, and this function must at the minimum include the following
+   mappings:
 
    RSA, 2048 bits:
    : rsa_pss_sha256 as defined in Section 4.2.3 of {{!TLS1.3}}
@@ -397,7 +396,7 @@ For each element *signature* of `signatures`:
 
 Let *origin* be `manifest`\["metadata"]\["origin"].
 
-Try to find a certificate in *signing-certificates* that has an identity
+Iterate through *signing-certificates* until one is found that has an identity
 ({{!RFC2818}}, Section 3.1) matching *origin*'s hostname, and that is trusted
 for serverAuth ({{!RFC5280}}, Section 4.2.1.12) using paths built from elements
 of `certificates` or any other certificates the parser is aware of. If no such
@@ -420,13 +419,6 @@ a [resource](#resource) within the `indexed-content` section. The sub-package's
 resources are not otherwise distinguished from the rest of the resources in the
 package. Sub-packages can form an arbitrarily-deep tree.
 
-There are three possible forms of dependencies on sub-packages, of which we
-allow two. Because a sub-package's manifest is protected by its own signature,
-if the main package trusts the sub-package's server, it could avoid specifying a
-version of the sub-package at all. However, this opens the main package up to
-downgrade attacks, where the sub-package is replaced by an older, vulnerable
-version, so we don't allow this option.
-
 ~~~~~ cddl
 subpackage = [
   resource: resource-key,
@@ -437,11 +429,19 @@ subpackage = [
 ]
 ~~~~~
 
+There are three possible forms of dependencies on sub-packages, of which we
+allow two. Because a sub-package's manifest is protected by its own signature,
+if the main package trusts the sub-package's server, it could avoid specifying a
+version of the sub-package at all. However, this opens the main package up to
+downgrade attacks, where the sub-package is replaced by an older, vulnerable
+version, so we don't allow this option.
+
 If the main package wants to load either the sub-package it was built with or
 any upgrade, it can specify the date of the original sub-package:
 
 ~~~~~ cbor-diag
-[32("https://example.com/loginsdk.package"), {"notbefore": 1(1486429554)}]
+[32("https://example.com/loginsdk.package"),
+ {"notbefore": 1(1486429554)}]
 ~~~~~
 
 Constraining packages with their date makes it possible to link together
@@ -449,18 +449,41 @@ sub-packages with common dependencies, even if the sub-packages were built at
 different times.
 
 If the main package wants to be certain it's loading the exact version
-of a sub-package that it was built with, it can constrain sub-package
+of a sub-package that it was built with, it can constrain the sub-package
 with a hash of its manifest:
 
 ~~~~~ cbor-diag
 [32("https://example.com/loginsdk.package"),
- {"hash": {"sha256": b64'9qg0NGDuhsjeGwrcbaxMKZAvfzAHJ2d8L7NkDzXhgHk='}}]
+ {"hash": {"sha256":
+     b64'9qg0NGDuhsjeGwrcbaxMKZAvfzAHJ2d8L7NkDzXhgHk='}}]
 ~~~~~
 
 Note that because the sub-package may include sub-sub-packages by date, the top
 package may need to explicitly list those sub-sub-packages' hashes in order to
-be completely constrained.
+be completely constrained. For example, if `loginsdk.package` has subpackages
+of the form:
 
+~~~~~ cbor-diag
+[
+  [32("https://other.example.com/helper.package"),
+   {"notbefore": 1(1486429554)}]
+]
+~~~~~
+
+the top-level package needs to specify:
+
+~~~~~ cbor-diag
+[
+  [32("https://example.com/loginsdk.package"),
+   {"hash": {"sha256":
+        b64'9qg0NGDuhsjeGwrcbaxMKZAvfzAHJ2d8L7NkDzXhgHk='}}],
+  [32("https://other.example.com/helper.package"),
+   {"hash": {"sha256":
+        b64'SG2GjbrpfVCh21HPLMIXD17fHNCst1Gz/MbQOqihG68='}}]
+]
+~~~~~
+
+in order to completely constrain all the versions of its dependencies.
 
 ## Parsing a resource {#resource}
 
