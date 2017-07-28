@@ -1,5 +1,9 @@
 # Web Packaging Format Explainer
-This document intends to list use cases motivating the improvements of the current [Web Packaging Draft](https://w3ctag.github.io/packaging-on-the-web/). It serves similar role as typical "Introduction" or "Using" and other non-normative sections of specs.
+This document describes use cases for a new package format for web sites and
+applications and outlines such a format. It replaces the
+~~[W3C TAG's Web Packaging Draft](https://w3ctag.github.io/packaging-on-the-web/)~~.
+It serves similar role as typical "Introduction" or "Using" and other
+non-normative sections of specs.
 
 ## Background
 Some new use cases for Web technology have motivated thinking about a multi-resource packaging format. Those new opportunity include:
