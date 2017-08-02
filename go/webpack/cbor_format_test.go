@@ -42,8 +42,7 @@ func hpackByteArray(headersAndValues ...string) []byte {
 	return append(cbor.Encoded(cbor.TypeBytes, len(result)), result...)
 }
 
-func hpackDecode(t *testing.T, encoded []byte) HTTPHeaders {
-	var result HTTPHeaders
+func hpackDecode(t *testing.T, encoded []byte) (result HTTPHeaders) {
 	dec := hpack.NewDecoder(4096, func(f hpack.HeaderField) {
 		result = append(result, f)
 	})
@@ -274,14 +273,25 @@ func TestWriteCBORManifest(t *testing.T) {
 		require.NoError(err)
 	}
 	signingCert := certs[keyIndex]
-	signingCert.Verify(x509.VerifyOptions{
+	_, err = signingCert.Verify(x509.VerifyOptions{
 		DNSName:       "example.com",
 		Roots:         poolOf(root1),
 		Intermediates: poolOf(certs...),
 		CurrentTime:   time.Date(2017, time.May, 17, 0, 0, 0, 0, time.UTC),
 		KeyUsages:     []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 	})
+	assert.NoError(err)
 	assert.NoError(Verify(signingCert.PublicKey, manifestBytes, signatureValue))
+
+	// Double-check that Verify checks the DNSName.
+	_, err = signingCert.Verify(x509.VerifyOptions{
+		DNSName:       "example2.com",
+		Roots:         poolOf(root1),
+		Intermediates: poolOf(certs...),
+		CurrentTime:   time.Date(2017, time.May, 17, 0, 0, 0, 0, time.UTC),
+		KeyUsages:     []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	})
+	assert.Error(err)
 
 	// indexed-content section:
 	assert.Equal(sectionsStart+indexedContentOffset, d.pos(),
@@ -319,4 +329,47 @@ func TestWriteCBORManifest(t *testing.T) {
 	// magic2.
 	assert.EqualValues("🌐📦", d.read(d.decodeType(cbor.TypeBytes)))
 
+}
+
+func TestWriteCBORManifestWithWrongOrigin(t *testing.T) {
+	require := require.New(t)
+
+	intermediateCert := mustLoadCertificate("testdata/pki/intermediate1.cert")
+
+	signWithServerCert, err := LoadSignWith("testdata/pki/example.com.cert", "testdata/pki/example.com.key")
+	require.NoError(err)
+	require.NoError(signWithServerCert.GivePassword(bytes.TrimSpace(mustReadFile("testdata/pki/example.com.password"))))
+
+	pack := Package{
+		manifest: Manifest{
+			metadata: Metadata{
+				date: time.Date(2017, 5, 20, 10, 0, 0, 0, time.UTC),
+				// Note that we're trying to sign example2.com,
+				// but only have a certificate for example.com.
+				origin: staticUrl("https://example2.com"),
+			},
+			signatures:   []SignWith{signWithServerCert},
+			certificates: []*x509.Certificate{intermediateCert},
+			hashTypes:    []crypto.Hash{crypto.SHA256, crypto.SHA512},
+		},
+		parts: []*PackPart{
+			&PackPart{
+				requestHeaders: HTTPHeaders{
+					httpHeader(":method", "GET"),
+					httpHeader(":scheme", "https"),
+					httpHeader(":authority", "example2.com"),
+					httpHeader(":path", "/index.html?query"),
+				},
+				responseHeaders: HTTPHeaders{
+					httpHeader(":status", "200"),
+					httpHeader("Content-Type", "text/html"),
+					httpHeader("Expires", "Mon, 1 Jan 2018 01:00:00 GMT"),
+				},
+				content: []byte("I am example2.com's index.html\n"),
+			},
+		},
+	}
+
+	var cborPack bytes.Buffer
+	require.Error(WriteCBOR(&pack, &cborPack))
 }

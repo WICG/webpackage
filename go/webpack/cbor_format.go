@@ -251,14 +251,14 @@ func writeCBORSignedManifest(p *Package, partInfo map[*PackPart]PartInfo, to io.
 	for _, key := range metadataKeys {
 		metadata.AppendUTF8S(key)
 		switch key {
-		case "origin":
-			uri := metadata.AppendTag(cbor.TagURI)
-			uri.AppendUTF8S(p.manifest.metadata.origin.String())
-			uri.Finish()
 		case "date":
 			time := metadata.AppendTag(cbor.TagTime)
 			time.AppendInt64(p.manifest.metadata.date.Unix())
 			time.Finish()
+		case "origin":
+			uri := metadata.AppendTag(cbor.TagURI)
+			uri.AppendUTF8S(p.manifest.metadata.origin.String())
+			uri.Finish()
 		default:
 			metadata.AppendGeneric(p.manifest.metadata.otherFields[key])
 		}
@@ -295,7 +295,14 @@ func writeCBORSignedManifest(p *Package, partInfo map[*PackPart]PartInfo, to io.
 
 	signedManifest.AppendUTF8S("signatures")
 	signatureArray := signedManifest.AppendArray(uint64(len(p.manifest.signatures)))
+	haveSignatureForOrigin := false
+	signatureForOriginErrs := []error{}
 	for i, signWith := range p.manifest.signatures {
+		if err := signWith.certificate.VerifyHostname(p.manifest.metadata.origin.Hostname()); err != nil {
+			signatureForOriginErrs = append(signatureForOriginErrs, err)
+		} else {
+			haveSignatureForOrigin = true
+		}
 		signature := signatureArray.AppendMap(2)
 		signature.AppendUTF8S("keyIndex")
 		signature.AppendUint64(uint64(i))
@@ -306,6 +313,11 @@ func writeCBORSignedManifest(p *Package, partInfo map[*PackPart]PartInfo, to io.
 		}
 		signature.AppendBytes(sigBytes)
 		signature.Finish()
+	}
+	if !haveSignatureForOrigin {
+		return 0, fmt.Errorf("No signing certificate was valid for origin %q: %v",
+			p.manifest.metadata.origin.Hostname(),
+			signatureForOriginErrs)
 	}
 	signatureArray.Finish()
 
