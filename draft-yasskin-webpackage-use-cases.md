@@ -343,6 +343,20 @@ important to explicitly note that they don't appear in the list of
 
 ## Store confidential data {#confidential}
 
+Packages are designed to hold public information and to be shared to
+people with whom the original author never has an interactive
+connection. In that situation, there's no way to keep the contents
+confidential: even if they were encrypted, to make the data public,
+anyone would have to be able to get the decryption key.
+
+It's possible to maintain something similar to confidentiality for
+non-public packaged data, but doing so complicates the format design
+and can give users a false sense of security.
+
+We believe we'll cause fewer privacy breaches if we omit any mechanism
+for encrypting data, than if we include something and try to teach
+people when it's unsafe to use.
+
 ## Generate packages on the fly {#streamed-generation}
 
 See discussion at [WICG/webpackage#6](https://github.com/WICG/webpackage/issues/6#issuecomment-275746125).
