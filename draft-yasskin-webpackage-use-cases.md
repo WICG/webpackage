@@ -58,15 +58,25 @@ This saves Bailey the bandwidth costs of transferring the website.
 
 Associated requirements:
 
-* {{urls}}{:format="title"}
-* {{request-headers}}{:format="title"}
-* {{response-headers}}{:format="title"}
-* {{signing}}{:format="title"}
-* {{existing-certs}}{:format="title"}
-* {{multiple-origins}}{:format="title"}
-* {{crypto-agility}}{:format="title"}
-* {{revocation}}{:format="title"}
-* {{no-downgrades}}{:format="title"}
+* {{urls}}{:format="title"}: Resources on the web are addressed by URL.
+* {{request-headers}}{:format="title"}: If Bailey's running a different browser
+  from Alex or has a different language configured, the `accept*` headers are
+  important for selecting which resource to use at each URL.
+* {{response-headers}}{:format="title"}: The meaning of a resource is heavily
+  influenced by its HTTP response headers.
+* {{signing}}{:format="title"}: To prove that the file came from `O`.
+* {{existing-certs}}{:format="title"}: So `O` doesn't have to spend lots of
+  money buying a specialized certificate.
+* {{multiple-origins}}{:format="title"}: So the site can
+  be [built from multiple components](#libraries).
+* {{crypto-agility}}{:format="title"}: Today's algorithms will eventually be
+  obsolete and will need to be replaced.
+* {{revocation}}{:format="title"}: `O`'s certificate might be compromised or
+  mis-issued, and the attacker shouldn't then get an infinite ability to mint
+  packages.
+* {{no-downgrades}}{:format="title"}: `O`'s site might have an XSS
+  vulnerability, and attackers with an old signed package shouldn't be able to
+  take advantage of the XSS forever.
 
 #### Online use
 
@@ -82,7 +92,8 @@ their plan partway through each month.
 
 Associated requirements beyond {{offline-installation}}{:format="title"}:
 
-* {{packaged-validity}}{:format="title"}
+* {{packaged-validity}}{:format="title"}: Even without a direct internet
+  connection, Bailey should be able to check that their package is still valid.
 
 ### Offline browsing {#offline-browsing}
 
@@ -97,8 +108,10 @@ W3C's [Packaged Web Publications](https://www.w3.org/TR/pwp-ucr/#pwp) use case.
 
 Associated requirements beyond {{offline-installation}}{:format="title"}:
 
-* {{random-access}}{:format="title"}
-* {{stored-compression}}{:format="title"}
+* {{random-access}}{:format="title"}: To avoid needing a long linear scan before
+  using the content.
+* {{stored-compression}}{:format="title"}: So that more content can fit on the
+  same storage device.
 
 ### Save and share a web page {#snapshot}
 
@@ -112,10 +125,13 @@ links and accessibility.
 
 Associated requirements:
 
-* {{unsigned-content}}{:format="title"}
-* {{multiple-origins}}{:format="title"}
-* {{urls}}{:format="title"}
-* {{response-headers}}{:format="title"}
+* {{unsigned-content}}{:format="title"}: A client can't sign content as another
+  origin.
+* {{multiple-origins}}{:format="title"}: General web pages include resources
+  from multiple origins.
+* {{urls}}{:format="title"}: Resources on the web are addressed by URL.
+* {{response-headers}}{:format="title"}: The meaning of a resource is heavily
+  influenced by its HTTP response headers.
 
 ## Nice-to-have {#nice-to-have-use-cases}
 
@@ -148,8 +164,10 @@ requests back to their own origin, for example to implement federated sign-in.
 
 Associated requirements:
 
-* {{multiple-origins}}{:format="title"}
-* {{deduplication}}{:format="title"}
+* {{multiple-origins}}{:format="title"}: Each component may come from its own origin.
+* {{deduplication}}{:format="title"}: If we have dependencies A->B->D and
+  A->C->D, it's important that a request for a D resource resolves to a single
+  resource that both B and C can handle.
 
 #### Shared libraries
 
@@ -182,9 +200,14 @@ large resolutions.
 
 Associated requirements:
 
-* {{streamed-loading}}{:format="title"}
-* {{signing}}{:format="title"}
-* {{subsetting}}{:format="title"}
+* {{streamed-loading}}{:format="title"}: To get optimal performance, the browser
+  should be able to start loading early resources before the CDN finishes
+  sending the whole package.
+* {{signing}}{:format="title"}: To prove the content came from the original
+  origin.
+* {{subsetting}}{:format="title"}: If a package includes both WebP and PNG
+  versions of an image, the CDN should be able to select the best one to send to
+  each client.
 * {{transfer-compression}}{:format="title"}
 
 ### Installation from a self-extracting executable {#self-extracting}
@@ -208,10 +231,18 @@ re-do that.
 
 Associated requirements:
 
-* {{streamed-loading}}{:format="title"}
-* {{transfer-compression}}{:format="title"}
-* {{urls}}{:format="title"}
-* {{response-headers}}{:format="title"}
+* {{streamed-loading}}{:format="title"}: If the whole package has to be
+  downloaded before the browser can load a piece, this will definitely be slower
+  than PUSH.
+* {{transfer-compression}}{:format="title"}: I believe PUSHed resources cannot
+  keep a single compression state across resource boundaries, so this might be
+  an advantage for packaging.
+* {{urls}}{:format="title"}: Resources on the web are addressed by URL.
+* {{request-headers}}{:format="title"}:
+  [PUSH_PROMISE](http://httpwg.org/specs/rfc7540.html#PUSH_PROMISE)
+  ({{?RFC7540}}, section 6.6) includes request headers.
+* {{response-headers}}{:format="title"}: PUSHed resources include their response
+  headers.
 
 ### Packages in version control {#version-control}
 
@@ -307,8 +338,9 @@ no longer needed and can be removed.
 
 ### Compress transfers {#transfer-compression}
 
-Transferring a package over the network takes as few bytes as
-possible.
+Transferring a package over the network takes as few bytes as possible. This is
+an easier problem than {{stored-compression}}{:format="title"} since it doesn't
+have to preserve {{random-access}}{:format="title"}.
 
 ### Compress stored packages {#stored-compression}
 
