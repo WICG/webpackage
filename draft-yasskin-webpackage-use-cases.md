@@ -46,7 +46,9 @@ These use cases are in rough descending priority order. If use cases
 have conflicting requirements, the design should enable more important
 use cases.
 
-## Offline installation {#offline-installation}
+## Essential {#essential-use-cases}
+
+### Offline installation {#offline-installation}
 
 Alex can download a file containing a website
 (a [PWA](https://developers.google.com/web/progressive-web-apps/checklist))
@@ -66,12 +68,12 @@ Associated requirements:
 * {{revocation}}{:format="title"}
 * {{no-downgrades}}{:format="title"}
 
-### Online use
+#### Online use
 
 Bailey may have an internet connection through which they can, in real time,
 fetch updates to the package they received from Alex.
 
-### Fully offline use
+#### Fully offline use
 
 Or Bailey may not have any internet connection a significant fraction of the
 time, either because they have no internet at all, because they turn off
@@ -82,7 +84,7 @@ Associated requirements beyond {{offline-installation}}{:format="title"}:
 
 * {{packaged-validity}}{:format="title"}
 
-## Offline browsing {#offline-browsing}
+### Offline browsing {#offline-browsing}
 
 Alex can download a file containing a large website (e.g. Wikipedia) from its
 origin, save it to transferrable storage (e.g. an SD card), and hand it to their
@@ -98,7 +100,7 @@ Associated requirements beyond {{offline-installation}}{:format="title"}:
 * {{random-access}}{:format="title"}
 * {{stored-compression}}{:format="title"}
 
-## Save and share a web page {#snapshot}
+### Save and share a web page {#snapshot}
 
 Casey is viewing a web page and wants to save it either for offline use or to
 show it to their friend Dakota. Since Casey isn't the web page's author, they
@@ -115,7 +117,9 @@ Associated requirements:
 * {{urls}}{:format="title"}
 * {{response-headers}}{:format="title"}
 
-## Third-party security review {#security-review}
+## Nice-to-have {#nice-to-have-use-cases}
+
+### Third-party security review {#security-review}
 
 Some users may want to grant certain permissions only to applications that have
 been reviewed for security by a trusted third party. These third parties could
@@ -132,7 +136,7 @@ Associated requirements:
 
 * {{cross-signatures}}{:format="title"}
 
-## Building packages from multiple libraries {#libraries}
+### Building packages from multiple libraries {#libraries}
 
 Large programs are built from smaller components. In the case of the web,
 components can be included either as Javascript files or as `<iframe>`d
@@ -147,7 +151,7 @@ Associated requirements:
 * {{multiple-origins}}{:format="title"}
 * {{deduplication}}{:format="title"}
 
-### Shared libraries
+#### Shared libraries
 
 In ecosystems like [Electron](https://electron.atom.io/)
 and [Node](https://nodejs.org/en/), many packages may share some common
@@ -159,7 +163,7 @@ Associated requirements:
 
 * {{external-dependencies}}{:format="title"}
 
-## CDNs {#cdns}
+### CDNs {#cdns}
 
 CDNs want to re-publish other origins' content so readers can access
 it more quickly or more privately. Currently, to attribute that
@@ -183,7 +187,7 @@ Associated requirements:
 * {{subsetting}}{:format="title"}
 * {{transfer-compression}}{:format="title"}
 
-## Installation from a self-extracting executable {#self-extracting}
+### Installation from a self-extracting executable {#self-extracting}
 
 The Node and Electron communities would like to install packages using
 self-extracting executables. The traditional way to design a
@@ -195,7 +199,7 @@ Associated requirements:
 
 * {{trailing-length}}{:format="title"}
 
-## Ergonomic replacement for HTTP/2 PUSH {#push-replacement}
+### Ergonomic replacement for HTTP/2 PUSH {#push-replacement}
 
 HTTP/2 PUSH ({{?RFC7540}}, section 8.2) is hard for developers to configure, and
 an explicit package format might be easier. That said, the HTTPWG is doing a lot
@@ -209,7 +213,7 @@ Associated requirements:
 * {{urls}}{:format="title"}
 * {{response-headers}}{:format="title"}
 
-## Packages in version control {#version-control}
+### Packages in version control {#version-control}
 
 Once packages are generated, they should be stored in version control. Many
 popular VC systems auto-detect text files in order to "fix" their line endings.
@@ -222,115 +226,117 @@ Associated requirements:
 
 # Requirements {#requirements}
 
-## Indexed by URL {#urls}
+## Essential {#essential-reqs}
+
+### Indexed by URL {#urls}
 
 Resources should be keyed by URLs, matching how browsers look
 resources up over HTTP.
 
-## Request headers {#request-headers}
+### Request headers {#request-headers}
 
 Resource keys should include request headers like `accept` and
 `accept-language`, which allows content-negotiated resources to be
 represented.
 
-## Response headers {#response-headers}
+### Response headers {#response-headers}
 
 Resources should include their HTTP response headers, like
 `content-type`, `content-encoding`, `expires`,
 `content-security-policy`, etc.
 
-## Signing {#signing}
+### Signing {#signing}
 
 Resources within a package are provably from an entity with the
 ability to serve HTTPS requests for those resources' origin.
 
-## Random access {#random-access}
+### Random access {#random-access}
 
 When a package is stored on disk, the browser can access
 arbitrary resources without a linear scan.
 
-## Streamed loading {#streamed-loading}
-
-The browser can load a package as it downloads.
-
-## Resources from multiple origins in a package {#multiple-origins}
+### Resources from multiple origins in a package {#multiple-origins}
 
 A package from origin `A` can contain resources from origin `B`
 authenticated at the same level as those from `A`.
 
-## Cryptographic agility {#crypto-agility}
+### Cryptographic agility {#crypto-agility}
 
 Obsolete cryptographic algorithms can be replaced.
 
-## Cross-signatures {#cross-signatures}
-
-Third-parties can vouch for packages by signing them.
-
-## Unsigned content {#unsigned-content}
+### Unsigned content {#unsigned-content}
 
 Alex can create their own package without a CA-signed
 certificate, and Bailey can view the content of the package.
 
-## Certificate revocation {#revocation}
+### Certificate revocation {#revocation}
 
 When a package is signed by a revoked certificate, online browsers
 can detect this reasonably quickly.
 
-## Downgrade prevention {#no-downgrades}
+### Downgrade prevention {#no-downgrades}
 
 Attackers can't cause a browser to trust an older, vulnerable
 version of a package after the browser has seen a newer version.
 
-# Nice to have
+## Nice to have {#nice-to-have-reqs}
 
-## Binary {#binary}
+### Streamed loading {#streamed-loading}
+
+The browser can load a package as it downloads.
+
+### Cross-signatures {#cross-signatures}
+
+Third-parties can vouch for packages by signing them.
+
+### Binary {#binary}
 
 The format is identified as binary by tools that might try to "fix"
 line endings.
 
-## Deduplication of diamond dependencies {#deduplication}
+### Deduplication of diamond dependencies {#deduplication}
 
 Nested packages that have multiple dependency routes to the same
 sub-package, can be transmitted and stored with only one copy of that
 sub-package.
 
-## Old crypto can be removed {#crypto-removal}
+### Old crypto can be removed {#crypto-removal}
 
 The ecosystem can identify when an obsolete cryptographic algorithm is
 no longer needed and can be removed.
 
-## Compress transfers {#transfer-compression}
+### Compress transfers {#transfer-compression}
 
 Transferring a package over the network takes as few bytes as
 possible.
 
-## Compress stored packages {#stored-compression}
+### Compress stored packages {#stored-compression}
 
 Storing a package on disk takes as few bytes as possible.
 
-## Subsetting and reordering {#subsetting}
+### Subsetting and reordering {#subsetting}
 
 Resources can be removed from and reordered within a package, without
 breaking [signatures](#signing).
 
-## Packaged validity information {#packaged-validity}
+### Packaged validity information {#packaged-validity}
 
 {{revocation}}{:format="title"} and {{no-downgrades}}{:format="title"}
 information can itself be packaged or included in other packages.
 
-## Signing uses existing TLS certificates {#existing-certs}
+### Signing uses existing TLS certificates {#existing-certs}
 
 A "normal" TLS certificate can be used for signing packages. Avoiding
 extra requirements like "code signing" certificates makes packaging
 more accessible to all sites.
 
-## External dependencies {#external-dependencies}
+### External dependencies {#external-dependencies}
 
 Sub-packages can be "external" to the main package, meaning the browser
 will need to either fetch them separately or already have them.
 ([#35, App Installer Story](https://github.com/WICG/webpackage/issues/35))
 
-## Trailing length {#trailing-length}
+### Trailing length {#trailing-length}
 
 The package's length in bytes appears a fixed offset from the end of
 the package.
