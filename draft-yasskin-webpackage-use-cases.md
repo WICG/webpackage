@@ -234,9 +234,20 @@ Associated requirements:
 ### Ergonomic replacement for HTTP/2 PUSH {#push-replacement}
 
 HTTP/2 PUSH ({{?RFC7540}}, section 8.2) is hard for developers to configure, and
-an explicit package format might be easier. That said, the HTTPWG is doing a lot
-of work to let servers optimize the PUSHed data, and packaging would have to
-re-do that.
+an explicit package format might be easier.
+
+Trying to bundle resources in order to speed up page loads has a long history,
+including
+[Resource Packages](https://www.mnot.net/blog/2010/02/18/resource_packages) from
+2010 and
+the
+[W3C TAG's packaging proposal](https://w3ctag.github.io/packaging-on-the-web/)
+from 2015.
+
+However, the HTTPWG is doing a lot of work to let servers optimize the PUSHed
+data, and packaging would either have to re-do that or accept lower performance.
+Accepting lower performance might be worthwhile if it allows more developers to
+adopt the smaller optimization.
 
 Associated requirements:
 
@@ -286,6 +297,9 @@ Resources should include their HTTP response headers, like
 `content-security-policy`, etc.
 
 ### Signing as an origin {#signing}
+
+Resources within a package are provably from an entity with the ability to serve
+HTTPS requests for those resources' origin {{?RFC6454}}.
 
 Resources within a package are provably from an entity with the ability to serve
 HTTPS requests for those resources' origin {{?RFC6454}}.
