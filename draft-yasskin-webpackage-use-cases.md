@@ -285,10 +285,16 @@ Resources should include their HTTP response headers, like
 `content-type`, `content-encoding`, `expires`,
 `content-security-policy`, etc.
 
-### Signing {#signing}
+### Signing as an origin {#signing}
 
-Resources within a package are provably from an entity with the
-ability to serve HTTPS requests for those resources' origin.
+Resources within a package are provably from an entity with the ability to serve
+HTTPS requests for those resources' origin {{?RFC6454}}.
+
+Note that previous attempts to sign HTTP messages
+({{?I-D.thomson-http-content-signature}}, {{?I-D.burke-content-signature}}, and
+{{?I-D.cavage-http-signatures}}) omit a description of how a client should use a
+signature to prove that a resource comes from a particular origin, and they're
+probably not usable for that purpose.
 
 ### Random access {#random-access}
 
