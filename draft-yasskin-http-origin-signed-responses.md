@@ -106,9 +106,17 @@ The W3C WebAppSec group is investigating
 {{SRI}}. They need a way to transmit the signature with the
 response, which this proposal could provide.
 
-However, with the `integrity="ed25519-[public-key]"` attribute, they don't need
-the key that signs the signature (which is conveyed in that attribute) to be
-also trusted to sign arbitrary content for an origin.
+However, their needs also differ in some significant ways:
+
+1. The `integrity="ed25519-[public-key]"` attribute and CSP-based ways of
+   expressing a public key don't need the signing key to be also trusted to sign
+   arbitrary content for an origin.
+2. Some uses of SRI want to constrain subresources to be vouched for by a
+   third-party, rather than just being signed by the subresource's author.
+
+While we can design this system to cover both origin-trusted and simple-key
+signatures, we should check that this is better than having two separate systems
+for the two kinds of signatures.
 
 ## Offline websites {#uc-offline-websites}
 
