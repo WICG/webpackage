@@ -48,6 +48,19 @@ network. The W3C has addressed running applications offline with
 Service Workers ({{ServiceWorkers}}), but not the problem of
 distribution.
 
+Previous attempts at packaging web resources
+(e.g.
+[Resource Packages](https://www.mnot.net/blog/2010/02/18/resource_packages) and
+the
+[W3C TAG's packaging proposal](https://w3ctag.github.io/packaging-on-the-web/))
+were motivated by speeding up the download of resources from a single server,
+which is probably better achieved through other mechanisms like HTTP/2 PUSH,
+possibly augmented with
+a
+[simple manifest of URLs a page plans to use](https://lists.w3.org/Archives/Public/public-web-perf/2015Jan/0038.html).
+This attempt is instead motivated by avoiding a connection to the origin server
+at all. It may still be useful for the earlier use cases, so they're still
+listed, but they're not primary.
 
 # Use cases
 
