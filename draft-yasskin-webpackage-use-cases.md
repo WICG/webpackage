@@ -20,7 +20,15 @@ author:
     email: jyasskin@chromium.org
 
 informative:
+  JAR:
+    target: "https://docs.oracle.com/javase/7/docs/technotes/guides/jar/jar.html"
+    title: "JAR File Specification"
+  MHTML: RFC2557
   ServiceWorkers: W3C.WD-service-workers-1-20161011
+  ZIP:
+    date: 2014-10-01
+    target: "https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT"
+    title: "APPNOTE.TXT - .ZIP File Format Specification"
 
 --- abstract
 
@@ -303,11 +311,22 @@ Resource keys should include request headers like `accept` and
 `accept-language`, which allows content-negotiated resources to be
 represented.
 
+This conflicts with {{MHTML}}, which uses the `content-location` response header
+to encode the requested URL, but has no way to encode other request headers.
+MHTML also has no instructions for handling multiple resources with the same
+`content-location`.
+
+This also conflicts with {{ZIP}}: we'd need to encode the request headers into
+ZIP's filename fields.
+
 ### Response headers {#response-headers}
 
 Resources should include their HTTP response headers, like
 `content-type`, `content-encoding`, `expires`,
 `content-security-policy`, etc.
+
+This conflicts with {{ZIP}}: we'd need something like {{JAR}}'s `META-INF`
+directory to hold extra metadata beyond the resource's body.
 
 ### Signing as an origin {#signing}
 
@@ -323,10 +342,20 @@ Note that previous attempts to sign HTTP messages
 signature to prove that a resource comes from a particular origin, and they're
 probably not usable for that purpose.
 
+This would require an extension to the {{ZIP}} format, similar to {{JAR}}'s
+signatures.
+
+In any cryptographic system, the specification is responsible to make correct
+implementations easier to deploy than incorrect implementations
+({{easy-implementation}}).
+
 ### Random access {#random-access}
 
 When a package is stored on disk, the browser can access
 arbitrary resources without a linear scan.
+
+{{MHTML}} would need to be extended with an index of the byte offsets of each
+contained resource.
 
 ### Resources from multiple origins in a package {#multiple-origins}
 
@@ -336,6 +365,9 @@ authenticated at the same level as those from `A`.
 ### Cryptographic agility {#crypto-agility}
 
 Obsolete cryptographic algorithms can be replaced.
+
+Planning to upgrade the cryptography also means we should include some way to
+know when it's safe to remove old cryptography ({{crypto-removal}}).
 
 ### Unsigned content {#unsigned-content}
 
@@ -352,11 +384,31 @@ can detect this reasonably quickly.
 Attackers can't cause a browser to trust an older, vulnerable
 version of a package after the browser has seen a newer version.
 
+### Implementations are hard to get wrong {#easy-implementation}
+
+The design should incorporate aspects that tend to cause incorrect
+implementations to get noticed quickly, and avoid aspects that are easy to
+implement incorrectly. For example:
+
+* Explicitly specifying a cryptographic algorithm identifier in {{?RFC7515}}
+  made it easy for implementations to trust that algorithm,
+  which
+  [caused vulnerabilities](https://paragonie.com/blog/2017/03/jwt-json-web-tokens-is-bad-standard-that-everyone-should-avoid).
+* {{ZIP}}'s duplicate specification of filenames makes it easy for
+  implementations to
+  [check the signature of one copy but use the other](https://nakedsecurity.sophos.com/2013/07/10/anatomy-of-a-security-hole-googles-android-master-key-debacle-explained/).
+* Following
+  [Langley's Law](https://blog.gerv.net/2016/09/introducing-deliberate-protocol-errors-langleys-law/) when
+  possible makes it hard to deploy incorrect implementations.
+
+
 ## Nice to have {#nice-to-have-reqs}
 
 ### Streamed loading {#streamed-loading}
 
 The browser can load a package as it downloads.
+
+This conflicts with ZIP, since ZIP's index is at the end.
 
 ### Cross-signatures {#cross-signatures}
 
@@ -366,6 +418,8 @@ Third-parties can vouch for packages by signing them.
 
 The format is identified as binary by tools that might try to "fix"
 line endings.
+
+This conflicts with using an {{MHTML}}-based format.
 
 ### Deduplication of diamond dependencies {#deduplication}
 
@@ -414,6 +468,8 @@ will need to either fetch them separately or already have them.
 
 The package's length in bytes appears a fixed offset from the end of
 the package.
+
+This conflicts with {{MHTML}}.
 
 # Non-goals
 
