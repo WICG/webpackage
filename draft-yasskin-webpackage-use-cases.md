@@ -108,6 +108,8 @@ Associated requirements:
 * {{no-downgrades}}{:format="title"}: `O`'s site might have an XSS
   vulnerability, and attackers with an old signed package shouldn't be able to
   take advantage of the XSS forever.
+* {{metadata}}{:format="title"}: The browser needs to know which resource within
+  a package file to treat as its Service Worker and/or initial HTML page.
 
 #### Online use
 
@@ -133,9 +135,6 @@ origin, save it to transferrable storage (e.g. an SD card), and hand it to their
 peer Bailey. Then Bailey can browse the website with a proof that it came from
 `O`. Bailey may not have the storage space to copy the website before browsing
 it.
-
-This use case may also cover the
-W3C's [Packaged Web Publications](https://www.w3.org/TR/pwp-ucr/#pwp) use case.
 
 Associated requirements beyond {{offline-installation}}{:format="title"}:
 
@@ -165,6 +164,50 @@ Associated requirements:
   influenced by its HTTP response headers.
 
 ## Nice-to-have {#nice-to-have-use-cases}
+
+### Packaged Web Publications {#uc-web-pub}
+
+The
+[W3C's Publishing Working Group](https://www.w3.org/publishing/groups/publ-wg/),
+merged from the International Digital Publishing Forum (IDPF) and in charge of
+EPUB maintenance, wants to be able to create publications on the web and then
+let them be copied to different servers or to other users via arbitrary
+protocols. See
+their [Packaged Web Publications use cases](https://www.w3.org/TR/pwp-ucr/#pwp)
+for more details.
+
+Associated requirements:
+
+* {{urls}}{:format="title"}: Resources on the web are addressed by URL.
+* {{signing}}{:format="title"}: So that readers can be sure their copy is
+  authentic and so that copying the package preserves the URLs of the content
+  inside it.
+* {{no-downgrades}}{:format="title"}: An early version of a publication might
+  contain incorrect content, and a publisher should be able to update that
+  without worrying that an attacker can still show the old content to users.
+* {{metadata}}{:format="title"}: A publication can have copyright and licensing
+  concerns; a title, author, and cover image; an ISBN or DOI name; etc.; which
+  should be included when that publication is packaged.
+
+Other requirements are similar to those from
+{{offline-installation}}{:format="title"}:
+
+* {{random-access}}{:format="title"}: To avoid needing a long linear scan before
+  using the content.
+* {{stored-compression}}{:format="title"}: So that more content can fit on the
+  same storage device.
+* {{request-headers}}{:format="title"}: If different users' browsers have
+  different capabilities or preferences, the `accept*` headers are important for
+  selecting which resource to use at each URL.
+* {{response-headers}}{:format="title"}: The meaning of a resource is heavily
+  influenced by its HTTP response headers.
+* {{existing-certs}}{:format="title"}: So a publisher doesn't have to spend lots
+  of money buying a specialized certificate.
+* {{crypto-agility}}{:format="title"}: Today's algorithms will eventually be
+  obsolete and will need to be replaced.
+* {{revocation}}{:format="title"}: The publisher's certificate might be
+  compromised or mis-issued, and an attacker shouldn't then get an infinite
+  ability to mint packages.
 
 ### Third-party security review {#security-review}
 
@@ -384,6 +427,12 @@ can detect this reasonably quickly.
 
 Attackers can't cause a browser to trust an older, vulnerable
 version of a package after the browser has seen a newer version.
+
+### Metadata {#metadata}
+
+Metadata like that found in the W3C's Application Manifest
+{{?W3C.WD-appmanifest-20170828}} can help a client know how to load and display
+a package.
 
 ### Implementations are hard to get wrong {#easy-implementation}
 
