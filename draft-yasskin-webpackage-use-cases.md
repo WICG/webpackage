@@ -21,6 +21,7 @@ author:
 
 informative:
   JAR:
+    date: 2014
     target: "https://docs.oracle.com/javase/7/docs/technotes/guides/jar/jar.html"
     title: "JAR File Specification"
   MHTML: RFC2557
