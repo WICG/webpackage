@@ -97,14 +97,24 @@ resources.
      physicalsrc="https://cdn.com/O.com/img.png">
 ~~~
 
+To make it easier to configure the right CDN for a given request, computation of
+the `physicalsrc` could be encapsulated in a custom element:
+
+~~~html
+<cdn-img src="https://O.com/img.png"></cdn-img>
+~~~
+
+where the `<cdn-img>` implementation generates an appropriate `<img>` based on,
+for example, a `<meta name="cdn-base">` tag elsewhere in the page.
+
 This could be used for some of the same purposes as SRI ({{uc-sri}}).
 
 ## Subresource Integrity {#uc-sri}
 
 The W3C WebAppSec group is investigating
-[using signatures](https://github.com/w3c/webappsec-subresource-integrity/blob/master/signature-based-restrictions-explainer.markdown) in
-{{SRI}}. They need a way to transmit the signature with the
-response, which this proposal could provide.
+[using signatures](https://github.com/mikewest/signature-based-sri) in {{SRI}}.
+They need a way to transmit the signature with the response, which this proposal
+could provide.
 
 However, their needs also differ in some significant ways:
 
@@ -117,6 +127,12 @@ However, their needs also differ in some significant ways:
 While we can design this system to cover both origin-trusted and simple-key
 signatures, we should check that this is better than having two separate systems
 for the two kinds of signatures.
+
+Note that while the current signature proposal anticipates signing only the
+content of a
+resource,
+[it's likely that they'll need to sign its name as well, to prevent security vulnerabilities](https://github.com/mikewest/signature-based-sri/issues/5),
+bringing it closer to this proposal.
 
 ## Offline websites {#uc-offline-websites}
 
