@@ -559,6 +559,16 @@ Special support for blocking access to downloaded content based on
 licensing. Note that DRM systems can be shipped inside the package
 even if the packaging format doesn't specifically support them.
 
+# Security Considerations
+
+The security considerations will depend on the solution designed to satisfy the
+above requirements. See {{?I-D.yasskin-dispatch-web-packaging}} for one possible
+set of security considerations.
+
+# IANA Considerations
+
+This document has no actions for IANA.
+
 --- back
 
 # Acknowledgements
