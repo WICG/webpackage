@@ -312,13 +312,13 @@ Resource keys should include request headers like `accept` and
 `accept-language`, which allows content-negotiated resources to be
 represented.
 
-This conflicts with {{MHTML}}, which uses the `content-location` response header
-to encode the requested URL, but has no way to encode other request headers.
-MHTML also has no instructions for handling multiple resources with the same
-`content-location`.
+This would require an extension to {{MHTML}}, which uses the `content-location`
+response header to encode the requested URL, but has no way to encode other
+request headers. MHTML also has no instructions for handling multiple resources
+with the same `content-location`.
 
-This also conflicts with {{ZIP}}: we'd need to encode the request headers into
-ZIP's filename fields.
+This also requires an extension to {{ZIP}}: we'd need to encode the request
+headers into ZIP's filename fields.
 
 ### Response headers {#response-headers}
 
@@ -326,8 +326,8 @@ Resources should include their HTTP response headers, like
 `content-type`, `content-encoding`, `expires`,
 `content-security-policy`, etc.
 
-This conflicts with {{ZIP}}: we'd need something like {{JAR}}'s `META-INF`
-directory to hold extra metadata beyond the resource's body.
+This requires an extension to {{ZIP}}: we'd need something like {{JAR}}'s
+`META-INF` directory to hold extra metadata beyond the resource's body.
 
 ### Signing as an origin {#signing}
 
