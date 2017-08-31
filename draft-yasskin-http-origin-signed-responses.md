@@ -2,7 +2,7 @@
 coding: utf-8
 
 title: Origin-signed HTTP Responses
-docname: draft-yasskin-http-origin-signed-responses
+docname: draft-yasskin-http-origin-signed-responses-latest
 category: std
 
 ipr: trust200902
