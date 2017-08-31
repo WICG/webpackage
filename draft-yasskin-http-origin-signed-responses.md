@@ -68,7 +68,7 @@ Client
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
 NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED",
 "MAY", and "OPTIONAL" in this document are to be interpreted as
-described in BCP 14 [RFC2119] [RFC8174] when, and only when, they
+described in BCP 14 {{!RFC2119}} {{!RFC8174}} when, and only when, they
 appear in all capitals, as shown here.
 
 # Use cases
@@ -134,11 +134,12 @@ While we can design this system to cover both origin-trusted and simple-key
 signatures, we should check that this is better than having two separate systems
 for the two kinds of signatures.
 
-Note that while the current signature proposal anticipates signing only the
-content of a
+Note that while the current proposal for SRI describes signing only the content
+of a
 resource,
-[it's likely that they'll need to sign its name as well, to prevent security vulnerabilities](https://github.com/mikewest/signature-based-sri/issues/5),
-bringing it closer to this proposal.
+[they may need to sign its name as well, to prevent security vulnerabilities](https://github.com/mikewest/signature-based-sri/issues/5).
+The details of what they need to sign will affect whether and how they can use
+this proposal.
 
 ## Offline websites {#uc-offline-websites}
 
