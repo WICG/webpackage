@@ -65,6 +65,12 @@ Client
 : An entity that uses a signed HTTP response and needs to be able to prove that
   the author vouched for it as coming from its claimed origin.
 
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED",
+"MAY", and "OPTIONAL" in this document are to be interpreted as
+described in BCP 14 [RFC2119] [RFC8174] when, and only when, they
+appear in all capitals, as shown here.
+
 # Use cases
 
 ## PUSHed subresources {#uc-pushed-subresources}
@@ -325,6 +331,9 @@ this leaks extra information.
 For non-executable resource types, a signed response can improve the privacy
 situation by hiding the client's interest from the original author.
 
+# IANA considerations
+
+This document has no actions for IANA.
 
 --- back
 
