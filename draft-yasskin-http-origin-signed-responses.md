@@ -156,26 +156,51 @@ context as a TLS connection, we need someone to vouch for the signing key with
 as much verification as the signing keys used in TLS. The obvious way to do this
 is to re-use the web PKI and CA ecosystem.
 
-We'll improve adoption if we can re-use existing TLS server certificates, but if
-the risks of doing that are too high, we could define a new Extended Key Usage
+### Certificate constraints
+
+If we re-use existing TLS server certificates, we incur the risks that:
+
+1. TLS server certificates must be accessible from online servers, so they're
+   easier to steal than an offline key. A package's signing key doesn't need to
+   be online.
+2. A server running TLS or another key-exchange protocol might accidentally sign
+   something that looks like a package, or vice versa.
+
+If these risks are too high, we could define a new Extended Key Usage
 ({{?RFC5280}}, section 4.2.1.12) that requires CAs to issue new keys for this
-purpose. The rest of this document will assume we can re-use existing TLS server
+purpose or a new certificate extension to do the same. A new EKU would probably
+require CAs to also issue new intermediate certificates because of how browsers
+trust EKUs. Both an EKU and a new extension take a long time to deploy and allow
+CAs to charge package-signers more than normal server operators, which will
+reduce adoption.
+
+The rest of this document will assume we can re-use existing TLS server
 certificates.
 
-It's essential that an attacker who can convince the server to sign some
-resource, cannot cause those signed bytes to be interpreted as something else.
-As a result, signatures here need to use the same format as TLS's signatures,
-specified in {{?I-D.ietf-tls-tls13}} section 4.4.3, with a context string that's
-specific to this use.
+### Signature constraints
 
-### The certificate and its chain {#certificate-chain}
+In order to prevent an attacker who can convince the server to sign some
+resource from causing those signed bytes to be interpreted as something else,
+signatures here need to:
 
-The client needs to be able to find the certificate vouching for the signing key
-and a chain from that certificate to a trusted root. One approach would be to
-include the certificate and its chain in the signature metadata itself, but this
-wastes bytes when the same certificate is used for multiple HTTP responses. If
-we decide to put the signature in an HTTP header, certificates are also
-unusually large for that context.
+1. Avoid key types that have been used for non-TLS key exchange protocols. That
+   may be just the `rsaEncryption` OID from {{?RFC2437}}.
+2. Use the same format as TLS's signatures, specified in {{?I-D.ietf-tls-tls13}}
+   section 4.4.3, with a context string that's specific to this use.
+
+The specification also needs to define which signing algorithm to use. I expect
+to define that as a function from the key type, instead of allowing
+attacker-controlled data to specify it.
+
+### Retrieving the certificate {#certificate-chain}
+
+The client needs to be able to find the certificate vouching for the signing
+key, a chain from that certificate to a trusted root, and possibly other trust
+information like SCTs ({{?RFC6962}}). One approach would be to include the
+certificate and its chain in the signature metadata itself, but this wastes
+bytes when the same certificate is used for multiple HTTP responses. If we
+decide to put the signature in an HTTP header, certificates are also unusually
+large for that context.
 
 Another option is to pass a URL that the client can fetch to retrieve the
 certificate and chain. To avoid extra round trips in fetching that URL, it could
@@ -286,6 +311,9 @@ frames, or could
 1. Allow longer contiguous bodies than
    [HTTP/2's 16MB frame limit](https://tools.ietf.org/html/rfc7540#section-4.2), and
 2. Use better compression than {{?RFC7541}} for the non-confidential headers.
+   Note that header compression can probably share a compression state across a
+   single signed request/response pair, but probably cannot use any compression
+   state from other responses.
 
 To help the PUSHed subresources use case ({{uc-pushed-subresources}}), we might
 also want to extend the `PUSH_PROMISE` frame type to include a signature, and
@@ -340,3 +368,4 @@ This document has no actions for IANA.
 
 # Acknowledgements
 
+Thanks to Ilari Liusvaara for comments that improved this draft.
