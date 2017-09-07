@@ -163,8 +163,8 @@ If we re-use existing TLS server certificates, we incur the risks that:
 1. TLS server certificates must be accessible from online servers, so they're
    easier to steal than an offline key. A package's signing key doesn't need to
    be online.
-2. A server running TLS or another key-exchange protocol might accidentally sign
-   something that looks like a package, or vice versa.
+2. A server using an origin-trusted key for one purpose (e.g. TLS) might
+   accidentally sign something that looks like a package, or vice versa.
 
 If these risks are too high, we could define a new Extended Key Usage
 ({{?RFC5280}}, section 4.2.1.12) that requires CAs to issue new keys for this
@@ -183,8 +183,9 @@ In order to prevent an attacker who can convince the server to sign some
 resource from causing those signed bytes to be interpreted as something else,
 signatures here need to:
 
-1. Avoid key types that have been used for non-TLS key exchange protocols. That
-   may be just the `rsaEncryption` OID from {{?RFC2437}}.
+1. Avoid key types that are used for non-TLS protocols whose output could be
+   confused with a signature. That may be just the `rsaEncryption` OID from
+   {{?RFC2437}}.
 2. Use the same format as TLS's signatures, specified in {{?I-D.ietf-tls-tls13}}
    section 4.4.3, with a context string that's specific to this use.
 
@@ -205,7 +206,15 @@ large for that context.
 Another option is to pass a URL that the client can fetch to retrieve the
 certificate and chain. To avoid extra round trips in fetching that URL, it could
 be [bundled](#uc-offline-websites) with the signed content
-or [PUSHed](#uc-pushed-subresources) with it.
+or [PUSHed](#uc-pushed-subresources) with it. The risks from the
+`client_certificate_url` extension ({{RFC6066}} section 11.3) don't seem to
+apply here, since an attacker who can get a client to load a package and fetch
+the certificates it references, can also get the client to perform those fetches
+by loading other HTML.
+
+To avoid using an unintended certificate with the same public key as the
+intended one, the content of the certificate chain should be included in the
+signed data, like TLS does ({{?I-D.ietf-tls-tls13}}, section 4.4.3).
 
 ## How much to sign
 
