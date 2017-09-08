@@ -7,7 +7,7 @@ It serves similar role as typical "Introduction" or "Using" and other
 non-normative sections of specs.
 
 ## Background
-Some new use cases for Web technology have motivated thinking about a multi-resource packaging format. Those new opportunity include:
+Some new use cases for Web technology have motivated thinking about a multi-resource packaging format. Those new opportunities include:
 
 ### Local Sharing
 
@@ -72,58 +72,8 @@ time, avoiding the above problems with outdated packages.
 
 ## Goals and non-goals
 
-### Goals
-
-* **authenticated-sharing**: Alice can download a package containing
-  a [PWA](https://developers.google.com/web/progressive-web-apps/checklist) from
-  origin `O`, and transmit it to their peer Bob, and then Bob can install
-  the PWA with a proof that it came from `O`.
-* **random-access**: When a package is stored on disk, the UA can access
-  arbitrary resources without a linear scan.
-* **streamed-loading**: The UA can load a package as it downloads.
-* **multiple-origins**: A package from origin `A` can contain resources from
-  origin `B` that can make same-origin requests back to `B`.
-* **crypto-agility**: Obsolete cryptographic algorithms can be replaced.
-* **cross-signatures**: Third-parties can vouch for packages by signing them.
-* **unsigned-content**: Alice can create their own package without a CA-signed
-  certificate, and Bob can view the content of the package.
-* **binary**: The format is identified as binary by tools that might try to
-  "fix" line endings.
-* **revocation**: When a package is signed by a revoked certificate, online UAs
-  can detect this reasonably quickly.
-* **no-downgrades**: Attackers can't cause a UA to trust an older, vulnerable
-  version of a package after the UA has seen a newer version.
-
-### Nice to have
-
-* **deduplication**: Nested packages that have multiple dependency routes to the
-  same sub-package, can be transmitted and stored with only one copy of that
-  sub-package.
-* **crypto-removal**: The ecosystem can identify when an obsolete cryptographic
-  algorithm is no longer needed and can be removed.
-* **transfer-compression**: Transferring a package over the network takes as few
-  bytes as possible.
-* **stored-compression**: Storing a package on disk takes as few bytes as possible.
-* **external-dependencies**: Sub-packages can be "external" to the main package,
-  meaning the UA will need to either fetch them separately or already have them.
-  ([#35, App Installer Story](https://github.com/WICG/webpackage/issues/35))
-* **self-extracting**: Wrap packages in self-extracting executables. This is
-  required for Node to use the format.
-* **optional-components**: A package can identify resources that don't need to
-  be authenticated before the UA starts loading the package.
-* **unsigned-streamed-loading**: Unsigned packages can be loaded as they
-  transfer.
-
-### Non-goals
-
-* **confidential**: Store confidential data.
-* **streamed-generation**: Generate packages on the fly.
-  ([#6](https://github.com/WICG/webpackage/issues/6#issuecomment-275746125))
-* **non-origin-identity**: A package can be primarily identified as coming from
-  something other than a
-  [Web Origin](https://html.spec.whatwg.org/multipage/browsers.html#concept-origin).
-* **drm**: Special support for blocking access to downloaded content based on
-  licensing.
+See
+https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html#requirements
 
 ## Proposal
 
