@@ -1,10 +1,14 @@
-# Web Packaging Format Status
+# Web Packaging Format
 
-We're developing a web packaging format in this repository. This format replaces
-the
+This repository holds the in-progress specification for a web packaging format.
+This format replaces the
 ~~[W3C TAG's Web Packaging Draft](https://w3ctag.github.io/packaging-on-the-web/)~~.
+It will allow people to bundle together the resources that make up a website, so
+they can be shared offline, either with or without a proof that they came from
+the original website.
 
-See the [explainer](explainer.md) for an overview of what the format enables.
+See the [explainer](explainer.md) for an overview of what the format does and
+how it works.
 
 Work on this format is happening in both the IETF and the W3C. We presented the
 format to the DISPATCH WG at IETF99, and
