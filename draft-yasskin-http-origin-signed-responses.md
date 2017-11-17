@@ -352,6 +352,13 @@ version is live, while an attacker can forward a signed response until its
 signature expires. Authors should consider shorter signature expiration times
 than they use for cache expiration times.
 
+An attacker with temporary access to a signing oracle can sign "still valid"
+assertions with arbitrary timestamps and expiration times. As a result, when a
+signing oracle is removed, the keys it provided access to SHOULD be revoked so
+that, even if the attacker used them to sign future-dated package validity
+assertions, the key's OCSP assertions will expire, causing the package as a
+whole to become untrusted.
+
 # Privacy considerations
 
 Normally, when a client fetches `https://o1.com/resource.js`,
