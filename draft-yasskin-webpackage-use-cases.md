@@ -297,39 +297,6 @@ Associated requirements:
 
 * {{trailing-length}}{:format="title"}
 
-### Ergonomic replacement for HTTP/2 PUSH {#push-replacement}
-
-HTTP/2 PUSH ({{?RFC7540}}, section 8.2) is hard for developers to configure, and
-an explicit package format might be easier.
-
-Trying to bundle resources in order to speed up page loads has a long history,
-including
-[Resource Packages](https://www.mnot.net/blog/2010/02/18/resource_packages) from
-2010 and
-the
-[W3C TAG's packaging proposal](https://w3ctag.github.io/packaging-on-the-web/)
-from 2015.
-
-However, the HTTPWG is doing a lot of work to let servers optimize the PUSHed
-data, and packaging would either have to re-do that or accept lower performance.
-Accepting lower performance might be worthwhile if it allows more developers to
-adopt the smaller optimization.
-
-Associated requirements:
-
-* {{streamed-loading}}{:format="title"}: If the whole package has to be
-  downloaded before the browser can load a piece, this will definitely be slower
-  than PUSH.
-* {{transfer-compression}}{:format="title"}: I believe PUSHed resources cannot
-  keep a single compression state across resource boundaries, so this might be
-  an advantage for packaging.
-* {{urls}}{:format="title"}: Resources on the web are addressed by URL.
-* {{request-headers}}{:format="title"}:
-  [PUSH_PROMISE](http://httpwg.org/specs/rfc7540.html#PUSH_PROMISE)
-  ({{?RFC7540}}, section 6.6) includes request headers.
-* {{response-headers}}{:format="title"}: PUSHed resources include their response
-  headers.
-
 ### Packages in version control {#version-control}
 
 Once packages are generated, they should be stored in version control. Many
@@ -559,6 +526,44 @@ than a
 Special support for blocking access to downloaded content based on
 licensing. Note that DRM systems can be shipped inside the package
 even if the packaging format doesn't specifically support them.
+
+## Ergonomic replacement for HTTP/2 PUSH {#push-replacement}
+
+HTTP/2 PUSH ({{?RFC7540}}, section 8.2) is hard for developers to configure, and
+an explicit package format might be easier. However, experts in this area
+believe we should focus on improving PUSH directly instead of routing around it
+with a bundling format.
+
+Trying to bundle resources in order to speed up page loads has a long history,
+including
+[Resource Packages](https://www.mnot.net/blog/2010/02/18/resource_packages) from
+2010 and
+the
+[W3C TAG's packaging proposal](https://w3ctag.github.io/packaging-on-the-web/)
+from 2015.
+
+However, the HTTPWG is doing a lot of work to let servers optimize the PUSHed
+data, and packaging would either have to re-do that or accept lower performance.
+For example:
+
+* {{?I-D.vkrasnov-h2-compression-dictionaries}} should allow individual small
+  resources to be compressed as well as they would be in a bundle.
+* {{?I-D.ietf-httpbis-cache-digest}} tells the server which resources it doesn't
+  need to PUSH.
+
+Associated requirements:
+
+* {{streamed-loading}}{:format="title"}: If the whole package has to be
+  downloaded before the browser can load a piece, this will definitely be slower
+  than PUSH.
+* {{transfer-compression}}{:format="title"}: Keep up with
+  {{?I-D.vkrasnov-h2-compression-dictionaries}}.
+* {{urls}}{:format="title"}: Resources on the web are addressed by URL.
+* {{request-headers}}{:format="title"}:
+  [PUSH_PROMISE](http://httpwg.org/specs/rfc7540.html#PUSH_PROMISE)
+  ({{?RFC7540}}, section 6.6) includes request headers.
+* {{response-headers}}{:format="title"}: PUSHed resources include their response
+  headers.
 
 # Security Considerations
 
