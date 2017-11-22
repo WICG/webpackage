@@ -405,23 +405,40 @@ The `Signature` header is a Structured Header as defined by
 {{!I-D.nottingham-structured-headers}}. Its value MUST be a dictionary
 ({{!I-D.nottingham-structured-headers}}, section 4.7).
 
-The dictionary MUST contain:
+The dictionary MUST contain members named "validityUrl", "date", "expires", and
+"sig", and either "certUrl" and "certSha256" members or an "ed25519Key" member.
+The present members MUST have the following values:
 
-* A member whose key is "certUrl" and whose value is a string
-  ({{!I-D.nottingham-structured-headers}}, section 4.2) containing a [valid URL
-  string](https://url.spec.whatwg.org/#valid-url-string).
-* A member whose key is "certSha256" and whose value is binary content
-  ({{!I-D.nottingham-structured-headers}}, section 4.5) holding the SHA-256 hash
-  of the first certificate found at "certUrl".
-* {:#signature-validityurl} A member whose key is "validityUrl" and whose value
-  is a string ({{!I-D.nottingham-structured-headers}}, section 4.2) containing a
+"certUrl"
+
+: A string ({{!I-D.nottingham-structured-headers}}, section 4.2) containing a
   [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
-* A member whose key is "date" and whose value is an unsigned integer
-  ({{!I-D.nottingham-structured-headers}}, section 4.1) representing a Unix time.
-* A member whose key is "expires" and whose value is an unsigned integer
-  ({{!I-D.nottingham-structured-headers}}, section 4.1) representing a Unix time.
-* A member whose key is "sig" and whose value is binary content
-  ({{!I-D.nottingham-structured-headers}}, section 4.5) holding the signature of most of this header and the significant parts of the exchange {{significant-parts}}.
+
+"certSha256"
+
+: Binary content ({{!I-D.nottingham-structured-headers}}, section 4.5) holding
+  the SHA-256 hash of the first certificate found at "certUrl".
+
+"ed25519Key"
+
+: Binary content ({{!I-D.nottingham-structured-headers}}, section 4.5) holding
+  an Ed25519 public key ({{!RFC8032}}).
+
+{:#signature-validityurl} "validityUrl"
+
+: A string ({{!I-D.nottingham-structured-headers}}, section 4.2) containing a
+  [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
+
+"date" and "expires
+
+: An unsigned integer ({{!I-D.nottingham-structured-headers}}, section 4.1)
+  representing a Unix time.
+
+"sig"
+
+: Binary content ({{!I-D.nottingham-structured-headers}}, section 4.5) holding
+  the signature of most of this header and the significant parts of the exchange
+  {{significant-parts}}.
 
 The "certUrl" and "validityUrl" members are *not* signed, so intermediates can
 update them with pointers to cached versions.
@@ -586,61 +603,66 @@ The significant parts of the exhange are the `application/http2` CBOR item
 ## Signature validity ## {#signature-validity}
 
 The client MUST use the following algorithm to determine whether each
-`Signature` header field ({{signature-header}}) is valid or invalid.
+`Signature` header field ({{signature-header}}) is invalid or potentially-valid.
+Potentially-valid results include:
+
+* The signed parts of the exchange so that higher-level protocols can avoid
+  relying on unsigned headers, and
+* Either a certificate chain or a public key so that a higher-level protocol can
+  determine whether it's actually valid.
+
+This algorithm accepts a `forceFetch` flag that avoids the cache when fetching
+URLs. A client that determines that a potentially-valid certificate chain is
+actually invalid due to expired OCSP responses MAY retry with `forceFetch` set
+to retrieve updated OCSPs from the original server.
+{:#force-fetch}
 
 1. Let `exchange` be the significant parts ({{significant-parts}}) of the
    `Signature` header's exchange. If `exchange` is a failure, then return
    "invalid".
-1. Let `authority` be the ":authority" request header from `exchange`.
 1. If an error is thrown while parsing the `Signature` header as the dictionary
    described in {{signature-header}}  ({{!I-D.nottingham-structured-headers}},
    section 4.7.1), return "invalid".
 1. Let:
-   * `certUrl` be the header's "certUrl" member
-   * `certSha256` be the header's "certSha256" member
+   * `certUrl` be the header's "certUrl" member, if any
+   * `certSha256` be the header's "certSha256" member, if any
+   * `ed25519Key` be the header's "ed25519Key" member, if any
    * `date` be the header's "date" member, interpreted as a Unix time
    * `expires` be the header's "expires" member, interpreted as a Unix time
    * `signature` be the header's "sig" member
-1. Let `certificate-chain` be the result of fetching ({{FETCH}}) `certUrl` and
-   parsing it as a TLS 1.3 Certificate message ({{!I-D.ietf-tls-tls13}}, section
-   4.4.2) containing X.509v3 certificates. The fetch can be fulfilled from a
-   cache using normal HTTP semantics {{!RFC7234}}. If this fetch or parse fails,
-   return "invalid".
-1. Let `main-certificate` be the first certificate in `certificate-chain`.
-1. {:#validate-certificate} Validate `main-certificate`. If any of these
-   substeps fails and the `certUrl` was fetched from a cache, the client MAY
-   invalidate that cache entry and restart this algorithm. Otherwise, a failure
-   in a substep means to return "invalid".
-   1. Validate that the SHA-256 hash of `main-certificate`'s `cert_data` is
-      equal to `certSha256`. See the [open questions](#hash-whole-chain).
-   1. Use `certificate-chain` to validate that `main-certificate` is trusted as
-      `authority`'s server certificate ({{!RFC5280}} and other undocumented
-      conventions). Let `path` be the path that was used from the
-      `main-certificate` to a trusted root, including the `main-certificate` but
-      excluding the root.
-   1. Validate that all certificates in `path` include "status_request"
-      extensions with valid OCSP responses. ({{!RFC6960}})
-   1. Validate that all certificates in `path` include
-      "signed_certificate_timestamp" extensions containing valid SCTs from
-      trusted logs. ({{!RFC6962}})
-1. The client MUST define a partial function from public key types to signing
-   algorithms, and this function must at the minimum include the following
-   mappings:
+1. Set `publicKey` and `signing-alg` depending on which key fields are present:
+   1. If `certUrl` is present:
+      1. Let `certificate-chain` be the result of fetching ({{FETCH}}) `certUrl`
+         and parsing it as a TLS 1.3 Certificate message
+         ({{!I-D.ietf-tls-tls13}}, section 4.4.2) containing X.509v3
+         certificates. If `forceFetch` is *not* set, the fetch can be fulfilled
+         from a cache using normal HTTP semantics {{!RFC7234}}. If this fetch or
+         parse fails, return "invalid".
+      1. Let `main-certificate` be the first certificate in `certificate-chain`.
+      1. If the SHA-256 hash of `main-certificate`'s `cert_data` is not equal to
+        `certSha256`, return "invalid". See the [open questions](#hash-whole-chain).
+      1. Set `publicKey` to `main-certificate`'s public key
+      1. The client MUST define a partial function from public key types to
+         signing algorithms, and this function must at the minimum include the
+         following mappings:
 
-   RSA, 2048 bits:
-   : rsa_pss_sha256 as defined in Section 4.2.3 of {{!I-D.ietf-tls-tls13}}.
+         RSA, 2048 bits:
+         : rsa_pss_sha256 as defined in Section 4.2.3 of
+           {{!I-D.ietf-tls-tls13}}.
 
-   EC, with the secp256r1 curve:
-   : ecdsa_secp256r1_sha256 as defined in Section 4.2.3 of
-   {{!I-D.ietf-tls-tls13}}.
+         EC, with the secp256r1 curve:
+         : ecdsa_secp256r1_sha256 as defined in Section 4.2.3 of
+           {{!I-D.ietf-tls-tls13}}.
 
-   EC, with the secp384r1 curve:
-   : ecdsa_secp384r1_sha384 as defined in Section 4.2.3 of
-   {{!I-D.ietf-tls-tls13}}.
+         EC, with the secp384r1 curve:
+         : ecdsa_secp384r1_sha384 as defined in Section 4.2.3 of
+           {{!I-D.ietf-tls-tls13}}.
 
-   Let `signing-alg` be the result of applying this function to type of
-   `main-certificate`'s public key. If the function is undefined on this
-   input, return "invalid".
+         Set `signing-alg` to the result of applying this function to type of
+         `main-certificate`'s public key. If the function is undefined on this
+         input, return "invalid".
+   1. If `ed25519Key` is present, set `publicKey` to `ed25519Key` and
+      `signing-alg` to ed25519, as defined by {{!RFC8032}}
 1. If `expires` is more than 7 days (604800 seconds) after `date`, return
    "invalid".
 1. If the current time is before `date` or after `expires`, return "invalid".
@@ -660,7 +682,32 @@ The client MUST use the following algorithm to determine whether each
       1. The text string "exchange".
       1. The CBOR item `exchange`. See the [open questions](#incremental-validity).
 1. If `signature` is `message`'s signature by `main-certificate`'s public key
-   using `signing-alg`, return "valid". Otherwise, return "invalid".
+   using `signing-alg`, return "potentially-valid" with `exchange` and whichever
+   is present of `certificate-chain` or `ed25519Key`. Otherwise, return
+   "invalid".
+
+### Validating a certificate chain for an authority
+
+When the physical request is different from the logical request, clients will often want to verify that a potentially-valid certificate chain is trusted for the logical request. They can use the following algorithm to do so:
+
+1. Run {{signature-validity}} over the `Signature` header, getting `exchange`
+   and `certificate-chain` back. If this returned "invalid", return "invalid".
+1. Let `authority` be the ":authority" request header from `exchange`. If
+   `exchange` doesn't include its ":authority" header, return "invalid".
+1. Validate the `certificate-chain` using the following substeps. If any of them
+   fail, re-run {{signature-validity}} once over the `Signature` header with the
+   `forceFetch` flag set, and restart from step 2.
+   1. Use `certificate-chain` to validate that its first entry,
+      `main-certificate` is trusted as `authority`'s server certificate
+      ({{!RFC5280}} and other undocumented conventions). Let `path` be the path
+      that was used from the `main-certificate` to a trusted root, including the
+      `main-certificate` but excluding the root.
+   1. Validate that all certificates in `path` include "status_request"
+      extensions with valid OCSP responses. ({{!RFC6960}})
+   1. Validate that all certificates in `path` include
+      "signed_certificate_timestamp" extensions containing valid SCTs from
+      trusted logs. ({{!RFC6962}})
+1. Return "valid".
 
 ### Open Questions
 
@@ -686,8 +733,8 @@ time after they're signed, so that revoked certificates and signed exchanges
 with known vulnerabilities are distrusted promptly.
 
 This specification provides no way to update OCSP responses by themselves.
-Instead, [clients need to re-fetch the "certUrl"](#validate-certificate) to get
-a chain including newer OCSPs.
+Instead, [clients need to re-fetch the "certUrl"](#force-fetch) to get a chain
+including newer OCSPs.
 
 The ["validityUrl" member](#signature-validityurl) of the `Signature` header
 provides a way to fetch new signatures or learn where to fetch a complete
