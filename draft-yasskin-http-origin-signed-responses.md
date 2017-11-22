@@ -90,28 +90,30 @@ Then to avoid the need to look up and connect to `jquery.com` in the critical
 path, `example.com` might PUSH that resource ({{?RFC7540}}, section 8.2), signed
 by `jquery.com`.
 
-## Explicit use of a CDN for subresources {#uc-explicit-cdn}
+## Explicit use of a content distributor for subresources {#uc-explicit-distributor}
 
 In order to speed up loading but still maintain control over its content, an
 HTML page in a particular origin `O.com` could tell clients to load its
-subresources from an intermediate CDN that's not authoritative, but require that
-those resources be signed by `O.com` so that the CDN couldn't modify the
-resources.
+subresources from an intermediate content distributor that's not authoritative,
+but require that those resources be signed by `O.com` so that the distributor
+couldn't modify the resources. This is more constrained than the common CDN case
+where `O.com` has a CNAME granting the CDN the right to serve arbitrary content
+as `O.com`.
 
 ~~~html
 <img logicalsrc="https://O.com/img.png"
-     physicalsrc="https://cdn.com/O.com/img.png">
+     physicalsrc="https://distributor.com/O.com/img.png">
 ~~~
 
-To make it easier to configure the right CDN for a given request, computation of
-the `physicalsrc` could be encapsulated in a custom element:
+To make it easier to configure the right distributor for a given request,
+computation of the `physicalsrc` could be encapsulated in a custom element:
 
 ~~~html
-<cdn-img src="https://O.com/img.png"></cdn-img>
+<dist-img src="https://O.com/img.png"></dist-img>
 ~~~
 
-where the `<cdn-img>` implementation generates an appropriate `<img>` based on,
-for example, a `<meta name="cdn-base">` tag elsewhere in the page.
+where the `<dist-img>` implementation generates an appropriate `<img>` based on,
+for example, a `<meta name="dist-base">` tag elsewhere in the page.
 
 This could be used for some of the same purposes as SRI ({{uc-sri}}).
 
