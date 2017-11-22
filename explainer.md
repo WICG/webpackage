@@ -57,8 +57,21 @@ package signed by a compromised certificate. When the client gets back to a
 public network, it should attempt to validate both the certificate and the
 package using the mechanisms alluded to under [Local Sharing](#local-sharing).
 
-### Content Distribution Networks and Web caches.
-The CDNs can provide service of hosting web content that should be delivered at scale. This includes both hosting subresources (JS libraries, images) as well as entire content ([Google AMP](https://developers.google.com/amp/cache/overview)) on network of servers, often provided as a service by 3rd party. Unfortunately, origin-based security model of the Web limits the ways a 3rd-party caches/servers can be used. Indeed, for example in case of hosting JS subresources, the original document must explicitly trust the CDN origin to serve the trusted script. The user agent must use protocol-based means to verify the subresource is coming from the trusted CDN. Another example is a CDN that caches the whole content. Because the origin of CDN is different from the origin of the site, the browser normally can't afford the origin treatment of the site to the loaded content. Look at how an article from USA Today is represented:
+### Content Distributors and Web caches.
+Content distributors can provide the service of hosting web content that should
+be delivered at scale. This includes both hosting subresources (JS libraries,
+images) as well as entire content ([Google
+AMP](https://developers.google.com/amp/cache/overview)) on a network of servers,
+often provided as a service by 3rd party. Unfortunately, the origin-based
+security model of the Web limits the ways 3rd-party caches/servers can be used.
+For example in the case of hosting JS subresources, the original document must
+explicitly trust the distributor's origin to serve the trusted script. The user
+agent must use protocol-based means to verify the subresource is coming from the
+trusted distributor. Another example is a content distributor that caches the
+whole content. Because the origin of the distributor is different from the
+origin of the site, the browser normally can't afford the origin treatment of
+the site to the loaded content. Look at how an article from USA Today is
+represented:
 
 <img align="center" width=350 src="buick.png">
 
@@ -66,8 +79,9 @@ Note the address bar indicating google.com. Also, since the content of USA Today
 - Can't request permissions
 - Can't be added to homescreen
 
-Packages served to CDNs can staple an OCSP response and have a short expiration
-time, avoiding the above problems with outdated packages.
+Packages served to content distributors can staple an OCSP response and have a
+short expiration time, avoiding the problems with outdated packages under "Local
+Sharing".
 
 
 ## Goals and non-goals
