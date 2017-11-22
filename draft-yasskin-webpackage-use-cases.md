@@ -255,33 +255,34 @@ Associated requirements:
 
 * {{external-dependencies}}{:format="title"}
 
-### CDNs {#cdns}
+### Content Distributors {#content-distributors}
 
-CDNs want to re-publish other origins' content so readers can access
-it more quickly or more privately. Currently, to attribute that
-content to the original origin, they need the full ability to publish
-arbitrary content under that origin's name. There should be a way to
-let them attribute only the exact content that the original origin
-published.
+Content distributors want to re-publish other origins' content so readers can
+access it more quickly or more privately. Currently, to attribute that content
+to the original origin, they need to be full CDNs with the ability to publish
+arbitrary content under that origin's name. There should be a way to let them
+attribute only the exact content that the original origin published.
 
-Web Packages would allow CDNs to publish content as another site as
-long as the user visited a URL explicitly mentioning the CDN.
+Web Packages would allow distributors to publish another site's signed content
+as long as the user visited a URL explicitly mentioning the distributor.
 
-CDNs want to serve only the bytes that most optimally represent the
-content the current user needs, even though the origin needs to
-provide representations for all users. Think PNG vs WebP and small vs
-large resolutions.
+Content distributors want to serve only the bytes that most optimally represent
+the content the current user needs, even though the origin needs to provide
+representations for all users. Think PNG vs WebP and small vs large resolutions.
+
+This use case is also addressed by
+{{?I-D.yasskin-http-origin-signed-responses}}.
 
 Associated requirements:
 
 * {{streamed-loading}}{:format="title"}: To get optimal performance, the browser
-  should be able to start loading early resources before the CDN finishes
-  sending the whole package.
+  should be able to start loading early resources before the distributor
+  finishes sending the whole package.
 * {{signing}}{:format="title"}: To prove the content came from the original
   origin.
 * {{subsetting}}{:format="title"}: If a package includes both WebP and PNG
-  versions of an image, the CDN should be able to select the best one to send to
-  each client.
+  versions of an image, the distributor should be able to select the best one to
+  send to each client.
 * {{transfer-compression}}{:format="title"}
 
 ### Installation from a self-extracting executable {#self-extracting}

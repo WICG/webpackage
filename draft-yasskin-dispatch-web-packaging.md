@@ -55,35 +55,7 @@ details can be found in that repository.
 Use Cases    {#use-cases}
 ---------
 
-### Offline Installation
-
-People with expensive or intermittent internet connections are used
-to sharing files via P2P links and shared SD cards. They should be
-able to install web applications they received this way. Installing a
-web application requires a guarantee of the same kind as an HTTPS
-connection that it came from and can use data owned by a particular
-origin.
-
-### Snapshot packages
-
-Verification of the origin of the content isn't always necessary.
-For example, users currently share screenshots and MHTML documents
-with their peers, with no guarantee that the shared content is
-authentic. However, these formats have low fidelity (screenshots)
-and/or aren't interoperable (MHTML). We'd like an interoperable format
-that lets both publishers and readers package such content for use in
-an untrusted mode.
-
-### CDNs
-
-CDNs want to re-publish other origins' content so readers can access
-it more quickly or more privately. Currently, to attribute that
-content to the original origin, they need the full ability to publish
-arbitrary content under that origin's name. There should be a way to
-let them attribute only the exact content that the original origin
-published.
-
-### ...
+See {{?I-D.yasskin-webpackage-use-cases}}.
 
 Why not ZIP?   {#not-zip}
 ------------
