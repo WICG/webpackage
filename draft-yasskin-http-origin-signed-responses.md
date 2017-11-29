@@ -76,9 +76,9 @@ Author
   TLS server for their origin.
 
 Exchange (noun)
-: An HTTP request from a client and the matching response from a server. These
-make up an entire HTTP/2 stream or a contiguous block of an HTTP/1 connection.
-Defined by {{!RFC7540}} section 8.
+: An HTTP request/response pair. This can either be a request from a client and
+the matching response from a server or the request in a PUSH_PROMISE and its
+matching response stream. Defined by {{!RFC7540}} section 8.
 
 Intermediate
 : An entity that fetches signed HTTP exchanges from an author or another
@@ -245,25 +245,26 @@ To avoid using an unintended certificate with the same public key as the
 intended one, the content of the certificate chain should be included in the
 signed data, like TLS does ({{?I-D.ietf-tls-tls13}}, section 4.4.3).
 
-## How much to sign
+## How much to sign ## {#how-much-to-sign}
 
 The previous {{?I-D.thomson-http-content-signature}} and
 {{?I-D.burke-content-signature}} schemes signed just the content, while
 ({{?I-D.cavage-http-signatures}} could also sign the response headers and the
 request method and path. However, the same path, response headers, and content
-may mean something very different when retrieved from a different server, so
-this document expects to include the whole URL in the signed data as well.
+may mean something very different when retrieved from a different server. I
+suspect all higher-level protocols should require the whole URL to be signed,
+but {{signed-headers}} allows them to do otherwise.
 
 The question of whether to include other request headers---primarily the
 `accept*` family---is still open. These headers need to be represented so that
 clients wanting a different language, say, can avoid using the wrong-language
 response, but it's not obvious that there's a security vulnerability if an
-attacker can spoof them. That said, it's always safer to include everything in
-the signature.
+attacker can spoof them. For now, the proposal ({{proposal}}) omits other
+request headers.
 
-In order to allow multiple clients to consume the same signed response, the
-response shouldn't include the exact headers that any particular client sends.
-For example, a Japanese resource wouldn't include
+In order to allow multiple clients to consume the same signed exchange, the
+exchange shouldn't include the exact request headers that any particular client
+sends. For example, a Japanese resource wouldn't include
 
 ~~~http
 accept-language: ja-JP, ja;q=0.9, en;q=0.8, zh;q=0.7, *;q=0.5
@@ -279,8 +280,35 @@ and clients would use the same matching logic as
 for [PUSH_PROMISE](https://tools.ietf.org/html/rfc7540#section-8.2) frame
 headers.
 
-The rest of this document will assume that all request headers are included in
-the signature.
+### Conveying the signed headers
+
+HTTP headers are traditionally munged by proxies, making it impossible to
+guarantee that the client will see the same sequence of bytes as the author
+wrote. In the HTTPS world, we have more end-to-end header integrity, but it's
+still likely that there are enough TLS-terminating proxies that the author's
+signatures would tend to break before getting to the client.
+
+There's also no way in current HTTP for the response to a client-initiated
+request ({{RFC7540}}, section 8.1) to convey the request headers it expected to
+respond to. A PUSH_PROMISE ({{RFC7540}}, section 8.2) does not have this
+problem, and it would be possible to introduce a response header to convey the
+expected request headers.
+
+Since proxies don't modify unknown content types, we could wrap the original
+exchange into an `application/http2` format. This could be as simple as a series
+of HTTP/2 frames, or could
+
+1. Allow longer contiguous bodies than [HTTP/2's 16MB frame
+   limit](https://tools.ietf.org/html/rfc7540#section-4.2), and
+1. Use better compression than {{?RFC7541}} for the non-confidential headers.
+   Note that header compression can probably share a compression state across a
+   single signed exchange, but needs a mechanism like
+   {{?I-D.vkrasnov-h2-compression-dictionaries}} to use any compression state
+   from other responses.
+
+To help the PUSHed subresources use case ({{uc-pushed-subresources}}), we might
+also want to extend the `PUSH_PROMISE` frame type to include a signature, and
+that could tell intermediates not to change the ensuing headers.
 
 ## Response lifespan
 
@@ -333,46 +361,17 @@ These assertions could be structured as:
 The signature also needs to include instructions to intermediates for how to
 fetch updated validity assertions.
 
-## Conveying the signed headers
-
-HTTP headers are traditionally munged by proxies, making it impossible to
-guarantee that the client will see the same sequence of bytes as the author
-wrote. In the HTTPS world, we have more end-to-end header integrity, but it's
-still likely that there are enough TLS-terminating proxies that the author's
-signatures would tend to break before getting to the client.
-
-Since proxies don't modify unknown content types, I expect to propose an
-`application/http2` format to serialize the request headers, response headers,
-and body so they can be signed. This could be as simple as a series of HTTP/2
-frames, or could
-
-1. Allow longer contiguous bodies than
-   [HTTP/2's 16MB frame limit](https://tools.ietf.org/html/rfc7540#section-4.2), and
-2. Use better compression than {{?RFC7541}} for the non-confidential headers.
-   Note that header compression can probably share a compression state across a
-   single signed exchange, but probably cannot use any compression state from
-   other responses.
-
-To help the PUSHed subresources use case ({{uc-pushed-subresources}}), we might
-also want to extend the `PUSH_PROMISE` frame type to include a signature, and
-then there might be some way to include the request headers directly in that
-frame.
-
 # Straw proposal # {#proposal}
 
-As a response to an HTTP request (the "physical request"), or as a Server Push
-({{!RFC7540}}, section 8.2) the server MAY send a "logical request" and its
-response, with significant headers identified by `Signed-Request-Headers` and
-`Signed-Response-Headers` headers ({{signed-r-headers}}), and with signatures
-included in one or more `Signature` headers ({{signature-header}}).
+As a response to an HTTP request or as a Server Push ({{!RFC7540}}, section 8.2)
+the server MAY include a `Signed-Headers` header field ({{signed-headers}})
+identifying [significant](#significant-parts) header fields and one or more
+`Signature` header fields ({{signature-header}}) that vouch for the content of
+the response.
 
-The client reconstructs the "significant" parts of the exchange
-({{significant-parts}}) either by taking the sent `application/http2`
-({{application-http2}}) content directly or by building an `application/http2`
-item from the significant request and response headers and the response payload.
-Then it categorizes each `Signature` header as "valid" or "invalid" by
+The client categorizes each `Signature` header as "valid" or "invalid" by
 validating that header's certificate, metadata, and signature against the
-significant parts of the pair ({{signature-validity}}). This validity then
+significant headers and content ({{signature-validity}}). This validity then
 informs higher-level protocols.
 
 The `Signature` header includes information to let a client fetch assurance a
@@ -381,20 +380,35 @@ newly-discovered vulnerabilities. This assurance can be bundled back into the
 signed exchange and forwarded to another client, which won't have to re-fetch
 this validity information for some period of time.
 
-## The Signed-Request-Headers and Signed-Response-Headers Headers ## {#signed-r-headers}
+## The Signed-Headers Header ## {#signed-headers}
 
-Each of the `Signed-Request-Headers` and `Signed-Response-Headers` headers
-identifies an ordered list of request and response, respectively, header field
-names to include in a signature. These lists of header field names need to be
+The `Signed-Headers` header field identifies an ordered list of request
+pseudo-header fields and response header fields to include in a signature. This
+allows a TLS-terminating intermediate to reorder headers without breaking the
+signature. This *can* also allow the intermediate to add headers that will be
+ignored by some higher-level protocols, but {{signature-validity}} provides a
+hook to let other higher-level protocols reject such insecure headers.
+
+This header field appears once instead of being incorporated into the
+`Signature` header fields because the significant header fields need to be
 consistent across all signatures of an exchange, to avoid forcing higher-level
-protocols to merge the header field lists of valid signatures, so they're
-provided by headers instead of being included in the `Signature` header field.
+protocols to merge the header field lists of valid signatures.
 
-`Signed-Request-Headers` and `Signed-Response-Headers` are Structured Headers as
-defined by {{!I-D.nottingham-structured-headers}}. Their values MUST be lists
-({{!I-D.nottingham-structured-headers}}, section 4.7) of lowercase strings
-({{!I-D.nottingham-structured-headers}}, section 4.2) naming HTTP headers,
-following the ordering and lowercasing rules from {{!RFC7540}}, section 8.1.2.
+See {{how-much-to-sign}} for a discussion of why only request pseudo-headers can
+be included.
+
+`Signed-Headers` is a Structured Header as defined by
+{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list
+({{!I-D.ietf-httpbis-header-structure}}, section 4.8) of lowercase strings
+({{!I-D.ietf-httpbis-header-structure}}, section 4.2) naming HTTP header fields.
+In this list, any request pseudo-header field names ({{!RFC7540}}, section
+8.1.2.3) MUST appear first, followed by response pseudo-header field names
+({{!RFC7540}}, section 8.1.2.4), followed by other response header field names.
+
+Note that this field's value's meaning relies on the names of request and response pseudo-header fields being distinct, which is true as of {{?RFC7540}}.
+
+Higher-level protocols SHOULD place requirements on the minimum set of headers
+to include in the `Signed-Headers` header field.
 
 ## The Signature Header ## {#signature-header}
 
@@ -402,8 +416,8 @@ The `Signature` header conveys a signature for an exchange and information about
 how to determine the authority of and refresh that signature.
 
 The `Signature` header is a Structured Header as defined by
-{{!I-D.nottingham-structured-headers}}. Its value MUST be a dictionary
-({{!I-D.nottingham-structured-headers}}, section 4.7).
+{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a dictionary
+({{!I-D.ietf-httpbis-header-structure}}, section 4.7).
 
 The dictionary MUST contain members named "validityUrl", "date", "expires", and
 "sig", and either "certUrl" and "certSha256" members or an "ed25519Key" member.
@@ -411,32 +425,32 @@ The present members MUST have the following values:
 
 "certUrl"
 
-: A string ({{!I-D.nottingham-structured-headers}}, section 4.2) containing a
+: A string ({{!I-D.ietf-httpbis-header-structure}}, section 4.2) containing a
   [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
 
 "certSha256"
 
-: Binary content ({{!I-D.nottingham-structured-headers}}, section 4.5) holding
+: Binary content ({{!I-D.ietf-httpbis-header-structure}}, section 4.5) holding
   the SHA-256 hash of the first certificate found at "certUrl".
 
 "ed25519Key"
 
-: Binary content ({{!I-D.nottingham-structured-headers}}, section 4.5) holding
+: Binary content ({{!I-D.ietf-httpbis-header-structure}}, section 4.5) holding
   an Ed25519 public key ({{!RFC8032}}).
 
 {:#signature-validityurl} "validityUrl"
 
-: A string ({{!I-D.nottingham-structured-headers}}, section 4.2) containing a
+: A string ({{!I-D.ietf-httpbis-header-structure}}, section 4.2) containing a
   [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
 
-"date" and "expires
+"date" and "expires"
 
-: An unsigned integer ({{!I-D.nottingham-structured-headers}}, section 4.1)
+: An unsigned integer ({{!I-D.ietf-httpbis-header-structure}}, section 4.1)
   representing a Unix time.
 
 "sig"
 
-: Binary content ({{!I-D.nottingham-structured-headers}}, section 4.5) holding
+: Binary content ({{!I-D.ietf-httpbis-header-structure}}, section 4.5) holding
   the signature of most of this header and the significant parts of the exchange
   {{significant-parts}}.
 
@@ -446,106 +460,102 @@ update them with pointers to cached versions.
 ### Open Questions
 Should the certUrl and validityUrl be lists so that intermediates can offer a
 cache without losing the original URLs? Putting lists in dictionary fields is
-more complex than {{?I-D.nottingham-structured-headers}} allows, but Mark might
-be willing to update that.
+more complex than {{?I-D.ietf-httpbis-header-structure}} allows, but the WG
+might be willing to update that.
 
-## Content of a signed exchange
+Should "validityUrl" be signed or optionally signed so that an exchange's author
+can prevent an intermediate from removing it, which would prevent clients from
+sharing the exchange among themselves without going back to the intermeidate?
 
-The payload of a signed exchange can appear in one of two forms:
+## Significant parts of an exchange ## {#significant-parts}
 
-1. `application/http2` content describing the exact request and response headers
-   for the logical request ({{application-http2}}).
-1. The payload of the logical response.
+The significant parts of an exchange are:
 
-In the first case, `Signed-Request-Headers` and `Signed-Response-Headers` header
-fields MUST NOT appear. In the second case, they MUST appear and identify which
-headers are significant and in which order.
+* The request pseudo-header fields whose names are listed in that exchange's
+  `Signed-Headers` header field ({{signed-headers}}), in the order they appear
+  in that header field.  If a request pseudo-header field name from
+  `Signed-Headers` does not appear in the exchange's request pseudo-header
+  fields, the exchange has no significant parts.
 
-## application/http2 content type ## {#application-http2}
+  If the request includes a `Host` header field but no `:authority` header
+  field, it is treated for the purpose of computing its significant parts as
+  having an `:authority` header field with the value of the `Host` header field.
+* The response header fields whose names are listed in that exchange's
+  `Signed-Headers` header field ({{signed-headers}}), in the order they appear
+  in that header field. If a response header field name from `Signed-Headers`
+  does not appear in the exchange's response header fields, the exchange has no
+  significant parts.
+* The exchange's payload body ({{!RFC7230}}, section 3.3). Note that the payload
+  body is the message body with any transfer encodings removed.
 
-The `application/http2` content type encodes an HTTP2 ({{!RFC7540}})
-exchange, including an ordered list of pseudo and normal request
-header fields, optionally a request body, an ordered list of pseudo and normal
-response header fields, a payload body, and optionally an ordered list of
-trailer header fields.
+If the exchange's `Signed-Headers` header field is not present, doesn't parse as
+a Structured Header ({{!I-D.ietf-httpbis-header-structure}}) or doesn't follow
+the constraints on its value described in {{signed-headers}}, the exchange has
+no significant parts.
 
-This content type is **not** simply the concatenation of a sequence of HTTP/2
-frames ({{?RFC7540}}, section 6). Using this concatenation would have the two downsides that 1) there's no canonical form
+### Open Questions
 
-This content type consists of a canonical CBOR ({{!RFC7049}}, section 3.9) array
-containing alternating member names encoded as text strings, {{!RFC7049}},
-section 2.1), and member values, each consisting of a single CBOR item with a
-type and meaning determined by the member name.
+Do the significant parts of an exchange need to include the `Signed-Headers`
+header field itself?
 
-Note that this format does not use CBOR dictionaries, so that it can specify a
-natural order for the members.
+## CBOR representation of an exchange ## {#cbor-representation}
 
-This specification defines the following member names with their associated
-values:
+To sign an exchange, it needs to be serialized into a byte string. Since
+intermediaries and [distributors](#uc-explicit-distributor) might rearrange,
+add, or just reserialize headers, and this can change the HPACK encoding, we
+can't use the literal bytes of the header frames as this serialization. Instead,
+this section defines a CBOR representation that can be embedded into other CBOR,
+canonically serialized ({{canonical-cbor}}), and then signed.
 
-"request"
+The CBOR representation of an exchange is the result of the following algorithm:
 
-: An array of alternating request header field names and header field values,
-  encoded as byte strings ({{!RFC7049}}, section 2.1), following the ordering
-  and lowercasing rules from {{!RFC7540}}, section 8.1.2.
+1. Let `exchange` be the exchange. This is expected to be the significant parts
+   ({{significant-parts}}) of some other exchange.
+1. Return a CBOR ({{!RFC7049}}) array with the following content:
+   1. The text string "request".
+   1. The array consisting of the appended items from, for each request header
+      field in `exchange`, in order:
+      1. Append the header field's name as a byte string.
+      1. Append the header field's value as a byte string.
+   1. The text string "response".
+   1. The array consisting of the appended items from, for each response header
+      field in `exchange`, in order:
+      1. Append the header field's name as a byte string.
+      1. Append the header field's value as a byte string.
+   1. The text string "payload".
+   1. The byte string containing the response's payload body ({{!RFC7230}},
+      section 3.3). Note that the payload body is the message body with any
+      transfer encodings removed.
 
-"request payload"
+### Example ### {#example-cbor-representation}
 
-: A byte string ({{!RFC7049}}, section 2.1) containing the request payload body.
+Given the HTTP/2 exchange:
 
-"response"
+~~~http
+:method = GET
+:scheme = https
+:authority = example.com
+:path = /
+accept = */*
 
-: An array of alternating response header field names and header field values,
-  encoded as byte strings ({{!RFC7049}}, section 2.1), following the ordering
-  and lowercasing rules from {{!RFC7540}} section 8.1.2.
+:status = 200
+content-type = text/html
+signed-headers = ":authority",":path",":status","content-type"
 
-"payload"
+<!doctype html>
+<html>
+...
+~~~
 
-: A byte string ({{!RFC7049}}, section 2.1) containing the response payload body
-  ({{!RFC7230}}, section 3.3).
-
-"trailer"
-
-: An array of alternating trailer header field names and header field values,
-  encoded as byte strings ({{!RFC7049}}, section 2.1), following the ordering
-  and lowercasing rules from {{!RFC7540}} section 8.1.2.
-
-A parser MAY return incremental information while parsing `application/http2`
-content.
-
-Members "request", "response", and "payload" MUST be present. If one is missing,
-the parser MUST stop and report an error.
-
-The member names MUST appear in the order:
-
-1. "request"
-1. "request payload"
-1. "response"
-1. "payload"
-1. "trailer"
-
-If a member name is not a text string, appears out of order, or is followed by a
-value not matching its description above, the parser MUST stop and report an
-error.
-
-If the parser encounters an unknown member name, it MUST skip the following item
-and resume parsing at the next member name.
-
-### Example ### {#example-application-http2}
-
-An example `application/http2` file representing a possible exchange with
-<https://example.com/> follows, in the extended diagnostic format defined in
-{{?I-D.ietf-cbor-cddl}} appendix G:
+The cbor representation consists of the following item, represented using the
+extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 
 ~~~cbor-diag
 [
   "request",
   [
-    ':method', 'GET',
-    ':scheme', 'https',
     ':authority', 'example.com',
-    ':path', '/',
-    'accept', '*/*'
+    ':path', '/'
   ],
   "response",
   [
@@ -553,52 +563,23 @@ An example `application/http2` file representing a possible exchange with
     'content-type', 'text/html'
   ],
   "payload",
-  '<!doctype html>\r\n<html>...'
+  '<!doctype html>\n<html>...'
 ]
 ~~~
 
-## Significant parts of an exchange ## {#significant-parts}
+## Canonical CBOR serialization ## {#canonical-cbor}
 
-The significant parts of an exchange are either an `application/http2` item
-({{application-http2}}) or a failure.
+Within this specification, the canonical serialization of a CBOR item uses the
+following rules derived from section 3.9 of {{?RFC7049}}:
 
-If the `Content-Type` ({{!RFC7231}}) of the response is `application/http2` and
-neither the `Signed-Request-Headers` nor the `Signed-Response-Headers` header
-field is present, the significant parts are the payload itself. If either of
-those header fields is present, computing the significant parts fails.
+* Integers and the lengths of arrays and strings MUST use the smallest possible
+  encoding.
+* Items MUST NOT be encoded with indefinite length.
 
-Otherwise (the `Content-Type` is not `application/http2`), if either of the
-`Signed-Request-Headers` or the `Signed-Response-Headers` header field is
-missing, or if either throws an error while parsing as the structured header
-defined in {{signed-r-headers}}, computing the significant parts fails.
-
-If the client is building the significant parts of an exchange for an HTTP
-Request/Response Exchange ({{RFC7540}}, section 8.1), the "input request" is the
-request the client sent. If the client is doing so for a Server Push
-({{RFC7540}}, section 8.2), the input request is the request represented in the
-PUSH_PROMISE and its CONTINUATIONs.
-
-The significant parts of the exhange are the `application/http2` CBOR item
-({{application-http2}}) with the following content:
-
-1. The text string "request".
-1. The array consisting of the appended items from, for each element `name` of
-   the `Signed-Request-Headers` header field value,
-   1. Append `name` as a byte string.
-   1. If there is a header field named `name` in the input request's header
-      fields, append that header field's value, as a byte string.
-   1. Otherwise, computing the significant parts fails.
-1. The text string "response".
-1. The array consisting of the appended items from, for each element `name` of
-   the `Signed-Response-Headers` header field value,
-   1. Append `name` as a byte string.
-   1. If there is a header field named `name` in the response's header fields,
-      append that header field's value, as a byte string.
-   1. Otherwise, computing the significant parts fails.
-1. The text string "payload".
-1. The byte string containing the response's payload body ({{!RFC7230}}, section
-   3.3). Note that the payload body is the message body with any transfer
-   encodings removed.
+Note: this specification does not use CBOR maps, so the map ordering rules
+aren't necessary. This specification also doesn't use floating point, tags, or
+other more complex data types, so it doesn't need rules to canonicalize those
+either.
 
 ## Signature validity ## {#signature-validity}
 
@@ -617,11 +598,18 @@ actually invalid due to expired OCSP responses MAY retry with `forceFetch` set
 to retrieve updated OCSPs from the original server.
 {:#force-fetch}
 
-1. Let `exchange` be the significant parts ({{significant-parts}}) of the
-   `Signature` header's exchange. If `exchange` is a failure, then return
-   "invalid".
+This algorithm also accepts an `allResponseHeaders` flag, which insists that
+there are no non-significant response header fields in the exchange.
+
+1. Let `originalExchange` be the `Signature` header field's exchange.
+1. Let `exchange` be the significant parts ({{significant-parts}}) of
+   `originalExchange`. If `originalExchange` has no significant parts, then
+   return "invalid".
+1. If `allResponseHeaders` is set and the response headers fields in
+   `originalExchange` are a proper superset of the response header fields in
+   `exchange`, then return "invalid".
 1. If an error is thrown while parsing the `Signature` header as the dictionary
-   described in {{signature-header}}  ({{!I-D.nottingham-structured-headers}},
+   described in {{signature-header}}  ({{!I-D.ietf-httpbis-header-structure}},
    section 4.7.1), return "invalid".
 1. Let:
    * `certUrl` be the header's "certUrl" member, if any
@@ -672,7 +660,8 @@ to retrieve updated OCSPs from the original server.
    1. A string that consists of octet 32 (0x20) repeated 64 times.
    1. A context string: the ASCII encoding of “HTTP Exchange”.
    1. A single 0 byte which serves as a separator.
-   1. The bytes of the canonical CBOR encoding of a CBOR array consisting of:
+   1. The bytes of the canonical CBOR serialization ({{canonical-cbor}}) of a
+      CBOR array consisting of:
       1. The text string "certSha256".
       1. The byte string `certSha256`.
       1. The text string "date".
@@ -680,7 +669,8 @@ to retrieve updated OCSPs from the original server.
       1. The text string "expires".
       1. The integer value of `expires`.
       1. The text string "exchange".
-      1. The CBOR item `exchange`. See the [open questions](#incremental-validity).
+      1. The CBOR representation ({{cbor-representation}}) of `exchange`. See
+         the [open questions](#incremental-validity).
 1. If `signature` is `message`'s signature by `main-certificate`'s public key
    using `signing-alg`, return "potentially-valid" with `exchange` and whichever
    is present of `certificate-chain` or `ed25519Key`. Otherwise, return
@@ -856,6 +846,20 @@ that, even if the attacker used them to sign future-dated package validity
 assertions, the key's OCSP assertions will expire, causing the package as a
 whole to become untrusted.
 
+## Aspects of the straw proposal
+
+The use of a single `Signed-Headers` header field prevents us from signing
+non-pseudo request headers. For example, if an author signs both
+`Content-Encoding: br` and `Content-Encoding: gzip` variants of a response,
+what's the impact if an attacker serves the brotli one for a request with
+`Accept-Encoding: gzip`?
+
+{{signature-validity}} can succeed when some delivered headers aren't included
+in the signed set. This accommodates current TLS-terminating intermediates and
+may be useful for SRI ({{uc-sri}}), but is risky for trusting cross-origin
+responses ({{uc-pushed-subresources}}, {{uc-explicit-distributor}}, and
+{{uc-offline-websites}}).
+
 # Privacy considerations
 
 Normally, when a client fetches `https://o1.com/resource.js`,
@@ -875,10 +879,11 @@ situation by hiding the client's interest from the original author.
 
 # IANA considerations
 
-TODO: register application/http2 and possibly the validityUrl format.
+TODO: possibly register the validityUrl format.
 
 --- back
 
 # Acknowledgements
 
-Thanks to Ilari Liusvaara for comments that improved this draft.
+Thanks to Ilari Liusvaara, Ryan Sleevi, and Yoav Weiss for comments that
+improved this draft.
