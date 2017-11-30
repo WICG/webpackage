@@ -348,15 +348,15 @@ These assertions could be structured as:
    This requires that signed responses need to include a version number or
    timestamp, but allows a server to provide a single signature covering all
    valid versions.
-2. A replacement for the whole exchange's signature. This requires the author to
+1. A replacement for the whole exchange's signature. This requires the author to
    separately re-sign each valid version and requires each version to include a
-   strong validator {{?RFC7232}}, but allows intermediates to serve less data.
-3. A replacement for the exchange's signature and an update for the embedded
+   different update URL, but allows intermediates to serve less data. This is
+   the approach taken in {{proposal}}.
+1. A replacement for the exchange's signature and an update for the embedded
    `expires` and related cache-control HTTP headers {{?RFC7234}}. This naturally
    extends authors' intuitions about cache expiration and the existing cache
-   revalidation behavior to signed exchanges. However, it also requires that the
-   update procedure for the response headers on the client must produce
-   something that's bytewise identical to the updated headers on the server.
+   revalidation behavior to signed exchanges. This is sketched and its downsides
+   explored in {{validity-with-cache-control}}.
 
 The signature also needs to include instructions to intermediates for how to
 fetch updated validity assertions.
@@ -819,6 +819,91 @@ Signature: validityUrl="https://thirdparty.example.com/resource.validity",
 
 https://example.com/resource.validity could also expand the set of `Signature`
 header fields if its `signatures` array contained more than 2 elements.
+
+### Determining validity using cache control ### {#validity-with-cache-control}
+
+This section is not normative.
+
+This draft could expire signature validity using the normal HTTP cache control
+headers ({{?RFC7234}}) instead of embedding an expiration date in the Signature
+itself. This section specifies how that would work, and describes why I haven't
+chosen that option.
+
+The `Signature` header field ({{signature-header}}) would no longer contain
+"date" or "expires" fields.
+
+The validity-checking algorithm ({{signature-validity}}) would initialize `date`
+from the resource's `Date` header field ({{?RFC7231}}, section 7.1.1.2) and
+initialize `expires` from either the `Expires` header field ({{?RFC7234}}
+section 5.3) or the `Cache-Control` header field's `max-age` directive
+({{?RFC7234}} section 5.2.2.8) (added to `date`), whichever is present,
+preferring `max-age` (or failing) if both are present.
+
+Validity updates ({{updating-validity}}) would include a list of replacement
+response header fields. For each header field name in this list, the client
+would remove matching header fields from the stored exchange's response header
+fields. Then the client would append the replacement header fields to the stored
+exchange's response header fields.
+
+#### Example of updating cache control
+
+For example, given a stored exchange of:
+
+~~~http
+:method = GET
+:scheme = https
+:authority = example.com
+:path = /
+accept = */*
+
+:status = 200
+date = Mon, 20 Nov 2017 10:00:00 UTC
+content-type = text/html
+date = Tue, 21 Nov 2017 10:00:00 UTC
+expires = Sun, 26 Nov 2017 10:00:00 UTC
+
+<!doctype html>
+<html>
+...
+~~~
+
+And an update listing the following headers:
+
+~~~http
+expires = Fri, 1 Dec 2017 10:00:00 UTC
+date = Sat, 25 Nov 2017 10:00:00 UTC
+~~~
+
+The resulting stored exchange would be:
+
+~~~http
+:method = GET
+:scheme = https
+:authority = example.com
+:path = /
+accept = */*
+
+:status = 200
+content-type = text/html
+expires = Fri, 1 Dec 2017 10:00:00 UTC
+date = Sat, 25 Nov 2017 10:00:00 UTC
+
+<!doctype html>
+<html>
+...
+~~~
+
+#### Downsides of updating cache control #### {#downsides-of-cache-control}
+
+In an exchange with multiple signatures, using cache control to expire
+signatures forces all signatures to initially live for the same period. Worse,
+the update from one signature's "validityUrl" might not match the update for
+another signature. Clients would need to maintain a current set of headers for
+each signature, and then decide which set to use when actually parsing the
+resource itself.
+
+This need to store and reconcile multiple sets of headers for a single signed
+exchange argues for embedding a signature's lifetime into the signature.
 
 # Security considerations
 
