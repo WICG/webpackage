@@ -98,269 +98,6 @@ NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED",
 described in BCP 14 {{!RFC2119}} {{!RFC8174}} when, and only when, they
 appear in all capitals, as shown here.
 
-# Use cases
-
-## PUSHed subresources {#uc-pushed-subresources}
-
-To reduce round trips, a server might use HTTP/2 PUSH to inject a subresource
-from another server into the client's cache. If anything about the subresource
-is expired or can't be verified, the client would fetch it from the original
-server.
-
-For example, if `https://example.com/index.html` includes
-
-~~~html
-<script src="https://jquery.com/jquery-1.2.3.min.js">
-~~~
-
-Then to avoid the need to look up and connect to `jquery.com` in the critical
-path, `example.com` might PUSH that resource ({{?RFC7540}}, section 8.2), signed
-by `jquery.com`.
-
-## Explicit use of a content distributor for subresources {#uc-explicit-distributor}
-
-In order to speed up loading but still maintain control over its content, an
-HTML page in a particular origin `O.com` could tell clients to load its
-subresources from an intermediate content distributor that's not authoritative,
-but require that those resources be signed by `O.com` so that the distributor
-couldn't modify the resources. This is more constrained than the common CDN case
-where `O.com` has a CNAME granting the CDN the right to serve arbitrary content
-as `O.com`.
-
-~~~html
-<img logicalsrc="https://O.com/img.png"
-     physicalsrc="https://distributor.com/O.com/img.png">
-~~~
-
-To make it easier to configure the right distributor for a given request,
-computation of the `physicalsrc` could be encapsulated in a custom element:
-
-~~~html
-<dist-img src="https://O.com/img.png"></dist-img>
-~~~
-
-where the `<dist-img>` implementation generates an appropriate `<img>` based on,
-for example, a `<meta name="dist-base">` tag elsewhere in the page.
-
-This could be used for some of the same purposes as SRI ({{uc-sri}}).
-
-## Subresource Integrity {#uc-sri}
-
-The W3C WebAppSec group is investigating
-[using signatures](https://github.com/mikewest/signature-based-sri) in {{SRI}}.
-They need a way to transmit the signature with the response, which this proposal
-could provide.
-
-However, their needs also differ in some significant ways:
-
-1. The `integrity="ed25519-[public-key]"` attribute and CSP-based ways of
-   expressing a public key don't need the signing key to be also trusted to sign
-   arbitrary content for an origin.
-2. Some uses of SRI want to constrain subresources to be vouched for by a
-   third-party, rather than just being signed by the subresource's author.
-
-While we can design this system to cover both origin-trusted and simple-key
-signatures, we should check that this is better than having two separate systems
-for the two kinds of signatures.
-
-Note that while the current proposal for SRI describes signing only the content
-of a
-resource,
-[they may need to sign its name as well, to prevent security vulnerabilities](https://github.com/mikewest/signature-based-sri/issues/5).
-The details of what they need to sign will affect whether and how they can use
-this proposal.
-
-## Offline websites {#uc-offline-websites}
-
-See <https://github.com/WICG/webpackage> and
-{{?I-D.yasskin-dispatch-web-packaging}}. This use requires origin-signed
-resources to be bundled.
-
-# Requirements and open questions
-
-## Proof of origin
-
-To verify that a thing came from a particular origin, for use in the same
-context as a TLS connection, we need someone to vouch for the signing key with
-as much verification as the signing keys used in TLS. The obvious way to do this
-is to re-use the web PKI and CA ecosystem.
-
-### Certificate constraints
-
-If we re-use existing TLS server certificates, we incur the risks that:
-
-1. TLS server certificates must be accessible from online servers, so they're
-   easier to steal than an offline key. A package's signing key doesn't need to
-   be online.
-2. A server using an origin-trusted key for one purpose (e.g. TLS) might
-   accidentally sign something that looks like a package, or vice versa.
-
-If these risks are too high, we could define a new Extended Key Usage
-({{?RFC5280}}, section 4.2.1.12) that requires CAs to issue new keys for this
-purpose or a new certificate extension to do the same. A new EKU would probably
-require CAs to also issue new intermediate certificates because of how browsers
-trust EKUs. Both an EKU and a new extension take a long time to deploy and allow
-CAs to charge package-signers more than normal server operators, which will
-reduce adoption.
-
-The rest of this document will assume we can re-use existing TLS server
-certificates.
-
-### Signature constraints
-
-In order to prevent an attacker who can convince the server to sign some
-resource from causing those signed bytes to be interpreted as something else,
-signatures here need to:
-
-1. Avoid key types that are used for non-TLS protocols whose output could be
-   confused with a signature. That may be just the `rsaEncryption` OID from
-   {{?RFC2437}}.
-2. Use the same format as TLS's signatures, specified in {{?I-D.ietf-tls-tls13}}
-   section 4.4.3, with a context string that's specific to this use.
-
-The specification also needs to define which signing algorithm to use. I expect
-to define that as a function from the key type, instead of allowing
-attacker-controlled data to specify it.
-
-### Retrieving the certificate {#certificate-chain}
-
-The client needs to be able to find the certificate vouching for the signing
-key, a chain from that certificate to a trusted root, and possibly other trust
-information like SCTs ({{?RFC6962}}). One approach would be to include the
-certificate and its chain in the signature metadata itself, but this wastes
-bytes when the same certificate is used for multiple HTTP responses. If we
-decide to put the signature in an HTTP header, certificates are also unusually
-large for that context.
-
-Another option is to pass a URL that the client can fetch to retrieve the
-certificate and chain. To avoid extra round trips in fetching that URL, it could
-be [bundled](#uc-offline-websites) with the signed content
-or [PUSHed](#uc-pushed-subresources) with it. The risks from the
-`client_certificate_url` extension ({{RFC6066}} section 11.3) don't seem to
-apply here, since an attacker who can get a client to load a package and fetch
-the certificates it references, can also get the client to perform those fetches
-by loading other HTML.
-
-To avoid using an unintended certificate with the same public key as the
-intended one, the content of the certificate chain should be included in the
-signed data, like TLS does ({{?I-D.ietf-tls-tls13}}, section 4.4.3).
-
-## How much to sign ## {#how-much-to-sign}
-
-The previous {{?I-D.thomson-http-content-signature}} and
-{{?I-D.burke-content-signature}} schemes signed just the content, while
-({{?I-D.cavage-http-signatures}} could also sign the response headers and the
-request method and path. However, the same path, response headers, and content
-may mean something very different when retrieved from a different server. I
-suspect all higher-level protocols should require the whole URL to be signed,
-but {{signed-headers}} allows them to do otherwise.
-
-The question of whether to include other request headers---primarily the
-`accept*` family---is still open. These headers need to be represented so that
-clients wanting a different language, say, can avoid using the wrong-language
-response, but it's not obvious that there's a security vulnerability if an
-attacker can spoof them. For now, the proposal ({{proposal}}) omits other
-request headers.
-
-In order to allow multiple clients to consume the same signed exchange, the
-exchange shouldn't include the exact request headers that any particular client
-sends. For example, a Japanese resource wouldn't include
-
-~~~http
-accept-language: ja-JP, ja;q=0.9, en;q=0.8, zh;q=0.7, *;q=0.5
-~~~
-
-Instead, it would probably include just
-
-~~~http
-accept-language: ja-JP, ja
-~~~
-
-and clients would use the same matching logic as
-for [PUSH_PROMISE](https://tools.ietf.org/html/rfc7540#section-8.2) frame
-headers.
-
-### Conveying the signed headers
-
-HTTP headers are traditionally munged by proxies, making it impossible to
-guarantee that the client will see the same sequence of bytes as the author
-wrote. In the HTTPS world, we have more end-to-end header integrity, but it's
-still likely that there are enough TLS-terminating proxies that the author's
-signatures would tend to break before getting to the client.
-
-There's also no way in current HTTP for the response to a client-initiated
-request ({{RFC7540}}, section 8.1) to convey the request headers it expected to
-respond to. A PUSH_PROMISE ({{RFC7540}}, section 8.2) does not have this
-problem, and it would be possible to introduce a response header to convey the
-expected request headers.
-
-Since proxies don't modify unknown content types, we could wrap the original
-exchange into an `application/http2` format. This could be as simple as a series
-of HTTP/2 frames, or could
-
-1. Allow longer contiguous bodies than [HTTP/2's 16MB frame
-   limit](https://tools.ietf.org/html/rfc7540#section-4.2), and
-1. Use better compression than {{?RFC7541}} for the non-confidential headers.
-   Note that header compression can probably share a compression state across a
-   single signed exchange, but needs a mechanism like
-   {{?I-D.vkrasnov-h2-compression-dictionaries}} to use any compression state
-   from other responses.
-
-To help the PUSHed subresources use case ({{uc-pushed-subresources}}), we might
-also want to extend the `PUSH_PROMISE` frame type to include a signature, and
-that could tell intermediates not to change the ensuing headers.
-
-## Response lifespan
-
-A normal HTTPS response is authoritative only for one client, for as long as its
-cache headers say it should live. A signed exchange can be re-used for many
-clients, and if it was generated while a server was compromised, it can continue
-compromising clients even if their requests happen after the server recovers.
-This signing scheme needs to mitigate that risk.
-
-### Certificate revocation
-
-Certificates are mis-issued and private keys are stolen, and in response clients
-need to be able to stop trusting these certificates as promptly as possible.
-Online revocation
-checks [don't work](https://www.imperialviolet.org/2012/02/05/crlsets.html), so
-the industry has moved to pushed revocation lists and stapled OCSP responses
-{{?RFC6066}}.
-
-Pushed revocation lists work as-is to block trust in the certificate signing an
-exchange, but the signatures need an explicit strategy to staple OCSP responses.
-One option is to extend the certificate download ({{certificate-chain}}) to
-include the OCSP response too, perhaps in the
-[TLS 1.3 CertificateEntry](https://tlswg.github.io/tls13-spec/draft-ietf-tls-tls13.html#ocsp-and-sct) format.
-
-### Response downgrade attacks {#downgrade}
-
-The signed content in a response might be vulnerable to attacks, such as XSS, or
-might simply be discovered to be incorrect after publication. Once the author
-fixes those vulnerabilities or mistakes, clients should stop trusting the old
-signed content in a reasonable amount of time. Similar to certificate
-revocation, I expect the best option to be stapled "this version is still valid"
-assertions with short expiration times.
-
-These assertions could be structured as:
-
-1. A signed minimum version number or timestamp for a set of request headers:
-   This requires that signed responses need to include a version number or
-   timestamp, but allows a server to provide a single signature covering all
-   valid versions.
-1. A replacement for the whole exchange's signature. This requires the author to
-   separately re-sign each valid version and requires each version to include a
-   different update URL, but allows intermediates to serve less data. This is
-   the approach taken in {{proposal}}.
-1. A replacement for the exchange's signature and an update for the embedded
-   `expires` and related cache-control HTTP headers {{?RFC7234}}. This naturally
-   extends authors' intuitions about cache expiration and the existing cache
-   revalidation behavior to signed exchanges. This is sketched and its downsides
-   explored in {{validity-with-cache-control}}.
-
-The signature also needs to include instructions to intermediates for how to
-fetch updated validity assertions.
-
 # Straw proposal # {#proposal}
 
 As a response to an HTTP request or as a Server Push ({{!RFC7540}}, section 8.2)
@@ -820,91 +557,6 @@ Signature: validityUrl="https://thirdparty.example.com/resource.validity",
 https://example.com/resource.validity could also expand the set of `Signature`
 header fields if its `signatures` array contained more than 2 elements.
 
-### Determining validity using cache control ### {#validity-with-cache-control}
-
-This section is not normative.
-
-This draft could expire signature validity using the normal HTTP cache control
-headers ({{?RFC7234}}) instead of embedding an expiration date in the Signature
-itself. This section specifies how that would work, and describes why I haven't
-chosen that option.
-
-The `Signature` header field ({{signature-header}}) would no longer contain
-"date" or "expires" fields.
-
-The validity-checking algorithm ({{signature-validity}}) would initialize `date`
-from the resource's `Date` header field ({{?RFC7231}}, section 7.1.1.2) and
-initialize `expires` from either the `Expires` header field ({{?RFC7234}}
-section 5.3) or the `Cache-Control` header field's `max-age` directive
-({{?RFC7234}} section 5.2.2.8) (added to `date`), whichever is present,
-preferring `max-age` (or failing) if both are present.
-
-Validity updates ({{updating-validity}}) would include a list of replacement
-response header fields. For each header field name in this list, the client
-would remove matching header fields from the stored exchange's response header
-fields. Then the client would append the replacement header fields to the stored
-exchange's response header fields.
-
-#### Example of updating cache control
-
-For example, given a stored exchange of:
-
-~~~http
-:method = GET
-:scheme = https
-:authority = example.com
-:path = /
-accept = */*
-
-:status = 200
-date = Mon, 20 Nov 2017 10:00:00 UTC
-content-type = text/html
-date = Tue, 21 Nov 2017 10:00:00 UTC
-expires = Sun, 26 Nov 2017 10:00:00 UTC
-
-<!doctype html>
-<html>
-...
-~~~
-
-And an update listing the following headers:
-
-~~~http
-expires = Fri, 1 Dec 2017 10:00:00 UTC
-date = Sat, 25 Nov 2017 10:00:00 UTC
-~~~
-
-The resulting stored exchange would be:
-
-~~~http
-:method = GET
-:scheme = https
-:authority = example.com
-:path = /
-accept = */*
-
-:status = 200
-content-type = text/html
-expires = Fri, 1 Dec 2017 10:00:00 UTC
-date = Sat, 25 Nov 2017 10:00:00 UTC
-
-<!doctype html>
-<html>
-...
-~~~
-
-#### Downsides of updating cache control #### {#downsides-of-cache-control}
-
-In an exchange with multiple signatures, using cache control to expire
-signatures forces all signatures to initially live for the same period. Worse,
-the update from one signature's "validityUrl" might not match the update for
-another signature. Clients would need to maintain a current set of headers for
-each signature, and then decide which set to use when actually parsing the
-resource itself.
-
-This need to store and reconcile multiple sets of headers for a single signed
-exchange argues for embedding a signature's lifetime into the signature.
-
 # Security considerations
 
 Authors MUST NOT include confidential information in a signed response that an
@@ -967,6 +619,352 @@ situation by hiding the client's interest from the original author.
 TODO: possibly register the validityUrl format.
 
 --- back
+
+# Use cases
+
+## PUSHed subresources {#uc-pushed-subresources}
+
+To reduce round trips, a server might use HTTP/2 PUSH to inject a subresource
+from another server into the client's cache. If anything about the subresource
+is expired or can't be verified, the client would fetch it from the original
+server.
+
+For example, if `https://example.com/index.html` includes
+
+~~~html
+<script src="https://jquery.com/jquery-1.2.3.min.js">
+~~~
+
+Then to avoid the need to look up and connect to `jquery.com` in the critical
+path, `example.com` might PUSH that resource ({{?RFC7540}}, section 8.2), signed
+by `jquery.com`.
+
+## Explicit use of a content distributor for subresources {#uc-explicit-distributor}
+
+In order to speed up loading but still maintain control over its content, an
+HTML page in a particular origin `O.com` could tell clients to load its
+subresources from an intermediate content distributor that's not authoritative,
+but require that those resources be signed by `O.com` so that the distributor
+couldn't modify the resources. This is more constrained than the common CDN case
+where `O.com` has a CNAME granting the CDN the right to serve arbitrary content
+as `O.com`.
+
+~~~html
+<img logicalsrc="https://O.com/img.png"
+     physicalsrc="https://distributor.com/O.com/img.png">
+~~~
+
+To make it easier to configure the right distributor for a given request,
+computation of the `physicalsrc` could be encapsulated in a custom element:
+
+~~~html
+<dist-img src="https://O.com/img.png"></dist-img>
+~~~
+
+where the `<dist-img>` implementation generates an appropriate `<img>` based on,
+for example, a `<meta name="dist-base">` tag elsewhere in the page.
+
+This could be used for some of the same purposes as SRI ({{uc-sri}}).
+
+## Subresource Integrity {#uc-sri}
+
+The W3C WebAppSec group is investigating
+[using signatures](https://github.com/mikewest/signature-based-sri) in {{SRI}}.
+They need a way to transmit the signature with the response, which this proposal
+could provide.
+
+However, their needs also differ in some significant ways:
+
+1. The `integrity="ed25519-[public-key]"` attribute and CSP-based ways of
+   expressing a public key don't need the signing key to be also trusted to sign
+   arbitrary content for an origin.
+2. Some uses of SRI want to constrain subresources to be vouched for by a
+   third-party, rather than just being signed by the subresource's author.
+
+While we can design this system to cover both origin-trusted and simple-key
+signatures, we should check that this is better than having two separate systems
+for the two kinds of signatures.
+
+Note that while the current proposal for SRI describes signing only the content
+of a
+resource,
+[they may need to sign its name as well, to prevent security vulnerabilities](https://github.com/mikewest/signature-based-sri/issues/5).
+The details of what they need to sign will affect whether and how they can use
+this proposal.
+
+## Offline websites {#uc-offline-websites}
+
+See <https://github.com/WICG/webpackage> and
+{{?I-D.yasskin-dispatch-web-packaging}}. This use requires origin-signed
+resources to be bundled.
+
+# Requirements and open questions
+
+## Proof of origin
+
+To verify that a thing came from a particular origin, for use in the same
+context as a TLS connection, we need someone to vouch for the signing key with
+as much verification as the signing keys used in TLS. The obvious way to do this
+is to re-use the web PKI and CA ecosystem.
+
+### Certificate constraints
+
+If we re-use existing TLS server certificates, we incur the risks that:
+
+1. TLS server certificates must be accessible from online servers, so they're
+   easier to steal than an offline key. A package's signing key doesn't need to
+   be online.
+2. A server using an origin-trusted key for one purpose (e.g. TLS) might
+   accidentally sign something that looks like a package, or vice versa.
+
+If these risks are too high, we could define a new Extended Key Usage
+({{?RFC5280}}, section 4.2.1.12) that requires CAs to issue new keys for this
+purpose or a new certificate extension to do the same. A new EKU would probably
+require CAs to also issue new intermediate certificates because of how browsers
+trust EKUs. Both an EKU and a new extension take a long time to deploy and allow
+CAs to charge package-signers more than normal server operators, which will
+reduce adoption.
+
+The rest of this document will assume we can re-use existing TLS server
+certificates.
+
+### Signature constraints
+
+In order to prevent an attacker who can convince the server to sign some
+resource from causing those signed bytes to be interpreted as something else,
+signatures here need to:
+
+1. Avoid key types that are used for non-TLS protocols whose output could be
+   confused with a signature. That may be just the `rsaEncryption` OID from
+   {{?RFC2437}}.
+2. Use the same format as TLS's signatures, specified in {{?I-D.ietf-tls-tls13}}
+   section 4.4.3, with a context string that's specific to this use.
+
+The specification also needs to define which signing algorithm to use. I expect
+to define that as a function from the key type, instead of allowing
+attacker-controlled data to specify it.
+
+### Retrieving the certificate {#certificate-chain}
+
+The client needs to be able to find the certificate vouching for the signing
+key, a chain from that certificate to a trusted root, and possibly other trust
+information like SCTs ({{?RFC6962}}). One approach would be to include the
+certificate and its chain in the signature metadata itself, but this wastes
+bytes when the same certificate is used for multiple HTTP responses. If we
+decide to put the signature in an HTTP header, certificates are also unusually
+large for that context.
+
+Another option is to pass a URL that the client can fetch to retrieve the
+certificate and chain. To avoid extra round trips in fetching that URL, it could
+be [bundled](#uc-offline-websites) with the signed content
+or [PUSHed](#uc-pushed-subresources) with it. The risks from the
+`client_certificate_url` extension ({{RFC6066}} section 11.3) don't seem to
+apply here, since an attacker who can get a client to load a package and fetch
+the certificates it references, can also get the client to perform those fetches
+by loading other HTML.
+
+To avoid using an unintended certificate with the same public key as the
+intended one, the content of the certificate chain should be included in the
+signed data, like TLS does ({{?I-D.ietf-tls-tls13}}, section 4.4.3).
+
+## How much to sign ## {#how-much-to-sign}
+
+The previous {{?I-D.thomson-http-content-signature}} and
+{{?I-D.burke-content-signature}} schemes signed just the content, while
+({{?I-D.cavage-http-signatures}} could also sign the response headers and the
+request method and path. However, the same path, response headers, and content
+may mean something very different when retrieved from a different server. I
+suspect all higher-level protocols should require the whole URL to be signed,
+but {{signed-headers}} allows them to do otherwise.
+
+The question of whether to include other request headers---primarily the
+`accept*` family---is still open. These headers need to be represented so that
+clients wanting a different language, say, can avoid using the wrong-language
+response, but it's not obvious that there's a security vulnerability if an
+attacker can spoof them. For now, the proposal ({{proposal}}) omits other
+request headers.
+
+In order to allow multiple clients to consume the same signed exchange, the
+exchange shouldn't include the exact request headers that any particular client
+sends. For example, a Japanese resource wouldn't include
+
+~~~http
+accept-language: ja-JP, ja;q=0.9, en;q=0.8, zh;q=0.7, *;q=0.5
+~~~
+
+Instead, it would probably include just
+
+~~~http
+accept-language: ja-JP, ja
+~~~
+
+and clients would use the same matching logic as
+for [PUSH_PROMISE](https://tools.ietf.org/html/rfc7540#section-8.2) frame
+headers.
+
+### Conveying the signed headers
+
+HTTP headers are traditionally munged by proxies, making it impossible to
+guarantee that the client will see the same sequence of bytes as the author
+wrote. In the HTTPS world, we have more end-to-end header integrity, but it's
+still likely that there are enough TLS-terminating proxies that the author's
+signatures would tend to break before getting to the client.
+
+There's also no way in current HTTP for the response to a client-initiated
+request ({{RFC7540}}, section 8.1) to convey the request headers it expected to
+respond to. A PUSH_PROMISE ({{RFC7540}}, section 8.2) does not have this
+problem, and it would be possible to introduce a response header to convey the
+expected request headers.
+
+Since proxies don't modify unknown content types, we could wrap the original
+exchange into an `application/http2` format. This could be as simple as a series
+of HTTP/2 frames, or could
+
+1. Allow longer contiguous bodies than [HTTP/2's 16MB frame
+   limit](https://tools.ietf.org/html/rfc7540#section-4.2), and
+1. Use better compression than {{?RFC7541}} for the non-confidential headers.
+   Note that header compression can probably share a compression state across a
+   single signed exchange, but needs a mechanism like
+   {{?I-D.vkrasnov-h2-compression-dictionaries}} to use any compression state
+   from other responses.
+
+To help the PUSHed subresources use case ({{uc-pushed-subresources}}), we might
+also want to extend the `PUSH_PROMISE` frame type to include a signature, and
+that could tell intermediates not to change the ensuing headers.
+
+## Response lifespan
+
+A normal HTTPS response is authoritative only for one client, for as long as its
+cache headers say it should live. A signed exchange can be re-used for many
+clients, and if it was generated while a server was compromised, it can continue
+compromising clients even if their requests happen after the server recovers.
+This signing scheme needs to mitigate that risk.
+
+### Certificate revocation
+
+Certificates are mis-issued and private keys are stolen, and in response clients
+need to be able to stop trusting these certificates as promptly as possible.
+Online revocation
+checks [don't work](https://www.imperialviolet.org/2012/02/05/crlsets.html), so
+the industry has moved to pushed revocation lists and stapled OCSP responses
+{{?RFC6066}}.
+
+Pushed revocation lists work as-is to block trust in the certificate signing an
+exchange, but the signatures need an explicit strategy to staple OCSP responses.
+One option is to extend the certificate download ({{certificate-chain}}) to
+include the OCSP response too, perhaps in the
+[TLS 1.3 CertificateEntry](https://tlswg.github.io/tls13-spec/draft-ietf-tls-tls13.html#ocsp-and-sct) format.
+
+### Response downgrade attacks {#downgrade}
+
+The signed content in a response might be vulnerable to attacks, such as XSS, or
+might simply be discovered to be incorrect after publication. Once the author
+fixes those vulnerabilities or mistakes, clients should stop trusting the old
+signed content in a reasonable amount of time. Similar to certificate
+revocation, I expect the best option to be stapled "this version is still valid"
+assertions with short expiration times.
+
+These assertions could be structured as:
+
+1. A signed minimum version number or timestamp for a set of request headers:
+   This requires that signed responses need to include a version number or
+   timestamp, but allows a server to provide a single signature covering all
+   valid versions.
+1. A replacement for the whole exchange's signature. This requires the author to
+   separately re-sign each valid version and requires each version to include a
+   different update URL, but allows intermediates to serve less data. This is
+   the approach taken in {{proposal}}.
+1. A replacement for the exchange's signature and an update for the embedded
+   `expires` and related cache-control HTTP headers {{?RFC7234}}. This naturally
+   extends authors' intuitions about cache expiration and the existing cache
+   revalidation behavior to signed exchanges. This is sketched and its downsides
+   explored in {{validity-with-cache-control}}.
+
+The signature also needs to include instructions to intermediates for how to
+fetch updated validity assertions.
+
+# Determining validity using cache control # {#validity-with-cache-control}
+
+This draft could expire signature validity using the normal HTTP cache control
+headers ({{?RFC7234}}) instead of embedding an expiration date in the Signature
+itself. This section specifies how that would work, and describes why I haven't
+chosen that option.
+
+The `Signature` header field ({{signature-header}}) would no longer contain
+"date" or "expires" fields.
+
+The validity-checking algorithm ({{signature-validity}}) would initialize `date`
+from the resource's `Date` header field ({{?RFC7231}}, section 7.1.1.2) and
+initialize `expires` from either the `Expires` header field ({{?RFC7234}}
+section 5.3) or the `Cache-Control` header field's `max-age` directive
+({{?RFC7234}} section 5.2.2.8) (added to `date`), whichever is present,
+preferring `max-age` (or failing) if both are present.
+
+Validity updates ({{updating-validity}}) would include a list of replacement
+response header fields. For each header field name in this list, the client
+would remove matching header fields from the stored exchange's response header
+fields. Then the client would append the replacement header fields to the stored
+exchange's response header fields.
+
+## Example of updating cache control
+
+For example, given a stored exchange of:
+
+~~~http
+:method = GET
+:scheme = https
+:authority = example.com
+:path = /
+accept = */*
+
+:status = 200
+date = Mon, 20 Nov 2017 10:00:00 UTC
+content-type = text/html
+date = Tue, 21 Nov 2017 10:00:00 UTC
+expires = Sun, 26 Nov 2017 10:00:00 UTC
+
+<!doctype html>
+<html>
+...
+~~~
+
+And an update listing the following headers:
+
+~~~http
+expires = Fri, 1 Dec 2017 10:00:00 UTC
+date = Sat, 25 Nov 2017 10:00:00 UTC
+~~~
+
+The resulting stored exchange would be:
+
+~~~http
+:method = GET
+:scheme = https
+:authority = example.com
+:path = /
+accept = */*
+
+:status = 200
+content-type = text/html
+expires = Fri, 1 Dec 2017 10:00:00 UTC
+date = Sat, 25 Nov 2017 10:00:00 UTC
+
+<!doctype html>
+<html>
+...
+~~~
+
+## Downsides of updating cache control ## {#downsides-of-cache-control}
+
+In an exchange with multiple signatures, using cache control to expire
+signatures forces all signatures to initially live for the same period. Worse,
+the update from one signature's "validityUrl" might not match the update for
+another signature. Clients would need to maintain a current set of headers for
+each signature, and then decide which set to use when actually parsing the
+resource itself.
+
+This need to store and reconcile multiple sets of headers for a single signed
+exchange argues for embedding a signature's lifetime into the signature.
 
 # Acknowledgements
 
