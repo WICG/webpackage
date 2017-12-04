@@ -44,7 +44,8 @@ informative:
 
 This document explores how a server can send particular responses that are
 authoritative for an origin, when the server itself is not authoritative for
-that origin. For now, it focuses on the constraints covering any such mechanism.
+that origin. For now, the appendices containing use cases and requirements
+should be treated as more confident than the proposal itself.
 
 --- note_Note_to_Readers
 
@@ -698,7 +699,7 @@ See <https://github.com/WICG/webpackage> and
 {{?I-D.yasskin-dispatch-web-packaging}}. This use requires origin-signed
 resources to be bundled.
 
-# Requirements and open questions
+# Requirements
 
 ## Proof of origin
 
@@ -968,5 +969,5 @@ exchange argues for embedding a signature's lifetime into the signature.
 
 # Acknowledgements
 
-Thanks to Ilari Liusvaara, Ryan Sleevi, and Yoav Weiss for comments that
-improved this draft.
+Thanks to Ilari Liusvaara, Mark Nottingham, Ryan Sleevi, and Yoav Weiss for
+comments that improved this draft.
