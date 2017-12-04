@@ -711,9 +711,9 @@ Including the entire exchange in the signed data forces a client to download the
 whole thing before trusting any of it. {{?I-D.thomson-http-mice}} is designed to
 let us check the validity of just the `MI` header up front and then
 incrementally check blocks of the payload as they arrive. What's the best way to
-integrate that? Maybe make the {{significant-parts}} omit the actual payload
-when there's an `MI` header with a matching `Content-Encoding` and warn clients
-to enforce the `MI` header when using the body?
+integrate that? Maybe add a flag to the Signature header field saying that the
+payload is guarded by some other header field, so isn't included in the
+significant parts ({{significant-parts}}).
 {:#incremental-validity}
 
 ## Updating signature validity ## {#updating-validity}
