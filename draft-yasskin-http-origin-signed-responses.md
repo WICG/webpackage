@@ -141,7 +141,7 @@ is included and not other request headers.
 ({{!I-D.ietf-httpbis-header-structure}}, section 4.8) of lowercase strings
 ({{!I-D.ietf-httpbis-header-structure}}, section 4.2) naming HTTP response
 header fields. Pseudo-header field names ({{!RFC7540}}, section 8.1.2.1) MUST
-not appear in this list.
+NOT appear in this list.
 
 Higher-level protocols SHOULD place requirements on the minimum set of headers
 to include in the `Signed-Headers` header field.
@@ -775,7 +775,7 @@ signatures here need to:
 
 1. Avoid key types that are used for non-TLS protocols whose output could be
    confused with a signature. That may be just the `rsaEncryption` OID from
-   {{?RFC2437}}.
+   {{?RFC8017}}.
 2. Use the same format as TLS's signatures, specified in {{?I-D.ietf-tls-tls13}}
    section 4.4.3, with a context string that's specific to this use.
 
