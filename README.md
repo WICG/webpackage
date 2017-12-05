@@ -15,13 +15,11 @@ format to the DISPATCH WG at IETF99, and
 received [feedback](https://datatracker.ietf.org/doc/minutes-99-dispatch/). We
 have Internet Drafts for:
 
-* [Use cases](https://tools.ietf.org/html/draft-yasskin-webpackage-use-cases)
-* [Requirements on individual origin-signed request/response pairs](https://tools.ietf.org/html/draft-yasskin-http-origin-signed-responses):
+* [Use cases](https://tools.ietf.org/html/draft-yasskin-webpackage-use-cases) ([Editor's draft](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html))
+* [Requirements on individual origin-signed request/response pairs](https://tools.ietf.org/html/draft-yasskin-http-origin-signed-responses) ([Editor's draft](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html)):
   This is one layer split out of the full packaging proposal. The other layer,
   bundling these signed responses, isn't drafted yet.
-* [The full packaging format](https://tools.ietf.org/html/draft-yasskin-dispatch-web-packaging)
-
-Editor's drafts are available within https://WICG.github.io/webpackage/.
+* [The full packaging format](https://tools.ietf.org/html/draft-yasskin-dispatch-web-packaging) ([Editor's draft](https://wicg.github.io/webpackage/draft-yasskin-dispatch-web-packaging.html))
 
 At the W3C, we'll pursue a specification on how browsers load this format. If
 the IETF turns out not to be interested in the format itself, that'll come back
