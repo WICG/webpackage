@@ -217,20 +217,13 @@ sharing the exchange among themselves without going back to the intermeidate?
 
 The significant parts of an exchange are:
 
-* The request pseudo-header fields whose names are listed in that exchange's
-  `Signed-Headers` header field ({{signed-headers}}), in the order they appear
-  in that header field.  If a request pseudo-header field name from
-  `Signed-Headers` does not appear in the exchange's request pseudo-header
-  fields, the exchange has no significant parts.
-
-  If the request includes a `Host` header field but no `:authority` header
-  field, it is treated for the purpose of computing its significant parts as
-  having an `:authority` header field with the value of the `Host` header field.
-* The response header fields whose names are listed in that exchange's
-  `Signed-Headers` header field ({{signed-headers}}), in the order they appear
-  in that header field. If a response header field name from `Signed-Headers`
-  does not appear in the exchange's response header fields, the exchange has no
-  significant parts.
+* The method ({{!RFC7231}}, section 4) and effective request URI ({{!RFC7230}},
+  section 5.5) of the request.
+* The response status code ({{!RFC7231}}, section 6) and the response header
+  fields whose names are listed in that exchange's `Signed-Headers` header field
+  ({{signed-headers}}), in the order they appear in that header field. If a
+  response header field name from `Signed-Headers` does not appear in the
+  exchange's response header fields, the exchange has no significant parts.
 * The exchange's payload body ({{!RFC7230}}, section 3.3). Note that the payload
   body is the message body with any transfer encodings removed.
 
@@ -259,13 +252,19 @@ The CBOR representation of an exchange is the result of the following algorithm:
    ({{significant-parts}}) of some other exchange.
 1. Return a CBOR ({{!RFC7049}}) array with the following content:
    1. The text string "request".
-   1. The array consisting of the appended items from, for each request header
-      field in `exchange`, in order:
-      1. Append the header field's name as a byte string.
-      1. Append the header field's value as a byte string.
+   1. The array consisting of the following items:
+      1. The byte string ':method'.
+      1. The byte string containing the request's method.
+      1. The byte string ':url'.
+      1. The byte string containing the request's effective request URI.
    1. The text string "response".
-   1. The array consisting of the appended items from, for each response header
-      field in `exchange`, in order:
+   1. The array consisting of the initial two items
+      1. The byte string ':status'.
+      1. The byte string containing the response's 3-digit status code.
+
+      Followed by the appended items from, for each response header field in
+      `exchange`, in order:
+
       1. Append the header field's name as a byte string.
       1. Append the header field's value as a byte string.
    1. The text string "payload".
@@ -275,18 +274,15 @@ The CBOR representation of an exchange is the result of the following algorithm:
 
 ### Example ### {#example-cbor-representation}
 
-Given the HTTP/2 exchange:
+Given the HTTP exchange:
 
 ~~~http
-:method = GET
-:scheme = https
-:authority = example.com
-:path = /
+GET https://example.com/ HTTP/1.1
 accept = */*
 
-:status = 200
+HTTP/1.1 200
 content-type = text/html
-signed-headers = ":authority",":path",":status","content-type"
+signed-headers = "content-type"
 
 <!doctype html>
 <html>
@@ -300,8 +296,8 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 [
   "request",
   [
-    ':authority', 'example.com',
-    ':path', '/'
+    ':method', 'GET',
+    ':url', 'https://example.com/'
   ],
   "response",
   [
@@ -447,7 +443,7 @@ the client MUST treat the exchange as a stream error as described by
 1. Run {{signature-validity}} over the signature with the `allResponseHeaders`
    flag set, getting `exchange` and `certificate-chain` back. If this returned
    "invalid" or didn't return a certificate chain, return "invalid".
-1. Let `authority` be the ":authority" request header from `exchange`.
+1. Let `authority` be the host component of `exchange`'s effective request URI.
 1. Validate the `certificate-chain` using the following substeps. If any of them
    fail, re-run {{signature-validity}} once over the signature with both the
    `forceFetch` flag and the `allResponseHeaders` flag set, and restart from
@@ -620,10 +616,14 @@ whole to become untrusted.
 ## Aspects of the straw proposal
 
 The use of a single `Signed-Headers` header field prevents us from signing
-aspects of the request other than its effective request URL ({{?RFC7230}},
+aspects of the request other than its effective request URI ({{?RFC7230}},
 section 5.5). For example, if an author signs both `Content-Encoding: br` and
 `Content-Encoding: gzip` variants of a response, what's the impact if an
 attacker serves the brotli one for a request with `Accept-Encoding: gzip`?
+
+The simple form of `Signed-Headers` also prevents us from signing less than the
+full request URL. The SRI use case ({{uc-sri}}) may benefit from being able to
+leave the authority less constrained.
 
 {{signature-validity}} can succeed when some delivered headers aren't included
 in the signed set. This accommodates current TLS-terminating intermediates and
@@ -701,6 +701,9 @@ where the `<dist-img>` implementation generates an appropriate `<img>` based on,
 for example, a `<meta name="dist-base">` tag elsewhere in the page.
 
 This could be used for some of the same purposes as SRI ({{uc-sri}}).
+
+Note that the current proposal doesn't support this use case because there's no
+way aside from a Server Push to override the physical request URL.
 
 ## Subresource Integrity {#uc-sri}
 
@@ -809,9 +812,10 @@ The previous {{?I-D.thomson-http-content-signature}} and
 {{?I-D.burke-content-signature}} schemes signed just the content, while
 ({{?I-D.cavage-http-signatures}} could also sign the response headers and the
 request method and path. However, the same path, response headers, and content
-may mean something very different when retrieved from a different server. I
-suspect all higher-level protocols should require the whole URL to be signed,
-but {{signed-headers}} allows them to do otherwise.
+may mean something very different when retrieved from a different server.
+{{significant-parts}} currently includes the whole request URL in the signature,
+but it's possible we need a more flexible scheme to allow some higher-level
+protocols to accept a less-signed URL.
 
 The question of whether to include other request headers---primarily the
 `accept*` family---is still open. These headers need to be represented so that
@@ -947,13 +951,10 @@ exchange's response header fields.
 For example, given a stored exchange of:
 
 ~~~http
-:method = GET
-:scheme = https
-:authority = example.com
-:path = /
+GET https://example.com/ HTTP/1.1
 accept = */*
 
-:status = 200
+HTTP/1.1 200
 date = Mon, 20 Nov 2017 10:00:00 UTC
 content-type = text/html
 date = Tue, 21 Nov 2017 10:00:00 UTC
@@ -974,13 +975,10 @@ date = Sat, 25 Nov 2017 10:00:00 UTC
 The resulting stored exchange would be:
 
 ~~~http
-:method = GET
-:scheme = https
-:authority = example.com
-:path = /
+GET https://example.com/ HTTP/1.1
 accept = */*
 
-:status = 200
+HTTP/1.1 200
 content-type = text/html
 expires = Fri, 1 Dec 2017 10:00:00 UTC
 date = Sat, 25 Nov 2017 10:00:00 UTC
