@@ -429,12 +429,25 @@ there are no non-significant response header fields in the exchange.
 
 ### Validating a certificate chain for an authority ### {#authority-chain-validation}
 
-When the physical request is different from the logical request, clients will often want to verify that a potentially-valid certificate chain is trusted for the logical request. They can use the following algorithm to do so:
+{{?RFC7540}} section 8.2 includes the rule:
 
-1. Run {{signature-validity}} over the `Signature` header, getting `exchange`
-   and `certificate-chain` back. If this returned "invalid", return "invalid".
-1. Let `authority` be the ":authority" request header from `exchange`. If
-   `exchange` doesn't include its ":authority" header, return "invalid".
+> The server MUST include a value in the :authority pseudo-header field for
+> which the server is authoritative (see Section 10.1). A client MUST treat a
+> PUSH_PROMISE for which the server is not authoritative as a stream error
+> (Section 5.4.2) of type PROTOCOL_ERROR.
+
+If the Server Push contains a signed exchange for which the server is not
+authoritative, instead of treating it as a stream error, the client MAY search
+for a signature for which the following algorithm returns "valid". If such a
+signature is found, the client MAY treat the server as authoritative for this
+particular exchange and store the exchange as described by {{!RFC7540}}. If not,
+the client MUST treat the exchange as a stream error as described by
+{{!RFC7540}}.
+
+1. Run {{signature-validity}} over the signature with the `allResponseHeaders`
+   flag set, getting `exchange` and `certificate-chain` back. If this returned
+   "invalid" or didn't return a certificate chain, return "invalid".
+1. Let `authority` be the ":authority" request header from `exchange`.
 1. Validate the `certificate-chain` using the following substeps. If any of them
    fail, re-run {{signature-validity}} once over the signature with both the
    `forceFetch` flag and the `allResponseHeaders` flag set, and restart from
