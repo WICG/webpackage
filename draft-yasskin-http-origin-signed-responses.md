@@ -103,63 +103,70 @@ appear in all capitals, as shown here.
 
 As a response to an HTTP request or as a Server Push ({{!RFC7540}}, section 8.2)
 the server MAY include a `Signed-Headers` header field ({{signed-headers}})
-identifying [significant](#significant-parts) header fields and one or more
-`Signature` header fields ({{signature-header}}) that vouch for the content of
-the response.
+identifying [significant](#significant-parts) header fields and a `Signature`
+header field ({{signature-header}}) holding a list of one or more parameterised
+signatures that vouch for the content of the response.
 
-The client categorizes each `Signature` header as "valid" or "invalid" by
-validating that header's certificate, metadata, and signature against the
+The client categorizes each signature as "valid" or "invalid" by validating that
+signature with its certificate or public key and other metadata against the
 significant headers and content ({{signature-validity}}). This validity then
 informs higher-level protocols.
 
-The `Signature` header includes information to let a client fetch assurance a
-signed exchange is still valid, in the face of revoked certificates and
+Each signature is parameterised with information to let a client fetch assurance
+that a signed exchange is still valid, in the face of revoked certificates and
 newly-discovered vulnerabilities. This assurance can be bundled back into the
 signed exchange and forwarded to another client, which won't have to re-fetch
 this validity information for some period of time.
 
 ## The Signed-Headers Header ## {#signed-headers}
 
-The `Signed-Headers` header field identifies an ordered list of request
-pseudo-header fields and response header fields to include in a signature. This
-allows a TLS-terminating intermediate to reorder headers without breaking the
-signature. This *can* also allow the intermediate to add headers that will be
-ignored by some higher-level protocols, but {{signature-validity}} provides a
-hook to let other higher-level protocols reject such insecure headers.
+The `Signed-Headers` header field identifies an ordered list of response header
+fields to include in a signature. The request URL and response status are
+included unconditionally. This allows a TLS-terminating intermediate to reorder
+headers without breaking the signature. This *can* also allow the intermediate
+to add headers that will be ignored by some higher-level protocols, but
+{{signature-validity}} provides a hook to let other higher-level protocols
+reject such insecure headers.
 
 This header field appears once instead of being incorporated into the
-`Signature` header fields because the significant header fields need to be
+signatures' parameters because the significant header fields need to be
 consistent across all signatures of an exchange, to avoid forcing higher-level
 protocols to merge the header field lists of valid signatures.
 
-See {{how-much-to-sign}} for a discussion of why only request pseudo-headers can
-be included.
+See {{how-much-to-sign}} for a discussion of why only the URL from the request
+is included and not other request headers.
 
 `Signed-Headers` is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list
 ({{!I-D.ietf-httpbis-header-structure}}, section 4.8) of lowercase strings
-({{!I-D.ietf-httpbis-header-structure}}, section 4.2) naming HTTP header fields.
-In this list, any request pseudo-header field names ({{!RFC7540}}, section
-8.1.2.3) MUST appear first, followed by response pseudo-header field names
-({{!RFC7540}}, section 8.1.2.4), followed by other response header field names.
-
-Note that this field's value's meaning relies on the names of request and response pseudo-header fields being distinct, which is true as of {{?RFC7540}}.
+({{!I-D.ietf-httpbis-header-structure}}, section 4.2) naming HTTP response
+header fields. Pseudo-header field names ({{!RFC7540}}, section 8.1.2.1) MUST
+not appear in this list.
 
 Higher-level protocols SHOULD place requirements on the minimum set of headers
 to include in the `Signed-Headers` header field.
 
 ## The Signature Header ## {#signature-header}
 
-The `Signature` header conveys a signature for an exchange and information about
-how to determine the authority of and refresh that signature.
+The `Signature` header field conveys a list of signatures for an exchange, each
+one accompanied by information about how to determine the authority of and
+refresh that signature.
 
 The `Signature` header is a Structured Header as defined by
-{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a dictionary
-({{!I-D.ietf-httpbis-header-structure}}, section 4.7).
+{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list ({{!I-D.ietf-httpbis-header-structure}}, section 4.8) of
+parameterised labels ({{!I-D.ietf-httpbis-header-structure}}, section 4.4).
 
-The dictionary MUST contain members named "validityUrl", "date", "expires", and
-"sig", and either "certUrl" and "certSha256" members or an "ed25519Key" member.
-The present members MUST have the following values:
+Each parameterised label MUST have parameters named "sig", "validityUrl",
+"date", and "expires", and either "certUrl" and "certSha256" parameters or an
+"ed25519Key" parameter. This specification gives no meaning to the label itself,
+which can be used as a human-readable identifier for the signature (see {{parameterised-binary}}). The present
+parameters MUST have the following values:
+
+"sig"
+
+: Binary content ({{!I-D.ietf-httpbis-header-structure}}, section 4.5) holding
+  the signature of most of these parameters and the significant parts of the
+  exchange ({{significant-parts}}).
 
 "certUrl"
 
@@ -186,20 +193,21 @@ The present members MUST have the following values:
 : An unsigned integer ({{!I-D.ietf-httpbis-header-structure}}, section 4.1)
   representing a Unix time.
 
-"sig"
-
-: Binary content ({{!I-D.ietf-httpbis-header-structure}}, section 4.5) holding
-  the signature of most of this header and the significant parts of the exchange
-  {{significant-parts}}.
-
-The "certUrl" and "validityUrl" members are *not* signed, so intermediates can
+The "certUrl" and "validityUrl" parameters are *not* signed, so intermediates can
 update them with pointers to cached versions.
 
 ### Open Questions
+
+{{?I-D.ietf-httpbis-header-structure}} provides a way to parameterise labels but
+not other supported types like binary content. If the `Signature` header field
+is notionally a list of parameterised signatures, maybe we should add a
+"parameterised binary content" type.
+{:#parameterised-binary}
+
 Should the certUrl and validityUrl be lists so that intermediates can offer a
 cache without losing the original URLs? Putting lists in dictionary fields is
-more complex than {{?I-D.ietf-httpbis-header-structure}} allows, but the WG
-might be willing to update that.
+more complex than {{?I-D.ietf-httpbis-header-structure}} allows, so they're
+single items for now.
 
 Should "validityUrl" be signed or optionally signed so that an exchange's author
 can prevent an intermediate from removing it, which would prevent clients from
@@ -321,9 +329,15 @@ either.
 
 ## Signature validity ## {#signature-validity}
 
-The client MUST use the following algorithm to determine whether each
-`Signature` header field ({{signature-header}}) is invalid or potentially-valid.
-Potentially-valid results include:
+The client MUST parse the `Signature` header field as the list of parameterised
+values described in {{signature-header}}
+({{!I-D.ietf-httpbis-header-structure}}, section 4.8.1). If an error is thrown
+during this parsing, the exchange has no valid signatures. Otherwise, each
+member of this list represents a signature with parameters.
+
+The client MUST use the following algorithm to determine whether each signature
+with parameters is invalid or potentially-valid. Potentially-valid results
+include:
 
 * The signed parts of the exchange so that higher-level protocols can avoid
   relying on unsigned headers, and
@@ -339,23 +353,22 @@ to retrieve updated OCSPs from the original server.
 This algorithm also accepts an `allResponseHeaders` flag, which insists that
 there are no non-significant response header fields in the exchange.
 
-1. Let `originalExchange` be the `Signature` header field's exchange.
+1. Let `originalExchange` be the signature's exchange.
 1. Let `exchange` be the significant parts ({{significant-parts}}) of
    `originalExchange`. If `originalExchange` has no significant parts, then
    return "invalid".
 1. If `allResponseHeaders` is set and the response headers fields in
    `originalExchange` are a proper superset of the response header fields in
    `exchange`, then return "invalid".
-1. If an error is thrown while parsing the `Signature` header as the dictionary
-   described in {{signature-header}}  ({{!I-D.ietf-httpbis-header-structure}},
-   section 4.7.1), return "invalid".
 1. Let:
-   * `certUrl` be the header's "certUrl" member, if any
-   * `certSha256` be the header's "certSha256" member, if any
-   * `ed25519Key` be the header's "ed25519Key" member, if any
-   * `date` be the header's "date" member, interpreted as a Unix time
-   * `expires` be the header's "expires" member, interpreted as a Unix time
-   * `signature` be the header's "sig" member
+   * `signature` be the signature (binary content in the parameterised value's
+     "sig" parameter).
+   * `certUrl` be the signature's "certUrl" parameter, if any.
+   * `certSha256` be the signature's "certSha256" parameter, if any.
+   * `ed25519Key` be the signature's "ed25519Key" parameter, if any.
+   * `date` be the signature's "date" parameter, interpreted as a Unix time.
+   * `expires` be the signature's "expires" parameter, interpreted as a Unix
+     time.
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. If `certUrl` is present:
       1. Let `certificate-chain` be the result of fetching ({{FETCH}}) `certUrl`
@@ -414,7 +427,7 @@ there are no non-significant response header fields in the exchange.
    is present of `certificate-chain` or `ed25519Key`. Otherwise, return
    "invalid".
 
-### Validating a certificate chain for an authority
+### Validating a certificate chain for an authority ### {#authority-chain-validation}
 
 When the physical request is different from the logical request, clients will often want to verify that a potentially-valid certificate chain is trusted for the logical request. They can use the following algorithm to do so:
 
@@ -423,8 +436,9 @@ When the physical request is different from the logical request, clients will of
 1. Let `authority` be the ":authority" request header from `exchange`. If
    `exchange` doesn't include its ":authority" header, return "invalid".
 1. Validate the `certificate-chain` using the following substeps. If any of them
-   fail, re-run {{signature-validity}} once over the `Signature` header with the
-   `forceFetch` flag set, and restart from step 2.
+   fail, re-run {{signature-validity}} once over the signature with both the
+   `forceFetch` flag and the `allResponseHeaders` flag set, and restart from
+   step 2. If a substep fails again, return "invalid".
    1. Use `certificate-chain` to validate that its first entry,
       `main-certificate` is trusted as `authority`'s server certificate
       ({{!RFC5280}} and other undocumented conventions). Let `path` be the path
@@ -440,8 +454,8 @@ When the physical request is different from the logical request, clients will of
 ### Open Questions
 
 TLS 1.3 signs the entire certificate chain, but doing that here would preclude
-updating the OCSP signatures without replacing all `Signature` header fields at
-the same time. What attack do I allow by hashing only the end-entity
+updating the OCSP signatures without replacing all signatures using that chain
+at the same time. What attack do I allow by hashing only the end-entity
 certificate?
 {:#hash-whole-chain}
 
@@ -449,14 +463,14 @@ Including the entire exchange in the signed data forces a client to download the
 whole thing before trusting any of it. {{?I-D.thomson-http-mice}} is designed to
 let us check the validity of just the `MI` header up front and then
 incrementally check blocks of the payload as they arrive. What's the best way to
-integrate that? Maybe add a flag to the Signature header field saying that the
-payload is guarded by some other header field, so isn't included in the
-significant parts ({{significant-parts}}).
+integrate that? Maybe add a flag to the `Signature` header field or its
+signatures saying that the payload is guarded by some other header field, so
+isn't included in the significant parts ({{significant-parts}}).
 {:#incremental-validity}
 
 ## Updating signature validity ## {#updating-validity}
 
-Both OCSP responses and `Signature` header fields are designed to expire a short
+Both OCSP responses and signatures are designed to expire a short
 time after they're signed, so that revoked certificates and signed exchanges
 with known vulnerabilities are distrusted promptly.
 
@@ -464,9 +478,9 @@ This specification provides no way to update OCSP responses by themselves.
 Instead, [clients need to re-fetch the "certUrl"](#force-fetch) to get a chain
 including newer OCSPs.
 
-The ["validityUrl" member](#signature-validityurl) of the `Signature` header
-provides a way to fetch new signatures or learn where to fetch a complete
-updated package.
+The ["validityUrl" parameter](#signature-validityurl) of the signatures provides
+a way to fetch new signatures or learn where to fetch a complete updated
+package.
 
 Each version of a signed exchange SHOULD have its own validity URLs, since each
 version needs different signatures and becomes obsolete at different times.
@@ -485,9 +499,9 @@ validity = {
 ~~~
 
 The elements of the `signatures` array are header field values meant to replace
-the `Signature` header fields pointing to this validity data. If the signed
-exchange contains a bug severe enough that clients need to stop using the
-content, the `signatures` array MUST NOT be present.
+the signatures within the `Signature` header field pointing to this validity
+data. If the signed exchange contains a bug severe enough that clients need to
+stop using the content, the `signatures` array MUST NOT be present.
 
 The `update` map gives a location to update the entire signed exchange and an
 estimate of the size of the resource at that URL. If the signed exchange is
@@ -499,24 +513,27 @@ signatures.
 
 ### Examples ### {#examples-updating-validity}
 
-For example, if a signed exchange has the following `Signature` header fields:
+For example, if a signed exchange has the following `Signature` header field (written as multiple fields for convenience):
 
 ~~~http
-Signature: validityUrl="https://example.com/resource.validity",
-  certUrl="https://example.com/certs",
-  certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI,
-  date=1511128380, expires=1511560380,
-  sig=*MEUCIQDXlI2gN3RNBlgFiuRNFpZXcDIaUpX6HIEwcZEc0cZYLAIga9DsVOMM+g5YpwEBdGW3sS+bvnmAJJiSMwhuBdqp5UY
-Signature: validityUrl="https://example.com/resource.validity",
-  certUrl="https://example.com/certs",
-  certSha256=*kQAA8u33cZRTy7RHMO4+dv57baZL48SYA2PqmYvPPbg,
-  date=1511301183, expires=1511905983,
-  sig=*MEQCIGjZRqTRf9iKNkGFyzRMTFgwf/BrY2ZNIP/dykhUV0aYAiBTXg+8wujoT4n/W+cNgb7pGqQvIUGYZ8u8HZJ5YH26Qg
-Signature: validityUrl="https://thirdparty.example.com/resource.validity",
-  certUrl="https://thirdparty.example.com/certs",
-  certSha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc,
-  date=1511301183, expires=1511905983,
-  sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+
+Signature: sig1;
+  sig=*MEUCIQDXlI2gN3RNBlgFiuRNFpZXcDIaUpX6HIEwcZEc0cZYLAIga9DsVOMM+g5YpwEBdGW3sS+bvnmAJJiSMwhuBdqp5UY;
+  validityUrl="https://example.com/resource.validity";
+  certUrl="https://example.com/certs";
+  certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI;
+  date=1511128380; expires=1511560380
+Signature: sig2;
+  sig=*MEQCIGjZRqTRf9iKNkGFyzRMTFgwf/BrY2ZNIP/dykhUV0aYAiBTXg+8wujoT4n/W+cNgb7pGqQvIUGYZ8u8HZJ5YH26Qg;
+  validityUrl="https://example.com/resource.validity";
+  certUrl="https://example.com/certs";
+  certSha256=*kQAA8u33cZRTy7RHMO4+dv57baZL48SYA2PqmYvPPbg;
+  date=1511301183; expires=1511905983
+Signature: sig3;
+  sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+;
+  validityUrl="https://thirdparty.example.com/resource.validity";
+  certUrl="https://thirdparty.example.com/certs";
+  certSha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc;
+  date=1511301183; expires=1511905983
 ~~~
 
 https://example.com/resource.validity might contain:
@@ -524,11 +541,12 @@ https://example.com/resource.validity might contain:
 ~~~cbor-diag
 {
   "signatures": [
-    'validityUrl="https://example.com/resource.validity", '
-    'certUrl="https://example.com/certs", '
-    'certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI, '
-    'date=1511467200, expires=1511985600, '
-    'sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw'
+    'sig4; '
+    'sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw; '
+    'validityUrl="https://example.com/resource.validity"; '
+    'certUrl="https://example.com/certs"; '
+    'certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI; '
+    'date=1511467200; expires=1511985600'
   ],
   "update": {
     "url": "https://example.com/resource",
@@ -537,26 +555,28 @@ https://example.com/resource.validity might contain:
 }
 ~~~
 
-This indicates that the first two of the original `Signature` header fields (the
-ones with a validityUrl of "https://example.com/resource.validity") can be
-replaced with a single new header field. The `Signature` header fields of the
-updated signed exchange would be:
+This indicates that the first two of the original signatures (the ones with a
+validityUrl of "https://example.com/resource.validity") can be replaced with a
+single new signature. The signatures of the updated signed
+exchange would be:
 
 ~~~http
-Signature: validityUrl="https://example.com/resource.validity",
-  certUrl="https://example.com/certs",
-  certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI,
-  date=1511467200, expires=1511985600,
-  sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw
-Signature: validityUrl="https://thirdparty.example.com/resource.validity",
-  certUrl="https://thirdparty.example.com/certs",
-  certSha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc,
-  date=1511301183, expires=1511905983,
-  sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+
+Signature: sig4;
+  sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw;
+  validityUrl="https://example.com/resource.validity";
+  certUrl="https://example.com/certs";
+  certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI;
+  date=1511467200; expires=1511985600
+Signature: sig3;
+  sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+;
+  validityUrl="https://thirdparty.example.com/resource.validity";
+  certUrl="https://thirdparty.example.com/certs";
+  certSha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc;
+  date=1511301183; expires=1511905983
 ~~~
 
-https://example.com/resource.validity could also expand the set of `Signature`
-header fields if its `signatures` array contained more than 2 elements.
+https://example.com/resource.validity could also expand the set of signatures if
+its `signatures` array contained more than 2 elements.
 
 # Security considerations
 
@@ -587,16 +607,18 @@ whole to become untrusted.
 ## Aspects of the straw proposal
 
 The use of a single `Signed-Headers` header field prevents us from signing
-non-pseudo request headers. For example, if an author signs both
-`Content-Encoding: br` and `Content-Encoding: gzip` variants of a response,
-what's the impact if an attacker serves the brotli one for a request with
-`Accept-Encoding: gzip`?
+aspects of the request other than its effective request URL ({{?RFC7230}},
+section 5.5). For example, if an author signs both `Content-Encoding: br` and
+`Content-Encoding: gzip` variants of a response, what's the impact if an
+attacker serves the brotli one for a request with `Accept-Encoding: gzip`?
 
 {{signature-validity}} can succeed when some delivered headers aren't included
 in the signed set. This accommodates current TLS-terminating intermediates and
 may be useful for SRI ({{uc-sri}}), but is risky for trusting cross-origin
 responses ({{uc-pushed-subresources}}, {{uc-explicit-distributor}}, and
-{{uc-offline-websites}}).
+{{uc-offline-websites}}). {{authority-chain-validation}} requires all headers to
+be included in the signature before trusting cross-origin pushed resources, at
+Ryan Sleevi's recommendation.
 
 # Privacy considerations
 
@@ -887,12 +909,12 @@ fetch updated validity assertions.
 # Determining validity using cache control # {#validity-with-cache-control}
 
 This draft could expire signature validity using the normal HTTP cache control
-headers ({{?RFC7234}}) instead of embedding an expiration date in the Signature
+headers ({{?RFC7234}}) instead of embedding an expiration date in the signature
 itself. This section specifies how that would work, and describes why I haven't
 chosen that option.
 
-The `Signature` header field ({{signature-header}}) would no longer contain
-"date" or "expires" fields.
+The signatures in the `Signature` header field ({{signature-header}}) would no
+longer contain "date" or "expires" fields.
 
 The validity-checking algorithm ({{signature-validity}}) would initialize `date`
 from the resource's `Date` header field ({{?RFC7231}}, section 7.1.1.2) and
