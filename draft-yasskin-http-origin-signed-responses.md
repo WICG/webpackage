@@ -278,11 +278,11 @@ Given the HTTP exchange:
 
 ~~~http
 GET https://example.com/ HTTP/1.1
-accept = */*
+Accept: */*
 
 HTTP/1.1 200
-content-type = text/html
-signed-headers = "content-type"
+Content-Type: text/html
+Signed-Headers: "content-type"
 
 <!doctype html>
 <html>
@@ -952,13 +952,13 @@ For example, given a stored exchange of:
 
 ~~~http
 GET https://example.com/ HTTP/1.1
-accept = */*
+Accept: */*
 
 HTTP/1.1 200
-date = Mon, 20 Nov 2017 10:00:00 UTC
-content-type = text/html
-date = Tue, 21 Nov 2017 10:00:00 UTC
-expires = Sun, 26 Nov 2017 10:00:00 UTC
+Date: Mon, 20 Nov 2017 10:00:00 UTC
+Content-Type: text/html
+Date: Tue, 21 Nov 2017 10:00:00 UTC
+Expires: Sun, 26 Nov 2017 10:00:00 UTC
 
 <!doctype html>
 <html>
@@ -968,20 +968,20 @@ expires = Sun, 26 Nov 2017 10:00:00 UTC
 And an update listing the following headers:
 
 ~~~http
-expires = Fri, 1 Dec 2017 10:00:00 UTC
-date = Sat, 25 Nov 2017 10:00:00 UTC
+Expires: Fri, 1 Dec 2017 10:00:00 UTC
+Date: Sat, 25 Nov 2017 10:00:00 UTC
 ~~~
 
 The resulting stored exchange would be:
 
 ~~~http
 GET https://example.com/ HTTP/1.1
-accept = */*
+Accept: */*
 
 HTTP/1.1 200
-content-type = text/html
-expires = Fri, 1 Dec 2017 10:00:00 UTC
-date = Sat, 25 Nov 2017 10:00:00 UTC
+Content-Type: text/html
+Expires: Fri, 1 Dec 2017 10:00:00 UTC
+Date: Sat, 25 Nov 2017 10:00:00 UTC
 
 <!doctype html>
 <html>
