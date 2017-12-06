@@ -372,7 +372,11 @@ there are no non-significant response header fields in the exchange.
          parse fails, return "invalid".
       1. Let `main-certificate` be the first certificate in `certificate-chain`.
       1. If the SHA-256 hash of `main-certificate`'s `cert_data` is not equal to
-        `certSha256`, return "invalid". See the [open questions](#hash-whole-chain).
+         `certSha256`, return "invalid". Note that this intentionally differs
+         from TLS 1.3, which signs the entire certificate chain in its
+         Certificate Verify ({{?I-D.ietf-tls-tls13}}, section 4.4.3), in order
+         to allow updating stapled OCSP responses without updating signatures at
+         the same time.
       1. Set `publicKey` to `main-certificate`'s public key
       1. The client MUST define a partial function from public key types to
          signing algorithms, and this function must at the minimum include the
@@ -458,12 +462,6 @@ the client MUST treat the exchange as a stream error as described by
 1. Return "valid".
 
 ### Open Questions
-
-TLS 1.3 signs the entire certificate chain, but doing that here would preclude
-updating the OCSP signatures without replacing all signatures using that chain
-at the same time. What attack do I allow by hashing only the end-entity
-certificate?
-{:#hash-whole-chain}
 
 Including the entire exchange in the signed data forces a client to download the
 whole thing before trusting any of it. {{?I-D.thomson-http-mice}} is designed to
