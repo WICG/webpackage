@@ -371,6 +371,13 @@ there are no non-significant response header fields in the exchange.
          `forceFetch` is *not* set, the fetch can be fulfilled from a cache
          using normal HTTP semantics {{!RFC7234}}. If this fetch or parse fails,
          return "invalid".
+
+         Parsing notes:
+         1. This does not include the 4-byte header that would appear in a
+            Handshake message.
+         1. Since this fetch is not in response to a CertificateRequest, the
+            certificate_request_context MUST be empty, and a non-empty value
+            MUST cause the parse to fail.
       1. Let `main-certificate` be the first certificate in `certificate-chain`.
       1. If the SHA-256 hash of `main-certificate`'s `cert_data` is not equal to
          `certSha256`, return "invalid". Note that this intentionally differs
@@ -411,8 +418,9 @@ there are no non-significant response header fields in the exchange.
    1. A single 0 byte which serves as a separator.
    1. The bytes of the canonical CBOR serialization ({{canonical-cbor}}) of a
       CBOR array consisting of:
-      1. The text string "certSha256".
-      1. The byte string `certSha256`.
+      1. If `certSha256` is set:
+         1. The text string "certSha256".
+         1. The byte string `certSha256`.
       1. The text string "date".
       1. The integer value of `date`.
       1. The text string "expires".
