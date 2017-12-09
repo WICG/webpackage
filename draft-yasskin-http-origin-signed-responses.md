@@ -717,8 +717,10 @@ for example, a `<meta name="dist-base">` tag elsewhere in the page.
 
 This could be used for some of the same purposes as SRI ({{uc-sri}}).
 
-Note that the current proposal doesn't support this use case because there's no
-way aside from a Server Push to override the physical request URL.
+To implement this with the current proposal, the distributor would respond to
+the physical request to `https://distributor.com/O.com/img.png` with first a
+signed PUSH_PROMISE for `https://O.com/img.png` and then a redirect to
+`https://O.com/img.png`.
 
 ## Subresource Integrity {#uc-sri}
 
