@@ -654,6 +654,21 @@ situation by hiding the client's interest from the original author.
 
 TODO: possibly register the validityUrl format.
 
+## Signature Header Field Registration
+
+This section registers the `Signature` header field in the "Permanent Message
+Header Field Names" registry ({{!RFC3864}}).
+
+Header field name:  `Signature`
+
+Applicable protocol:  http
+
+Status:  standard
+
+Author/Change controller:  IETF
+
+Specification document(s):  {{signature-header}} of this document
+
 --- back
 
 # Use cases
