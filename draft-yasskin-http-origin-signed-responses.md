@@ -6,9 +6,6 @@ docname: draft-yasskin-http-origin-signed-responses-latest
 category: std
 
 ipr: trust200902
-area: gen
-workgroup: http
-keyword: Internet-Draft
 
 stand_alone: yes
 pi: [comments, sortrefs, strict, symrefs, toc]
