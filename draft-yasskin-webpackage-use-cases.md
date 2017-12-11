@@ -6,9 +6,6 @@ docname: draft-yasskin-webpackage-use-cases-latest
 category: info
 
 ipr: trust200902
-area: gen
-workgroup: dispatch
-keyword: Internet-Draft
 
 stand_alone: yes
 pi: [comments, sortrefs, strict, symrefs, toc]

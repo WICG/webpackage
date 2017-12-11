@@ -6,9 +6,6 @@ docname: draft-yasskin-dispatch-web-packaging-latest
 category: std
 
 ipr: trust200902
-area: gen
-workgroup: Dispatch
-keyword: Internet-Draft
 
 stand_alone: yes
 pi: [comments, sortrefs, strict, symrefs, toc]
