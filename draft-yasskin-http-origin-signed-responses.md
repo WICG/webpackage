@@ -395,11 +395,17 @@ there are no non-significant response header fields in the exchange.
          : ecdsa_secp384r1_sha384 as defined in Section 4.2.3 of
            {{!I-D.ietf-tls-tls13}}.
 
+         Ed25519 and Ed448:
+         : ed25519ph and ed448ph, respectively, as defined by {{!RFC8032}}. (Key
+           types defined in {{!I-D.ietf-curdle-pkix}}.) See the [Open
+           Questions](#pre-hashed-sigs).
+
          Set `signing-alg` to the result of applying this function to type of
          `main-certificate`'s public key. If the function is undefined on this
          input, return "invalid".
    1. If `ed25519Key` is present, set `publicKey` to `ed25519Key` and
-      `signing-alg` to ed25519, as defined by {{!RFC8032}}
+      `signing-alg` to ed25519ph, as defined by {{!RFC8032}}.  See the [Open
+      Questions](#pre-hashed-sigs).
 1. If `expires` is more than 7 days (604800 seconds) after `date`, return
    "invalid".
 1. If the current time is before `date` or after `expires`, return "invalid".
@@ -472,6 +478,13 @@ integrate that? Maybe add a flag to the `Signature` header field or its
 signatures saying that the payload is guarded by some other header field, so
 isn't included in the significant parts ({{significant-parts}}).
 {:#incremental-validity}
+
+Using the ed25519ph and ed448ph variants makes it easier for a client to start
+parsing a resource before validating its signature. Clearly the client can't use
+the parsed resource (e.g. execute javascript it contains, render it, etc.) until
+the signature is verified, but getting a head-start on parsing can still save
+time. Is this the right tradeoff?
+{:#pre-hashed-sigs}
 
 ## Updating signature validity ## {#updating-validity}
 
