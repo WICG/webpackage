@@ -375,7 +375,7 @@ there are no non-significant response header fields in the exchange.
       1. If the SHA-256 hash of `main-certificate`'s `cert_data` is not equal to
          `certSha256`, return "invalid". Note that this intentionally differs
          from TLS 1.3, which signs the entire certificate chain in its
-         Certificate Verify ({{?I-D.ietf-tls-tls13}}, section 4.4.3), in order
+         Certificate Verify (Section 4.4.3 of {{?I-D.ietf-tls-tls13}}), in order
          to allow updating stapled OCSP responses without updating signatures at
          the same time.
       1. Set `publicKey` to `main-certificate`'s public key
