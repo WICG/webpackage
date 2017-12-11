@@ -340,8 +340,8 @@ include:
 
 This algorithm accepts a `forceFetch` flag that avoids the cache when fetching
 URLs. A client that determines that a potentially-valid certificate chain is
-actually invalid due to expired OCSP responses MAY retry with `forceFetch` set
-to retrieve updated OCSPs from the original server.
+actually invalid due to an expired OCSP response MAY retry with `forceFetch` set
+to retrieve an updated OCSP from the original server.
 {:#force-fetch}
 
 This algorithm also accepts an `allResponseHeaders` flag, which insists that
@@ -383,8 +383,8 @@ there are no non-significant response header fields in the exchange.
          `certSha256`, return "invalid". Note that this intentionally differs
          from TLS 1.3, which signs the entire certificate chain in its
          Certificate Verify (Section 4.4.3 of {{?I-D.ietf-tls-tls13}}), in order
-         to allow updating stapled OCSP responses without updating signatures at
-         the same time.
+         to allow updating the stapled OCSP response without updating signatures
+         at the same time.
       1. Set `publicKey` to `main-certificate`'s public key
       1. The client MUST define a partial function from public key types to
          signing algorithms, and this function must at the minimum include the
@@ -463,8 +463,11 @@ the client MUST treat the exchange as a stream error as described by
       ({{!RFC5280}} and other undocumented conventions). Let `path` be the path
       that was used from the `main-certificate` to a trusted root, including the
       `main-certificate` but excluding the root.
-   1. Validate that all certificates in `path` include "status_request"
-      extensions with valid OCSP responses. ({{!RFC6960}})
+   1. Validate that `main-certificate` includes a "status_request" extension
+      with a valid OCSP response whose lifetime (`nextUpdate - thisUpdate`) is
+      less than 7 days ({{!RFC6960}}). Note that this does not check for
+      revocation of intermediate certificates, and clients SHOULD implement
+      another mechanism for that.
    1. Validate that all certificates in `path` include
       "signed_certificate_timestamp" extensions containing valid SCTs from
       trusted logs. ({{!RFC6962}})
@@ -489,7 +492,7 @@ with known vulnerabilities are distrusted promptly.
 
 This specification provides no way to update OCSP responses by themselves.
 Instead, [clients need to re-fetch the "certUrl"](#force-fetch) to get a chain
-including newer OCSPs.
+including a newer OCSP response.
 
 The ["validityUrl" parameter](#signature-validityurl) of the signatures provides
 a way to fetch new signatures or learn where to fetch a complete updated
@@ -614,7 +617,7 @@ An attacker with temporary access to a signing oracle can sign "still valid"
 assertions with arbitrary timestamps and expiration times. As a result, when a
 signing oracle is removed, the keys it provided access to SHOULD be revoked so
 that, even if the attacker used them to sign future-dated package validity
-assertions, the key's OCSP assertions will expire, causing the package as a
+assertions, the key's OCSP assertion will expire, causing the package as a
 whole to become untrusted.
 
 ## Aspects of the straw proposal
