@@ -789,7 +789,11 @@ computation of the `physicalsrc` could be encapsulated in a custom element:
 ~~~
 
 where the `<dist-img>` implementation generates an appropriate `<img>` based on,
-for example, a `<meta name="dist-base">` tag elsewhere in the page.
+for example, a `<meta name="dist-base">` tag elsewhere in the page. However,
+this has the downside that the
+[preloader](https://calendar.perfplanet.com/2013/big-bad-preloader/) can no
+longer see the physical source to download it. The resulting delay might cancel
+out the benefit of using a distributor.
 
 This could be used for some of the same purposes as SRI ({{uc-sri}}).
 
@@ -949,9 +953,10 @@ to respond to. A PUSH_PROMISE (Section 8.2 of {{RFC7540}}) does not have this
 problem, and it would be possible to introduce a response header to convey the
 expected request headers.
 
-Since proxies don't modify unknown content types, we could wrap the original
-exchange into an `application/http2` format. This could be as simple as a series
-of HTTP/2 frames, or could
+Since proxies are unlikely to modify unknown content types, we could wrap the
+original exchange into an `application/http2` format and include the
+`Cache-Control: no-transform` header when sending it. This format could be as
+simple as a series of HTTP/2 frames, or could
 
 1. Allow longer contiguous bodies than [HTTP/2's 16MB frame
    limit](https://tools.ietf.org/html/rfc7540#section-4.2), and
@@ -960,6 +965,10 @@ of HTTP/2 frames, or could
    single signed exchange, but needs a mechanism like
    {{?I-D.vkrasnov-h2-compression-dictionaries}} to use any compression state
    from other responses.
+
+To reduce the likelihood of accidental modification by proxies, an
+`application/http2` format should be sure to include a file signature that
+doesn't collide with other known signatures.
 
 To help the PUSHed subresources use case ({{uc-pushed-subresources}}), we might
 also want to extend the `PUSH_PROMISE` frame type to include a signature, and
