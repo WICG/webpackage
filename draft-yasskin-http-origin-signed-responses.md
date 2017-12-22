@@ -244,31 +244,25 @@ can't use the literal bytes of the header frames as this serialization. Instead,
 this section defines a CBOR representation that can be embedded into other CBOR,
 canonically serialized ({{canonical-cbor}}), and then signed.
 
-The CBOR representation of an exchange is the result of the following algorithm:
+The CBOR representation of an exchange `exchange` is the CBOR ({{!RFC7049}})
+array with the following content:
 
-1. Let `exchange` be the exchange. This is expected to be the significant parts
-   ({{significant-parts}}) of some other exchange.
-1. Return a CBOR ({{!RFC7049}}) array with the following content:
-   1. The text string "request".
-   1. The array consisting of the following items:
-      1. The byte string ':method'.
-      1. The byte string containing the request's method.
-      1. The byte string ':url'.
-      1. The byte string containing the request's effective request URI.
-   1. The text string "response".
-   1. The array consisting of the initial two items
-      1. The byte string ':status'.
-      1. The byte string containing the response's 3-digit status code.
-
-      Followed by the appended items from, for each response header field in
-      `exchange`, in order:
-
-      1. Append the header field's name as a byte string.
-      1. Append the header field's value as a byte string.
-   1. The text string "payload".
-   1. The byte string containing the response's payload body (Section 3.3 of
-      {{!RFC7230}}). Note that the payload body is the message body with any
-      transfer encodings removed.
+1. The text string "request".
+1. The map mapping:
+   * The byte string ':method' to the byte string containing `exchange`'s
+     request's method.
+   * The byte string ':url' to the byte string containing `exchange`'s request's
+     effective request URI.
+1. The text string "response".
+1. The map mapping:
+   * the byte string ':status' to the byte string containing `exchange`'s
+     response's 3-digit status code, and
+   * for each response header field in `exchange`, the header field's name as a
+     byte string to the header field's value as a byte string.
+1. The text string "payload".
+1. The byte string containing `exchange`'s response's payload body (Section 3.3
+   of {{!RFC7230}}). Note that the payload body is the message body with any
+   transfer encodings removed.
 
 ### Example ### {#example-cbor-representation}
 
@@ -310,16 +304,25 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 ## Canonical CBOR serialization ## {#canonical-cbor}
 
 Within this specification, the canonical serialization of a CBOR item uses the
-following rules derived from Section 3.9 of {{?RFC7049}}:
+following rules derived from Section 3.9 of {{?RFC7049}} with erratum 4964
+applied:
 
-* Integers and the lengths of arrays and strings MUST use the smallest possible
-  encoding.
+* Integers and the lengths of arrays, maps, and strings MUST use the smallest
+  possible encoding.
 * Items MUST NOT be encoded with indefinite length.
+* The keys in every map MUST be sorted in the bytewise lexicographic order of
+  their canonical encodings. For example, the following keys are correctly sorted:
+  1. 10, encoded as 0A.
+  1. 100, encoded as 18 64.
+  1. -1, encoded as 20.
+  1. "z", encoded as 61 7A.
+  1. "aa", encoded as 62 61 61.
+  1. \[100], encoded as 81 18 64.
+  1. \[-1], encoded as 81 20.
+  1. false, encoded as F4.
 
-Note: this specification does not use CBOR maps, so the map ordering rules
-aren't necessary. This specification also doesn't use floating point, tags, or
-other more complex data types, so it doesn't need rules to canonicalize those
-either.
+Note: this specification does not use floating point, tags, or other more
+complex data types, so it doesn't need rules to canonicalize those.
 
 ## Signature validity ## {#signature-validity}
 
@@ -417,17 +420,14 @@ there are no non-significant response header fields in the exchange.
    1. A context string: the ASCII encoding of “HTTP Exchange”.
    1. A single 0 byte which serves as a separator.
    1. The bytes of the canonical CBOR serialization ({{canonical-cbor}}) of a
-      CBOR array consisting of:
+      CBOR map mapping:
       1. If `certSha256` is set:
-         1. The text string "certSha256".
-         1. The byte string `certSha256`.
-      1. The text string "date".
-      1. The integer value of `date`.
-      1. The text string "expires".
-      1. The integer value of `expires`.
-      1. The text string "exchange".
-      1. The CBOR representation ({{cbor-representation}}) of `exchange`. See
-         the [open questions](#incremental-validity).
+         1. The text string "certSha256" to the byte string `certSha256`.
+      1. The text string "date" to the integer value of `date`.
+      1. The text string "expires" to the integer value of `expires`.
+      1. The text string "exchange" to the CBOR representation
+         ({{cbor-representation}}) of `exchange`. See the [open
+         questions](#incremental-validity).
 1. If `signature` is `message`'s signature by `main-certificate`'s public key
    using `signing-alg`, return "potentially-valid" with `exchange` and whichever
    is present of `certificate-chain` or `ed25519Key`. Otherwise, return
