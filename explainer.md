@@ -57,7 +57,7 @@ package signed by a compromised certificate. When the client gets back to a
 public network, it should attempt to validate both the certificate and the
 package using the mechanisms alluded to under [Local Sharing](#local-sharing).
 
-### Content Distributors and Web caches.
+### Content Distributors and Web caches
 Content distributors can provide the service of hosting web content that should
 be delivered at scale. This includes both hosting subresources (JS libraries,
 images) as well as entire content ([Google
