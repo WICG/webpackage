@@ -100,9 +100,9 @@ appear in all capitals, as shown here.
 
 As a response to an HTTP request or as a Server Push (Section 8.2 of
 {{!RFC7540}}) the server MAY include a `Signed-Headers` header field
-({{signed-headers}}) identifying [significant](#significant-parts) header fields
-and a `Signature` header field ({{signature-header}}) holding a list of one or
-more parameterised signatures that vouch for the content of the response.
+({{signed-headers}}) identifying [significant](#significant-headers) header
+fields and a `Signature` header field ({{signature-header}}) holding a list of
+one or more parameterised signatures that vouch for the content of the response.
 
 The client categorizes each signature as "valid" or "invalid" by validating that
 signature with its certificate or public key and other metadata against the
@@ -147,24 +147,33 @@ to include in the `Signed-Headers` header field.
 
 The `Signature` header field conveys a list of signatures for an exchange, each
 one accompanied by information about how to determine the authority of and
-refresh that signature.
+refresh that signature. Each signature directly signs the significant headers of
+the exchange and identifies one of those headers that enforces the integrity of
+the exchange's payload.
 
 The `Signature` header is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 4.8 of
 {{!I-D.ietf-httpbis-header-structure}}) of parameterised labels (Section 4.4 of
 {{!I-D.ietf-httpbis-header-structure}}).
 
-Each parameterised label MUST have parameters named "sig", "validityUrl",
-"date", and "expires", and either "certUrl" and "certSha256" parameters or an
-"ed25519Key" parameter. This specification gives no meaning to the label itself,
-which can be used as a human-readable identifier for the signature (see {{parameterised-binary}}). The present
-parameters MUST have the following values:
+Each parameterised label MUST have parameters named "sig", "integrity",
+"validityUrl", "date", and "expires", and either "certUrl" and "certSha256"
+parameters or an "ed25519Key" parameter. This specification gives no meaning to
+the label itself, which can be used as a human-readable identifier for the
+signature (see {{parameterised-binary}}). The present parameters MUST have the
+following values:
 
 "sig"
 
 : Binary content (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}}) holding
-  the signature of most of these parameters and the significant parts of the
-  exchange ({{significant-parts}}).
+  the signature of most of these parameters and the significant headers of the
+  exchange ({{significant-headers}}).
+
+"integrity"
+
+: A string (Section 4.2 of {{!I-D.ietf-httpbis-header-structure}}) containing
+  the lowercase name of the response header field that guards the response
+  payload's integrity.
 
 "certUrl"
 
@@ -211,9 +220,9 @@ Should "validityUrl" be signed or optionally signed so that an exchange's author
 can prevent an intermediate from removing it, which would prevent clients from
 sharing the exchange among themselves without going back to the intermeidate?
 
-## Significant parts of an exchange ## {#significant-parts}
+## Significant headers of an exchange ## {#significant-headers}
 
-The significant parts of an exchange are:
+The significant headers of an exchange are:
 
 * The method (Section 4 of {{!RFC7231}}) and effective request URI (Section 5.5
   of {{!RFC7230}}) of the request.
@@ -221,48 +230,40 @@ The significant parts of an exchange are:
   fields whose names are listed in that exchange's `Signed-Headers` header field
   ({{signed-headers}}), in the order they appear in that header field. If a
   response header field name from `Signed-Headers` does not appear in the
-  exchange's response header fields, the exchange has no significant parts.
-* The exchange's payload body (Section 3.3 of {{!RFC7230}}). Note that the
-  payload body is the message body with any transfer encodings removed.
+  exchange's response header fields, the exchange has no significant headers.
 
 If the exchange's `Signed-Headers` header field is not present, doesn't parse as
 a Structured Header ({{!I-D.ietf-httpbis-header-structure}}) or doesn't follow
 the constraints on its value described in {{signed-headers}}, the exchange has
-no significant parts.
+no significant headers.
 
 ### Open Questions
 
-Do the significant parts of an exchange need to include the `Signed-Headers`
+Do the significant headers of an exchange need to include the `Signed-Headers`
 header field itself?
 
-## CBOR representation of an exchange ## {#cbor-representation}
+## CBOR representation of exchange headers ## {#cbor-representation}
 
-To sign an exchange, it needs to be serialized into a byte string. Since
-intermediaries and [distributors](#uc-explicit-distributor) might rearrange,
-add, or just reserialize headers, and this can change the HPACK encoding, we
-can't use the literal bytes of the header frames as this serialization. Instead,
-this section defines a CBOR representation that can be embedded into other CBOR,
-canonically serialized ({{canonical-cbor}}), and then signed.
+To sign an exchange's headers, they need to be serialized into a byte string.
+Since intermediaries and [distributors](#uc-explicit-distributor) might
+rearrange, add, or just reserialize headers, we can't use the literal bytes of
+the headers as this serialization. Instead, this section defines a CBOR
+representation that can be embedded into other CBOR, canonically serialized
+({{canonical-cbor}}), and then signed.
 
-The CBOR representation of an exchange `exchange` is the CBOR ({{!RFC7049}})
-array with the following content:
+The CBOR representation of an exchange `exchange`'s headers is the CBOR
+({{!RFC7049}}) array with the following content:
 
-1. The text string "request".
 1. The map mapping:
    * The byte string ':method' to the byte string containing `exchange`'s
      request's method.
    * The byte string ':url' to the byte string containing `exchange`'s request's
      effective request URI.
-1. The text string "response".
 1. The map mapping:
    * the byte string ':status' to the byte string containing `exchange`'s
      response's 3-digit status code, and
    * for each response header field in `exchange`, the header field's name as a
      byte string to the header field's value as a byte string.
-1. The text string "payload".
-1. The byte string containing `exchange`'s response's payload body (Section 3.3
-   of {{!RFC7230}}). Note that the payload body is the message body with any
-   transfer encodings removed.
 
 ### Example ### {#example-cbor-representation}
 
@@ -274,7 +275,8 @@ Accept: */*
 
 HTTP/1.1 200
 Content-Type: text/html
-Signed-Headers: "content-type"
+Digest: SHA-256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3
+Signed-Headers: "content-type", "digest"
 
 <!doctype html>
 <html>
@@ -286,18 +288,15 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 
 ~~~cbor-diag
 [
-  "request",
-  [
-    ':method', 'GET',
-    ':url', 'https://example.com/'
-  ],
-  "response",
-  [
-    ':status', '200',
-    'content-type', 'text/html'
-  ],
-  "payload",
-  '<!doctype html>\n<html>...'
+  {
+    ':url': 'https://example.com/'
+    ':method': 'GET',
+  },
+  {
+    'digest': 'SHA-256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3',
+    ':status': '200',
+    'content-type': 'text/html'
+  }
 ]
 ~~~
 
@@ -336,7 +335,7 @@ The client MUST use the following algorithm to determine whether each signature
 with parameters is invalid or potentially-valid. Potentially-valid results
 include:
 
-* The signed parts of the exchange so that higher-level protocols can avoid
+* The signed headers of the exchange so that higher-level protocols can avoid
   relying on unsigned headers, and
 * Either a certificate chain or a public key so that a higher-level protocol can
   determine whether it's actually valid.
@@ -351,21 +350,34 @@ This algorithm also accepts an `allResponseHeaders` flag, which insists that
 there are no non-significant response header fields in the exchange.
 
 1. Let `originalExchange` be the signature's exchange.
-1. Let `exchange` be the significant parts ({{significant-parts}}) of
-   `originalExchange`. If `originalExchange` has no significant parts, then
+1. Let `headers` be the significant headers ({{significant-headers}}) of
+   `originalExchange`. If `originalExchange` has no significant headers, then
    return "invalid".
-1. If `allResponseHeaders` is set and the response headers fields in
+1. Let `payload` be the payload body (Section 3.3 of {{!RFC7230}}) of
+   `originalExchange`. Note that the payload body is the message body with any
+   transfer encodings removed.
+1. If `allResponseHeaders` is set and the response header fields in
    `originalExchange` are a proper superset of the response header fields in
-   `exchange`, then return "invalid".
+   `headers`, then return "invalid".
 1. Let:
    * `signature` be the signature (binary content in the parameterised value's
      "sig" parameter).
+   * `integrity` be the signature's "integrity" parameter.
    * `certUrl` be the signature's "certUrl" parameter, if any.
    * `certSha256` be the signature's "certSha256" parameter, if any.
    * `ed25519Key` be the signature's "ed25519Key" parameter, if any.
    * `date` be the signature's "date" parameter, interpreted as a Unix time.
    * `expires` be the signature's "expires" parameter, interpreted as a Unix
      time.
+1. If `integrity` names a header field that is not present in `headers` or which
+   the client cannot use to check the integrity of `payload` (for example, the
+   header field is new and hasn't been implemented yet), then return "invalid".
+   Clients MUST implement at least the `Digest` ({{!RFC3230}}) and `MI`
+   ({{!I-D.thomson-http-mice}}) header fields.
+1. If `integrity` is "digest", and the `Digest` header field in `headers`
+   contains no digest-algorithms
+   (<https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml>) stronger
+   than `SHA`, then return "invalid".
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. If `certUrl` is present:
       1. Let `certificate-chain` be the result of fetching ({{FETCH}}) `certUrl`
@@ -425,24 +437,21 @@ there are no non-significant response header fields in the exchange.
          1. The text string "certSha256" to the byte string `certSha256`.
       1. The text string "date" to the integer value of `date`.
       1. The text string "expires" to the integer value of `expires`.
-      1. The text string "exchange" to the CBOR representation
-         ({{cbor-representation}}) of `exchange`. See the [open
-         questions](#incremental-validity).
+      1. The text string "headers" to the CBOR representation
+         ({{cbor-representation}}) of `exchange`'s headers.
 1. If `signature` is `message`'s signature by `main-certificate`'s public key
    using `signing-alg`, return "potentially-valid" with `exchange` and whichever
    is present of `certificate-chain` or `ed25519Key`. Otherwise, return
    "invalid".
 
-### Open Questions
-
-Including the entire exchange in the signed data forces a client to download the
-whole thing before trusting any of it. {{?I-D.thomson-http-mice}} is designed to
-let us check the validity of just the `MI` header up front and then
-incrementally check blocks of the payload as they arrive. What's the best way to
-integrate that? Maybe add a flag to the `Signature` header field or its
-signatures saying that the payload is guarded by some other header field, so
-isn't included in the significant parts ({{significant-parts}}).
-{:#incremental-validity}
+   Note that the above algorithm can determine that an exchange's headers are
+   potentially-valid before the exchange's payload is received. The client MAY
+   process those headers as soon as they are validated. If `integrity`
+   identifies a header field like `MI` ({{?I-D.thomson-http-mice}}) that can
+   incrementally validate the payload, the client MAY also incrementally process
+   the validated parts of the payload as soon as they are validated. The client
+   MUST NOT process any part of the headers or payload before it has been
+   validated either by the signature or the header field named by `integrity`.
 
 ## Updating signature validity ## {#updating-validity}
 
@@ -494,18 +503,21 @@ For example, if a signed exchange has the following `Signature` header field (wr
 ~~~http
 Signature: sig1;
   sig=*MEUCIQDXlI2gN3RNBlgFiuRNFpZXcDIaUpX6HIEwcZEc0cZYLAIga9DsVOMM+g5YpwEBdGW3sS+bvnmAJJiSMwhuBdqp5UY;
+  integrity="mi";
   validityUrl="https://example.com/resource.validity";
   certUrl="https://example.com/certs";
   certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI;
   date=1511128380; expires=1511560380
 Signature: sig2;
   sig=*MEQCIGjZRqTRf9iKNkGFyzRMTFgwf/BrY2ZNIP/dykhUV0aYAiBTXg+8wujoT4n/W+cNgb7pGqQvIUGYZ8u8HZJ5YH26Qg;
+  integrity="mi";
   validityUrl="https://example.com/resource.validity";
   certUrl="https://example.com/certs";
   certSha256=*kQAA8u33cZRTy7RHMO4+dv57baZL48SYA2PqmYvPPbg;
   date=1511301183; expires=1511905983
 Signature: sig3;
   sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+;
+  integrity="mi";
   validityUrl="https://thirdparty.example.com/resource.validity";
   certUrl="https://thirdparty.example.com/certs";
   certSha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc;
@@ -519,6 +531,7 @@ https://example.com/resource.validity might contain:
   "signatures": [
     'sig4; '
     'sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw; '
+    'integrity="mi"; '
     'validityUrl="https://example.com/resource.validity"; '
     'certUrl="https://example.com/certs"; '
     'certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI; '
@@ -539,12 +552,14 @@ exchange would be:
 ~~~http
 Signature: sig4;
   sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw;
+  integrity="mi";
   validityUrl="https://example.com/resource.validity";
   certUrl="https://example.com/certs";
   certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI;
   date=1511467200; expires=1511985600
 Signature: sig3;
   sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+;
+  integrity="mi";
   validityUrl="https://thirdparty.example.com/resource.validity";
   certUrl="https://thirdparty.example.com/certs";
   certSha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc;
@@ -910,9 +925,9 @@ The previous {{?I-D.thomson-http-content-signature}} and
 ({{?I-D.cavage-http-signatures}} could also sign the response headers and the
 request method and path. However, the same path, response headers, and content
 may mean something very different when retrieved from a different server.
-{{significant-parts}} currently includes the whole request URL in the signature,
-but it's possible we need a more flexible scheme to allow some higher-level
-protocols to accept a less-signed URL.
+{{significant-headers}} currently includes the whole request URL in the
+signature, but it's possible we need a more flexible scheme to allow some
+higher-level protocols to accept a less-signed URL.
 
 The question of whether to include other request headers---primarily the
 `accept*` family---is still open. These headers need to be represented so that
