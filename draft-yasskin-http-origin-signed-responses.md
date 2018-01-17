@@ -157,11 +157,11 @@ The `Signature` header is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}).
 
 Each parameterised label MUST have parameters named "sig", "integrity",
-"validityUrl", "date", and "expires", and either "certUrl" and "certSha256"
-parameters or an "ed25519Key" parameter. This specification gives no meaning to
-the label itself, which can be used as a human-readable identifier for the
-signature (see {{parameterised-binary}}). The present parameters MUST have the
-following values:
+"validityUrl", "date", and "expires". Each parameterised label MUST also have
+either "certUrl" and "certSha256" parameters or an "ed25519Key" parameter. This
+specification gives no meaning to the label itself, which can be used as a
+human-readable identifier for the signature (see {{parameterised-binary}}). The
+present parameters MUST have the following values:
 
 "sig"
 
