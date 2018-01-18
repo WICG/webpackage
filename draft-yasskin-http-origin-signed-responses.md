@@ -650,6 +650,110 @@ Signature:
 `https://example.com/resource.validity.1511157180` could also expand the set of
 signatures if its `signatures` array contained more than 2 elements.
 
+## The Accept-Signature header ## {#accept-signature}
+
+`Signature` header fields cost on the order of 300 bytes for ECDSA signatures,
+so servers might prefer to avoid sending them to clients that don't intend to
+use them. A client can send the `Accept-Signature` header field to indicate that
+it does intend to take advantage of any available signatures and to indicate
+what kinds of signatures it supports.
+
+When a server receives an `Accept-Signature` header field in a client request,
+it SHOULD reply with any available `Signature` header fields for its response
+that the `Accept-Signature` header field indicates the client supports. However,
+if the `Accept-Signature` value violates a requirement in this section, the
+server MUST NOT send any `Signature` headers.
+
+The `Accept-Signature` header field is a Structured Header as defined by
+{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 4.8 of
+{{!I-D.ietf-httpbis-header-structure}}) of parameterised labels (Section 4.4 of
+{{!I-D.ietf-httpbis-header-structure}}). The order of labels in the
+`Accept-Signature` list is not significant. Labels, ignoring any initial "-"
+character, MUST NOT be duplicated.
+
+Each label in the `Accept-Signature` header field's value indicates that a
+feature of the `Signature` header field ({{signature-header}}) is supported. If
+the label begins with a "-" character, it instead indicates that the feature
+named by the rest of the label is not supported. Unknown labels and parameters
+MUST be ignored because new labels and new parameters on existing labels may be
+defined by future specifications.
+
+### Integrity labels ### {#accept-signature-integrity}
+
+Labels starting with "digest/" indicate that the client supports the `Digest`
+header field ({{!RFC3230}}) with the digest-algorithm from the
+<https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml> registry
+named in lower-case by the rest of the label. For example, "digest/sha-512"
+indicates support for the SHA-512 digest algorithm, and "-digest/sha-256"
+indicates non-support for the SHA-256 digest algorithm.
+
+Labels starting with "mi/" indicate that the client supports the `MI` header
+field ({{!I-D.thomson-http-mice}}) with the parameter from the HTTP MI Parameter
+Registry registry named in lower-case by the rest of the label. For example,
+"mi/mi-blake2" indicates support for Merkle integrity with the
+as-yet-unspecified mi-blake2 parameter, and "-digest/mi-sha256" indicates
+non-support for Merkle integrity with the mi-sha256 content encoding.
+
+If the `Accept-Signature` header field is present, servers SHOULD assume support
+for "digest/sha-256" and "mi/mi-sha256" unless the header field states
+otherwise.
+
+### Key type labels ### {#accept-signature-key-types}
+
+Labels starting with "rsa/" indicate that the client supports certificates
+holding RSA public keys with a number of bits indicated by the digits after the
+"/".
+
+Labels starting with "ecdsa/" indicate that the client supports certificates
+holding ECDSA public keys on the curve named in lower-case by the rest of the
+label.
+
+If the `Accept-Signature` header field is present, servers SHOULD assume support
+for "rsa/2048", "ecdsa/secp256r1", and "ecdsa/secp384r1" unless the header field
+states otherwise.
+
+### Key value labels ### {#accept-signature-key-values}
+
+The "ed25519key" label has parameters indicating the public keys that will be
+used to validate the returned signature. Each parameter's name is re-interpreted
+as binary content (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}})
+encoding a prefix of the SHA-256 hash of the public key. For example, if the
+client will validate signatures using the public key whose base64 encoding is
+`11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo`, valid `Accept-Signature` header fields include:
+
+~~~http
+Accept-Signature: ..., ed25519key; *If4x36FUomFia/hUBG/SJxt77UtqvkWqWId+9H+XIbk
+Accept-Signature: ..., ed25519key; *If4x36FUomFia/hUBG/SJw
+Accept-Signature: ..., ed25519key; *If4x3w
+~~~
+
+but not
+
+~~~http
+Accept-Signature: ..., ed25519key; *If4x3
+Accept-Signature: ..., ed25519key; If4x3w
+~~~
+
+### Examples ### {#accept-signature-examples}
+
+~~~http
+Accept-Signature: mi/mi-sha256
+~~~
+
+states that the client will accept signatures with payload integrity assured by
+the `MI` header and `mi-sha256` content encoding and implies that the client
+will accept integrity assured by the `Digest: SHA-256` header and signatures
+from 2048-bit RSA keys and ECDSA keys on the secp256r1 and secp384r1 curves.
+
+~~~http
+Accept-Signature: -rsa/2048, rsa/4096
+~~~
+
+states that the client will accept 4096-bit RSA keys but not 2048-bit RSA keys,
+and implies that the client will accept ECDSA keys on the secp256r1 and
+secp384r1 curves and payload integrity assured with the `MI: mi-sha256` and
+`Digest: SHA-256` header fields.
+
 # HTTP/2 extension for cross-origin Server Push # {#cross-origin-push}
 
 To allow servers to Server-Push (Section 8.2 of {{?RFC7540}}) signed exchanges
