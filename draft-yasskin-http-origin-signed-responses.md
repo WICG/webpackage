@@ -444,14 +444,18 @@ there are no non-significant response header fields in the exchange.
    is present of `certificate-chain` or `ed25519Key`. Otherwise, return
    "invalid".
 
-   Note that the above algorithm can determine that an exchange's headers are
-   potentially-valid before the exchange's payload is received. The client MAY
-   process those headers as soon as they are validated. If `integrity`
-   identifies a header field like `MI` ({{?I-D.thomson-http-mice}}) that can
-   incrementally validate the payload, the client MAY also incrementally process
-   the validated parts of the payload as soon as they are validated. The client
-   MUST NOT process any part of the headers or payload before it has been
-   validated either by the signature or the header field named by `integrity`.
+Note that the above algorithm can determine that an exchange's headers are
+potentially-valid before the exchange's payload is received. Similarly, if
+`integrity` identifies a header field like `MI` ({{?I-D.thomson-http-mice}})
+that can incrementally validate the payload, early parts of the payload can be
+determined to be potentially-valid before later parts of the payload.
+Higher-level protocols MAY process parts of the exchange that have been
+determined to be potentially-valid as soon as that determination is made but
+MUST NOT process parts of the exchange that are not yet potentially-valid.
+Similarly, as the higher-level protocol determines that parts of the exchange
+are actually valid, the client MAY process those parts of the exchange and MUST
+wait to process other parts of the exchange until they too are determined to be
+valid.
 
 ## Updating signature validity ## {#updating-validity}
 
