@@ -874,6 +874,108 @@ This allows the mitigation against downgrades in {{seccons-downgrades}}, but
 prohibits intermediates from providing a cache of the validity information. We
 could do both with a list of URLs.
 
+# application/http-exchange+cbor format for HTTP/1 compatibility # {#application-http-exchange}
+
+To allow servers to serve cross-origin responses when either the client or the
+server hasn't implemented HTTP/2 Push (Section 8.2 of {{?RFC7540}}) support yet,
+we define a format that represents an HTTP exchange.
+
+The `application/http-exchange+cbor` content type encodes an HTTP exchange,
+including request metadata and header fields, optionally a request body,
+response header fields and metadata, a payload body, and optionally trailer
+header fields.
+
+This content type consists of a canonically-serialized ({{canonical-cbor}}) CBOR
+array containing:
+
+1. The text string "htxg" to serve as a file signature, followed by
+1. Alternating member names encoded as text strings (Section 2.1 of
+   {{!RFC7049}}) and member values, with each value consisting of a single CBOR
+   item with a type and meaning determined by the member name.
+
+This specification defines the following member names with their associated
+values:
+
+"request"
+
+: A map from request header field names to values, encoded as byte strings
+  ({{!RFC7049}}, section 2.1). The request header fields MUST include two
+  pseudo-header fields (Section 8.1.2.1 of {{!RFC7540}}):
+
+  * `':method'`: The method of the request (Section 4 of {{!RFC7231}}).
+  * `':url'`: The effective request URI of the request (Section 5.5 of
+    {{!RFC7230}}).
+
+"request payload"
+
+: A byte string ({{!RFC7049}}, section 2.1) containing the request payload body
+  (Section 3.3 of {{!RFC7230}}).
+
+"response"
+
+: A map from response header field names to values, encoded as byte strings
+  ({{!RFC7049}}, section 2.1). The response header fields MUST include one
+  pseudo-header field (Section 8.1.2.1 of {{!RFC7540}}):
+
+  * `':status'`: The response's 3-digit status code (Section 6 of
+    {{!RFC7231}}]).
+
+"payload"
+
+: A byte string ({{!RFC7049}}, section 2.1) containing the response payload body
+  (Section 3.3 of {{!RFC7230}}).
+
+"trailer"
+
+: A map of trailer header field names to values, encoded as byte strings
+  (Section 2.1 of {{!RFC7049}}).
+
+A parser MAY return incremental information while parsing
+`application/http-exchange+cbor` content.
+
+Members "request", "response", and "payload" MUST be present. If one is missing,
+the parser MUST stop and report an error.
+
+The member names MUST appear in the order:
+
+1. "request"
+1. "request payload"
+1. "response"
+1. "payload"
+1. "trailer"
+
+If a member name is not a text string, appears out of order, or is followed by a
+value not matching its description above, the parser MUST stop and report an
+error.
+
+If the parser encounters an unknown member name, it MUST skip the following item
+and resume parsing at the next member name.
+
+## Example ## {#example-application-http-exchange}
+
+An example `application/http-exchange+cbor` file representing a possible
+exchange with <https://example.com/> follows, in the extended diagnostic format
+defined in Appendix G of {{?I-D.ietf-cbor-cddl}}:
+
+~~~cbor-diag
+[
+  "htxg",
+  "request",
+  {
+    ':method': 'GET',
+    ':url': 'https://example.com/',
+    'accept', '*/*'
+  },
+  "response",
+  {
+    ':status': '200',
+    'content-type': 'text/html'
+  },
+  "payload",
+  '<!doctype html>\r\n<html>...'
+]
+~~~
+
 # Security considerations
 
 ## Confidential data ## {#seccons-confidentiality}
@@ -934,6 +1036,15 @@ responses ({{uc-pushed-subresources}}, {{uc-explicit-distributor}}, and
 {{uc-offline-websites}}). {{cross-origin-push}} requires all headers to be
 included in the signature before trusting cross-origin pushed resources, at Ryan
 Sleevi's recommendation.
+
+## application/http-exchange+cbor ## {#security-application-http-exchange}
+
+Clients MUST NOT trust an effective request URI claimed by an
+`application/http-exchange+cbor` resource ({{application-http-exchange}})
+without either ensuring the resource was transferred from a server that was
+authoritative (Section 9.1 of {{!RFC7230}}) for that URI's origin, or validating
+the resource's signature using a procedure like the one described in
+{{authority-chain-validation}}.
 
 # Privacy considerations
 
@@ -1005,6 +1116,50 @@ Description: The client does not trust the signature for a cross-origin Pushed
 signed exchange.
 
 Specification: This document
+
+## Internet Media Type application/http-exchange+cbor
+
+Type name:  application
+
+Subtype name:  http-exchange+cbor
+
+Required parameters:  N/A
+
+Optional parameters:  N/A
+
+Encoding considerations:  binary
+
+Security considerations:  see {{security-application-http-exchange}}
+
+Interoperability considerations:  N/A
+
+Published specification:  This specification (see
+{{application-http-exchange}}).
+
+Applications that use this media type:  N/A
+
+Fragment identifier considerations:  N/A
+
+Additional information:
+
+  Deprecated alias names for this type:  N/A
+
+  Magic number(s):  8? 64 68 74 78 67
+
+  File extension(s):  N/A
+
+  Macintosh file type code(s):  N/A
+
+Person and email address to contact for further information: See Authors'
+  Addresses section.
+
+Intended usage:  COMMON
+
+Restrictions on usage:  N/A
+
+Author:  See Authors' Addresses section.
+
+Change controller:  IESG
 
 --- back
 
@@ -1214,22 +1369,14 @@ to respond to. A PUSH_PROMISE (Section 8.2 of {{RFC7540}}) does not have this
 problem, and it would be possible to introduce a response header to convey the
 expected request headers.
 
-Since proxies are unlikely to modify unknown content types, we could wrap the
-original exchange into an `application/http2` format and include the
-`Cache-Control: no-transform` header when sending it. This format could be as
-simple as a series of HTTP/2 frames, or could
+Since proxies are unlikely to modify unknown content types, we can wrap the
+original exchange into an `application/http-exchange+cbor` format
+({{application-http-exchange}}) and include the `Cache-Control: no-transform`
+header when sending it.
 
-1. Allow longer contiguous bodies than [HTTP/2's 16MB frame
-   limit](https://tools.ietf.org/html/rfc7540#section-4.2), and
-1. Use better compression than {{?RFC7541}} for the non-confidential headers.
-   Note that header compression can probably share a compression state across a
-   single signed exchange, but needs a mechanism like
-   {{?I-D.vkrasnov-h2-compression-dictionaries}} to use any compression state
-   from other responses.
-
-To reduce the likelihood of accidental modification by proxies, an
-`application/http2` format should be sure to include a file signature that
-doesn't collide with other known signatures.
+To reduce the likelihood of accidental modification by proxies, the
+`application/http-exchange+cbor` format includes a file signature that doesn't
+collide with other known signatures.
 
 To help the PUSHed subresources use case ({{uc-pushed-subresources}}), we might
 also want to extend the `PUSH_PROMISE` frame type to include a signature, and
