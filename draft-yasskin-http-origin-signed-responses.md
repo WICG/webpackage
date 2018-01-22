@@ -1146,7 +1146,7 @@ Additional information:
 
   Magic number(s):  8? 64 68 74 78 67
 
-  File extension(s):  N/A
+  File extension(s): .htxg
 
   Macintosh file type code(s):  N/A
 
