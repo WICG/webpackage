@@ -798,6 +798,14 @@ this leaks extra information.
 For non-executable resource types, a signed response can improve the privacy
 situation by hiding the client's interest from the original author.
 
+To prevent network operators other than `o1.com` or `o2.com` from learning which
+exchanges were read, clients SHOULD only load exchanges fetched over a transport
+that's protected from eavesdroppers. This can be difficult to determine when the
+exchange is being loaded from local disk, but when the client itself requested
+the exchange over a network it SHOULD require TLS ({{!I-D.ietf-tls-tls13}}) or a
+successor transport layer, and MUST NOT accept exchanges transferred over plain
+HTTP without TLS.
+
 # IANA considerations
 
 TODO: possibly register the validityUrl format.
