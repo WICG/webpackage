@@ -1,7 +1,7 @@
 ---
 coding: utf-8
 
-title: Origin-signed HTTP Responses
+title: Signed HTTP Exchanges
 docname: draft-yasskin-http-origin-signed-responses-latest
 category: std
 
@@ -45,10 +45,15 @@ informative:
 
 --- abstract
 
-This document explores how a server can send particular responses that are
-authoritative for an origin, when the server itself is not authoritative for
-that origin. For now, the appendices containing use cases and requirements
-should be treated as more confident than the proposal itself.
+This document specifies how a server can send an HTTP request/response pair,
+known as an exchange, with signatures that vouch for that exchange's
+authenticity. These signatures can be verified against an origin's certificate
+to establish that the exchange is authoritative for an origin even if it was
+transferred over a connection that isn't. The signatures can also be used in
+other ways described in the appendices.
+
+These signatures contain countermeasures against downgrade and
+protocol-confusion attacks.
 
 --- note_Note_to_Readers
 
@@ -63,14 +68,27 @@ in <https://github.com/WICG/webpackage>.
 
 # Introduction
 
-When
-I
-[presented Web Packaging to DISPATCH](https://datatracker.ietf.org/doc/minutes-99-dispatch/),
-folks thought it would make sense to split it into a way to sign individual HTTP
-responses as coming from a particular origin, and separately a way to bundle a
-collection of HTTP responses. This document explores the constraints on any
-method of signing HTTP responses and sketches a possible solution to the
-constraints.
+Signed HTTP exchanges provide a way to prove the authenticity of a resource in
+cases where the transport layer isn't sufficient. This can be used in several
+ways:
+
+* When signed by a certificate ({{?RFC5280}}) that's trusted for an origin, an
+  exchange can be treated as authoritative for that origin, even if it was
+  transferred over a connection that isn't authoritative (Section 9.1 of
+  {{?RFC7230}}) for that origin. See {{uc-pushed-subresources}} and
+  {{uc-explicit-distributor}}.
+* A top-level resource can use a public key to identify an expected author for
+  particular subresources, a system known as Subresource Integrity ({{SRI}}). An
+  exchange's signature provides the matching proof of authorship. See
+  {{uc-sri}}.
+* A signature can vouch for the exchange in some way, for example that it
+  appears in a transparency log or that static analysis indicates that it omits
+  certain attacks. See {{uc-transparency}} and {{uc-static-analysis}}.
+
+Subsequent work toward the use cases in {{?I-D.yasskin-webpackage-use-cases}}
+will provide a way to group signed exchanges into bundles that can be
+transmitted and stored together, but single signed exchanges are useful enough
+to standardize on their own.
 
 # Terminology
 
@@ -102,7 +120,7 @@ NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED",
 described in BCP 14 {{!RFC2119}} {{!RFC8174}} when, and only when, they
 appear in all capitals, as shown here.
 
-# Straw proposal # {#proposal}
+# Signing an exchange # {#proposal}
 
 As a response to an HTTP request or as a Server Push (Section 8.2 of
 {{!RFC7540}}) the server MAY include a `Signed-Headers` header field
@@ -274,7 +292,7 @@ which did some validation or processing and then signed the resource at
 2017-11-19 23:11 UTC. `thirdparty.example.com` only grants 4-day signatures, so
 clients will need to re-validate more often.
 
-### Open Questions
+### Open Questions ### {#oq-signature-header}
 
 {{?I-D.ietf-httpbis-header-structure}} provides a way to parameterise labels but
 not other supported types like binary content. If the `Signature` header field
@@ -286,6 +304,7 @@ Should the certUrl and validityUrl be lists so that intermediates can offer a
 cache without losing the original URLs? Putting lists in dictionary fields is
 more complex than {{?I-D.ietf-httpbis-header-structure}} allows, so they're
 single items for now.
+
 
 ## Significant headers of an exchange ## {#significant-headers}
 
@@ -304,7 +323,7 @@ a Structured Header ({{!I-D.ietf-httpbis-header-structure}}) or doesn't follow
 the constraints on its value described in {{signed-headers}}, the exchange has
 no significant headers.
 
-### Open Questions
+### Open Questions ### {#oq-significant-headers}
 
 Do the significant headers of an exchange need to include the `Signed-Headers`
 header field itself?
@@ -393,10 +412,11 @@ complex data types, so it doesn't need rules to canonicalize those.
 ## Signature validity ## {#signature-validity}
 
 The client MUST parse the `Signature` header field as the list of parameterised
-values described in {{signature-header}} (Section 4.8.1 of
-{{!I-D.ietf-httpbis-header-structure}}). If an error is thrown during this
-parsing, the exchange has no valid signatures. Otherwise, each member of this
-list represents a signature with parameters.
+values (Section 4.8.1 of {{!I-D.ietf-httpbis-header-structure}}) described in
+{{signature-header}}. If an error is thrown during this parsing or any of the
+requirements described there aren't satisfied, the exchange has no valid
+signatures. Otherwise, each member of this list represents a signature with
+parameters.
 
 The client MUST use the following algorithm to determine whether each signature
 with parameters is invalid or potentially-valid. Potentially-valid results
@@ -424,10 +444,10 @@ there are no non-significant response header fields in the exchange.
    `originalExchange`. Note that the payload body is the message body with any
    transfer encodings removed.
 1. If `allResponseHeaders` is set and the response header fields in
-   `originalExchange` are a proper superset of the response header fields in
-   `headers`, then return "invalid".
+   `originalExchange` are not equal to the response header fields in `headers`,
+   then return "invalid".
 1. Let:
-   * `signature` be the signature (binary content in the parameterised value's
+   * `signature` be the signature (binary content in the parameterised label's
      "sig" parameter).
    * `integrity` be the signature's "integrity" parameter.
    * `validityUrl` be the signature's "validityUrl" parameter.
@@ -544,7 +564,7 @@ including a newer OCSP response.
 
 The ["validityUrl" parameter](#signature-validityurl) of the signatures provides
 a way to fetch new signatures or learn where to fetch a complete updated
-package.
+exchange.
 
 Each version of a signed exchange SHOULD have its own validity URLs, since each
 version needs different signatures and becomes obsolete at different times.
@@ -821,7 +841,7 @@ validate, that the signature is expired, etc. This draft conflates all of these
 possible failures into one error code, NO_TRUSTED_EXCHANGE_SIGNATURE
 (0xERROR-TBD).
 
-### Open Questions
+### Open Questions ### {#oq-error-code}
 
 How fine-grained should this specification's error codes be?
 
@@ -1024,8 +1044,8 @@ same-origin requirement).
 An attacker with temporary access to a signing oracle can sign "still valid"
 assertions with arbitrary timestamps and expiration times. As a result, when a
 signing oracle is removed, the keys it provided access to SHOULD be revoked so
-that, even if the attacker used them to sign future-dated package validity
-assertions, the key's OCSP assertion will expire, causing the package as a
+that, even if the attacker used them to sign future-dated exchange validity
+assertions, the key's OCSP assertion will expire, causing the exchange as a
 whole to become untrusted.
 
 ## Unsigned headers ## {#seccons-unsigned-headers}
@@ -1178,10 +1198,10 @@ Change controller:  IESG
 
 ## PUSHed subresources {#uc-pushed-subresources}
 
-To reduce round trips, a server might use HTTP/2 PUSH to inject a subresource
-from another server into the client's cache. If anything about the subresource
-is expired or can't be verified, the client would fetch it from the original
-server.
+To reduce round trips, a server might use HTTP/2 Push (Section 8.2 of
+{{?RFC7540}}) to inject a subresource from another server into the client's
+cache. If anything about the subresource is expired or can't be verified, the
+client would fetch it from the original server.
 
 For example, if `https://example.com/index.html` includes
 
@@ -1190,8 +1210,7 @@ For example, if `https://example.com/index.html` includes
 ~~~
 
 Then to avoid the need to look up and connect to `jquery.com` in the critical
-path, `example.com` might PUSH that resource (Section 8.2 of {{?RFC7540}}),
-signed by `jquery.com`.
+path, `example.com` might push that resource signed by `jquery.com`.
 
 ## Explicit use of a content distributor for subresources {#uc-explicit-distributor}
 
@@ -1234,32 +1253,55 @@ signed PUSH_PROMISE for `https://O.com/img.png` and then a redirect to
 The W3C WebAppSec group is investigating
 [using signatures](https://github.com/mikewest/signature-based-sri) in {{SRI}}.
 They need a way to transmit the signature with the response, which this proposal
-could provide.
+provides.
 
-However, their needs also differ in some significant ways:
+Their needs are simpler than most other use cases in that the
+`integrity="ed25519-[public-key]"` attribute and CSP-based ways of expressing a
+public key don't need that key to be wrapped into a certificate.
 
-1. The `integrity="ed25519-[public-key]"` attribute and CSP-based ways of
-   expressing a public key don't need the signing key to be also trusted to sign
-   arbitrary content for an origin.
-2. Some uses of SRI want to constrain subresources to be vouched for by a
-   third-party, rather than just being signed by the subresource's author.
+The "ed25519Key" signature parameter supports this simpler way of attaching a
+key.
 
-While we can design this system to cover both origin-trusted and simple-key
-signatures, we should check that this is better than having two separate systems
-for the two kinds of signatures.
+The current proposal for signature-based SRI describes signing only the content
+of a resource, while this specification requires them to sign the request URI as
+well. This issue is tracked in
+<https://github.com/mikewest/signature-based-sri/issues/5>. The details of what
+they need to sign will affect whether and how they can use this proposal.
 
-Note that while the current proposal for SRI describes signing only the content
-of a
-resource,
-[they may need to sign its name as well, to prevent security vulnerabilities](https://github.com/mikewest/signature-based-sri/issues/5).
-The details of what they need to sign will affect whether and how they can use
-this proposal.
+## Binary Transparency {#uc-transparency}
+
+So-called "Binary Transparency" may eventually allow users to verify that a
+program they've been delivered is one that's available to the public, and not a
+specially-built version intended to attack just them. Binary transparency
+systems don't exist yet, but they're likely to work similarly to the successful
+Certificate Transparency logs described by {{?RFC6962}}.
+
+Certificate Transparency depends on Signed Certificate Timestamps that prove a
+log contained a particular certificate at a particular time. To build the same
+thing for Binary Transparency logs containing HTTP resources or full websites,
+we'll need a way to provide signatures of those resources, which signed
+exchanges provides.
+
+## Static Analysis {#uc-static-analysis}
+
+Native app stores like the [Apple App
+Store](https://www.apple.com/ios/app-store/) and the [Android Play
+Store](https://play.google.com/store) grant their contents powerful abilities,
+which they attempt to make safe by analyzing the applications before offering
+them to people. The web has no equivalent way for people to wait to run an
+update of a web application until a trusted authority has vouched for it.
+
+While full application analysis probably needs to wait until the authority can
+sign bundles of exchanges, authorities may be able to guarantee certain
+properties by just checking a top-level resource and its {{SRI}}-constrained
+sub-resources.
 
 ## Offline websites {#uc-offline-websites}
 
-See <https://github.com/WICG/webpackage> and
-{{?I-D.yasskin-dispatch-web-packaging}}. This use requires origin-signed
-resources to be bundled.
+Fully-offline websites can be represented as bundles of signed exchanges,
+although an optimization to reduce the number of signature verifications may be
+needed. Work on this is in progress in the <https://github.com/WICG/webpackage>
+repository.
 
 # Requirements
 
@@ -1275,20 +1317,20 @@ is to re-use the web PKI and CA ecosystem.
 If we re-use existing TLS server certificates, we incur the risks that:
 
 1. TLS server certificates must be accessible from online servers, so they're
-   easier to steal than an offline key. A package's signing key doesn't need to
-   be online.
+   easier to steal or use as signing oracles than an offline key. An exchange's
+   signing key doesn't need to be online.
 2. A server using an origin-trusted key for one purpose (e.g. TLS) might
-   accidentally sign something that looks like a package, or vice versa.
+   accidentally sign something that looks like an exchange, or vice versa.
 
 If these risks are too high, we could define a new Extended Key Usage (Section
 4.2.1.12 of {{?RFC5280}}) that requires CAs to issue new keys for this purpose
 or a new certificate extension to do the same. A new EKU would probably require
 CAs to also issue new intermediate certificates because of how browsers trust
 EKUs. Both an EKU and a new extension take a long time to deploy and allow CAs
-to charge package-signers more than normal server operators, which will reduce
+to charge exchange-signers more than normal server operators, which will reduce
 adoption.
 
-The rest of this document will assume we can re-use existing TLS server
+The rest of this document assumes we can re-use existing TLS server
 certificates.
 
 ### Signature constraints
@@ -1301,10 +1343,10 @@ signatures here need to:
    confused with a signature. That may be just the `rsaEncryption` OID from
    {{?RFC8017}}.
 2. Use the same format as TLS's signatures, specified in Section 4.4.3 of
-   {{?I-D.ietf-tls-tls13}} , with a context string that's specific to this use.
+   {{?I-D.ietf-tls-tls13}}, with a context string that's specific to this use.
 
-The specification also needs to define which signing algorithm to use. I expect
-to define that as a function from the key type, instead of allowing
+The specification also needs to define which signing algorithm to use. It
+currently specifies that as a function from the key type, instead of allowing
 attacker-controlled data to specify it.
 
 ### Retrieving the certificate {#certificate-chain}
@@ -1322,13 +1364,14 @@ certificate and chain. To avoid extra round trips in fetching that URL, it could
 be [bundled](#uc-offline-websites) with the signed content or
 [PUSHed](#uc-pushed-subresources) with it. The risks from the
 `client_certificate_url` extension (Section 11.3 of {{RFC6066}}) don't seem to
-apply here, since an attacker who can get a client to load a package and fetch
+apply here, since an attacker who can get a client to load an exchange and fetch
 the certificates it references, can also get the client to perform those fetches
 by loading other HTML.
 
 To avoid using an unintended certificate with the same public key as the
-intended one, the content of the certificate chain should be included in the
-signed data, like TLS does (Section 4.4.3 of {{?I-D.ietf-tls-tls13}}).
+intended one, the content of the leaf certificate or the chain should be
+included in the signed data, like TLS does (Section 4.4.3 of
+{{?I-D.ietf-tls-tls13}}).
 
 ## How much to sign ## {#how-much-to-sign}
 
