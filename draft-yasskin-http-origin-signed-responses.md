@@ -657,22 +657,31 @@ authoritative for the PUSH_PROMISE's authority.
 
 # Security considerations
 
+## Confidential data ## {#seccons-confidentiality}
+
 Authors MUST NOT include confidential information in a signed response that an
 untrusted intermediate could forward, since the response is only signed and not
 encrypted. Intermediates can read the content.
+
+## Off-path attackers ## {#seccons-off-path}
 
 Relaxing the requirement to consult DNS when determining authority for an origin
 means that an attacker who possesses a valid certificate no longer needs to be
 on-path to redirect traffic to them; instead of modifying DNS, they need only
 convince the user to visit another Web site in order to serve responses signed
-as the target. This consideration and mitigations for it are shared by
-{{?I-D.ietf-httpbis-origin-frame}}.
+as the target. This consideration and mitigations for it are shared by the
+combination of {{?I-D.ietf-httpbis-origin-frame}} and
+{{?I-D.ietf-httpbis-http2-secondary-certs}}.
+
+## Downgrades ## {#seccons-downgrades}
 
 Signing a bad response can affect more users than simply serving a bad response,
 since a served response will only affect users who make a request while the bad
 version is live, while an attacker can forward a signed response until its
 signature expires. Authors should consider shorter signature expiration times
 than they use for cache expiration times.
+
+## Signing oracles are permanent ## {#seccons-signing-oracles}
 
 An attacker with temporary access to a signing oracle can sign "still valid"
 assertions with arbitrary timestamps and expiration times. As a result, when a
@@ -681,7 +690,7 @@ that, even if the attacker used them to sign future-dated package validity
 assertions, the key's OCSP assertion will expire, causing the package as a
 whole to become untrusted.
 
-## Aspects of the straw proposal
+## Unsigned headers ## {#seccons-unsigned-headers}
 
 The use of a single `Signed-Headers` header field prevents us from signing
 aspects of the request other than its effective request URI (Section 5.5 of
