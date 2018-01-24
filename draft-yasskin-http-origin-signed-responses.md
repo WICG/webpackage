@@ -23,6 +23,12 @@ normative:
     author:
       org: WHATWG
     date: Living Standard
+  HTML:
+    target: https://html.spec.whatwg.org/multipage
+    title: HTML
+    author:
+      org: WHATWG
+    date: Living Standard
   POSIX:
     target: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/
     title: The Open Group Base Specifications Issue 7
@@ -200,8 +206,8 @@ present parameters MUST have the following values:
 : An unsigned integer (Section 4.1 of {{!I-D.ietf-httpbis-header-structure}})
   representing a Unix time.
 
-The "certUrl" and "validityUrl" parameters are *not* signed, so intermediates can
-update them with pointers to cached versions.
+The "certUrl" parameter is *not* signed, so intermediates can update it with a
+pointer to a cached version.
 
 ### Examples ### {#example-signature-header}
 
@@ -280,10 +286,6 @@ Should the certUrl and validityUrl be lists so that intermediates can offer a
 cache without losing the original URLs? Putting lists in dictionary fields is
 more complex than {{?I-D.ietf-httpbis-header-structure}} allows, so they're
 single items for now.
-
-Should "validityUrl" be signed or optionally signed so that an exchange's author
-can prevent an intermediate from removing it, which would prevent clients from
-sharing the exchange among themselves without going back to the intermeidate?
 
 ## Significant headers of an exchange ## {#significant-headers}
 
@@ -428,6 +430,7 @@ there are no non-significant response header fields in the exchange.
    * `signature` be the signature (binary content in the parameterised value's
      "sig" parameter).
    * `integrity` be the signature's "integrity" parameter.
+   * `validityUrl` be the signature's "validityUrl" parameter.
    * `certUrl` be the signature's "certUrl" parameter, if any.
    * `certSha256` be the signature's "certSha256" parameter, if any.
    * `ed25519Key` be the signature's "ed25519Key" parameter, if any.
@@ -499,7 +502,10 @@ there are no non-significant response header fields in the exchange.
    1. The bytes of the canonical CBOR serialization ({{canonical-cbor}}) of a
       CBOR map mapping:
       1. If `certSha256` is set:
-         1. The text string "certSha256" to the byte string `certSha256`.
+         1. The text string "certSha256" to the byte string value of
+            `certSha256`.
+      1. The text string "validityUrl" to the byte string value of
+         `validityUrl`.
       1. The text string "date" to the integer value of `date`.
       1. The text string "expires" to the integer value of `expires`.
       1. The text string "headers" to the CBOR representation
@@ -703,6 +709,10 @@ authoritative for the PUSH_PROMISE's authority.
 
 ### Validating a certificate chain for an authority ### {#authority-chain-validation}
 
+1. If the signature's ["validityUrl" parameter](#signature-validityurl) is not
+   [same-origin](https://html.spec.whatwg.org/multipage/origin.html#same-origin)
+   with the exchange's effective request URI (Section 5.5 of {{!RFC7230}}),
+   return "invalid".
 1. Run {{signature-validity}} over the signature with the `allResponseHeaders`
    flag set, getting `exchange` and `certificate-chain` back. If this returned
    "invalid" or didn't return a certificate chain, return "invalid".
@@ -725,6 +735,13 @@ authoritative for the PUSH_PROMISE's authority.
       "signed_certificate_timestamp" extensions containing valid SCTs from
       trusted logs. ({{!RFC6962}})
 1. Return "valid".
+
+### Open Questions ### {#oq-cross-origin-push}
+
+Is it right that "validityUrl" is required to be same-origin with the exchange?
+This allows the mitigation against downgrades in {{seccons-downgrades}}, but
+prohibits intermediates from providing a cache of the validity information. We
+could do both with a list of URLs.
 
 # Security considerations
 
@@ -751,6 +768,12 @@ since a served response will only affect users who make a request while the bad
 version is live, while an attacker can forward a signed response until its
 signature expires. Authors should consider shorter signature expiration times
 than they use for cache expiration times.
+
+Clients MAY also check the ["validityUrl"](#signature-validityurl) of an
+exchange more often than the signature's expiration would require. Doing so for
+an exchange with an HTTPS request URI provides a TLS guarantee that the exchange
+isn't out of date (as long as {{oq-cross-origin-push}} is resolved to keep the
+same-origin requirement).
 
 ## Signing oracles are permanent ## {#seccons-signing-oracles}
 
@@ -1211,5 +1234,5 @@ exchange argues for embedding a signature's lifetime into the signature.
 
 # Acknowledgements
 
-Thanks to Ilari Liusvaara, Mark Nottingham, Mike Bishop, Ryan Sleevi, and Yoav
-Weiss for comments that improved this draft.
+Thanks to Ilari Liusvaara, Justin Schuh, Mark Nottingham, Mike Bishop, Ryan
+Sleevi, and Yoav Weiss for comments that improved this draft.
