@@ -717,23 +717,30 @@ states otherwise.
 The "ed25519key" label has parameters indicating the public keys that will be
 used to validate the returned signature. Each parameter's name is re-interpreted
 as binary content (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}})
-encoding a prefix of the SHA-256 hash of the public key. For example, if the
+encoding a prefix of the public key. For example, if the
 client will validate signatures using the public key whose base64 encoding is
 `11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo`, valid `Accept-Signature` header fields include:
 
 ~~~http
-Accept-Signature: ..., ed25519key; *If4x36FUomFia/hUBG/SJxt77UtqvkWqWId+9H+XIbk
-Accept-Signature: ..., ed25519key; *If4x36FUomFia/hUBG/SJw
-Accept-Signature: ..., ed25519key; *If4x3w
+Accept-Signature: ..., ed25519key; *11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo
+Accept-Signature: ..., ed25519key; *11qYAYKxCrfVS/7TyWQHOg
+Accept-Signature: ..., ed25519key; *11qYAQ
 Accept-Signature: ..., ed25519key; *
 ~~~
 
 but not
 
 ~~~http
-Accept-Signature: ..., ed25519key; *If4x3
-Accept-Signature: ..., ed25519key; If4x3w
+Accept-Signature: ..., ed25519key; *11qYA
 ~~~
+
+because 5 bytes isn't a valid length for encoded base64, and not
+
+~~~http
+Accept-Signature: ..., ed25519key; 11qYAQ
+~~~
+
+because it doesn't start with the `*` that indicates binary content.
 
 Note that `ed25519key; *` is an empty prefix, which matches all public keys, so
 it's useful in subresource integrity ({{uc-sri}}) cases like `<link rel=preload
