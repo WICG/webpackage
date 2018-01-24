@@ -725,6 +725,7 @@ client will validate signatures using the public key whose base64 encoding is
 Accept-Signature: ..., ed25519key; *If4x36FUomFia/hUBG/SJxt77UtqvkWqWId+9H+XIbk
 Accept-Signature: ..., ed25519key; *If4x36FUomFia/hUBG/SJw
 Accept-Signature: ..., ed25519key; *If4x3w
+Accept-Signature: ..., ed25519key; *
 ~~~
 
 but not
@@ -733,6 +734,11 @@ but not
 Accept-Signature: ..., ed25519key; *If4x3
 Accept-Signature: ..., ed25519key; If4x3w
 ~~~
+
+Note that `ed25519key; *` is an empty prefix, which matches all public keys, so
+it's useful in subresource integrity ({{uc-sri}}) cases like `<link rel=preload
+as=script href="...">` where the public key isn't known until the matching
+`<script src="..." integrity="...">` tag.
 
 ### Examples ### {#accept-signature-examples}
 
@@ -753,6 +759,19 @@ states that the client will accept 4096-bit RSA keys but not 2048-bit RSA keys,
 and implies that the client will accept ECDSA keys on the secp256r1 and
 secp384r1 curves and payload integrity assured with the `MI: mi-sha256` and
 `Digest: SHA-256` header fields.
+
+### Open Questions ### {#oq-accept-signature}
+
+Is an `Accept-Signature` header useful enough to pay for itself? If clients wind
+up sending it on most requests, that may cost more than the cost of sending
+`Signature`s unconditionally. On the other hand, it gives servers an indication
+of which kinds of signatures are supported, which can help us upgrade the
+ecosystem in the future.
+
+Is `Accept-Signature` the right spelling, or do we want to imitate `Want-Digest`
+(Section 4.3.1 of {{?RFC3230}}) instead?
+
+Do I have the right structure for the labels indicating feature support?
 
 # HTTP/2 extension for cross-origin Server Push # {#cross-origin-push}
 
