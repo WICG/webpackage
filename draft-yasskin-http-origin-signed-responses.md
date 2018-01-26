@@ -662,7 +662,8 @@ When a server receives an `Accept-Signature` header field in a client request,
 it SHOULD reply with any available `Signature` header fields for its response
 that the `Accept-Signature` header field indicates the client supports. However,
 if the `Accept-Signature` value violates a requirement in this section, the
-server MUST NOT send any `Signature` headers.
+server MUST behave as if it hadn't received any `Accept-Signature` header at
+all.
 
 The `Accept-Signature` header field is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 4.8 of
