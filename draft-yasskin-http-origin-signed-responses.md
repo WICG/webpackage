@@ -1521,6 +1521,26 @@ resource itself.
 This need to store and reconcile multiple sets of headers for a single signed
 exchange argues for embedding a signature's lifetime into the signature.
 
+# Change Log
+
+RFC EDITOR PLEASE DELETE THIS SECTION.
+
+draft-02
+
+* Signatures identify a header (e.g. Digest or MI) to guard the payload's
+  integrity instead of directly signing over the payload.
+* The validityUrl is signed.
+* Use CBOR maps where appropriate, and define how they're canonicalized.
+* Remove the update.url field from signature validity updates, in favor of just
+  re-fetching the original request URL.
+* Define an HTTP/2 extension to use a setting to enable cross-origin Server
+  Push.
+* Define an `Accept-Signature` header to negotiate whether to send Signatures
+  and which ones.
+* Define an `application/http-exchange+cbor` format to fetch signed exchanges
+  without HTTP/2 Push.
+* 2 new use cases.
+
 # Acknowledgements
 
 Thanks to Ilari Liusvaara, Justin Schuh, Mark Nottingham, Mike Bishop, Ryan
