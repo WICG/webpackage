@@ -528,6 +528,10 @@ are actually valid, the client MAY process those parts of the exchange and MUST
 wait to process other parts of the exchange until they too are determined to be
 valid.
 
+### Open Questions ### {#oq-signature-validity}
+
+Should we ban RSA keys to avoid their vulnerability to Bleichenbacher attacks?
+
 ## Updating signature validity ## {#updating-validity}
 
 Both OCSP responses and signatures are designed to expire a short
