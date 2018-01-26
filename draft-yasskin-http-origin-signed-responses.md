@@ -976,6 +976,13 @@ defined in Appendix G of {{?I-D.ietf-cbor-cddl}}:
 ]
 ~~~
 
+## Open Questions ## {#oq-application-http-exchange}
+
+Should `application/http-exchange+cbor` support request payloads and trailers,
+or only the aspects needed for signed exchanges?
+
+Are the mime type, extension, and magic number right?
+
 # Security considerations
 
 ## Confidential data ## {#seccons-confidentiality}
