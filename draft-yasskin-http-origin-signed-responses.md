@@ -494,8 +494,9 @@ there are no non-significant response header fields in the exchange.
          following mappings:
 
          RSA, 2048 bits:
-         : rsa_pss_sha256 as defined in Section 4.2.3 of
-           {{!I-D.ietf-tls-tls13}}.
+         : rsa_pss_rsae_sha256 or rsa_pss_pss_sha256, as defined in Section
+           4.2.3 of {{!I-D.ietf-tls-tls13}}, depending on which of the
+           rsaEncryption OID or RSASSA-PSS OID {{!RFC8017}} is used.
 
          EC, with the secp256r1 curve:
          : ecdsa_secp256r1_sha256 as defined in Section 4.2.3 of
@@ -551,6 +552,7 @@ valid.
 ### Open Questions ### {#oq-signature-validity}
 
 Should we ban RSA keys to avoid their vulnerability to Bleichenbacher attacks?
+Or just keys using the rsaEncryption OID?
 
 ## Updating signature validity ## {#updating-validity}
 
