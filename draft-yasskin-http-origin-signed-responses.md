@@ -23,6 +23,12 @@ normative:
     author:
       org: WHATWG
     date: Living Standard
+  HTML:
+    target: https://html.spec.whatwg.org/multipage
+    title: HTML
+    author:
+      org: WHATWG
+    date: Living Standard
   POSIX:
     target: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/
     title: The Open Group Base Specifications Issue 7
@@ -200,8 +206,73 @@ present parameters MUST have the following values:
 : An unsigned integer (Section 4.1 of {{!I-D.ietf-httpbis-header-structure}})
   representing a Unix time.
 
-The "certUrl" and "validityUrl" parameters are *not* signed, so intermediates can
-update them with pointers to cached versions.
+The "certUrl" parameter is *not* signed, so intermediates can update it with a
+pointer to a cached version.
+
+### Examples ### {#example-signature-header}
+
+The following header is included in the response for an exchange with effective
+request URI `https://example.com/resource.html`. Newlines are added for
+readability.
+
+~~~http
+Signature:
+ sig1;
+  sig=*MEUCIQDXlI2gN3RNBlgFiuRNFpZXcDIaUpX6HIEwcZEc0cZYLAIga9DsVOMM+g5YpwEBdGW3sS+bvnmAJJiSMwhuBdqp5UY;
+  integrity="mi";
+  validityUrl="https://example.com/resource.validity.1511128380";
+  certUrl="https://example.com/oldcerts";
+  certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI;
+  date=1511128380; expires=1511733180,
+ sig2;
+  sig=*MEQCIGjZRqTRf9iKNkGFyzRMTFgwf/BrY2ZNIP/dykhUV0aYAiBTXg+8wujoT4n/W+cNgb7pGqQvIUGYZ8u8HZJ5YH26Qg;
+  integrity="mi";
+  validityUrl="https://example.com/resource.validity.1511128380";
+  certUrl="https://example.com/newcerts";
+  certSha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw;
+  date=1511128380; expires=1511733180,
+ srisig;
+  sig=*lGZVaJJM5f2oGczFlLmBdKTDL+QADza4BgeO494ggACYJOvrof6uh5OJCcwKrk7DK+LBch0jssDYPp5CLc1SDA
+  integrity="mi";
+  validityUrl="https://example.com/resource.validity.1511128380";
+  ed25519Key=*zsSevyFsxyZHiUluVBDd4eypdRLTqyWRVOJuuKUz+A8
+  date=1511128380; expires=1511733180,
+ thirdpartysig;
+  sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+;
+  integrity="mi";
+  validityUrl="https://thirdparty.example.com/resource.validity.1511161860";
+  certUrl="https://thirdparty.example.com/certs";
+  certSha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc;
+  date=1511133060; expires=1511478660,
+~~~
+
+There are 4 signatures: 2 from different secp256r1 certificates within
+`https://example.com/`, one using a raw ed25519 public key that's also
+controlled by `example.com`, and a fourth using a secp256r1 certificate owned by
+`thirdparty.example.com`.
+
+All 4 signatures rely on the `MI` response header to guard the integrity of the
+response payload. This isn't strictly required---some signatures could use `MI`
+while others use `Digest`---but there's not much benefit to mixing them.
+
+The signatures include a "validityUrl" that includes the first time the resource
+was seen. This allows multiple versions of a resource at the same URL to be
+updated with new signatures, which allows clients to avoid transferring extra
+data while the old versions don't have known security bugs.
+
+The certificates at `https://example.com/oldcerts` and
+`https://example.com/newcerts` have `subjectAltName`s of `example.com`, meaning
+that if they and their signatures validate, the exchange can be trusted as
+having an origin of `https://example.com/`. The author might be using two
+certificates because their readers have disjoint sets of roots in their trust
+stores.
+
+The author signed with all three certificates at the same time, so they share a validity range: 7 days starting at 2017-11-19 21:53 UTC.
+
+The author then requested an additional signature from `thirdparty.example.com`,
+which did some validation or processing and then signed the resource at
+2017-11-19 23:11 UTC. `thirdparty.example.com` only grants 4-day signatures, so
+clients will need to re-validate more often.
 
 ### Open Questions
 
@@ -215,10 +286,6 @@ Should the certUrl and validityUrl be lists so that intermediates can offer a
 cache without losing the original URLs? Putting lists in dictionary fields is
 more complex than {{?I-D.ietf-httpbis-header-structure}} allows, so they're
 single items for now.
-
-Should "validityUrl" be signed or optionally signed so that an exchange's author
-can prevent an intermediate from removing it, which would prevent clients from
-sharing the exchange among themselves without going back to the intermeidate?
 
 ## Significant headers of an exchange ## {#significant-headers}
 
@@ -363,6 +430,7 @@ there are no non-significant response header fields in the exchange.
    * `signature` be the signature (binary content in the parameterised value's
      "sig" parameter).
    * `integrity` be the signature's "integrity" parameter.
+   * `validityUrl` be the signature's "validityUrl" parameter.
    * `certUrl` be the signature's "certUrl" parameter, if any.
    * `certSha256` be the signature's "certSha256" parameter, if any.
    * `ed25519Key` be the signature's "ed25519Key" parameter, if any.
@@ -434,7 +502,10 @@ there are no non-significant response header fields in the exchange.
    1. The bytes of the canonical CBOR serialization ({{canonical-cbor}}) of a
       CBOR map mapping:
       1. If `certSha256` is set:
-         1. The text string "certSha256" to the byte string `certSha256`.
+         1. The text string "certSha256" to the byte string value of
+            `certSha256`.
+      1. The text string "validityUrl" to the byte string value of
+         `validityUrl`.
       1. The text string "date" to the integer value of `date`.
       1. The text string "expires" to the integer value of `expires`.
       1. The text string "headers" to the CBOR representation
@@ -481,20 +552,22 @@ following CDDL ({{!I-D.ietf-cbor-cddl}}):
 validity = {
   ? signatures: [ + bytes ]
   ? update: {
-    url: text,
     ? size: uint,
   }
 ]
 ~~~
 
-The elements of the `signatures` array are header field values meant to replace
-the signatures within the `Signature` header field pointing to this validity
-data. If the signed exchange contains a bug severe enough that clients need to
-stop using the content, the `signatures` array MUST NOT be present.
+The elements of the `signatures` array are parameterised labels (Section 4.4 of
+{{!I-D.ietf-httpbis-header-structure}}) meant to replace the signatures within
+the `Signature` header field pointing to this validity data. If the signed
+exchange contains a bug severe enough that clients need to stop using the
+content, the `signatures` array MUST NOT be present.
 
-The `update` map gives a location to update the entire signed exchange and an
-estimate of the size of the resource at that URL. If the signed exchange is
-currently the most recent version, the `update` SHOULD NOT be present.
+If the the `update` map is present, that indicates that a new version of the
+signed exchange is available at its effective request URI (Section 5.5 of
+{{!RFC7230}}) and can give an estimate of the size of the updated exchange
+(`update.size`). If the signed exchange is currently the most recent version,
+the `update` SHOULD NOT be present.
 
 If both the `signatures` and `update` fields are present, clients can use the
 estimated size to decide whether to update the whole resource or just its
@@ -502,76 +575,80 @@ signatures.
 
 ### Examples ### {#examples-updating-validity}
 
-For example, if a signed exchange has the following `Signature` header field (written as multiple fields for convenience):
+For example, say a signed exchange whose URL is `https://example.com/resource`
+has the following `Signature` header field (with line breaks included and
+irrelevant fields omitted for ease of reading).
 
 ~~~http
-Signature: sig1;
-  sig=*MEUCIQDXlI2gN3RNBlgFiuRNFpZXcDIaUpX6HIEwcZEc0cZYLAIga9DsVOMM+g5YpwEBdGW3sS+bvnmAJJiSMwhuBdqp5UY;
-  integrity="mi";
-  validityUrl="https://example.com/resource.validity";
-  certUrl="https://example.com/certs";
-  certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI;
-  date=1511128380; expires=1511560380
-Signature: sig2;
-  sig=*MEQCIGjZRqTRf9iKNkGFyzRMTFgwf/BrY2ZNIP/dykhUV0aYAiBTXg+8wujoT4n/W+cNgb7pGqQvIUGYZ8u8HZJ5YH26Qg;
-  integrity="mi";
-  validityUrl="https://example.com/resource.validity";
-  certUrl="https://example.com/certs";
-  certSha256=*kQAA8u33cZRTy7RHMO4+dv57baZL48SYA2PqmYvPPbg;
-  date=1511301183; expires=1511905983
-Signature: sig3;
-  sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+;
-  integrity="mi";
-  validityUrl="https://thirdparty.example.com/resource.validity";
+Signature:
+ sig1;
+  sig=*MEUCIQ...;
+  ...
+  validityUrl="https://example.com/resource.validity.1511157180";
+  certUrl="https://example.com/oldcerts";
+  date=1511128380; expires=1511733180,
+ sig2;
+  sig=*MEQCIG...;
+  ...
+  validityUrl="https://example.com/resource.validity.1511157180";
+  certUrl="https://example.com/newcerts";
+  date=1511128380; expires=1511733180,
+ thirdpartysig;
+  sig=*MEYCIQ...;
+  ...
+  validityUrl="https://thirdparty.example.com/resource.validity.1511161860";
   certUrl="https://thirdparty.example.com/certs";
-  certSha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc;
-  date=1511301183; expires=1511905983
+  date=1511478660; expires=1511824260
 ~~~
 
-https://example.com/resource.validity might contain:
+At 2017-11-27 11:02 UTC, `sig1` and `sig2` have expired, but `thirdpartysig`
+doesn't exipire until 23:11 that night, so the client needs to fetch
+`https://example.com/resource.validity.1511157180` (the `validityUrl` of `sig1`
+and `sig2`) to update those signatures. This URL might contain:
 
 ~~~cbor-diag
 {
   "signatures": [
-    'sig4; '
+    'sig1; '
     'sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw; '
+    'validityUrl="https://example.com/resource.validity.1511157180"; '
     'integrity="mi"; '
-    'validityUrl="https://example.com/resource.validity"; '
-    'certUrl="https://example.com/certs"; '
-    'certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI; '
-    'date=1511467200; expires=1511985600'
+    'certUrl="https://example.com/newcerts"; '
+    'certSha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw; '
+    'date=1511733180; expires=1512337980'
   ],
   "update": {
-    "url": "https://example.com/resource",
     "size": 5557452
   }
 }
 ~~~
 
-This indicates that the first two of the original signatures (the ones with a
-validityUrl of "https://example.com/resource.validity") can be replaced with a
-single new signature. The signatures of the updated signed
-exchange would be:
+This indicates that the client could fetch a newer version at
+`https://example.com/resource` (the original URL of the exchange), or that the
+validity period of the old version can be extended by replacing the first two of
+the original signatures (the ones with a validityUrl of
+`https://example.com/resource.validity.1511157180`) with the single new
+signature provided. (This might happen at the end of a migration to a new root
+certificate.) The signatures of the updated signed exchange would be:
 
 ~~~http
-Signature: sig4;
-  sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw;
-  integrity="mi";
-  validityUrl="https://example.com/resource.validity";
-  certUrl="https://example.com/certs";
-  certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI;
-  date=1511467200; expires=1511985600
-Signature: sig3;
-  sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+;
-  integrity="mi";
-  validityUrl="https://thirdparty.example.com/resource.validity";
+Signature:
+ sig1;
+  sig=*MEQCIC...;
+  ...
+  validityUrl="https://example.com/resource.validity.1511157180";
+  certUrl="https://example.com/newcerts";
+  date=1511733180; expires=1512337980,
+ thirdpartysig;
+  sig=*MEYCIQ...;
+  ...
+  validityUrl="https://thirdparty.example.com/resource.validity.1511161860";
   certUrl="https://thirdparty.example.com/certs";
-  certSha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc;
-  date=1511301183; expires=1511905983
+  date=1511478660; expires=1511824260
 ~~~
 
-https://example.com/resource.validity could also expand the set of signatures if
-its `signatures` array contained more than 2 elements.
+`https://example.com/resource.validity.1511157180` could also expand the set of
+signatures if its `signatures` array contained more than 2 elements.
 
 # HTTP/2 extension for cross-origin Server Push # {#cross-origin-push}
 
@@ -632,6 +709,10 @@ authoritative for the PUSH_PROMISE's authority.
 
 ### Validating a certificate chain for an authority ### {#authority-chain-validation}
 
+1. If the signature's ["validityUrl" parameter](#signature-validityurl) is not
+   [same-origin](https://html.spec.whatwg.org/multipage/origin.html#same-origin)
+   with the exchange's effective request URI (Section 5.5 of {{!RFC7230}}),
+   return "invalid".
 1. Run {{signature-validity}} over the signature with the `allResponseHeaders`
    flag set, getting `exchange` and `certificate-chain` back. If this returned
    "invalid" or didn't return a certificate chain, return "invalid".
@@ -655,24 +736,46 @@ authoritative for the PUSH_PROMISE's authority.
       trusted logs. ({{!RFC6962}})
 1. Return "valid".
 
+### Open Questions ### {#oq-cross-origin-push}
+
+Is it right that "validityUrl" is required to be same-origin with the exchange?
+This allows the mitigation against downgrades in {{seccons-downgrades}}, but
+prohibits intermediates from providing a cache of the validity information. We
+could do both with a list of URLs.
+
 # Security considerations
+
+## Confidential data ## {#seccons-confidentiality}
 
 Authors MUST NOT include confidential information in a signed response that an
 untrusted intermediate could forward, since the response is only signed and not
 encrypted. Intermediates can read the content.
 
+## Off-path attackers ## {#seccons-off-path}
+
 Relaxing the requirement to consult DNS when determining authority for an origin
 means that an attacker who possesses a valid certificate no longer needs to be
 on-path to redirect traffic to them; instead of modifying DNS, they need only
 convince the user to visit another Web site in order to serve responses signed
-as the target. This consideration and mitigations for it are shared by
-{{?I-D.ietf-httpbis-origin-frame}}.
+as the target. This consideration and mitigations for it are shared by the
+combination of {{?I-D.ietf-httpbis-origin-frame}} and
+{{?I-D.ietf-httpbis-http2-secondary-certs}}.
+
+## Downgrades ## {#seccons-downgrades}
 
 Signing a bad response can affect more users than simply serving a bad response,
 since a served response will only affect users who make a request while the bad
 version is live, while an attacker can forward a signed response until its
 signature expires. Authors should consider shorter signature expiration times
 than they use for cache expiration times.
+
+Clients MAY also check the ["validityUrl"](#signature-validityurl) of an
+exchange more often than the signature's expiration would require. Doing so for
+an exchange with an HTTPS request URI provides a TLS guarantee that the exchange
+isn't out of date (as long as {{oq-cross-origin-push}} is resolved to keep the
+same-origin requirement).
+
+## Signing oracles are permanent ## {#seccons-signing-oracles}
 
 An attacker with temporary access to a signing oracle can sign "still valid"
 assertions with arbitrary timestamps and expiration times. As a result, when a
@@ -681,7 +784,7 @@ that, even if the attacker used them to sign future-dated package validity
 assertions, the key's OCSP assertion will expire, causing the package as a
 whole to become untrusted.
 
-## Aspects of the straw proposal
+## Unsigned headers ## {#seccons-unsigned-headers}
 
 The use of a single `Signed-Headers` header field prevents us from signing
 aspects of the request other than its effective request URI (Section 5.5 of
@@ -717,6 +820,14 @@ this leaks extra information.
 
 For non-executable resource types, a signed response can improve the privacy
 situation by hiding the client's interest from the original author.
+
+To prevent network operators other than `o1.com` or `o2.com` from learning which
+exchanges were read, clients SHOULD only load exchanges fetched over a transport
+that's protected from eavesdroppers. This can be difficult to determine when the
+exchange is being loaded from local disk, but when the client itself requested
+the exchange over a network it SHOULD require TLS ({{!I-D.ietf-tls-tls13}}) or a
+successor transport layer, and MUST NOT accept exchanges transferred over plain
+HTTP without TLS.
 
 # IANA considerations
 
@@ -1123,5 +1234,5 @@ exchange argues for embedding a signature's lifetime into the signature.
 
 # Acknowledgements
 
-Thanks to Ilari Liusvaara, Mark Nottingham, Mike Bishop, Ryan Sleevi, and Yoav
-Weiss for comments that improved this draft.
+Thanks to Ilari Liusvaara, Justin Schuh, Mark Nottingham, Mike Bishop, Ryan
+Sleevi, and Yoav Weiss for comments that improved this draft.
