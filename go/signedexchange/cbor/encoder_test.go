@@ -3,7 +3,6 @@ package cbor_test
 import (
 	"bytes"
 	"encoding/hex"
-	"sort"
 	"strings"
 	"testing"
 
@@ -115,7 +114,44 @@ func TestEncodeTextString(t *testing.T) {
 	}
 }
 
-func TestMapEncoderSorter(t *testing.T) {
+func TestMapEncoder(t *testing.T) {
+	entries := []*MapEntryEncoder{
+		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
+			keyE.EncodeBool(false)
+			valueE.EncodeTextString("false")
+		}),
+		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
+			keyE.EncodeInt(-1)
+			valueE.EncodeTextString("int -1")
+		}),
+		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
+			keyE.EncodeInt(10)
+			valueE.EncodeTextString("int 10")
+		}),
+		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
+			keyE.EncodeInt(100)
+			valueE.EncodeTextString("int 100")
+		}),
+		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
+			keyE.EncodeTextString("aa")
+			valueE.EncodeTextString("string \"aa\"")
+		}),
+		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
+			keyE.EncodeTextString("z")
+			valueE.EncodeTextString("string \"z\"")
+		}),
+		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
+			keyE.EncodeArrayHeader(1)
+			keyE.EncodeInt(-1)
+			valueE.EncodeTextString("array [-1]")
+		}),
+		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
+			keyE.EncodeArrayHeader(1)
+			keyE.EncodeInt(100)
+			valueE.EncodeTextString("array [100]")
+		}),
+	}
+
 	// The keys in every map MUST be sorted in the bytewise lexicographic order of
 	// their canonical encodings. For example, the following keys are correctly
 	// sorted:
@@ -127,62 +163,22 @@ func TestMapEncoderSorter(t *testing.T) {
 	// 6. [100], encoded as 81 18 64.
 	// 7. [-1], encoded as 81 20.
 	// 8. false, encoded as F4.
-	es := []*MapEntryEncoder{
-		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
-			keyE.EncodeInt(10)
-			valueE.EncodeTextString("int 10")
-		}),
-		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
-			keyE.EncodeInt(100)
-			valueE.EncodeTextString("int 100")
-		}),
-		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
-			keyE.EncodeInt(-1)
-			valueE.EncodeTextString("int -1")
-		}),
-		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
-			keyE.EncodeTextString("z")
-			valueE.EncodeTextString("string \"z\"")
-		}),
-		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
-			keyE.EncodeTextString("aa")
-			valueE.EncodeTextString("string \"aa\"")
-		}),
-		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
-			keyE.EncodeArrayHeader(1)
-			keyE.EncodeInt(100)
-			valueE.EncodeTextString("array [100]")
-		}),
-		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
-			keyE.EncodeArrayHeader(1)
-			keyE.EncodeInt(-1)
-			valueE.EncodeTextString("array [-1]")
-		}),
-		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
-			keyE.EncodeBool(false)
-			valueE.EncodeTextString("false")
-		}),
-	}
+	exp := fromHex(strings.Join([]string{
+		"A8", // length
+		"0A 66 69 6E 74 20 31 30",
+		"18 64 67 69 6E 74",
+		"20 31 30 30 20 66 69 6E 74 20 2D 31",
+		"61 7A 6A 73 74 72 69 6E 67 20 22 7A 22",
+		"62 61 61 6B 73 74 72 69 6E 67 20 22 61 61 22",
+		"81 18 64 6B 61 72 72 61 79 20 5B 31 30 30 5D",
+		"81 20 6A 61 72 72 61 79 20 5B 2D 31 5D",
+		"F4 65 66 61 6C 73 65",
+	}, ""))
 
-	keyExp := [][]byte{
-		fromHex("0A"),
-		fromHex("18 64"),
-		fromHex("20"),
-		fromHex("61 7A"),
-		fromHex("62 61 61"),
-		fromHex("81 18 64"),
-		fromHex("81 20"),
-		fromHex("F4"),
-	}
-	for i, exp := range keyExp {
-		if !bytes.Equal(exp, es[i].KeyBytes()) {
-			t.Errorf("FAIL key %d expected to encode to %v, actual %v ", i, exp, es[i].KeyBytes())
-		}
-	}
-
-	if !sort.SliceIsSorted(es, func(i, j int) bool {
-		return bytes.Compare(es[i].KeyBytes(), es[j].KeyBytes()) < 0
-	}) {
-		t.Errorf("FAIL")
+	var b bytes.Buffer
+	e := NewEncoder(&b)
+	e.EncodeMap(entries)
+	if !bytes.Equal(exp, b.Bytes()) {
+		t.Errorf("the map expected to encode to %v, actual %v", exp, b.Bytes())
 	}
 }
