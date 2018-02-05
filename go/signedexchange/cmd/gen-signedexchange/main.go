@@ -78,11 +78,12 @@ func run() error {
 	}
 
 	header := http.Header{}
-	header.Add("Content-Type", "text/html; charset=utf-8")
+	header.Add("content-type", "text/html; charset=utf-8")
 	i, err := signedexchange.NewInput(parsedUrl, *flagResponseStatus, header, payload, *flagMIRecordSize)
 	if err != nil {
 		return err
 	}
+	i.AddSignedHeadersHeader("content-type", "mi")
 
 	s := &signedexchange.Signer{
 		Date:        time.Now(),
