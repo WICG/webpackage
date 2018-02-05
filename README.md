@@ -49,6 +49,5 @@ https://github.com/martinthomson/i-d-template/blob/master/doc/SETUP.md.
 
 ### Packaging tool.
 
-Install this with `go install
-github.com/WICG/webpackage/tree/internet-draft/go/webpack/cmd/wpktext2cbor`.
+Install this with `go install github.com/WICG/webpackage/go/signed-exchange/cmd/gen-signedexchange`.
 This tool is not yet documented well.
