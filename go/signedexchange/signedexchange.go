@@ -1,86 +1,187 @@
 package signedexchange
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
-	"sort"
+	"strconv"
+	"strings"
 
-	"github.com/ugorji/go/codec"
+	"github.com/WICG/webpackage/go/signedexchange/cbor"
+	"github.com/WICG/webpackage/go/signedexchange/mice"
 )
 
-type ResponseHeader struct {
-	Name  string
-	Value string
-}
-
 type Input struct {
-	// * Request
-	RequestUri *url.URL
+	// Request
+	requestUri *url.URL
 
-	// * Response
-	ResponseStatus  int
-	ResponseHeaders []ResponseHeader
+	// Response
+	responseStatus int
+	responseHeader http.Header
 
-	// * Payload
-	Payload []byte
+	// Payload
+	payload []byte
 }
 
-type headersSorter []ResponseHeader
-
-var _ = sort.Interface(headersSorter{})
-
-func (s headersSorter) Len() int           { return len(s) }
-func (s headersSorter) Less(i, j int) bool { return s[i].Name < s[j].Name }
-func (s headersSorter) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-
-type requestE struct {
-	_struct bool `codec:",toarray"`
-
-	MethodTag []byte
-	Method    []byte
-	UrlTag    []byte
-	Url       []byte
+func NewInput(uri *url.URL, status int, headers http.Header, payload []byte, miRecordSize int) (*Input, error) {
+	i := &Input{
+		requestUri:     uri,
+		responseStatus: status,
+		responseHeader: headers,
+	}
+	if err := i.miEncode(payload, miRecordSize); err != nil {
+		return nil, err
+	}
+	return i, nil
 }
 
-type exchangeE struct {
-	_struct bool `codec:",toarray"`
-
-	RequestTag    []byte
-	Request       *requestE
-	ResponseTag   []byte
-	ResponseArray [][]byte
-	PayloadTag    []byte
-	Payload       []byte
+func (i *Input) miEncode(payload []byte, recordSize int) error {
+	var buf bytes.Buffer
+	mi, err := mice.Encode(&buf, payload, recordSize)
+	if err != nil {
+		return err
+	}
+	i.payload = buf.Bytes()
+	i.responseHeader.Add("Content-Encoding", "mi-sha256")
+	i.responseHeader.Add("MI", mi)
+	return nil
 }
 
-func WriteExchange(w io.Writer, i *Input) error {
-	sort.Sort(headersSorter(i.ResponseHeaders))
-
-	statusStr := fmt.Sprintf("%03d", i.ResponseStatus)
-	respary := [][]byte{
-		[]byte(":status"),
-		[]byte(statusStr),
+// AddSignedHeadersHeader adds 'signed-headers' header to the response.
+//
+// Signed-Headers is a Structured Header as defined by
+// [I-D.ietf-httpbis-header-structure]. Its value MUST be a list (Section 4.8
+// of [I-D.ietf-httpbis-header-structure]) of lowercase strings (Section 4.2 of
+// [I-D.ietf-httpbis-header-structure]) naming HTTP response header fields.
+// Pseudo-header field names (Section 8.1.2.1 of [RFC7540]) MUST NOT appear in
+// this list.
+func (i *Input) AddSignedHeadersHeader(ks ...string) {
+	strs := []string{}
+	for _, k := range ks {
+		strs = append(strs, fmt.Sprintf(`"%s"`, strings.ToLower(k)))
 	}
-	for _, rh := range i.ResponseHeaders {
-		respary = append(respary, []byte(rh.Name), []byte(rh.Value))
+	s := strings.Join(strs, ", ")
+	i.responseHeader.Add("signed-headers", s)
+}
+
+func (i *Input) AddSignatureHeader(s *Signer) error {
+	h, err := s.signatureHeaderValue(i)
+	if err != nil {
+		return err
+	}
+	i.responseHeader.Add("Signature", h)
+	return nil
+}
+
+func (i *Input) parseSignedHeadersHeader() []string {
+	unparsed := i.responseHeader.Get("signed-headers")
+
+	rawks := strings.Split(unparsed, ",")
+	ks := make([]string, 0, len(rawks))
+	for _, k := range rawks {
+		ks = append(ks, strings.Trim(k, "\" "))
+	}
+	return ks
+}
+
+func (i *Input) encodeCanonicalRequest(e *cbor.Encoder) error {
+	mes := []*cbor.MapEntryEncoder{
+		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+			keyE.EncodeByteString([]byte(":method"))
+			valueE.EncodeByteString([]byte("GET"))
+		}),
+		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+			keyE.EncodeByteString([]byte(":url"))
+			valueE.EncodeByteString([]byte(i.requestUri.String()))
+		}),
+	}
+	return e.EncodeMap(mes)
+}
+
+func (i *Input) encodeResponseHeader(e *cbor.Encoder, onlySignedHeaders bool) error {
+	// Only encode response headers which are specified in "signed-headers" header.
+	var m map[string]struct{}
+	if onlySignedHeaders {
+		m = map[string]struct{}{}
+		ks := i.parseSignedHeadersHeader()
+		for _, k := range ks {
+			m[k] = struct{}{}
+		}
 	}
 
-	exc := &exchangeE{
-		RequestTag: []byte("request"),
-		Request: &requestE{
-			MethodTag: []byte(":method"),
-			Method:    []byte("GET"),
-			UrlTag:    []byte(":url"),
-			Url:       []byte(i.RequestUri.String()),
-		},
-		ResponseTag:   []byte("response"),
-		ResponseArray: respary,
-		PayloadTag:    []byte("payload"),
-		Payload:       i.Payload,
+	mes := []*cbor.MapEntryEncoder{
+		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+			keyE.EncodeByteString([]byte(":status"))
+			valueE.EncodeByteString([]byte(strconv.Itoa(i.responseStatus)))
+		}),
+	}
+	for name, value := range i.responseHeader {
+		if onlySignedHeaders {
+			if _, ok := m[strings.ToLower(name)]; !ok {
+				continue
+			}
+		}
+		mes = append(mes,
+			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				keyE.EncodeByteString([]byte(strings.ToLower(name)))
+				valueE.EncodeByteString([]byte(value[0]))
+			}))
+	}
+	return e.EncodeMap(mes)
+}
+
+// draft-yasskin-http-origin-signed-responses.html#rfc.section.3.4
+func (i *Input) encodeCanonicalExchangeHeaders(e *cbor.Encoder) error {
+	if err := e.EncodeArrayHeader(2); err != nil {
+		return fmt.Errorf("signedexchange: failed to encode top-level array header: %v", err)
+	}
+	if err := i.encodeCanonicalRequest(e); err != nil {
+		return err
+	}
+	if err := i.encodeResponseHeader(e, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+// draft-yasskin-http-origin-signed-responses.html#application-http-exchange
+func WriteExchangeFile(w io.Writer, i *Input) error {
+	e := cbor.NewEncoder(w)
+	if err := e.EncodeArrayHeader(7); err != nil {
+		return err
+	}
+	if err := e.EncodeTextString("htxg"); err != nil {
+		return err
 	}
 
-	h := new(codec.CborHandle)
-	enc := codec.NewEncoder(w, h)
-	return enc.Encode(exc)
+	if err := e.EncodeTextString("request"); err != nil {
+		return err
+	}
+	// FIXME: This may diverge in future.
+	if err := i.encodeCanonicalRequest(e); err != nil {
+		return err
+	}
+
+	// FIXME: Support "request payload"
+
+	if err := e.EncodeTextString("response"); err != nil {
+		return err
+	}
+
+	if err := i.encodeResponseHeader(e, false); err != nil {
+		return err
+	}
+
+	if err := e.EncodeTextString("payload"); err != nil {
+		return err
+	}
+	if err := e.EncodeByteString(i.payload); err != nil {
+		return err
+	}
+
+	// FIXME: Support "trailer"
+
+	return nil
 }
