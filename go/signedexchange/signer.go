@@ -16,12 +16,13 @@ import (
 )
 
 type Signer struct {
-	Date    time.Time
-	Expires time.Time
-	Certs   []*x509.Certificate
-	CertUrl *url.URL
-	PrivKey crypto.PrivateKey
-	Rand    io.Reader
+	Date        time.Time
+	Expires     time.Time
+	Certs       []*x509.Certificate
+	CertUrl     *url.URL
+	ValidityUrl *url.URL
+	PrivKey     crypto.PrivateKey
+	Rand        io.Reader
 }
 
 func certSha256(certs []*x509.Certificate) []byte {
@@ -120,10 +121,10 @@ func (s *Signer) signatureHeaderValue(i *Input) (string, error) {
 	sigb64 := base64.RawStdEncoding.EncodeToString(sig)
 	integrityStr := "mi"
 	certUrl := s.CertUrl.String()
+	validityUrl := s.ValidityUrl.String()
 	certSha256b64 := base64.RawStdEncoding.EncodeToString(certSha256(s.Certs))
 	dateUnix := s.Date.Unix()
 	expiresUnix := s.Expires.Unix()
 
-	// FIXME: validityURL
-	return fmt.Sprintf("sig=*%s; integrity=\"%s\"; certUrl=\"%s\"; certSha256=*%s; date=%d; expires=%d", sigb64, integrityStr, certUrl, certSha256b64, dateUnix, expiresUnix), nil
+	return fmt.Sprintf("sig=*%s; validityUrl=\"%s\"; integrity=\"%s\"; certUrl=\"%s\"; certSha256=*%s; date=%d; expires=%d", sigb64, validityUrl, integrityStr, certUrl, certSha256b64, dateUnix, expiresUnix), nil
 }

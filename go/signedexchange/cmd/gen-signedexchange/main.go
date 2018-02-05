@@ -20,6 +20,7 @@ var (
 	flagContent        = flag.String("content", "index.html", "Source file to be used as the exchange payload")
 	flagCertificate    = flag.String("certificate", "cert.pem", "Certificate chain PEM file of the origin")
 	flagCertificateUrl = flag.String("certUrl", "https://example.com/cert.msg", "The URL where the certificate chain is hosted at.")
+	flagValidityUrl    = flag.String("validityUrl", "https://example.com/resource.validity.msg", "The URL where resource validity info is hosted at.")
 	flagPrivateKey     = flag.String("privateKey", "cert-key.pem", "Private key PEM file of the origin")
 	flagOutput         = flag.String("o", "out.htxg", "Signed exchange output file")
 	flagMIRecordSize   = flag.Int("miRecordSize", 4096, "The record size of Merkle Integrity Content Encoding")
@@ -44,6 +45,10 @@ func run() error {
 	certUrl, err := url.Parse(*flagCertificateUrl)
 	if err != nil {
 		return fmt.Errorf("failed to parse certificate URL \"%s\". err: %v", *flagCertificateUrl, err)
+	}
+	validityUrl, err := url.Parse(*flagValidityUrl)
+	if err != nil {
+		return fmt.Errorf("failed to parse validity URL \"%s\". err: %v", *flagValidityUrl, err)
 	}
 
 	privkeytext, err := ioutil.ReadFile(*flagPrivateKey)
@@ -80,11 +85,12 @@ func run() error {
 	}
 
 	s := &signedexchange.Signer{
-		Date:    time.Now(),
-		Expires: time.Now().Add(1 * time.Hour),
-		Certs:   certs,
-		CertUrl: certUrl,
-		PrivKey: privkey,
+		Date:        time.Now(),
+		Expires:     time.Now().Add(1 * time.Hour),
+		Certs:       certs,
+		CertUrl:     certUrl,
+		ValidityUrl: validityUrl,
+		PrivKey:     privkey,
 	}
 	if err := i.AddSignatureHeader(s); err != nil {
 		return err
