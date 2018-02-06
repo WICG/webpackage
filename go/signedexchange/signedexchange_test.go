@@ -2,13 +2,16 @@ package signedexchange_test
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/pem"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ugorji/go/codec"
 
 	"github.com/WICG/webpackage/go/signedexchange"
 )
@@ -107,8 +110,6 @@ s5B6gZsV/ojttR+aaeRknfrhQwEIA/k2r2oZE9yp8djzyiiqGswgw8yO0WSJztbx
 GRqzPwjon7ESIVpKLrVuh5qlMhUkOFUeF9wvViWX4qnV5Fvg
 -----END RSA PRIVATE KEY-----
 `
-
-	base64Result = `h2RodHhnZ3JlcXVlc3SiRDp1cmxUaHR0cHM6Ly9leGFtcGxlLmNvbS9HOm1ldGhvZENHRVRocmVzcG9uc2WmQm1pWDVtaS1zaGEyNTY9RFJ5QkdQYjdDQVcydWt6YjlzVDFTMWlhbHNzdGhpdjZRVzdLcy1Ucmc0WUc6c3RhdHVzQzIwMElzaWduYXR1cmVZAiZzaWc9KkRpYlR0dS9zSVQ4WThub0R4bjFnUEVCL2liOVZXaSs5bllTNkZ4QU1qV1lFblJKRGpBMCt5bldRa2lPT1B2QndBNDJtVnpRZ1FFejJENVBnbDNvY0hPWUxQL2tiNEtTdFNqN0RFWnFUcU1QVE9XSFBrZUxTRVJpQkI3L2owa2pSUGxRUTJib21sVkR1MHNuNnhCUU9ZSnFnTU1RSXRBWE1tcTlRNk83Y2hLMmErWFBublVqSWZYTmhxSDdkNlRzU1JSTmp5VjdoTDNIYXBxbVhOOVhOVTdvQk5VUlRuKzhQNTd5WENwMVFOMVZnNkpNdGZVN3RUMTAwVjFUcjNvK2tHdFZJQzdsK2hvRittYml1bTU4c094WGpQdXI2UE9vcSsySmZoTDBGUWt4RExJZDNkUjhFUVlUelN1cTE1QW5PVlB4NUc0OUhkVHFXZlhXb0d2cDJqQTsgdmFsaWRpdHlVcmw9Imh0dHBzOi8vZXhhbXBsZS5jb20vcmVzb3VyY2UudmFsaWRpdHkiOyBpbnRlZ3JpdHk9Im1pIjsgY2VydFVybD0iaHR0cHM6Ly9leGFtcGxlLmNvbS9jZXJ0Lm1zZyI7IGNlcnRTaGEyNTY9KlpDM2xUWVREQkpRVmYxUDJWNytmaWJUcWJJc1dOUi9YN0NXTlZXK0NFRUE7IGRhdGU9MTUxNzQxODgwMDsgZXhwaXJlcz0xNTE3NDIyNDAwTGNvbnRlbnQtdHlwZVgYdGV4dC9odG1sOyBjaGFyc2V0PXV0Zi04TnNpZ25lZC1oZWFkZXJzWCgiY29udGVudC10eXBlIiwgImNvbnRlbnQtZW5jb2RpbmciLCAibWkiUGNvbnRlbnQtZW5jb2RpbmdJbWktc2hhMjU2Z3BheWxvYWRZBSUAAAAAAAAAEExvcmVtIGlwc3VtIGRvbG8BFGBxZ7/qmc5iCIunAuyOPLaSa5oKgY96ASefEgB223Igc2l0IGFtZXQsIGNvbnPpcxszG73y5vSV72X7KnXIxKcG/qrGbt0fHAICv76M1WVjdGV0dXIgYWRpcGlzY2lq1IZaYvkGQnF5F057rGuzceI7G+5YTks9K+M8XUMaEW5nIGVsaXQsIHNlZCBkbyAWFN+S60IyCze7uJPhmqAmC+KUmPmxNAiZvm71qQiODGVpdXNtb2QgdGVtcG9yIGk1xgMs0YPicUEQcGe27ymzjS9ciDjw93Dg9JwqenpcQ25jaWRpZHVudCB1dCBsYWIo5tgXihrYA6sqS0xCD+1ECzmytTrGTG/3B1CTis8zdG9yZSBldCBkb2xvcmUgbWHxbZgkZ1sn8ysuxFpQ68bgA5Fpcopokv1sQfx0ZI7V42duYSBhbGlxdWEuIFV0IGXACS4X26L5fufCQqPoIyPtq+6kXdyeKJr5lct65eptkG5pbSBhZCBtaW5pbSB2ZW6IMCq0tV5tAnqSzvtFAs5/g4yJI/TZ4PoXp6Yv50f9vWlhbSwgcXVpcyBub3N0cnUP3uTxbra410m6O2E9TDaKxTdD0TB0LqN2Ee2yZqAgLmQgZXhlcmNpdGF0aW9uIHUzeavCtJdam77fMHGNDYbVLcQ163eWQhGdf/n8mbwoH2xsYW1jbyBsYWJvcmlzIG4bIGneIz4YUSB/b0Cg8YvfrhK0r4wweneZCmQJ8jVaGGlzaSB1dCBhbGlxdWlwIGVaUp8ia/7PKqN3gQSQIAY8lUwKiatmrDjpvhiqyJEgT3ggZWEgY29tbW9kbyBjb275I1RKLB5GVrwsP8F88T44duZRpyBPJgydLw6l3ZSSYXNlcXVhdC4gRHVpcyBhdXQolVCxp+F1Acefod81PIPN8pkiu9YY3kPRRli1eu7shWUgaXJ1cmUgZG9sb3IgaW7c+vvp/tp6DHN0xxPxxTkPLMLHFpSHOjdKuehII7jFsSByZXByZWhlbmRlcml0IGkICRFEkZaU9lOLCMZHVilt5kj8rqjCQAEPYVddFjgVe24gdm9sdXB0YXRlIHZlbGmH2y3eZLc31ZxkddFHlb+mgiyND3sHMIw9ifIBHzaHHXQgZXNzZSBjaWxsdW0gZG/CSNmgbwWoQXvd5muV1iw+hjkWkK4VcNwgpY3lxsXromxvcmUgZXUgZnVnaWF0IG695//baygvzVeS73jXBjE2suPa4pvYmaVjgco2h1EqiXVsbGEgcGFyaWF0dXIuIEUqiTk7bEVOxaxZb33vyTZHsNWsUCHrWEoValmYcXEnAHhjZXB0ZXVyIHNpbnQgb2O6HMwlmFP5cYMB1Kg7zcb12JqqnKmgHCuTBHh+o2YDa2NhZWNhdCBjdXBpZGF0YXT+FWp3KYNw3FdiaywdC7J/LsqxCl3bsosVUIcf8/2E1CBub24gcHJvaWRlbnQsIHP9gohggpngaCirjhwibbqbgsiSaCV12/x9X1jB2J+YoHVudCBpbiBjdWxwYSBxdWkRNNALZAnw3BxVNehYbnA7XDUbBejP1JaXIjCsfQTVbCBvZmZpY2lhIGRlc2VydW72RDi/M9aTecBqd67ojSMk0zjVkukDObEpA6HUMCZxSnQgbW9sbGl0IGFuaW0gaWRC5zY94ZqykToiRK07damvwmYsDusXYV+53vLNrdgGRyBlc3QgbGFib3J1bS4=`
 )
 
 type zeroReader struct{}
@@ -118,6 +119,14 @@ func (zeroReader) Read(b []byte) (int, error) {
 		b[i] = 0
 	}
 	return len(b), nil
+}
+
+func mustReadFile(path string) []byte {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }
 
 func TestSignedExchange(t *testing.T) {
@@ -158,11 +167,14 @@ func TestSignedExchange(t *testing.T) {
 
 	var buf bytes.Buffer
 	signedexchange.WriteExchangeFile(&buf, e)
-	got := strings.TrimSpace(base64.StdEncoding.EncodeToString(buf.Bytes()))
-	want := strings.TrimSpace(base64Result)
-	if len(got) != len(want) {
-		t.Errorf("len(got) vs len(want): got: %v, want: %v", len(got), len(want))
+
+	var decoded interface{}
+	handle := &codec.CborHandle{}
+	if err := codec.NewDecoder(&buf, handle).Decode(&decoded); err != nil {
+		t.Fatal(err)
 	}
+	got := strings.TrimSpace(fmt.Sprintf("%q", decoded))
+	want := strings.TrimSpace(string(mustReadFile("test-signedexchange-expected.txt")))
 	if got != want {
 		t.Errorf("WriteExchangeFile:\ngot %v\nwant %v", got, want)
 	}
