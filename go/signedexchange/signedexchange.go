@@ -57,9 +57,9 @@ func (e *Exchange) miEncode(payload []byte, recordSize int) error {
 // [I-D.ietf-httpbis-header-structure]) naming HTTP response header fields.
 // Pseudo-header field names (Section 8.1.2.1 of [RFC7540]) MUST NOT appear in
 // this list.
-func (e *Exchange) AddSignedHeadersHeader(ks ...string) {
+func (e *Exchange) AddSignedHeadersHeader() {
 	strs := []string{}
-	for _, k := range ks {
+	for k, _ := range e.responseHeaders {
 		strs = append(strs, fmt.Sprintf(`"%s"`, strings.ToLower(k)))
 	}
 	s := strings.Join(strs, ", ")
