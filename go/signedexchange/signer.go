@@ -105,7 +105,7 @@ func (s *Signer) sign(e *Exchange) ([]byte, error) {
 	if r == nil {
 		r = rand.Reader
 	}
-	alg, err := signerForPrivateKey(s.PrivKey, r)
+	alg, err := SigningAlgorithmForPrivateKey(s.PrivKey, r)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (s *Signer) sign(e *Exchange) ([]byte, error) {
 		return nil, err
 	}
 
-	return alg.sign(msg)
+	return alg.Sign(msg)
 }
 
 func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
