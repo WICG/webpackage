@@ -67,19 +67,25 @@ func (s *Signer) serializeSignedMessage(i *Input) ([]byte, error) {
 	}
 
 	mes = append(mes,
-		// "4.2. The text string "date" to the integer value of date."
+		// "4.2. The text string "validityUrl" to the byte string value of validityUrl."
+		// [spec text]
+		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+			keyE.EncodeTextString("validityUrl")
+			valueE.EncodeByteString([]byte(s.ValidityUrl.String()))
+		}),
+		// "4.3. The text string "date" to the integer value of date."
 		// [spec text]
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeTextString("date")
 			valueE.EncodeInt(s.Date.Unix())
 		}),
-		// "4.3. The text string "expires" to the integer value of expires."
+		// "4.4. The text string "expires" to the integer value of expires."
 		// [spec text]
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeTextString("expires")
 			valueE.EncodeInt(s.Expires.Unix())
 		}),
-		// "4.4. The text string "headers" to the CBOR representation (Section
+		// "4.5. The text string "headers" to the CBOR representation (Section
 		// 3.4) of exchange's headers."
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeTextString("headers")
