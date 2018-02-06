@@ -10,7 +10,7 @@ import (
 // Encode encodes the given content buf to MICE (Merkle Integrity Content Encoding)
 // format.
 //
-// Encode returns MI header field parameter string and error if exists.
+// Encode returns MI header field parameter string and error if one exists.
 //
 // Spec: https://tools.ietf.org/html/draft-thomson-http-mice-02
 func Encode(w io.Writer, buf []byte, recordSize int) (string, error) {

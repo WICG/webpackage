@@ -151,20 +151,6 @@ func (e *Encoder) EncodeArrayHeader(n int) error {
 }
 
 func (e *Encoder) encodeMapHeader(n int) error {
-	// Major type 5:  a map of pairs of data items.  Maps are also called
-	//   tables, dictionaries, hashes, or objects (in JSON).  A map is
-	//   comprised of pairs of data items, each pair consisting of a key
-	//   that is immediately followed by a value.  The map's length follows
-	//   the rules for byte strings (major type 2), except that the length
-	//   denotes the number of pairs, not the length in bytes that the map
-	//   takes up.  For example, a map that contains 9 pairs would have an
-	//   initial byte of 0b101_01001 (major type of 5, additional
-	//   information of 9 for the number of pairs) followed by the 18
-	//   remaining items.  The first item is the first key, the second item
-	//   is the first value, the third item is the second key, and so on.
-	//   A map that has duplicate keys may be well-formed, but it is not
-	//   valid, and thus it causes indeterminate decoding; see also
-	//   Section 3.7.
 	return e.encodeTypedUInt(TypeMap, uint64(n))
 }
 
@@ -211,10 +197,30 @@ func GenerateMapEntry(f func(keyE *Encoder, valueE *Encoder)) *MapEntryEncoder {
 }
 
 func (e *Encoder) EncodeMap(mes []*MapEntryEncoder) error {
+	// Major type 5:  a map of pairs of data items.  Maps are also called
+	//   tables, dictionaries, hashes, or objects (in JSON).  A map is
+	//   comprised of pairs of data items, each pair consisting of a key
+	//   that is immediately followed by a value.  The map's length follows
+	//   the rules for byte strings (major type 2), except that the length
+	//   denotes the number of pairs, not the length in bytes that the map
+	//   takes up.  For example, a map that contains 9 pairs would have an
+	//   initial byte of 0b101_01001 (major type of 5, additional
+	//   information of 9 for the number of pairs) followed by the 18
+	//   remaining items.  The first item is the first key, the second item
+	//   is the first value, the third item is the second key, and so on.
+	//   A map that has duplicate keys may be well-formed, but it is not
+	//   valid, and thus it causes indeterminate decoding; see also
+	//   Section 3.7.
+	//
+	// https://tools.ietf.org/html/rfc7049#section-2.1
+
 	if err := e.encodeMapHeader(len(mes)); err != nil {
 		return err
 	}
 
+	// Map keys must be sorted. Here copy all the keys into a slice for sorting.
+	// This is not very effective, but it is expected that the number of keys is
+	// not so big in signedexchange usage.
 	entries := make([]*MapEntryEncoder, len(mes))
 	copy(entries, mes)
 	sort.Slice(entries, func(i, j int) bool {

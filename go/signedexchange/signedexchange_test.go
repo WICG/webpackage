@@ -124,11 +124,11 @@ func TestSignedExchange(t *testing.T) {
 	u, _ := url.Parse("https://example.com/")
 	header := http.Header{}
 	header.Add("Content-Type", "text/html; charset=utf-8")
-	i, err := signedexchange.NewInput(u, 200, header, []byte(payload), 16)
+	e, err := signedexchange.NewExchange(u, 200, header, []byte(payload), 16)
 	if err != nil {
 		t.Fatal(err)
 	}
-	i.AddSignedHeadersHeader("Content-Type", "Content-Encoding", "MI")
+	e.AddSignedHeadersHeader("Content-Type", "Content-Encoding", "MI")
 
 	now := time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
 	certs, err := signedexchange.ParseCertificates([]byte(pemCerts))
@@ -152,12 +152,12 @@ func TestSignedExchange(t *testing.T) {
 		PrivKey:     privKey,
 		Rand:        zeroReader{},
 	}
-	if err := i.AddSignatureHeader(s); err != nil {
+	if err := e.AddSignatureHeader(s); err != nil {
 		t.Fatal(err)
 	}
 
 	var buf bytes.Buffer
-	signedexchange.WriteExchangeFile(&buf, i)
+	signedexchange.WriteExchangeFile(&buf, e)
 	got := strings.TrimSpace(base64.StdEncoding.EncodeToString(buf.Bytes()))
 	want := strings.TrimSpace(base64Result)
 	if len(got) != len(want) {

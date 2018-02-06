@@ -34,26 +34,26 @@ func run() error {
 
 	certtext, err := ioutil.ReadFile(*flagCertificate)
 	if err != nil {
-		return fmt.Errorf("failed to read certificate file \"%s\". err: %v", *flagCertificate, err)
+		return fmt.Errorf("failed to read certificate file %q. err: %v", *flagCertificate, err)
 
 	}
 	certs, err := signedexchange.ParseCertificates(certtext)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificate file \"%s\". err: %v", *flagCertificate, err)
+		return fmt.Errorf("failed to parse certificate file %q. err: %v", *flagCertificate, err)
 	}
 
 	certUrl, err := url.Parse(*flagCertificateUrl)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificate URL \"%s\". err: %v", *flagCertificateUrl, err)
+		return fmt.Errorf("failed to parse certificate URL %q. err: %v", *flagCertificateUrl, err)
 	}
 	validityUrl, err := url.Parse(*flagValidityUrl)
 	if err != nil {
-		return fmt.Errorf("failed to parse validity URL \"%s\". err: %v", *flagValidityUrl, err)
+		return fmt.Errorf("failed to parse validity URL %q. err: %v", *flagValidityUrl, err)
 	}
 
 	privkeytext, err := ioutil.ReadFile(*flagPrivateKey)
 	if err != nil {
-		return fmt.Errorf("failed to read private key file \"%s\". err: %v", *flagPrivateKey, err)
+		return fmt.Errorf("failed to read private key file %q. err: %v", *flagPrivateKey, err)
 	}
 
 	parsedPrivKey, _ := pem.Decode(privkeytext)
@@ -62,28 +62,28 @@ func run() error {
 	}
 	privkey, err := signedexchange.ParsePrivateKey(parsedPrivKey.Bytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse private key file \"%s\". err: %v", *flagPrivateKey, err)
+		return fmt.Errorf("failed to parse private key file %q. err: %v", *flagPrivateKey, err)
 	}
 
 	f, err := os.OpenFile(*flagOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		return fmt.Errorf("failed to open output file \"%s\" for writing. err: %v", *flagOutput, err)
+		return fmt.Errorf("failed to open output file %q for writing. err: %v", *flagOutput, err)
 		os.Exit(1)
 	}
 	defer f.Close()
 
 	parsedUrl, err := url.Parse(*flagUri)
 	if err != nil {
-		return fmt.Errorf("failed to parse URL \"%s\". err: %v", *flagUri, err)
+		return fmt.Errorf("failed to parse URL %q. err: %v", *flagUri, err)
 	}
 
 	header := http.Header{}
 	header.Add("content-type", "text/html; charset=utf-8")
-	i, err := signedexchange.NewInput(parsedUrl, *flagResponseStatus, header, payload, *flagMIRecordSize)
+	e, err := signedexchange.NewExchange(parsedUrl, *flagResponseStatus, header, payload, *flagMIRecordSize)
 	if err != nil {
 		return err
 	}
-	i.AddSignedHeadersHeader("content-type", "mi")
+	e.AddSignedHeadersHeader("content-type", "mi")
 
 	s := &signedexchange.Signer{
 		Date:        time.Now(),
@@ -93,11 +93,11 @@ func run() error {
 		ValidityUrl: validityUrl,
 		PrivKey:     privkey,
 	}
-	if err := i.AddSignatureHeader(s); err != nil {
+	if err := e.AddSignatureHeader(s); err != nil {
 		return err
 	}
 
-	if err := signedexchange.WriteExchangeFile(f, i); err != nil {
+	if err := signedexchange.WriteExchangeFile(f, e); err != nil {
 		return fmt.Errorf("failed to write exchange. err: %v", err)
 	}
 	return nil

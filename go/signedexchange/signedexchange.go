@@ -13,7 +13,7 @@ import (
 	"github.com/WICG/webpackage/go/signedexchange/mice"
 )
 
-type Input struct {
+type Exchange struct {
 	// Request
 	requestUri *url.URL
 
@@ -25,27 +25,27 @@ type Input struct {
 	payload []byte
 }
 
-func NewInput(uri *url.URL, status int, headers http.Header, payload []byte, miRecordSize int) (*Input, error) {
-	i := &Input{
+func NewExchange(uri *url.URL, status int, headers http.Header, payload []byte, miRecordSize int) (*Exchange, error) {
+	e := &Exchange{
 		requestUri:     uri,
 		responseStatus: status,
 		responseHeader: headers,
 	}
-	if err := i.miEncode(payload, miRecordSize); err != nil {
+	if err := e.miEncode(payload, miRecordSize); err != nil {
 		return nil, err
 	}
-	return i, nil
+	return e, nil
 }
 
-func (i *Input) miEncode(payload []byte, recordSize int) error {
+func (e *Exchange) miEncode(payload []byte, recordSize int) error {
 	var buf bytes.Buffer
 	mi, err := mice.Encode(&buf, payload, recordSize)
 	if err != nil {
 		return err
 	}
-	i.payload = buf.Bytes()
-	i.responseHeader.Add("Content-Encoding", "mi-sha256")
-	i.responseHeader.Add("MI", mi)
+	e.payload = buf.Bytes()
+	e.responseHeader.Add("Content-Encoding", "mi-sha256")
+	e.responseHeader.Add("MI", mi)
 	return nil
 }
 
@@ -57,26 +57,26 @@ func (i *Input) miEncode(payload []byte, recordSize int) error {
 // [I-D.ietf-httpbis-header-structure]) naming HTTP response header fields.
 // Pseudo-header field names (Section 8.1.2.1 of [RFC7540]) MUST NOT appear in
 // this list.
-func (i *Input) AddSignedHeadersHeader(ks ...string) {
+func (e *Exchange) AddSignedHeadersHeader(ks ...string) {
 	strs := []string{}
 	for _, k := range ks {
 		strs = append(strs, fmt.Sprintf(`"%s"`, strings.ToLower(k)))
 	}
 	s := strings.Join(strs, ", ")
-	i.responseHeader.Add("signed-headers", s)
+	e.responseHeader.Add("signed-headers", s)
 }
 
-func (i *Input) AddSignatureHeader(s *Signer) error {
-	h, err := s.signatureHeaderValue(i)
+func (e *Exchange) AddSignatureHeader(s *Signer) error {
+	h, err := s.signatureHeaderValue(e)
 	if err != nil {
 		return err
 	}
-	i.responseHeader.Add("Signature", h)
+	e.responseHeader.Add("Signature", h)
 	return nil
 }
 
-func (i *Input) parseSignedHeadersHeader() []string {
-	unparsed := i.responseHeader.Get("signed-headers")
+func (e *Exchange) parseSignedHeadersHeader() []string {
+	unparsed := e.responseHeader.Get("signed-headers")
 
 	rawks := strings.Split(unparsed, ",")
 	ks := make([]string, 0, len(rawks))
@@ -86,7 +86,7 @@ func (i *Input) parseSignedHeadersHeader() []string {
 	return ks
 }
 
-func (i *Input) encodeCanonicalRequest(e *cbor.Encoder) error {
+func (e *Exchange) encodeCanonicalRequest(enc *cbor.Encoder) error {
 	mes := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString([]byte(":method"))
@@ -94,18 +94,18 @@ func (i *Input) encodeCanonicalRequest(e *cbor.Encoder) error {
 		}),
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString([]byte(":url"))
-			valueE.EncodeByteString([]byte(i.requestUri.String()))
+			valueE.EncodeByteString([]byte(e.requestUri.String()))
 		}),
 	}
-	return e.EncodeMap(mes)
+	return enc.EncodeMap(mes)
 }
 
-func (i *Input) encodeResponseHeader(e *cbor.Encoder, onlySignedHeaders bool) error {
+func (e *Exchange) encodeResponseHeader(enc *cbor.Encoder, onlySignedHeaders bool) error {
 	// Only encode response headers which are specified in "signed-headers" header.
 	var m map[string]struct{}
 	if onlySignedHeaders {
 		m = map[string]struct{}{}
-		ks := i.parseSignedHeadersHeader()
+		ks := e.parseSignedHeadersHeader()
 		for _, k := range ks {
 			m[k] = struct{}{}
 		}
@@ -114,10 +114,10 @@ func (i *Input) encodeResponseHeader(e *cbor.Encoder, onlySignedHeaders bool) er
 	mes := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString([]byte(":status"))
-			valueE.EncodeByteString([]byte(strconv.Itoa(i.responseStatus)))
+			valueE.EncodeByteString([]byte(strconv.Itoa(e.responseStatus)))
 		}),
 	}
-	for name, value := range i.responseHeader {
+	for name, value := range e.responseHeader {
 		if onlySignedHeaders {
 			if _, ok := m[strings.ToLower(name)]; !ok {
 				continue
@@ -129,55 +129,55 @@ func (i *Input) encodeResponseHeader(e *cbor.Encoder, onlySignedHeaders bool) er
 				valueE.EncodeByteString([]byte(value[0]))
 			}))
 	}
-	return e.EncodeMap(mes)
+	return enc.EncodeMap(mes)
 }
 
 // draft-yasskin-http-origin-signed-responses.html#rfc.section.3.4
-func (i *Input) encodeCanonicalExchangeHeaders(e *cbor.Encoder) error {
-	if err := e.EncodeArrayHeader(2); err != nil {
+func (e *Exchange) encodeCanonicalExchangeHeaders(enc *cbor.Encoder) error {
+	if err := enc.EncodeArrayHeader(2); err != nil {
 		return fmt.Errorf("signedexchange: failed to encode top-level array header: %v", err)
 	}
-	if err := i.encodeCanonicalRequest(e); err != nil {
+	if err := e.encodeCanonicalRequest(enc); err != nil {
 		return err
 	}
-	if err := i.encodeResponseHeader(e, true); err != nil {
+	if err := e.encodeResponseHeader(enc, true); err != nil {
 		return err
 	}
 	return nil
 }
 
 // draft-yasskin-http-origin-signed-responses.html#application-http-exchange
-func WriteExchangeFile(w io.Writer, i *Input) error {
-	e := cbor.NewEncoder(w)
-	if err := e.EncodeArrayHeader(7); err != nil {
+func WriteExchangeFile(w io.Writer, e *Exchange) error {
+	enc := cbor.NewEncoder(w)
+	if err := enc.EncodeArrayHeader(7); err != nil {
 		return err
 	}
-	if err := e.EncodeTextString("htxg"); err != nil {
+	if err := enc.EncodeTextString("htxg"); err != nil {
 		return err
 	}
 
-	if err := e.EncodeTextString("request"); err != nil {
+	if err := enc.EncodeTextString("request"); err != nil {
 		return err
 	}
 	// FIXME: This may diverge in future.
-	if err := i.encodeCanonicalRequest(e); err != nil {
+	if err := e.encodeCanonicalRequest(enc); err != nil {
 		return err
 	}
 
 	// FIXME: Support "request payload"
 
-	if err := e.EncodeTextString("response"); err != nil {
+	if err := enc.EncodeTextString("response"); err != nil {
 		return err
 	}
 
-	if err := i.encodeResponseHeader(e, false); err != nil {
+	if err := e.encodeResponseHeader(enc, false); err != nil {
 		return err
 	}
 
-	if err := e.EncodeTextString("payload"); err != nil {
+	if err := enc.EncodeTextString("payload"); err != nil {
 		return err
 	}
-	if err := e.EncodeByteString(i.payload); err != nil {
+	if err := enc.EncodeByteString(e.payload); err != nil {
 		return err
 	}
 

@@ -35,7 +35,7 @@ func certSha256(certs []*x509.Certificate) []byte {
 	return sum[:]
 }
 
-func (s *Signer) serializeSignedMessage(i *Input) ([]byte, error) {
+func (s *Signer) serializeSignedMessage(e *Exchange) ([]byte, error) {
 	// "Let message be the concatenation of the following byte strings.
 	// This matches the [I-D.ietf-tls-tls13] format to avoid cross-protocol
 	// attacks when TLS certificates are used to sign manifests." [spec text]
@@ -89,18 +89,18 @@ func (s *Signer) serializeSignedMessage(i *Input) ([]byte, error) {
 		// 3.4) of exchange's headers."
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeTextString("headers")
-			i.encodeCanonicalExchangeHeaders(valueE)
+			e.encodeCanonicalExchangeHeaders(valueE)
 		}),
 	)
 
-	e := cbor.NewEncoder(&buf)
-	if err := e.EncodeMap(mes); err != nil {
+	enc := cbor.NewEncoder(&buf)
+	if err := enc.EncodeMap(mes); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func (s *Signer) sign(i *Input) ([]byte, error) {
+func (s *Signer) sign(e *Exchange) ([]byte, error) {
 	r := s.Rand
 	if r == nil {
 		r = rand.Reader
@@ -110,7 +110,7 @@ func (s *Signer) sign(i *Input) ([]byte, error) {
 		return nil, err
 	}
 
-	msg, err := s.serializeSignedMessage(i)
+	msg, err := s.serializeSignedMessage(e)
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +118,8 @@ func (s *Signer) sign(i *Input) ([]byte, error) {
 	return alg.sign(msg)
 }
 
-func (s *Signer) signatureHeaderValue(i *Input) (string, error) {
-	sig, err := s.sign(i)
+func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
+	sig, err := s.sign(e)
 	if err != nil {
 		return "", err
 	}

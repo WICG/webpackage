@@ -90,21 +90,29 @@ func TestEncodeTextString(t *testing.T) {
 	var textTests = []struct {
 		s        string
 		encoding string
+		error    bool
 	}{
-		{"", "60"},
-		{"a", "6161"},
-		{"IETF", "6449455446"},
-		{`"\`, "62225c"},
-		{"\u00fc", "62c3bc"},
-		{"\u6c34", "63e6b0b4"},
-		{"\U00010151", "64f0908591"},
+		{"", "60", false},
+		{"a", "6161", false},
+		{"IETF", "6449455446", false},
+		{`"\`, "62225c", false},
+		{"\u00fc", "62c3bc", false},
+		{"\u6c34", "63e6b0b4", false},
+		{"\U00010151", "64f0908591", false},
+		{"\x80 invalid utf-8 string", "", true},
 	}
 	for _, test := range textTests {
 		var b bytes.Buffer
 		e := NewEncoder(&b)
 
-		if err := e.EncodeTextString(test.s); err != nil {
+		err := e.EncodeTextString(test.s)
+		if err != nil && !test.error {
 			t.Errorf("Encode. err: %v", err)
+			continue
+		}
+		if err == nil && test.error {
+			t.Errorf("Encode must cause error for %q", test.s)
+			continue
 		}
 		exp := fromHex(test.encoding)
 

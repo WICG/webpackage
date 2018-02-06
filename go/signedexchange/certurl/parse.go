@@ -44,6 +44,30 @@ func ParsePEM(pemFileContent []byte) ([]byte, error) {
 
 	buf := &bytes.Buffer{}
 
+	// enum {
+	//     X509(0),
+	//     RawPublicKey(2),
+	//     (255)
+	// } CertificateType;
+	//
+	// struct {
+	//     select (certificate_type) {
+	//     case RawPublicKey:
+	//         /* From RFC 7250 ASN.1_subjectPublicKeyInfo */
+	//         opaque ASN1_subjectPublicKeyInfo<1..2^24-1>;
+	//
+	//     case X509:
+	//         opaque cert_data<1..2^24-1>;
+	//     };
+	//     Extension extensions<0..2^16-1>;
+	// } CertificateEntry;
+	//
+	// struct {
+	//     opaque certificate_request_context<0..2^8-1>;
+	//     CertificateEntry certificate_list<0..2^24-1>;
+	// } Certificate;
+	//
+	// https://tools.ietf.org/html/draft-ietf-tls-tls13-23#section-4.4.2
 	const (
 		certificateRequestContextHeadLength = 1
 		certificateListHeadLength           = 3
