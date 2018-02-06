@@ -8,6 +8,8 @@ import (
 )
 
 func writeHead(w *bytes.Buffer, n int, size int) error {
+	// encoding/binary's Write is not available here
+	// since the size is not necessarily a power of 2.
 	for i := 0; i < size; i++ {
 		if err := w.WriteByte(byte(n >> (8 * uint(size-i-1)))); err != nil {
 			return err
@@ -16,9 +18,9 @@ func writeHead(w *bytes.Buffer, n int, size int) error {
 	return nil
 }
 
-// ParsePEM parses a PEM formatted content to a certUrl content.
+// CertificateMessageFromPEM parses a PEM formatted content to a certUrl content.
 // See https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html for the spec.
-func ParsePEM(pemFileContent []byte) ([]byte, error) {
+func CertificateMessageFromPEM(pemFileContent []byte) ([]byte, error) {
 	b := pemFileContent
 
 	entries := []*x509.Certificate{}
@@ -92,6 +94,8 @@ func ParsePEM(pemFileContent []byte) ([]byte, error) {
 		if _, err := buf.Write(entry.Raw); err != nil {
 			return nil, err
 		}
+		// TODO: OCSP Status SignedCertificateTimestamps extensions will be
+		// needed to be included.
 		if err := writeHead(buf, 0, extensionsHeadLength); err != nil {
 			return nil, err
 		}

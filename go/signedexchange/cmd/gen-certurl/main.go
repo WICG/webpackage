@@ -20,7 +20,7 @@ func run(pemFilePath string) error {
 		return err
 	}
 
-	out, err := certurl.ParsePEM(in)
+	out, err := certurl.CertificateMessageFromPEM(in)
 	if err != nil {
 		return err
 	}

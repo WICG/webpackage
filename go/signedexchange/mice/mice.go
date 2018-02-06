@@ -19,6 +19,8 @@ func Encode(w io.Writer, buf []byte, recordSize int) (string, error) {
 		numRecords = 1
 	}
 
+	// Calculate proofs. This loop iterates from the tail of the content and creates
+	// the proof chain.
 	proofs := make([][]byte, numRecords)
 	for i := 0; i < numRecords; i++ {
 		rec := numRecords - i - 1

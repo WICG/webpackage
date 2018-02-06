@@ -245,7 +245,7 @@ cPUeybQ=
 		222, 192, 51, 155, 103, 211, 97, 46, 114, 135, 228, 105, 252, 18, 0, 87,
 		64, 30, 112, 245, 30, 201, 180, 0, 0}
 
-	got, err := ParsePEM(in)
+	got, err := CertificateMessageFromPEM(in)
 	if err != nil {
 		t.Errorf("failed to parse PEM: %v", err)
 	}
