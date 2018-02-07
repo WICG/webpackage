@@ -237,6 +237,8 @@ signed, so intermediates can update them with pointers to cached versions.
 
 ### Examples ### {#example-signature-header}
 
+#### Multiple signatures #### {#example-signature-header-multisig}
+
 The following header is included in the response for an exchange with effective
 request URI `https://example.com/resource.html`. Newlines are added for
 readability.
@@ -299,6 +301,36 @@ The author then requested an additional signature from `thirdparty.example.com`,
 which did some validation or processing and then signed the resource at
 2017-11-19 23:11 UTC. `thirdparty.example.com` only grants 4-day signatures, so
 clients will need to re-validate more often.
+
+#### Multiple urls #### {#example-signature-header-multiurl}
+
+The following header field, with multiple entries in the `validityUrl` and
+`certUrl` parameters, might be included in an exchange with the request URI
+`https://example.com/resource.html` but which was received from
+`https://cache.example.com/example.com/resource.html.htxg`. Newlines have been
+added for readability.
+
+~~~http
+Signature: sig1;
+  sig=*MEUCIQDXlI2gN3RNBlgFiuRNFpZXcDIaUpX6HIEwcZEc0cZYLAIga9DsVOMM+g5YpwEBdGW3sS+bvnmAJJiSMwhuBdqp5UY;
+  integrity="mi";
+  validityUrl="https://cache.example.com/example.com/resource.validity.1511128380
+    https://cache2.example.com/example.com/resource.validity.1511128380
+    https://example.com/resource.validity.1511128380";
+  certUrl="https://cache.example.com/example.com/certs
+    https://cache2.example.com/example.com/certs
+    https://example.com/certs";
+  certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI;
+  date=1511128380; expires=1511733180,
+~~~
+
+The final `validityUrl` is retained to allow clients to check for recentness
+with the original author (and to keep the signature valid), but clients might
+choose to use one of the earlier URLs to update signatures because it's closer
+or because its origin matches the origin from which the client originally
+fetched the exchange.
+
+Multiple `certUrl` entries are included for the same reasons.
 
 ### Open Questions ### {#oq-signature-header}
 
