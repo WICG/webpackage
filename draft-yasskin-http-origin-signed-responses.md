@@ -207,7 +207,7 @@ present parameters MUST have the following values:
 "certSha256"
 
 : Binary content (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}}) holding
-  the SHA-256 hash of the first certificate found at "certUrl".
+  the SHA-256 hash of the certificate chain found at "certUrl".
 
 "ed25519Key"
 
@@ -430,7 +430,7 @@ Loading a `certUrl` takes a `forceFetch` flag. The client MUST:
    might be impractical to completely achieve due to certificate validation
    implementations that don't enforce DER encoding or other standard
    constraints.
-1. Return `certificate-chain`.
+1. Return both `raw-chain` and `certificate-chain`.
 
 ## Canonical CBOR serialization ## {#canonical-cbor}
 
@@ -514,9 +514,9 @@ there are no non-significant response header fields in the exchange.
    than `SHA`, then return "invalid".
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. If `certUrl` is present:
-      1. Let `certificate-chain` be the result of loading the certificate chain
-         at `certUrl` passing the `forceFetch` flag ({{cert-chain-format}}). If
-         this returns "invalid", return "invalid".
+      1. Let `raw-chain` and `certificate-chain` be the results of loading the
+         certificate chain at `certUrl` passing the `forceFetch` flag
+         ({{cert-chain-format}}). If this returns "invalid", return "invalid".
       1. Let `main-certificate` be the first certificate in `certificate-chain`.
       1. Set `publicKey` to `main-certificate`'s public key.
       1. The client MUST define a partial function from public key types to
@@ -561,14 +561,14 @@ there are no non-significant response header fields in the exchange.
       1. The text string "expires" to the integer value of `expires`.
       1. The text string "headers" to the CBOR representation
          ({{cbor-representation}}) of `exchange`'s headers.
-1. If `certUrl` is present and the SHA-256 hash of `main-certificate`'s
-   `cert_data` is not equal to `certSha256` (whose presence was checked when the
-   `Signature` header field was parsed), return "invalid".
+1. If `certUrl` is present and the SHA-256 hash of `raw-chain` is not equal to
+   `certSha256` (whose presence was checked when the `Signature` header field
+   was parsed), return "invalid".
 
-   Note that this intentionally differs from TLS 1.3, which signs the entire
-   certificate chain in its Certificate Verify (Section 4.4.3 of
-   {{?I-D.ietf-tls-tls13}}), in order to allow updating the stapled OCSP
-   response without updating signatures at the same time.
+   Note that this requires that signatures be updated at the same time as the
+   certificate OCSP responses they cover. Intermediates SHOULD use distinct
+   `certUrl`s for each OCSP response to make sure clients request the right
+   certificate chain for their signature.
 1. If `signature` is a valid signature of `message` by `publicKey` using
    `signing-alg`, return "potentially-valid" with `exchange` and whichever is
    present of `certificate-chain` or `ed25519Key`. Otherwise, return "invalid".
@@ -585,11 +585,6 @@ Similarly, as the higher-level protocol determines that parts of the exchange
 are actually valid, the client MAY process those parts of the exchange and MUST
 wait to process other parts of the exchange until they too are determined to be
 valid.
-
-### Open Questions ### {#oq-signature-validity}
-
-Should we ban RSA keys to avoid their vulnerability to Bleichenbacher attacks?
-Or just keys using the rsaEncryption OID?
 
 ## Updating signature validity ## {#updating-validity}
 
@@ -1078,14 +1073,27 @@ an exchange with an HTTPS request URI provides a TLS guarantee that the exchange
 isn't out of date (as long as {{oq-cross-origin-push}} is resolved to keep the
 same-origin requirement).
 
-## Signing oracles are permanent ## {#seccons-signing-oracles}
+## Signing oracles are defended by OCSP ## {#seccons-signing-oracles}
 
-An attacker with temporary access to a signing oracle can sign "still valid"
-assertions with arbitrary timestamps and expiration times. As a result, when a
-signing oracle is removed, the keys it provided access to SHOULD be revoked so
-that, even if the attacker used them to sign future-dated exchange validity
-assertions, the key's OCSP assertion will expire, causing the exchange as a
-whole to become untrusted.
+There are several reasons a signing oracle for a private key may be accidentally
+exposed without exposing the private key itself. For example, organizations that
+run edge caches may provide a signing oracle to those machines. Those machines
+may be less physically secure than the machines with actual access to the TLS
+private key. When an edge cache is compromised, this allows recovery process to
+be as simple as turning off its signing oracle and waiting for clients to close
+compromised connections, rather than revoking the whole private key.
+
+Thus, signed exchanges cannot allow access to a signing oracle to allow minting
+exchanges that are valid long after the signing oracle is closed. To prevent
+this, signatures are required to cover the current OCSP response for a
+signature. This naturally limits their validity to the life of the latest OCSP
+response available when the signing oracle was closed. To limit this to 7 days,
+CAs SHOULD NOT pre-sign future OCSP responses.
+
+Another approach, that this specification doesn't take yet, is to avoid re-using
+arbitrary TLS certificates by creating a new certificate extension as described
+in {{certificate-constraints}}. This avoids requiring OCSP responses and
+signatures to be updated in lockstep.
 
 ## Unsigned headers ## {#seccons-unsigned-headers}
 
@@ -1404,13 +1412,12 @@ If we re-use existing TLS server certificates, we incur the risks that:
 2. A server using an origin-trusted key for one purpose (e.g. TLS) might
    accidentally sign something that looks like an exchange, or vice versa.
 
-If these risks are too high, we could define a new Extended Key Usage (Section
-4.2.1.12 of {{?RFC5280}}) that requires CAs to issue new keys for this purpose
-or a new certificate extension to do the same. A new EKU would probably require
-CAs to also issue new intermediate certificates because of how browsers trust
-EKUs. Both an EKU and a new extension take a long time to deploy and allow CAs
-to charge exchange-signers more than normal server operators, which will reduce
-adoption.
+If these risks are too high, we could define a new X.509 certificate extension
+(Section 4.2 of {{?RFC5280}}) that requires CAs to issue new certificates for
+this purpose. An extension may take a long time to deploy and allow CAs to
+charge exchange-signers more than normal server operators, which will reduce
+adoption. We might also be able to re-use the extension defined by
+{{?I-D.ietf-tls-subcerts}}, which has a similar meaning.
 
 The rest of this document assumes we can re-use existing TLS server
 certificates.
