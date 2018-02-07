@@ -11,7 +11,7 @@ import (
 )
 
 func showUsage(w io.Writer) {
-	fmt.Fprintf(w, "Usage: cert-url [pem-file] > [certurlFile]\n")
+	fmt.Fprintf(w, "Usage: cert-url [pem-file] > certurlFile\n")
 }
 
 func run(pemFilePath string) error {

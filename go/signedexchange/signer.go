@@ -89,7 +89,7 @@ func (s *Signer) serializeSignedMessage(e *Exchange) ([]byte, error) {
 		// 3.4) of exchange's headers."
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeTextString("headers")
-			e.encodeCanonicalExchangeHeaders(valueE)
+			e.encodeExchangeHeaders(valueE)
 		}),
 	)
 

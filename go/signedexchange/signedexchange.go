@@ -18,8 +18,8 @@ type Exchange struct {
 	requestUri *url.URL
 
 	// Response
-	responseStatus int
-	responseHeader http.Header
+	responseStatus  int
+	responseHeaders http.Header
 
 	// Payload
 	payload []byte
@@ -27,9 +27,9 @@ type Exchange struct {
 
 func NewExchange(uri *url.URL, status int, headers http.Header, payload []byte, miRecordSize int) (*Exchange, error) {
 	e := &Exchange{
-		requestUri:     uri,
-		responseStatus: status,
-		responseHeader: headers,
+		requestUri:      uri,
+		responseStatus:  status,
+		responseHeaders: headers,
 	}
 	if err := e.miEncode(payload, miRecordSize); err != nil {
 		return nil, err
@@ -44,8 +44,8 @@ func (e *Exchange) miEncode(payload []byte, recordSize int) error {
 		return err
 	}
 	e.payload = buf.Bytes()
-	e.responseHeader.Add("Content-Encoding", "mi-sha256")
-	e.responseHeader.Add("MI", mi)
+	e.responseHeaders.Add("Content-Encoding", "mi-sha256")
+	e.responseHeaders.Add("MI", mi)
 	return nil
 }
 
@@ -63,7 +63,7 @@ func (e *Exchange) AddSignedHeadersHeader(ks ...string) {
 		strs = append(strs, fmt.Sprintf(`"%s"`, strings.ToLower(k)))
 	}
 	s := strings.Join(strs, ", ")
-	e.responseHeader.Add("signed-headers", s)
+	e.responseHeaders.Add("signed-headers", s)
 }
 
 func (e *Exchange) AddSignatureHeader(s *Signer) error {
@@ -71,12 +71,12 @@ func (e *Exchange) AddSignatureHeader(s *Signer) error {
 	if err != nil {
 		return err
 	}
-	e.responseHeader.Add("Signature", h)
+	e.responseHeaders.Add("Signature", h)
 	return nil
 }
 
 func (e *Exchange) parseSignedHeadersHeader() []string {
-	unparsed := e.responseHeader.Get("signed-headers")
+	unparsed := e.responseHeaders.Get("signed-headers")
 
 	rawks := strings.Split(unparsed, ",")
 	ks := make([]string, 0, len(rawks))
@@ -86,7 +86,7 @@ func (e *Exchange) parseSignedHeadersHeader() []string {
 	return ks
 }
 
-func (e *Exchange) encodeCanonicalRequest(enc *cbor.Encoder) error {
+func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
 	mes := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString([]byte(":method"))
@@ -100,7 +100,7 @@ func (e *Exchange) encodeCanonicalRequest(enc *cbor.Encoder) error {
 	return enc.EncodeMap(mes)
 }
 
-func (e *Exchange) encodeResponseHeader(enc *cbor.Encoder, onlySignedHeaders bool) error {
+func (e *Exchange) encodeResponseHeaders(enc *cbor.Encoder, onlySignedHeaders bool) error {
 	// Only encode response headers which are specified in "signed-headers" header.
 	var m map[string]struct{}
 	if onlySignedHeaders {
@@ -117,7 +117,7 @@ func (e *Exchange) encodeResponseHeader(enc *cbor.Encoder, onlySignedHeaders boo
 			valueE.EncodeByteString([]byte(strconv.Itoa(e.responseStatus)))
 		}),
 	}
-	for name, value := range e.responseHeader {
+	for name, value := range e.responseHeaders {
 		if onlySignedHeaders {
 			if _, ok := m[strings.ToLower(name)]; !ok {
 				continue
@@ -133,14 +133,14 @@ func (e *Exchange) encodeResponseHeader(enc *cbor.Encoder, onlySignedHeaders boo
 }
 
 // draft-yasskin-http-origin-signed-responses.html#rfc.section.3.4
-func (e *Exchange) encodeCanonicalExchangeHeaders(enc *cbor.Encoder) error {
+func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
 	if err := enc.EncodeArrayHeader(2); err != nil {
 		return fmt.Errorf("signedexchange: failed to encode top-level array header: %v", err)
 	}
-	if err := e.encodeCanonicalRequest(enc); err != nil {
+	if err := e.encodeRequest(enc); err != nil {
 		return err
 	}
-	if err := e.encodeResponseHeader(enc, true); err != nil {
+	if err := e.encodeResponseHeaders(enc, true); err != nil {
 		return err
 	}
 	return nil
@@ -160,7 +160,7 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 		return err
 	}
 	// FIXME: This may diverge in future.
-	if err := e.encodeCanonicalRequest(enc); err != nil {
+	if err := e.encodeRequest(enc); err != nil {
 		return err
 	}
 
@@ -170,7 +170,7 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 		return err
 	}
 
-	if err := e.encodeResponseHeader(enc, false); err != nil {
+	if err := e.encodeResponseHeaders(enc, false); err != nil {
 		return err
 	}
 

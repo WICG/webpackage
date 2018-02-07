@@ -94,7 +94,7 @@ func CertificateMessageFromPEM(pemFileContent []byte) ([]byte, error) {
 		if _, err := buf.Write(entry.Raw); err != nil {
 			return nil, err
 		}
-		// TODO: OCSP Status SignedCertificateTimestamps extensions will be
+		// TODO: OCSP Status and SignedCertificateTimestamps extensions will be
 		// needed to be included.
 		if err := writeHead(buf, 0, extensionsHeadLength); err != nil {
 			return nil, err

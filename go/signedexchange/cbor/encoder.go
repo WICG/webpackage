@@ -219,7 +219,7 @@ func (e *Encoder) EncodeMap(mes []*MapEntryEncoder) error {
 	}
 
 	// Map keys must be sorted. Here copy all the keys into a slice for sorting.
-	// This is not very effective, but it is expected that the number of keys is
+	// This is not very efficient, but it is expected that the number of keys is
 	// not so big in signedexchange usage.
 	entries := make([]*MapEntryEncoder, len(mes))
 	copy(entries, mes)

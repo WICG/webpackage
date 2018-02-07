@@ -90,28 +90,21 @@ func TestEncodeTextString(t *testing.T) {
 	var textTests = []struct {
 		s        string
 		encoding string
-		error    bool
 	}{
-		{"", "60", false},
-		{"a", "6161", false},
-		{"IETF", "6449455446", false},
-		{`"\`, "62225c", false},
-		{"\u00fc", "62c3bc", false},
-		{"\u6c34", "63e6b0b4", false},
-		{"\U00010151", "64f0908591", false},
-		{"\x80 invalid utf-8 string", "", true},
+		{"", "60"},
+		{"a", "6161"},
+		{"IETF", "6449455446"},
+		{`"\`, "62225c"},
+		{"\u00fc", "62c3bc"},
+		{"\u6c34", "63e6b0b4"},
+		{"\U00010151", "64f0908591"},
 	}
 	for _, test := range textTests {
 		var b bytes.Buffer
 		e := NewEncoder(&b)
 
-		err := e.EncodeTextString(test.s)
-		if err != nil && !test.error {
+		if err := e.EncodeTextString(test.s); err != nil {
 			t.Errorf("Encode. err: %v", err)
-			continue
-		}
-		if err == nil && test.error {
-			t.Errorf("Encode must cause error for %q", test.s)
 			continue
 		}
 		exp := fromHex(test.encoding)
@@ -119,6 +112,13 @@ func TestEncodeTextString(t *testing.T) {
 		if !bytes.Equal(exp, b.Bytes()) {
 			t.Errorf("\"%s\" expected to encode to %v, actual %v", test.s, exp, b.Bytes())
 		}
+	}
+
+	var b bytes.Buffer
+	e := NewEncoder(&b)
+	str := "\x80 <- invalid UTF-8"
+	if err := e.EncodeTextString(str); err == nil {
+		t.Errorf("Expected an error for malformed UTF-8 (%q)", str)
 	}
 }
 
