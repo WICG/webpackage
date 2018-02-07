@@ -552,7 +552,9 @@ there are no non-significant response header fields in the exchange.
    1. If `certUrl` is present:
       1. Let `certificate-chain` be the result of loading the certificate chain
          at an element of `certUrl` passing the `forceFetch` flag
-         ({{cert-chain-format}}). If this returns "invalid", return "invalid".
+         ({{cert-chain-format}}). If this returns "invalid", the client MAY
+         retry with other elements of the `certUrl` list, but if all such
+         retries fail, return "invalid".
       1. Let `main-certificate` be the first certificate in `certificate-chain`.
       1. Set `publicKey` to `main-certificate`'s public key.
       1. The client MUST define a partial function from public key types to
