@@ -110,6 +110,11 @@ Client
 : An entity that uses a signed HTTP exchange and needs to be able to prove that
   the author vouched for it as coming from its claimed origin.
 
+Space-separated list
+: Used inside of a Structured Header string (Section 4.2 of
+  {{!I-D.ietf-httpbis-header-structure}}), the elements of this list are
+  separated by exactly 1 space (%x20) character.
+
 Unix time
 : Defined by {{POSIX}} [section
 4.16](http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap04.html#tag_04_16).
@@ -202,12 +207,14 @@ present parameters MUST have the following values:
 "certUrl"
 
 : A string (Section 4.2 of {{!I-D.ietf-httpbis-header-structure}}) containing a
-  [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
+  space-separated list of [valid URL
+  strings](https://url.spec.whatwg.org/#valid-url-string). The resources at all
+  elements of this list are expected to be the same.
 
 "certSha256"
 
 : Binary content (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}}) holding
-  the SHA-256 hash of the first certificate found at "certUrl".
+  the SHA-256 hash of the first certificate found at elements of "certUrl".
 
 "ed25519Key"
 
@@ -217,15 +224,16 @@ present parameters MUST have the following values:
 {:#signature-validityurl} "validityUrl"
 
 : A string (Section 4.2 of {{!I-D.ietf-httpbis-header-structure}}) containing a
-  [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
+  space-separated list of [valid URL
+  strings](https://url.spec.whatwg.org/#valid-url-string).
 
 "date" and "expires"
 
 : An unsigned integer (Section 4.1 of {{!I-D.ietf-httpbis-header-structure}})
   representing a Unix time.
 
-The "certUrl" parameter is *not* signed, so intermediates can update it with a
-pointer to a cached version.
+The "certUrl" parameter and the initial elements of "validityUrl" are *not*
+signed, so intermediates can update them with pointers to cached versions.
 
 ### Examples ### {#example-signature-header}
 
@@ -299,12 +307,6 @@ not other supported types like binary content. If the `Signature` header field
 is notionally a list of parameterised signatures, maybe we should add a
 "parameterised binary content" type.
 {:#parameterised-binary}
-
-Should the certUrl and validityUrl be lists so that intermediates can offer a
-cache without losing the original URLs? Putting lists in dictionary fields is
-more complex than {{?I-D.ietf-httpbis-header-structure}} allows, so they're
-single items for now.
-
 
 ## Significant headers of an exchange ## {#significant-headers}
 
@@ -388,7 +390,7 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 
 ## Loading a certificate chain ## {#cert-chain-format}
 
-The resource at a signature's `certUrl` MUST have the
+The resource at each element of a signature's `certUrl` list MUST have the
 `application/cert-chain+cbor` content type, MUST be canonically-encoded CBOR
 ({{canonical-cbor}}), and MUST match the following CDDL:
 
@@ -496,8 +498,10 @@ there are no non-significant response header fields in the exchange.
    * `signature` be the signature (binary content in the parameterised label's
      "sig" parameter).
    * `integrity` be the signature's "integrity" parameter.
-   * `validityUrl` be the signature's "validityUrl" parameter.
-   * `certUrl` be the signature's "certUrl" parameter, if any.
+   * `validityUrl` be the list of URLs in the signature's "validityUrl"
+     parameter.
+   * `certUrl` be the list of URLs in the signature's "certUrl" parameter, if
+     any.
    * `certSha256` be the signature's "certSha256" parameter, if any.
    * `ed25519Key` be the signature's "ed25519Key" parameter, if any.
    * `date` be the signature's "date" parameter, interpreted as a Unix time.
@@ -515,8 +519,8 @@ there are no non-significant response header fields in the exchange.
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. If `certUrl` is present:
       1. Let `certificate-chain` be the result of loading the certificate chain
-         at `certUrl` passing the `forceFetch` flag ({{cert-chain-format}}). If
-         this returns "invalid", return "invalid".
+         at an element of `certUrl` passing the `forceFetch` flag
+         ({{cert-chain-format}}). If this returns "invalid", return "invalid".
       1. Let `main-certificate` be the first certificate in `certificate-chain`.
       1. Set `publicKey` to `main-certificate`'s public key.
       1. The client MUST define a partial function from public key types to
@@ -555,8 +559,8 @@ there are no non-significant response header fields in the exchange.
       1. If `certSha256` is set:
          1. The text string "certSha256" to the byte string value of
             `certSha256`.
-      1. The text string "validityUrl" to the byte string value of
-         `validityUrl`.
+      1. The text string "validityUrl" to the byte string value of the last
+         element of `validityUrl`.
       1. The text string "date" to the integer value of `date`.
       1. The text string "expires" to the integer value of `expires`.
       1. The text string "headers" to the CBOR representation
@@ -598,23 +602,24 @@ time after they're signed, so that revoked certificates and signed exchanges
 with known vulnerabilities are distrusted promptly.
 
 This specification provides no way to update OCSP responses by themselves.
-Instead, [clients need to re-fetch the "certUrl"](#force-fetch) to get a chain
+Instead, [clients need to re-fetch a "certUrl"](#force-fetch) to get a chain
 including a newer OCSP response.
 
 The ["validityUrl" parameter](#signature-validityurl) of the signatures provides
-a way to fetch new signatures or learn where to fetch a complete updated
+ways to fetch new signatures or learn where to fetch a complete updated
 exchange.
 
 Each version of a signed exchange SHOULD have its own validity URLs, since each
 version needs different signatures and becomes obsolete at different times.
 
-The resource at a "validityUrl" is "validity data", a CBOR map matching the
+The resource at an element of "validityUrl" is "validity data", a CBOR map matching the
 following CDDL ({{!I-D.ietf-cbor-cddl}}):
 
 ~~~cddl
 validity = {
   ? signatures: [ + bytes ]
   ? update: {
+    ? url: text
     ? size: uint,
   }
 ]
@@ -627,10 +632,10 @@ exchange contains a bug severe enough that clients need to stop using the
 content, the `signatures` array MUST NOT be present.
 
 If the the `update` map is present, that indicates that a new version of the
-signed exchange is available at its effective request URI (Section 5.5 of
-{{!RFC7230}}) and can give an estimate of the size of the updated exchange
-(`update.size`). If the signed exchange is currently the most recent version,
-the `update` SHOULD NOT be present.
+signed exchange is available at either its effective request URI (Section 5.5 of
+{{!RFC7230}}) or, if present, the URL in `update.url`, and can give an estimate
+of the size of the updated exchange (`update.size`). If the signed exchange is
+currently the most recent version, the `update` SHOULD NOT be present.
 
 If both the `signatures` and `update` fields are present, clients can use the
 estimated size to decide whether to update the whole resource or just its
@@ -903,7 +908,8 @@ authoritative for the PUSH_PROMISE's authority.
 
 ### Validating a certificate chain for an authority ### {#authority-chain-validation}
 
-1. If the signature's ["validityUrl" parameter](#signature-validityurl) is not
+1. If the last element of the signature's ["validityUrl"
+   parameter](#signature-validityurl) is not
    [same-origin](https://html.spec.whatwg.org/multipage/origin.html#same-origin)
    with the exchange's effective request URI (Section 5.5 of {{!RFC7230}}),
    return "invalid".
@@ -929,13 +935,6 @@ authoritative for the PUSH_PROMISE's authority.
       ({{cert-chain-format}}) containing valid SCTs from trusted logs.
       ({{!RFC6962}})
 1. Return "valid".
-
-### Open Questions ### {#oq-cross-origin-push}
-
-Is it right that "validityUrl" is required to be same-origin with the exchange?
-This allows the mitigation against downgrades in {{seccons-downgrades}}, but
-prohibits intermediates from providing a cache of the validity information. We
-could do both with a list of URLs.
 
 # application/http-exchange+cbor format for HTTP/1 compatibility # {#application-http-exchange}
 
@@ -1072,11 +1071,11 @@ version is live, while an attacker can forward a signed response until its
 signature expires. Authors should consider shorter signature expiration times
 than they use for cache expiration times.
 
-Clients MAY also check the ["validityUrl"](#signature-validityurl) of an
-exchange more often than the signature's expiration would require. Doing so for
-an exchange with an HTTPS request URI provides a TLS guarantee that the exchange
-isn't out of date (as long as {{oq-cross-origin-push}} is resolved to keep the
-same-origin requirement).
+Clients MAY also check the elements of the
+["validityUrl"](#signature-validityurl) of an exchange more often than the
+signature's expiration would require. Checking the last such element for an
+exchange with an HTTPS request URI provides a TLS guarantee that the exchange
+isn't out of date.
 
 ## Signing oracles are permanent ## {#seccons-signing-oracles}
 
@@ -1657,6 +1656,7 @@ draft-03
   format should ignore them, and apparently TLS implementations don't expose
   their message parsers enough to allow passing a message to a certificate
   verifier.
+* `validityUrl` and `certUrl` can contain a list of URLs.
 
 draft-02
 
