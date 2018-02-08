@@ -14,7 +14,7 @@ import (
 
 	"github.com/ugorji/go/codec"
 
-	"github.com/WICG/webpackage/go/signedexchange"
+	. "github.com/WICG/webpackage/go/signedexchange"
 )
 
 const (
@@ -167,26 +167,26 @@ func TestSignedExchange(t *testing.T) {
 	u, _ := url.Parse("https://example.com/")
 	header := http.Header{}
 	header.Add("Content-Type", "text/html; charset=utf-8")
-	e, err := signedexchange.NewExchange(u, 200, header, []byte(payload), 16)
+	e, err := NewExchange(u, 200, header, []byte(payload), 16)
 	if err != nil {
 		t.Fatal(err)
 	}
 	e.AddSignedHeadersHeader("Content-Type", "Content-Encoding", "MI")
 
 	now := time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
-	certs, err := signedexchange.ParseCertificates([]byte(pemCerts))
+	certs, err := ParseCertificates([]byte(pemCerts))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	derPrivateKey, _ := pem.Decode([]byte(pemPrivateKey))
-	privKey, err := signedexchange.ParsePrivateKey(derPrivateKey.Bytes)
+	privKey, err := ParsePrivateKey(derPrivateKey.Bytes)
 	if err != nil {
 		t.Fatal(err)
 	}
 	certUrl, _ := url.Parse("https://example.com/cert.msg")
 	validityUrl, _ := url.Parse("https://example.com/resource.validity")
-	s := &signedexchange.Signer{
+	s := &Signer{
 		Date:        now,
 		Expires:     now.Add(1 * time.Hour),
 		Certs:       certs,
@@ -200,7 +200,7 @@ func TestSignedExchange(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	signedexchange.WriteExchangeFile(&buf, e)
+	WriteExchangeFile(&buf, e)
 
 	var decoded interface{}
 	handle := &codec.CborHandle{}
