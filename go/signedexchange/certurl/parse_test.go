@@ -1,8 +1,9 @@
 package certurl_test
 
 import (
-	"bytes"
 	"testing"
+
+	"github.com/kylelemons/godebug/pretty"
 
 	. "github.com/WICG/webpackage/go/signedexchange/certurl"
 )
@@ -250,8 +251,7 @@ cPUeybQ=
 		t.Errorf("failed to parse PEM: %v", err)
 	}
 
-	if !bytes.Equal(got, want) {
-		// TODO(hajimehoshi): Better error message
-		t.Errorf("ParsePEM: got: %v\nwant: %v\n", got, want)
+	if diff := pretty.Compare(got, want); diff != "" {
+		t.Errorf("ParsePEM: %v", diff)
 	}
 }
