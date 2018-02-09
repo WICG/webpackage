@@ -418,8 +418,7 @@ using the other certificates in the chain.
 1. Each certificate's `sct` value MUST be a `SignedCertificateTimestampList` for
    that certificate as defined by Section 3.3 of {{!RFC6962}}.
 
-Loading a `certUrl` takes a `forceFetch` flag and an `expectedSha256` hash
-value. The client MUST:
+Loading a `certUrl` takes a `forceFetch` flag. The client MUST:
 
 1. Let `raw-chain` be the result of fetching ({{FETCH}}) `certUrl`. If
    `forceFetch` is *not* set, the fetch can be fulfilled from a cache using
@@ -431,11 +430,6 @@ value. The client MUST:
    might be impractical to completely achieve due to certificate validation
    implementations that don't enforce DER encoding or other standard
    constraints.
-1. If the SHA-256 hash of `main-certificate`'s `cert_data` is not equal to
-   `certSha256`, return "invalid". Note that this intentionally differs from TLS
-   1.3, which signs the entire certificate chain in its Certificate Verify
-   (Section 4.4.3 of {{?I-D.ietf-tls-tls13}}), in order to allow updating the
-   stapled OCSP response without updating signatures at the same time.
 1. Return `certificate-chain`.
 
 ## Canonical CBOR serialization ## {#canonical-cbor}
@@ -521,8 +515,8 @@ there are no non-significant response header fields in the exchange.
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. If `certUrl` is present:
       1. Let `certificate-chain` be the result of loading the certificate chain
-         at `certUrl` passing the `forceFetch` flag and `certSha256`
-         ({{cert-chain}}). If this returns "invalid", return "invalid".
+         at `certUrl` passing the `forceFetch` flag ({{cert-chain}}). If this
+         returns "invalid", return "invalid".
       1. Let `main-certificate` be the first certificate in `certificate-chain`.
       1. Set `publicKey` to `main-certificate`'s public key.
       1. The client MUST define a partial function from public key types to
@@ -567,10 +561,17 @@ there are no non-significant response header fields in the exchange.
       1. The text string "expires" to the integer value of `expires`.
       1. The text string "headers" to the CBOR representation
          ({{cbor-representation}}) of `exchange`'s headers.
-1. If `signature` is `message`'s signature by `main-certificate`'s public key
-   using `signing-alg`, return "potentially-valid" with `exchange` and whichever
-   is present of `certificate-chain` or `ed25519Key`. Otherwise, return
-   "invalid".
+1. If `certUrl` is present and the SHA-256 hash of `main-certificate`'s
+   `cert_data` is not equal to `certSha256` (whose presence was checked when the
+   `Signature` header field was parsed), return "invalid".
+
+   Note that this intentionally differs from TLS 1.3, which signs the entire
+   certificate chain in its Certificate Verify (Section 4.4.3 of
+   {{?I-D.ietf-tls-tls13}}), in order to allow updating the stapled OCSP
+   response without updating signatures at the same time.
+1. If `signature` is `message`'s signature by `publicKey` using `signing-alg`,
+   return "potentially-valid" with `exchange` and whichever is present of
+   `certificate-chain` or `ed25519Key`. Otherwise, return "invalid".
 
 Note that the above algorithm can determine that an exchange's headers are
 potentially-valid before the exchange's payload is received. Similarly, if
