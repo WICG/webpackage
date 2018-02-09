@@ -386,6 +386,58 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 ]
 ~~~
 
+## Loading a certificate chain ## {#cert-chain}
+
+The resource at a signature's `certUrl` MUST have the
+`application/cert-chain+cbor` content type, MUST be canonically-encoded CBOR
+({{canonical-cbor}}), and MUST match the following CDDL:
+
+~~~cddl
+cert-chain = [
+  "📜⛓", ; U+1F4DC U+26D3
+  + {
+    cert: bytes,
+    ? ocsp: bytes,
+    ? sct: bytes,
+    * tstr => any,
+  }
+]
+~~~
+
+The first item in the CBOR array is treated as the end-entity certificate, and
+the client will attempt to build a path ({{?RFC5280}}) to it from a trusted root
+using the other certificates in the chain.
+
+1. Each `cert` value MUST be a DER-encoded X.509v3 certificate ({{!RFC5280}}).
+   Other key/value pairs in the same array item define properties of this
+   certificate.
+1. The first certificate's `ocsp` value if any MUST be a complete, DER-encoded
+   OCSP response for that certificate (using the ASN.1 type `OCSPResponse`
+   defined in {{!RFC2560}}). Subsequent certificates MUST NOT have an `ocsp`
+   value.
+1. Each certificate's `sct` value MUST be a `SignedCertificateTimestampList` for
+   that certificate as defined by Section 3.3 of {{!RFC6962}}.
+
+Loading a `certUrl` takes a `forceFetch` flag and an `expectedSha256` hash
+value. The client MUST:
+
+1. Let `raw-chain` be the result of fetching ({{FETCH}}) `certUrl`. If
+   `forceFetch` is *not* set, the fetch can be fulfilled from a cache using
+   normal HTTP semantics {{!RFC7234}}. If this fetch fails, return
+   "invalid".
+1. Let `certificate-chain` be the array of certificates and properties produced
+   by parsing `raw-chain` using the CDDL above. If any of the requirements above
+   aren't satisfied, return "invalid". Note that this validation requirement
+   might be impractical to completely achieve due to certificate validation
+   implementations that don't enforce DER encoding or other standard
+   constraints.
+1. If the SHA-256 hash of `main-certificate`'s `cert_data` is not equal to
+   `certSha256`, return "invalid". Note that this intentionally differs from TLS
+   1.3, which signs the entire certificate chain in its Certificate Verify
+   (Section 4.4.3 of {{?I-D.ietf-tls-tls13}}), in order to allow updating the
+   stapled OCSP response without updating signatures at the same time.
+1. Return `certificate-chain`.
+
 ## Canonical CBOR serialization ## {#canonical-cbor}
 
 Within this specification, the canonical serialization of a CBOR item uses the
@@ -468,27 +520,11 @@ there are no non-significant response header fields in the exchange.
    than `SHA`, then return "invalid".
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. If `certUrl` is present:
-      1. Let `certificate-chain` be the result of fetching ({{FETCH}}) `certUrl`
-         and parsing it as a TLS 1.3 Certificate message (Section 4.4.2 of
-         {{!I-D.ietf-tls-tls13}}) containing X.509v3 certificates. If
-         `forceFetch` is *not* set, the fetch can be fulfilled from a cache
-         using normal HTTP semantics {{!RFC7234}}. If this fetch or parse fails,
-         return "invalid".
-
-         Parsing notes:
-         1. This does not include the 4-byte header that would appear in a
-            Handshake message.
-         1. Since this fetch is not in response to a CertificateRequest, the
-            certificate_request_context MUST be empty, and a non-empty value
-            MUST cause the parse to fail.
+      1. Let `certificate-chain` be the result of loading the certificate chain
+         at `certUrl` passing the `forceFetch` flag and `certSha256`
+         ({{cert-chain}}). If this returns "invalid", return "invalid".
       1. Let `main-certificate` be the first certificate in `certificate-chain`.
-      1. If the SHA-256 hash of `main-certificate`'s `cert_data` is not equal to
-         `certSha256`, return "invalid". Note that this intentionally differs
-         from TLS 1.3, which signs the entire certificate chain in its
-         Certificate Verify (Section 4.4.3 of {{?I-D.ietf-tls-tls13}}), in order
-         to allow updating the stapled OCSP response without updating signatures
-         at the same time.
-      1. Set `publicKey` to `main-certificate`'s public key
+      1. Set `publicKey` to `main-certificate`'s public key.
       1. The client MUST define a partial function from public key types to
          signing algorithms, and this function must at the minimum include the
          following mappings:
@@ -506,7 +542,7 @@ there are no non-significant response header fields in the exchange.
          : ecdsa_secp384r1_sha384 as defined in Section 4.2.3 of
            {{!I-D.ietf-tls-tls13}}.
 
-         Set `signing-alg` to the result of applying this function to type of
+         Set `signing-alg` to the result of applying this function to the type of
          `main-certificate`'s public key. If the function is undefined on this
          input, return "invalid".
    1. If `ed25519Key` is present, set `publicKey` to `ed25519Key` and
@@ -883,14 +919,13 @@ authoritative for the PUSH_PROMISE's authority.
       ({{!RFC5280}} and other undocumented conventions). Let `path` be the path
       that was used from the `main-certificate` to a trusted root, including the
       `main-certificate` but excluding the root.
-   1. Validate that `main-certificate` includes a "status_request" extension
+   1. Validate that `main-certificate` has an `ocsp` property ({{cert-chain}})
       with a valid OCSP response whose lifetime (`nextUpdate - thisUpdate`) is
       less than 7 days ({{!RFC6960}}). Note that this does not check for
       revocation of intermediate certificates, and clients SHOULD implement
       another mechanism for that.
-   1. Validate that all certificates in `path` include
-      "signed_certificate_timestamp" extensions containing valid SCTs from
-      trusted logs. ({{!RFC6962}})
+   1. Validate that all certificates in `path` include `sct` properties
+      ({{cert-chain}}) containing valid SCTs from trusted logs. ({{!RFC6962}})
 1. Return "valid".
 
 ### Open Questions ### {#oq-cross-origin-push}
@@ -1180,6 +1215,49 @@ Additional information:
   Magic number(s):  8? 64 68 74 78 67
 
   File extension(s): .htxg
+
+  Macintosh file type code(s):  N/A
+
+Person and email address to contact for further information: See Authors'
+  Addresses section.
+
+Intended usage:  COMMON
+
+Restrictions on usage:  N/A
+
+Author:  See Authors' Addresses section.
+
+Change controller:  IESG
+
+## Internet Media Type application/cert-chain+cbor
+
+Type name:  application
+
+Subtype name:  cert-chain+cbor
+
+Required parameters:  N/A
+
+Optional parameters:  N/A
+
+Encoding considerations:  binary
+
+Security considerations:  N/A
+
+Interoperability considerations:  N/A
+
+Published specification:  This specification (see {{cert-chain}}).
+
+Applications that use this media type:  N/A
+
+Fragment identifier considerations:  N/A
+
+Additional information:
+
+  Deprecated alias names for this type:  N/A
+
+  Magic number(s): 1*9(??) 67 F0 9F 93 9C E2 9B 93
+
+  File extension(s): N/A
 
   Macintosh file type code(s):  N/A
 
@@ -1569,6 +1647,12 @@ exchange argues for embedding a signature's lifetime into the signature.
 # Change Log
 
 RFC EDITOR PLEASE DELETE THIS SECTION.
+
+draft-03
+
+* Define a CBOR structure to hold the certificate chain instead of re-using the
+  TLS1.3 message. Apparently TLS implementations don't expose their message
+  parsers enough to allow passing a message to a certificate verifier.
 
 draft-02
 
