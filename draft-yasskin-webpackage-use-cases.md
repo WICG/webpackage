@@ -305,6 +305,28 @@ Associated requirements:
 
 * {{binary}}{:format="title"}
 
+### Subresource bundling {#bundling}
+
+Text based subresources often benefit from improved compression ratios when
+bundled together.
+
+At the same time, the practice of JS and CSS bundling also has negative
+side-effects:
+
+* Dependent execution - in order to start executing *any* of the bundled
+resources, it is required to download, parse and execute *all* of them.
+* Loss of caching granularity - Modification of *any* of the resources results
+in caching invalidation of *all* of them.
+* Loss of module semantics - ES6 modules must be delivered as independent
+resources. Therefore, current bundling methods, which deliver them with other
+resources under a common URL, require transpilation to ES5 and result in loss
+of ES6 module semantics.
+
+An on-the-fly readable packaging format that will enable resources to maintain
+their own URLs while being physically delivered with other resources, can
+resolve the above downsides while keeping the upsides of improved compression
+ratios.
+
 # Requirements {#requirements}
 
 ## Essential {#essential-reqs}
