@@ -305,6 +305,42 @@ Associated requirements:
 
 * {{binary}}{:format="title"}
 
+### Subresource bundling {#bundling}
+
+Text based subresources often benefit from improved compression ratios when
+bundled together.
+
+At the same time, the current practice of JS and CSS bundling, by compiling
+everything into a single JS file, also has negative side-effects:
+
+1. Dependent execution - in order to start executing *any* of the bundled
+   resources, it is required to download, parse and execute *all* of them.
+1. Loss of caching granularity - Modification of *any* of the resources results
+   in caching invalidation of *all* of them.
+1. Loss of module semantics - ES6 modules must be delivered as independent
+   resources. Therefore, current bundling methods, which deliver them with other
+   resources under a common URL, require transpilation to ES5 and result in loss
+   of ES6 module semantics.
+
+An on-the-fly readable packaging format, that will enable resources to maintain
+their own URLs while being physically delivered with other resources, can
+resolve the above downsides while keeping the upsides of improved compression
+ratios.
+
+To improve cache granularity, the client needs to tell the server which versions
+of which resources are already cached, which it could do with a Service Worker
+or perhaps with {{?I-D.ietf-httpbis-cache-digest}}.
+
+Associated requirements:
+
+* {{urls}}{:format="title"}
+* {{streamed-loading}}{:format="title"}: To solve downside 1.
+* {{transfer-compression}}{:format="title"}: To keep the upside.
+* {{response-headers}}{:format="title"}: At least the Content-Type is needed to
+  load JS and CSS.
+* {{unsigned-content}}{:format="title"}: Signing same-origin content wastes
+  space.
+
 # Requirements {#requirements}
 
 ## Essential {#essential-reqs}
