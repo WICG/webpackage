@@ -386,7 +386,7 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 ]
 ~~~
 
-## Loading a certificate chain ## {#cert-chain}
+## Loading a certificate chain ## {#cert-chain-format}
 
 The resource at a signature's `certUrl` MUST have the
 `application/cert-chain+cbor` content type, MUST be canonically-encoded CBOR
@@ -515,8 +515,8 @@ there are no non-significant response header fields in the exchange.
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. If `certUrl` is present:
       1. Let `certificate-chain` be the result of loading the certificate chain
-         at `certUrl` passing the `forceFetch` flag ({{cert-chain}}). If this
-         returns "invalid", return "invalid".
+         at `certUrl` passing the `forceFetch` flag ({{cert-chain-format}}). If
+         this returns "invalid", return "invalid".
       1. Let `main-certificate` be the first certificate in `certificate-chain`.
       1. Set `publicKey` to `main-certificate`'s public key.
       1. The client MUST define a partial function from public key types to
@@ -920,13 +920,14 @@ authoritative for the PUSH_PROMISE's authority.
       ({{!RFC5280}} and other undocumented conventions). Let `path` be the path
       that was used from the `main-certificate` to a trusted root, including the
       `main-certificate` but excluding the root.
-   1. Validate that `main-certificate` has an `ocsp` property ({{cert-chain}})
-      with a valid OCSP response whose lifetime (`nextUpdate - thisUpdate`) is
-      less than 7 days ({{!RFC6960}}). Note that this does not check for
-      revocation of intermediate certificates, and clients SHOULD implement
-      another mechanism for that.
-   1. Validate that all certificates in `path` include `sct` properties
-      ({{cert-chain}}) containing valid SCTs from trusted logs. ({{!RFC6962}})
+   1. Validate that `main-certificate` has an `ocsp` property
+      ({{cert-chain-format}}) with a valid OCSP response whose lifetime
+      (`nextUpdate - thisUpdate`) is less than 7 days ({{!RFC6960}}). Note that
+      this does not check for revocation of intermediate certificates, and
+      clients SHOULD implement another mechanism for that.
+   1. Validate that `main-certificate` has an `sct` property
+      ({{cert-chain-format}}) containing valid SCTs from trusted logs.
+      ({{!RFC6962}})
 1. Return "valid".
 
 ### Open Questions ### {#oq-cross-origin-push}
@@ -1246,7 +1247,7 @@ Security considerations:  N/A
 
 Interoperability considerations:  N/A
 
-Published specification:  This specification (see {{cert-chain}}).
+Published specification:  This specification (see {{cert-chain-format}}).
 
 Applications that use this media type:  N/A
 
