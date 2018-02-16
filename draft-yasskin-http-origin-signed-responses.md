@@ -1076,24 +1076,22 @@ same-origin requirement).
 ## Signing oracles are defended by OCSP ## {#seccons-signing-oracles}
 
 There are several reasons a signing oracle for a private key may be accidentally
-exposed without exposing the private key itself. For example, organizations that
-run edge caches may provide a signing oracle to those machines. Those machines
-may be less physically secure than the machines with actual access to the TLS
-private key. When an edge cache is compromised, this allows recovery process to
-be as simple as turning off its signing oracle and waiting for clients to close
-compromised connections, rather than revoking the whole private key.
+exposed without exposing the private key itself. In addition to implementation
+flaws like Bleichenbacher's attack and DROWN, organizations that run edge caches
+may provide a signing oracle to those machines. Those machines may be less
+physically secure than the machines with actual access to the TLS private key.
+When an edge cache is compromised, this allows recovery process to be as simple
+as turning off its signing oracle and waiting for clients to close compromised
+connections, rather than revoking the whole private key.
 
 Thus, signed exchanges cannot allow access to a signing oracle to allow minting
 exchanges that are valid long after the signing oracle is closed. To prevent
 this, signatures are required to cover the current OCSP response for a
 signature. This naturally limits their validity to the life of the latest OCSP
 response available when the signing oracle was closed. To limit this to 7 days,
-CAs SHOULD NOT pre-sign future OCSP responses.
+CAs MUST NOT pre-sign future OCSP responses.
 
-Another approach, that this specification doesn't take yet, is to avoid re-using
-arbitrary TLS certificates by creating a new certificate extension as described
-in {{certificate-constraints}}. This avoids requiring OCSP responses and
-signatures to be updated in lockstep.
+If this is inadequate, see {{certificate-constraints}} for another approach.
 
 ## Unsigned headers ## {#seccons-unsigned-headers}
 
