@@ -8,7 +8,10 @@ to bundle together the resources that make up a website, so they can be shared
 offline, either with or without a proof that they came from the original
 website. A full list of use cases and resulting requirements is available in
 [draft-yasskin-webpackage-use-cases](https://tools.ietf.org/html/draft-yasskin-webpackage-use-cases)
-([Editor's draft](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html)).
+([Editor's
+draft](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html)).
+The [explainer](explainer.md) walks through how to use these specs for to
+achieve the use cases.
 
 The specifications come in a couple layers:
 
@@ -32,7 +35,7 @@ signed packages:
 ([Editor's draft](https://wicg.github.io/webpackage/draft-yasskin-dispatch-web-packaging.html)).
 The DISPATCH WG at IETF99
 [recommended](https://datatracker.ietf.org/doc/minutes-99-dispatch/) the current
-split. See the [explainer](explainer.md) for an overview of the old format.
+split.
 
 ## Building this repository
 

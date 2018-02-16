@@ -252,34 +252,67 @@ Associated requirements:
 
 * {{external-dependencies}}{:format="title"}
 
-### Content Distributors {#content-distributors}
+### Privacy-preserving prefetch {#private-prefetch}
 
-Content distributors want to re-publish other origins' content so readers can
-access it more quickly or more privately. Currently, to attribute that content
-to the original origin, they need to be full CDNs with the ability to publish
-arbitrary content under that origin's name. There should be a way to let them
-attribute only the exact content that the original origin published.
+Lots of websites link to other websites. Many of these source sites would like
+the targets of these links to load quickly. The source could use `<link
+rel="prefetch">` to prefetch the target of a link, but if the user doesn't
+actually click that link, that leaks the fact that the user saw a page that
+linked to the target. This can be true even if the prefetch is made without
+browser credentials because of mechanisms like TLS session IDs.
 
-Web Packages would allow distributors to publish another site's signed content
-as long as the user visited a URL explicitly mentioning the distributor.
+Because clients have limited data budgets to prefetch link targets, this use
+case is probably limited to sites that can accurately predict which link their
+users are most likely to click. For example, search engines can predict that
+their users will click one of the first couple results, and news aggreggation
+sites like Reddit or Slashdot can hope that users will read the article if
+they've navigated to its discussion.
 
-Content distributors want to serve only the bytes that most optimally represent
-the content the current user needs, even though the origin needs to provide
-representations for all users. Think PNG vs WebP and small vs large resolutions.
+Two search engines have built systems to do this with today's technology:
+Google's [AMP](https://www.ampproject.org/) and Baidu's
+[MIP](https://www.mipengine.org/) formats and caches allow them to prefetch
+search results while preserving privacy, at the cost of showing the wrong URLs
+for the results once the user has clicked. A good solution to this problem would
+show the right URLs but still avoid a request to the publishing origin until
+after the user clicks.
 
-This use case is also addressed by
-{{?I-D.yasskin-http-origin-signed-responses}}.
+Associated requirements:
+
+* {{signing}}{:format="title"}: To prove the content came from the original
+  origin.
+* {{streamed-loading}}{:format="title"}: If the user clicks before the target
+  page is fully transferred, the browser should be able to start loading early
+  parts before the source site finishes sending the whole page.
+* {{transfer-compression}}{:format="title"}
+* {{subsetting}}{:format="title"}: If a prefetched page includes subresources,
+  its publisher might want to provide and sign both WebP and PNG versions of an
+  image, but the source site should be able to transfer only best one for each
+  client.
+
+### Cross-CDN Serving {#cross-cdn-serving}
+
+When a web page has subresources from a different origin, retrieval of those
+subresources can be optimized if they're transferred over the same connection as
+the main resource. If both origins are distributed by the same CDN, in-progress
+mechanisms like {{?I-D.ietf-httpbis-http2-secondary-certs}} allow the server to
+use a single connection to send both resources, but if the resource and
+subresource don't share a CDN or don't use a CDN at all, existing mechanisms
+don't help.
+
+If the subresource is signed by its publisher, the main resource's server can
+forward it to the client.
+
+There are some yet-to-be-solved privacy problems if the client and server want
+to avoid transferring subresources that are already in the client's cache:
+naively telling the server that a resource is already present is a privacy leak.
 
 Associated requirements:
 
 * {{streamed-loading}}{:format="title"}: To get optimal performance, the browser
-  should be able to start loading early resources before the distributor
-  finishes sending the whole package.
+  should be able to start loading early parts of a resource before the
+  distributor finishes sending the whole resource.
 * {{signing}}{:format="title"}: To prove the content came from the original
   origin.
-* {{subsetting}}{:format="title"}: If a package includes both WebP and PNG
-  versions of an image, the distributor should be able to select the best one to
-  send to each client.
 * {{transfer-compression}}{:format="title"}
 
 ### Installation from a self-extracting executable {#self-extracting}
@@ -612,3 +645,5 @@ This document has no actions for IANA.
 
 # Acknowledgements
 
+Thanks to Yoav Weiss for the Subresource bundling use case and discussions about
+content distributors.
