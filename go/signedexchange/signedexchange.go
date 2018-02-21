@@ -15,7 +15,8 @@ import (
 
 type Exchange struct {
 	// Request
-	requestUri *url.URL
+	requestUri     *url.URL
+	requestHeaders http.Header
 
 	// Response
 	responseStatus  int
@@ -25,11 +26,12 @@ type Exchange struct {
 	payload []byte
 }
 
-func NewExchange(uri *url.URL, status int, headers http.Header, payload []byte, miRecordSize int) (*Exchange, error) {
+func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte, miRecordSize int) (*Exchange, error) {
 	e := &Exchange{
 		requestUri:      uri,
 		responseStatus:  status,
-		responseHeaders: headers,
+		requestHeaders:  requestHeaders,
+		responseHeaders: responseHeaders,
 	}
 	if err := e.miEncode(payload, miRecordSize); err != nil {
 		return nil, err
