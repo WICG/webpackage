@@ -99,6 +99,13 @@ func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
 			valueE.EncodeByteString([]byte(e.requestUri.String()))
 		}),
 	}
+	for name, value := range e.requestHeaders {
+		mes = append(mes,
+			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				keyE.EncodeByteString([]byte(strings.ToLower(name)))
+				valueE.EncodeByteString([]byte(value[0]))
+			}))
+	}
 	return enc.EncodeMap(mes)
 }
 
