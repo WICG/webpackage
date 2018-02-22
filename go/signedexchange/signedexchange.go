@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -62,6 +63,7 @@ func (e *Exchange) AddSignedHeadersHeader() {
 	for k, _ := range e.responseHeaders {
 		strs = append(strs, fmt.Sprintf(`"%s"`, strings.ToLower(k)))
 	}
+	sort.Strings(strs)
 	s := strings.Join(strs, ", ")
 	e.responseHeaders.Add("signed-headers", s)
 }
