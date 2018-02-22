@@ -88,7 +88,7 @@ func (e *Exchange) parseSignedHeadersHeader() []string {
 	return ks
 }
 
-func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
+func (e *Exchange) encodeRequest(enc *cbor.Encoder, encodeHeaders bool) error {
 	mes := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString([]byte(":method"))
@@ -99,12 +99,14 @@ func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
 			valueE.EncodeByteString([]byte(e.requestUri.String()))
 		}),
 	}
-	for name, value := range e.requestHeaders {
-		mes = append(mes,
-			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-				keyE.EncodeByteString([]byte(strings.ToLower(name)))
-				valueE.EncodeByteString([]byte(value[0]))
-			}))
+	if encodeHeaders {
+		for name, value := range e.requestHeaders {
+			mes = append(mes,
+				cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+					keyE.EncodeByteString([]byte(strings.ToLower(name)))
+					valueE.EncodeByteString([]byte(value[0]))
+				}))
+		}
 	}
 	return enc.EncodeMap(mes)
 }
@@ -146,7 +148,7 @@ func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
 	if err := enc.EncodeArrayHeader(2); err != nil {
 		return fmt.Errorf("signedexchange: failed to encode top-level array header: %v", err)
 	}
-	if err := e.encodeRequest(enc); err != nil {
+	if err := e.encodeRequest(enc, false); err != nil {
 		return err
 	}
 	if err := e.encodeResponseHeaders(enc, true); err != nil {
@@ -169,7 +171,7 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 		return err
 	}
 	// FIXME: This may diverge in future.
-	if err := e.encodeRequest(enc); err != nil {
+	if err := e.encodeRequest(enc, true); err != nil {
 		return err
 	}
 
