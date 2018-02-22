@@ -88,8 +88,8 @@ func (e *Exchange) parseSignedHeadersHeader() []string {
 	return ks
 }
 
-func (e *Exchange) encodeRequest(enc *cbor.Encoder, encodeHeaders bool) error {
-	mes := []*cbor.MapEntryEncoder{
+func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder) []*cbor.MapEntryEncoder {
+	return []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString([]byte(":method"))
 			valueE.EncodeByteString([]byte("GET"))
@@ -99,14 +99,21 @@ func (e *Exchange) encodeRequest(enc *cbor.Encoder, encodeHeaders bool) error {
 			valueE.EncodeByteString([]byte(e.requestUri.String()))
 		}),
 	}
-	if encodeHeaders {
-		for name, value := range e.requestHeaders {
-			mes = append(mes,
-				cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-					keyE.EncodeByteString([]byte(strings.ToLower(name)))
-					valueE.EncodeByteString([]byte(value[0]))
-				}))
-		}
+}
+
+func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
+	mes := e.encodeRequestCommon(enc)
+	return enc.EncodeMap(mes)
+}
+
+func (e *Exchange) encodeRequestWithHeaders(enc *cbor.Encoder) error {
+	mes := e.encodeRequestCommon(enc)
+	for name, value := range e.requestHeaders {
+		mes = append(mes,
+			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				keyE.EncodeByteString([]byte(strings.ToLower(name)))
+				valueE.EncodeByteString([]byte(value[0]))
+			}))
 	}
 	return enc.EncodeMap(mes)
 }
@@ -148,7 +155,7 @@ func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
 	if err := enc.EncodeArrayHeader(2); err != nil {
 		return fmt.Errorf("signedexchange: failed to encode top-level array header: %v", err)
 	}
-	if err := e.encodeRequest(enc, false); err != nil {
+	if err := e.encodeRequest(enc); err != nil {
 		return err
 	}
 	if err := e.encodeResponseHeaders(enc, true); err != nil {
@@ -171,7 +178,7 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 		return err
 	}
 	// FIXME: This may diverge in future.
-	if err := e.encodeRequest(enc, true); err != nil {
+	if err := e.encodeRequestWithHeaders(enc); err != nil {
 		return err
 	}
 
