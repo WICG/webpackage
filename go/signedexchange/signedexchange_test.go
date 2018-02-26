@@ -167,7 +167,7 @@ func TestSignedExchange(t *testing.T) {
 	u, _ := url.Parse("https://example.com/")
 	header := http.Header{}
 	header.Add("Content-Type", "text/html; charset=utf-8")
-	e, err := NewExchange(u, 200, header, []byte(payload), 16)
+	e, err := NewExchange(u, nil, 200, header, []byte(payload), 16)
 	if err != nil {
 		t.Fatal(err)
 	}

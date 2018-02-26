@@ -15,7 +15,8 @@ import (
 
 type Exchange struct {
 	// Request
-	requestUri *url.URL
+	requestUri     *url.URL
+	requestHeaders http.Header
 
 	// Response
 	responseStatus  int
@@ -25,11 +26,12 @@ type Exchange struct {
 	payload []byte
 }
 
-func NewExchange(uri *url.URL, status int, headers http.Header, payload []byte, miRecordSize int) (*Exchange, error) {
+func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte, miRecordSize int) (*Exchange, error) {
 	e := &Exchange{
 		requestUri:      uri,
 		responseStatus:  status,
-		responseHeaders: headers,
+		requestHeaders:  requestHeaders,
+		responseHeaders: responseHeaders,
 	}
 	if err := e.miEncode(payload, miRecordSize); err != nil {
 		return nil, err
@@ -86,8 +88,8 @@ func (e *Exchange) parseSignedHeadersHeader() []string {
 	return ks
 }
 
-func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
-	mes := []*cbor.MapEntryEncoder{
+func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder) []*cbor.MapEntryEncoder {
+	return []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString([]byte(":method"))
 			valueE.EncodeByteString([]byte("GET"))
@@ -96,6 +98,22 @@ func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
 			keyE.EncodeByteString([]byte(":url"))
 			valueE.EncodeByteString([]byte(e.requestUri.String()))
 		}),
+	}
+}
+
+func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
+	mes := e.encodeRequestCommon(enc)
+	return enc.EncodeMap(mes)
+}
+
+func (e *Exchange) encodeRequestWithHeaders(enc *cbor.Encoder) error {
+	mes := e.encodeRequestCommon(enc)
+	for name, value := range e.requestHeaders {
+		mes = append(mes,
+			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				keyE.EncodeByteString([]byte(strings.ToLower(name)))
+				valueE.EncodeByteString([]byte(value[0]))
+			}))
 	}
 	return enc.EncodeMap(mes)
 }
@@ -160,7 +178,7 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 		return err
 	}
 	// FIXME: This may diverge in future.
-	if err := e.encodeRequest(enc); err != nil {
+	if err := e.encodeRequestWithHeaders(enc); err != nil {
 		return err
 	}
 

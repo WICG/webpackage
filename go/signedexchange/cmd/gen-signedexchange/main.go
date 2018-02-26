@@ -9,10 +9,22 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/WICG/webpackage/go/signedexchange"
 )
+
+type headerArgs []string
+
+func (h *headerArgs) String() string {
+	return fmt.Sprintf("%v", *h)
+}
+
+func (h *headerArgs) Set(value string) error {
+	*h = append(*h, value)
+	return nil
+}
 
 var (
 	flagUri            = flag.String("uri", "https://example.com/index.html", "The URI of the resource represented in the exchange")
@@ -24,7 +36,15 @@ var (
 	flagPrivateKey     = flag.String("privateKey", "cert-key.pem", "Private key PEM file of the origin")
 	flagOutput         = flag.String("o", "out.htxg", "Signed exchange output file")
 	flagMIRecordSize   = flag.Int("miRecordSize", 4096, "The record size of Merkle Integrity Content Encoding")
+
+	flagRequestHeader  = headerArgs{}
+	flagResponseHeader = headerArgs{}
 )
+
+func init() {
+	flag.Var(&flagRequestHeader, "requestHeader", "Request header arguments")
+	flag.Var(&flagResponseHeader, "responseHeader", "Response header arguments")
+}
 
 func run() error {
 	payload, err := ioutil.ReadFile(*flagContent)
@@ -77,9 +97,19 @@ func run() error {
 		return fmt.Errorf("failed to parse URL %q. err: %v", *flagUri, err)
 	}
 
-	header := http.Header{}
-	header.Add("content-type", "text/html; charset=utf-8")
-	e, err := signedexchange.NewExchange(parsedUrl, *flagResponseStatus, header, payload, *flagMIRecordSize)
+	reqHeader := http.Header{}
+	for _, h := range flagRequestHeader {
+		chunks := strings.Split(h, ":")
+		reqHeader.Add(chunks[0], chunks[1])
+	}
+
+	resHeader := http.Header{}
+	resHeader.Add("content-type", "text/html; charset=utf-8")
+	for _, h := range flagResponseHeader {
+		chunks := strings.Split(h, ":")
+		resHeader.Add(chunks[0], chunks[1])
+	}
+	e, err := signedexchange.NewExchange(parsedUrl, reqHeader, *flagResponseStatus, resHeader, payload, *flagMIRecordSize)
 	if err != nil {
 		return err
 	}
