@@ -168,14 +168,11 @@ func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
 
 // draft-yasskin-http-origin-signed-responses.html#application-http-exchange
 func WriteExchangeFile(w io.Writer, e *Exchange) error {
-	enc := cbor.NewEncoder(w)
-	if err := enc.EncodeArrayHeader(7); err != nil {
+	buf := &bytes.Buffer{}
+	enc := cbor.NewEncoder(buf)
+	if err := enc.EncodeArrayHeader(4); err != nil {
 		return err
 	}
-	if err := enc.EncodeTextString("htxg"); err != nil {
-		return err
-	}
-
 	if err := enc.EncodeTextString("request"); err != nil {
 		return err
 	}
@@ -183,9 +180,7 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 	if err := e.encodeRequestWithHeaders(enc); err != nil {
 		return err
 	}
-
 	// FIXME: Support "request payload"
-
 	if err := enc.EncodeTextString("response"); err != nil {
 		return err
 	}
@@ -194,10 +189,32 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 		return err
 	}
 
-	if err := enc.EncodeTextString("payload"); err != nil {
+	// 1. The first 3 bytes of the content represents the length of the CBOR
+	// encoded section, encoded in network byte (big-endian) order.
+	cborBytes := buf.Bytes()
+	if _, err := w.Write([]byte{
+		byte(len(cborBytes) >> 16),
+		byte(len(cborBytes) >> 8),
+		byte(len(cborBytes)),
+	}); err != nil {
 		return err
 	}
-	if err := enc.EncodeByteString(e.payload); err != nil {
+
+	// 2. Then, immediately follows CBOR-encoded array containing 4 elements:
+	// - text string "request"
+	// - a map of request header field names to values, encoded as byte strings,
+	//   with ":method", and ":url" pseudo header fields
+	// - text string "response"
+	// - a map from response header field names to values, encoded as byte strings,
+	//   with ":status" pseudo-header field containing the status code (encoded as
+	//   3 ASCII letter byte string)
+	if _, err := w.Write(cborBytes); err != nil {
+		return err
+	}
+
+	// 3. Then, immediately follows the response body, encoded in MI.
+	// (note that this doesn't have the length 3 bytes like the CBOR section does)
+	if _, err := w.Write(e.payload); err != nil {
 		return err
 	}
 
