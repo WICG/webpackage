@@ -569,9 +569,9 @@ there are no non-significant response header fields in the exchange.
    certificate chain in its Certificate Verify (Section 4.4.3 of
    {{?I-D.ietf-tls-tls13}}), in order to allow updating the stapled OCSP
    response without updating signatures at the same time.
-1. If `signature` is `message`'s signature by `publicKey` using `signing-alg`,
-   return "potentially-valid" with `exchange` and whichever is present of
-   `certificate-chain` or `ed25519Key`. Otherwise, return "invalid".
+1. If `signature` is a valid signature of `message` by `publicKey` using
+   `signing-alg`, return "potentially-valid" with `exchange` and whichever is
+   present of `certificate-chain` or `ed25519Key`. Otherwise, return "invalid".
 
 Note that the above algorithm can determine that an exchange's headers are
 potentially-valid before the exchange's payload is received. Similarly, if
@@ -1653,8 +1653,10 @@ RFC EDITOR PLEASE DELETE THIS SECTION.
 draft-03
 
 * Define a CBOR structure to hold the certificate chain instead of re-using the
-  TLS1.3 message. Apparently TLS implementations don't expose their message
-  parsers enough to allow passing a message to a certificate verifier.
+  TLS1.3 message. The TLS 1.3 parser fails on unexpected extensions while this
+  format should ignore them, and apparently TLS implementations don't expose
+  their message parsers enough to allow passing a message to a certificate
+  verifier.
 
 draft-02
 
