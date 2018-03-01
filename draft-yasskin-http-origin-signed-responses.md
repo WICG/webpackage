@@ -800,6 +800,10 @@ returns "valid", return "valid". Otherwise, return "invalid".
 1. Use {{signature-validity}} to determine the signature's validity for
    `exchange`, getting `certificate-chain` back. If this returned "invalid" or
    didn't return a certificate chain, return "invalid".
+1. If `exchange`'s request method is not safe (Section 4.2.1 of {{!RFC7231}}) or
+   not cacheable (Section 4.2.3 of {{!RFC7231}}), return "invalid".
+1. If `exchange`'s headers contain a stateful header field, as defined in
+   {{stateful-headers}}, return "invalid".
 1. Let `authority` be the host component of `exchange`'s effective request URI.
 1. Validate the `certificate-chain` using the following substeps. If any of them
    fail, re-run {{signature-validity}} once over the signature with the
@@ -819,6 +823,37 @@ returns "valid", return "valid". Otherwise, return "invalid".
       ({{cert-chain-format}}) containing valid SCTs from trusted logs.
       ({{!RFC6962}})
 1. Return "valid".
+
+## Stateful header fields {#stateful-headers}
+
+As described in {{seccons-over-signing}}, a publisher can cause problems if they
+sign an exchange that includes private information. There's no way for a client
+to be sure an exchange does or does not include private information, but header
+fields that store or convey stored state in the client are a good sign.
+
+A stateful request header field informs the server of per-client state. These
+include but are not limited to:
+
+* `Authorization`, {{?RFC7235}}
+* `Cookie`, {{?RFC6265}}
+* `Cookie2`, {{?RFC2965}}
+* `Proxy-Authorization`, {{?RFC7235}}
+* `Sec-WebSocket-Key`, {{?RFC6455}}
+
+A stateful response header field modifies state, including authentication
+status, in the client. The HTTP cache is not considered part of this state.
+These include but are not limited to:
+
+* `Authentication-Control`, {{?RFC8053}}
+* `Authentication-Info`, {{?RFC7615}}
+* `Optional-WWW-Authenticate`, {{?RFC8053}}
+* `Proxy-Authenticate`, {{?RFC7235}}
+* `Proxy-Authentication-Info`, {{?RFC7615}}
+* `Sec-WebSocket-Accept`, {{?RFC6455}}
+* `Set-Cookie`, {{?RFC6265}}
+* `Set-Cookie2`, {{?RFC2965}}
+* `SetProfile`, {{?W3C.NOTE-OPS-OverHTTP}}
+* `WWW-Authenticate`, {{?RFC7235}}
 
 # Transferring a signed exchange {#transfer}
 
@@ -1068,11 +1103,48 @@ Are the mime type, extension, and magic number right?
 
 # Security considerations
 
-## Confidential data ## {#seccons-confidentiality}
+## Over-signing ## {#seccons-over-signing}
 
-Authors MUST NOT include confidential information in a signed response that an
-untrusted intermediate could forward, since the response is only signed and not
-encrypted. Intermediates can read the content.
+If a publisher blindly signs all responses as their origin, they can cause at
+least two kinds of problems, described below. To avoid this, publishers SHOULD
+design their systems to opt particular public content that doesn't depend on
+authentication status into signatures instead of signing by default.
+
+Signing systems SHOULD also incorporate the following mitigations to reduce the
+risk that private responses are signed:
+
+1. Strip the `Cookie` request header field and other identifying information
+   like client authentication and TLS session IDs from requests whose exchange
+   is destined to be signed, before forwarding the request to a backend.
+1. Only sign exchanges where the response includes a `Cache-Control: public`
+   header. Clients are not required to fail signature-checking for exchanges
+   that omit this `Cache-Control` response header field to reduce the risk that
+   naïve signing systems blindly add it.
+
+### Session fixation ### {#seccons-session-fixation}
+
+Blind signing can sign responses that create session cookies or otherwise change
+state on the client to identify a particular session. This breaks certain kinds
+of CSRF defense and can allow an attacker to force a user into the attacker's
+account, where the user might unintentionally save private information, like
+credit card numbers or addresses.
+
+This specification defends against cookie-based attacks by blocking the
+`Set-Cookie` response header, but it cannot prevent Javascript or other response
+content from changing state.
+
+### Misleading content ### {#seccons-misleading-content}
+
+If a site signs private information, an attacker might set up their own account
+to show particular private information, forward that signed information to a
+victim, and use that victim's confusion in a more sophisticated attack.
+
+Stripping authentication information from requests before sending them to
+backends is likely to prevent the backend from showing attacker-specific
+information in the signed response. It does not prevent the attacker from
+showing their victim a signed-out page when the victim is actually signed in,
+but while this is still misleading, it seems less likely to be useful to the
+attacker.
 
 ## Off-path attackers ## {#seccons-off-path}
 
@@ -1676,6 +1748,8 @@ draft-03
 * Allow each method of transferring an exchange to define which headers are
   signed, have the cross-origin methods use all headers, and remove the
   `allResponseHeaders` flag.
+* Describe footguns around signing private content, and block certain headers to
+  make it less likely.
 * Define a CBOR structure to hold the certificate chain instead of re-using the
   TLS1.3 message. The TLS 1.3 parser fails on unexpected extensions while this
   format should ignore them, and apparently TLS implementations don't expose
