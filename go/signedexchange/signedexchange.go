@@ -170,10 +170,7 @@ func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
 func WriteExchangeFile(w io.Writer, e *Exchange) error {
 	buf := &bytes.Buffer{}
 	enc := cbor.NewEncoder(buf)
-	if err := enc.EncodeArrayHeader(4); err != nil {
-		return err
-	}
-	if err := enc.EncodeTextString("request"); err != nil {
+	if err := enc.EncodeArrayHeader(2); err != nil {
 		return err
 	}
 	// FIXME: This may diverge in future.
@@ -181,10 +178,6 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 		return err
 	}
 	// FIXME: Support "request payload"
-	if err := enc.EncodeTextString("response"); err != nil {
-		return err
-	}
-
 	if err := e.encodeResponseHeaders(enc, false); err != nil {
 		return err
 	}
@@ -200,14 +193,12 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 		return err
 	}
 
-	// 2. Then, immediately follows CBOR-encoded array containing 4 elements:
-	// - text string "request"
+	// 2. Then, immediately follows a CBOR-encoded array containing 2 elements:
 	// - a map of request header field names to values, encoded as byte strings,
 	//   with ":method", and ":url" pseudo header fields
-	// - text string "response"
 	// - a map from response header field names to values, encoded as byte strings,
-	//   with ":status" pseudo-header field containing the status code (encoded as
-	//   3 ASCII letter byte string)
+	//   with a ":status" pseudo-header field containing the status code (encoded
+	//   as 3 ASCII letter byte string)
 	if _, err := w.Write(cborBytes); err != nil {
 		return err
 	}
