@@ -122,15 +122,15 @@ appear in all capitals, as shown here.
 
 # Signing an exchange # {#proposal}
 
-As a response to an HTTP request or as a Server Push (Section 8.2 of
-{{!RFC7540}}) the server MAY include a `Signed-Headers` header field
-({{signed-headers}}) identifying [significant](#significant-headers) header
-fields and a `Signature` header field ({{signature-header}}) holding a list of
-one or more parameterised signatures that vouch for the content of the response.
+In the response of an HTTP exchange the server MAY include a `Signature` header
+field ({{signature-header}}) holding a list of one or more parameterised
+signatures that vouch for the content of the exchange. Exactly which content the
+signature vouches for can depend on how the exchange is transferred
+({{transfer}}).
 
 The client categorizes each signature as "valid" or "invalid" by validating that
 signature with its certificate or public key and other metadata against the
-significant headers and content ({{signature-validity}}). This validity then
+exchange's headers and content ({{signature-validity}}). This validity then
 informs higher-level protocols.
 
 Each signature is parameterised with information to let a client fetch assurance
@@ -139,41 +139,13 @@ newly-discovered vulnerabilities. This assurance can be bundled back into the
 signed exchange and forwarded to another client, which won't have to re-fetch
 this validity information for some period of time.
 
-## The Signed-Headers Header ## {#signed-headers}
-
-The `Signed-Headers` header field identifies an ordered list of response header
-fields to include in a signature. The request URL and response status are
-included unconditionally. This allows a TLS-terminating intermediate to reorder
-headers without breaking the signature. This *can* also allow the intermediate
-to add headers that will be ignored by some higher-level protocols, but
-{{signature-validity}} provides a hook to let other higher-level protocols
-reject such insecure headers.
-
-This header field appears once instead of being incorporated into the
-signatures' parameters because the significant header fields need to be
-consistent across all signatures of an exchange, to avoid forcing higher-level
-protocols to merge the header field lists of valid signatures.
-
-See {{how-much-to-sign}} for a discussion of why only the URL from the request
-is included and not other request headers.
-
-`Signed-Headers` is a Structured Header as defined by
-{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 4.8 of
-{{!I-D.ietf-httpbis-header-structure}}) of lowercase strings (Section 4.2 of
-{{!I-D.ietf-httpbis-header-structure}}) naming HTTP response header fields.
-Pseudo-header field names (Section 8.1.2.1 of {{!RFC7540}}) MUST NOT appear in
-this list.
-
-Higher-level protocols SHOULD place requirements on the minimum set of headers
-to include in the `Signed-Headers` header field.
-
 ## The Signature Header ## {#signature-header}
 
 The `Signature` header field conveys a list of signatures for an exchange, each
 one accompanied by information about how to determine the authority of and
-refresh that signature. Each signature directly signs the significant headers of
-the exchange and identifies one of those headers that enforces the integrity of
-the exchange's payload.
+refresh that signature. Each signature directly signs the exchange's headers and
+identifies one of those headers that enforces the integrity of the exchange's
+payload.
 
 The `Signature` header is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 4.8 of
@@ -190,8 +162,7 @@ present parameters MUST have the following values:
 "sig"
 
 : Binary content (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}}) holding
-  the signature of most of these parameters and the significant headers of the
-  exchange ({{significant-headers}}).
+  the signature of most of these parameters and the exchange's headers.
 
 "integrity"
 
@@ -305,29 +276,6 @@ cache without losing the original URLs? Putting lists in dictionary fields is
 more complex than {{?I-D.ietf-httpbis-header-structure}} allows, so they're
 single items for now.
 
-
-## Significant headers of an exchange ## {#significant-headers}
-
-The significant headers of an exchange are:
-
-* The method (Section 4 of {{!RFC7231}}) and effective request URI (Section 5.5
-  of {{!RFC7230}}) of the request.
-* The response status code (Section 6 of {{!RFC7231}}) and the response header
-  fields whose names are listed in that exchange's `Signed-Headers` header field
-  ({{signed-headers}}), in the order they appear in that header field. If a
-  response header field name from `Signed-Headers` does not appear in the
-  exchange's response header fields, the exchange has no significant headers.
-
-If the exchange's `Signed-Headers` header field is not present, doesn't parse as
-a Structured Header ({{!I-D.ietf-httpbis-header-structure}}) or doesn't follow
-the constraints on its value described in {{signed-headers}}, the exchange has
-no significant headers.
-
-### Open Questions ### {#oq-significant-headers}
-
-Do the significant headers of an exchange need to include the `Signed-Headers`
-header field itself?
-
 ## CBOR representation of exchange headers ## {#cbor-representation}
 
 To sign an exchange's headers, they need to be serialized into a byte string.
@@ -345,6 +293,8 @@ The CBOR representation of an exchange `exchange`'s headers is the CBOR
      request's method.
    * The byte string ':url' to the byte string containing `exchange`'s request's
      effective request URI.
+   * For each request header field in `exchange`, the header field's name as a
+     byte string to the header field's value as a byte string.
 1. The map mapping:
    * the byte string ':status' to the byte string containing `exchange`'s
      response's 3-digit status code, and
@@ -479,19 +429,10 @@ actually invalid due to an expired OCSP response MAY retry with `forceFetch` set
 to retrieve an updated OCSP from the original server.
 {:#force-fetch}
 
-This algorithm also accepts an `allResponseHeaders` flag, which insists that
-there are no non-significant response header fields in the exchange.
-
-1. Let `originalExchange` be the signature's exchange.
-1. Let `headers` be the significant headers ({{significant-headers}}) of
-   `originalExchange`. If `originalExchange` has no significant headers, then
-   return "invalid".
+1. Let `exchange` be the signature's exchange.
 1. Let `payload` be the payload body (Section 3.3 of {{!RFC7230}}) of
-   `originalExchange`. Note that the payload body is the message body with any
-   transfer encodings removed.
-1. If `allResponseHeaders` is set and the response header fields in
-   `originalExchange` are not equal to the response header fields in `headers`,
-   then return "invalid".
+   `exchange`. Note that the payload body is the message body with any transfer
+   encodings removed.
 1. Let:
    * `signature` be the signature (binary content in the parameterised label's
      "sig" parameter).
@@ -503,13 +444,13 @@ there are no non-significant response header fields in the exchange.
    * `date` be the signature's "date" parameter, interpreted as a Unix time.
    * `expires` be the signature's "expires" parameter, interpreted as a Unix
      time.
-1. If `integrity` names a header field that is not present in `headers` or which
-   the client cannot use to check the integrity of `payload` (for example, the
-   header field is new and hasn't been implemented yet), then return "invalid".
-   Clients MUST implement at least the `Digest` ({{!RFC3230}}) and `MI`
-   ({{!I-D.thomson-http-mice}}) header fields.
-1. If `integrity` is "digest", and the `Digest` header field in `headers`
-   contains no digest-algorithms
+1. If `integrity` names a header field that is not present in `exchange`'s
+   response headers or which the client cannot use to check the integrity of
+   `payload` (for example, the header field is new and hasn't been implemented
+   yet), then return "invalid". Clients MUST implement at least the `Digest`
+   ({{!RFC3230}}) and `MI` ({{!I-D.thomson-http-mice}}) header fields.
+1. If `integrity` is "digest", and the `Digest` header field in `exchange`'s
+   response headers contains no digest-algorithms
    (<https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml>) stronger
    than `SHA`, then return "invalid".
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
@@ -570,8 +511,8 @@ there are no non-significant response header fields in the exchange.
    {{?I-D.ietf-tls-tls13}}), in order to allow updating the stapled OCSP
    response without updating signatures at the same time.
 1. If `signature` is a valid signature of `message` by `publicKey` using
-   `signing-alg`, return "potentially-valid" with `exchange` and whichever is
-   present of `certificate-chain` or `ed25519Key`. Otherwise, return "invalid".
+   `signing-alg`, return "potentially-valid" with whichever is present of
+   `certificate-chain` or `ed25519Key`. Otherwise, return "invalid".
 
 Note that the above algorithm can determine that an exchange's headers are
 potentially-valid before the exchange's payload is received. Similarly, if
@@ -856,14 +797,14 @@ stopping at the first one that returns "valid". If any signature returns
    [same-origin](https://html.spec.whatwg.org/multipage/origin.html#same-origin)
    with the exchange's effective request URI (Section 5.5 of {{!RFC7230}}),
    return "invalid".
-1. Run {{signature-validity}} over the signature with the `allResponseHeaders`
-   flag set, getting `exchange` and `certificate-chain` back. If this returned
-   "invalid" or didn't return a certificate chain, return "invalid".
+1. Run {{signature-validity}} over the signature, getting `certificate-chain`
+   back. If this returned "invalid" or didn't return a certificate chain, return
+   "invalid".
 1. Let `authority` be the host component of `exchange`'s effective request URI.
 1. Validate the `certificate-chain` using the following substeps. If any of them
-   fail, re-run {{signature-validity}} once over the signature with both the
-   `forceFetch` flag and the `allResponseHeaders` flag set, and restart from
-   step 2. If a substep fails again, return "invalid".
+   fail, re-run {{signature-validity}} once over the signature with the
+   `forceFetch` flag set, and restart from step 2. If a substep fails again,
+   return "invalid".
    1. Use `certificate-chain` to validate that its first entry,
       `main-certificate` is trusted as `authority`'s server certificate
       ({{!RFC5280}} and other undocumented conventions). Let `path` be the path
@@ -879,13 +820,86 @@ stopping at the first one that returns "valid". If any signature returns
       ({{!RFC6962}})
 1. Return "valid".
 
-# HTTP/2 extension for cross-origin Server Push # {#cross-origin-push}
+# Transferring a signed exchange {#transfer}
+
+A signed exchange can be transferred in several ways, of which three are
+described here.
+
+## Same-origin response {#same-origin-response}
+
+The signature for a signed exchange can be included in a normal HTTP response.
+Because different clients send different request header fields, and intermediate
+servers add response header fields, it can be impossible to have a signature for
+the exact request and response that the client sees. Therefore, when a client
+validates the `Signature` header field for an exchange represented as a normal
+HTTP request/response pair, it MUST pass only the subset of header fields
+defined by {{significant-headers}} to the validation procedure
+({{signature-validity}}).
+
+If the client relies on signature validity for any aspect of its behavior, it
+MUST ignore any header fields that it didn't pass to the validation procedure.
+
+### Significant headers for a same-origin response {#significant-headers}
+
+The significant headers of an exchange represented as a normal HTTP
+request/response pair (Section 2.1 of {{?RFC7230}} or Section 8.1 of
+{{?RFC7540}}) are:
+
+* The method (Section 4 of {{!RFC7231}}) and effective request URI (Section 5.5
+  of {{!RFC7230}}) of the request.
+* The response status code (Section 6 of {{!RFC7231}}) and the response header
+  fields whose names are listed in that exchange's `Signed-Headers` header field
+  ({{signed-headers}}), in the order they appear in that header field. If a
+  response header field name from `Signed-Headers` does not appear in the
+  exchange's response header fields, the exchange has no significant headers.
+
+If the exchange's `Signed-Headers` header field is not present, doesn't parse as
+a Structured Header ({{!I-D.ietf-httpbis-header-structure}}) or doesn't follow
+the constraints on its value described in {{signed-headers}}, the exchange has
+no significant headers.
+
+#### Open Questions {#oq-significant-headers}
+
+Do the significant headers of an exchange need to include the `Signed-Headers`
+header field itself?
+
+### The Signed-Headers Header {#signed-headers}
+
+The `Signed-Headers` header field identifies an ordered list of response header
+fields to include in a signature. The request URL and response status are
+included unconditionally. This allows a TLS-terminating intermediate to reorder
+headers without breaking the signature. This *can* also allow the intermediate
+to add headers that will be ignored by some higher-level protocols, but
+{{signature-validity}} provides a hook to let other higher-level protocols
+reject such insecure headers.
+
+This header field appears once instead of being incorporated into the
+signatures' parameters because the signed header fields need to be consistent
+across all signatures of an exchange, to avoid forcing higher-level protocols to
+merge the header field lists of valid signatures.
+
+See {{how-much-to-sign}} for a discussion of why only the URL from the request
+is included and not other request headers.
+
+`Signed-Headers` is a Structured Header as defined by
+{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 4.8 of
+{{!I-D.ietf-httpbis-header-structure}}) of lowercase strings (Section 4.2 of
+{{!I-D.ietf-httpbis-header-structure}}) naming HTTP response header fields.
+Pseudo-header field names (Section 8.1.2.1 of {{!RFC7540}}) MUST NOT appear in
+this list.
+
+Higher-level protocols SHOULD place requirements on the minimum set of headers
+to include in the `Signed-Headers` header field.
+
+
+
+## HTTP/2 extension for cross-origin Server Push # {#cross-origin-push}
 
 To allow servers to Server-Push (Section 8.2 of {{?RFC7540}}) signed exchanges
 ({{proposal}}) signed by an authority for which the server is not authoritative
 (Section 9.1 of {{?RFC7230}}), this section defines an HTTP/2 extension.
 
-## Indicating support for cross-origin Server Push # {#setting}
+### Indicating support for cross-origin Server Push # {#setting}
 
 Clients that might accept signed Server Pushes with an authority for which the
 server is not authoritative indicate this using the HTTP/2 SETTINGS parameter
@@ -906,7 +920,7 @@ a server were to send a cross-origin Push without first receiving a
 ENABLE_CROSS_ORIGIN_PUSH setting with the value of 1 it would be a protocol
 violation.
 
-## NO_TRUSTED_EXCHANGE_SIGNATURE error code {#error-code}
+### NO_TRUSTED_EXCHANGE_SIGNATURE error code {#error-code}
 
 The signatures on a Pushed cross-origin exchange may be untrusted for several
 reasons, for example that the certificate could not be fetched, that the
@@ -915,11 +929,11 @@ validate, that the signature is expired, etc. This draft conflates all of these
 possible failures into one error code, NO_TRUSTED_EXCHANGE_SIGNATURE
 (0xERROR-TBD).
 
-### Open Questions ### {#oq-error-code}
+#### Open Questions ### {#oq-error-code}
 
 How fine-grained should this specification's error codes be?
 
-## Validating a cross-origin Push ## {#validating-cross-origin-push}
+### Validating a cross-origin Push ## {#validating-cross-origin-push}
 
 If the client has set the ENABLE_CROSS_ORIGIN_PUSH setting to 1, the server MAY
 Push a signed exchange for which it is not authoritative, and the client MUST
@@ -934,14 +948,14 @@ If this returns "invalid", the client MUST treat the response as a stream error
 Otherwise, the client MUST treat the pushed response as if the server were
 authoritative for the PUSH_PROMISE's authority.
 
-### Open Questions ### {#oq-cross-origin-push}
+#### Open Questions ### {#oq-cross-origin-push}
 
 Is it right that "validityUrl" is required to be same-origin with the exchange?
 This allows the mitigation against downgrades in {{seccons-downgrades}}, but
 prohibits intermediates from providing a cache of the validity information. We
 could do both with a list of URLs.
 
-# application/http-exchange+cbor format for HTTP/1 compatibility # {#application-http-exchange}
+## application/http-exchange+cbor format for HTTP/1 compatibility # {#application-http-exchange}
 
 To allow servers to serve cross-origin responses when either the client or the
 server hasn't implemented HTTP/2 Push (Section 8.2 of {{?RFC7540}}) support yet,
@@ -1018,7 +1032,7 @@ error.
 If the parser encounters an unknown member name, it MUST skip the following item
 and resume parsing at the next member name.
 
-## Example ## {#example-application-http-exchange}
+### Example ## {#example-application-http-exchange}
 
 An example `application/http-exchange+cbor` file representing a possible
 exchange with <https://example.com/> follows, in the extended diagnostic format
@@ -1043,7 +1057,7 @@ defined in Appendix G of {{?I-D.ietf-cbor-cddl}}:
 ]
 ~~~
 
-## Open Questions ## {#oq-application-http-exchange}
+### Open Questions ## {#oq-application-http-exchange}
 
 Should `application/http-exchange+cbor` support request payloads and trailers,
 or only the aspects needed for signed exchanges?
@@ -1656,6 +1670,9 @@ RFC EDITOR PLEASE DELETE THIS SECTION.
 
 draft-03
 
+* Allow each method of transferring an exchange to define which headers are
+  signed, have the cross-origin methods use all headers, and remove the
+  `allResponseHeaders` flag.
 * Define a CBOR structure to hold the certificate chain instead of re-using the
   TLS1.3 message. The TLS 1.3 parser fails on unexpected extensions while this
   format should ignore them, and apparently TLS implementations don't expose
