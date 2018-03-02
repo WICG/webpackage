@@ -844,6 +844,41 @@ Is `Accept-Signature` the right spelling, or do we want to imitate `Want-Digest`
 
 Do I have the right structure for the labels indicating feature support?
 
+# Cross-origin trust {#cross-origin-trust}
+
+To determine whether to trust a cross-origin exchange, the client MUST parse the
+`Signature` header into a list of signatures according to the instructions in
+{{signature-validity}}, and run the following algorithm for each signature,
+stopping at the first one that returns "valid". If any signature returns
+"valid", return "valid". Otherwise, return "invalid".
+
+1. If the signature's ["validityUrl" parameter](#signature-validityurl) is not
+   [same-origin](https://html.spec.whatwg.org/multipage/origin.html#same-origin)
+   with the exchange's effective request URI (Section 5.5 of {{!RFC7230}}),
+   return "invalid".
+1. Run {{signature-validity}} over the signature with the `allResponseHeaders`
+   flag set, getting `exchange` and `certificate-chain` back. If this returned
+   "invalid" or didn't return a certificate chain, return "invalid".
+1. Let `authority` be the host component of `exchange`'s effective request URI.
+1. Validate the `certificate-chain` using the following substeps. If any of them
+   fail, re-run {{signature-validity}} once over the signature with both the
+   `forceFetch` flag and the `allResponseHeaders` flag set, and restart from
+   step 2. If a substep fails again, return "invalid".
+   1. Use `certificate-chain` to validate that its first entry,
+      `main-certificate` is trusted as `authority`'s server certificate
+      ({{!RFC5280}} and other undocumented conventions). Let `path` be the path
+      that was used from the `main-certificate` to a trusted root, including the
+      `main-certificate` but excluding the root.
+   1. Validate that `main-certificate` has an `ocsp` property
+      ({{cert-chain-format}}) with a valid OCSP response whose lifetime
+      (`nextUpdate - thisUpdate`) is less than 7 days ({{!RFC6960}}). Note that
+      this does not check for revocation of intermediate certificates, and
+      clients SHOULD implement another mechanism for that.
+   1. Validate that `main-certificate` has an `sct` property
+      ({{cert-chain-format}}) containing valid SCTs from trusted logs.
+      ({{!RFC6962}})
+1. Return "valid".
+
 # HTTP/2 extension for cross-origin Server Push # {#cross-origin-push}
 
 To allow servers to Server-Push (Section 8.2 of {{?RFC7540}}) signed exchanges
@@ -893,42 +928,11 @@ error (Section 5.4.2 of {{!RFC7540}}) of type PROTOCOL_ERROR, as described in
 Section 8.2 of {{?RFC7540}}.
 
 Instead, the client MUST validate such a PUSH_PROMISE and its response by
-parsing the `Signature` header into a list of signatures according to the
-instructions in {{signature-validity}}, and searching that list for a valid
-signature using the algorithm in {{authority-chain-validation}}. If no valid
-signature is found, the client MUST treat the response as a stream error
+passing the exchange they represent to the algorithm in {{cross-origin-trust}}.
+If this returns "invalid", the client MUST treat the response as a stream error
 (Section 5.4.2 of {{!RFC7540}}) of type NO_TRUSTED_EXCHANGE_SIGNATURE.
 Otherwise, the client MUST treat the pushed response as if the server were
 authoritative for the PUSH_PROMISE's authority.
-
-### Validating a certificate chain for an authority ### {#authority-chain-validation}
-
-1. If the signature's ["validityUrl" parameter](#signature-validityurl) is not
-   [same-origin](https://html.spec.whatwg.org/multipage/origin.html#same-origin)
-   with the exchange's effective request URI (Section 5.5 of {{!RFC7230}}),
-   return "invalid".
-1. Run {{signature-validity}} over the signature with the `allResponseHeaders`
-   flag set, getting `exchange` and `certificate-chain` back. If this returned
-   "invalid" or didn't return a certificate chain, return "invalid".
-1. Let `authority` be the host component of `exchange`'s effective request URI.
-1. Validate the `certificate-chain` using the following substeps. If any of them
-   fail, re-run {{signature-validity}} once over the signature with both the
-   `forceFetch` flag and the `allResponseHeaders` flag set, and restart from
-   step 2. If a substep fails again, return "invalid".
-   1. Use `certificate-chain` to validate that its first entry,
-      `main-certificate` is trusted as `authority`'s server certificate
-      ({{!RFC5280}} and other undocumented conventions). Let `path` be the path
-      that was used from the `main-certificate` to a trusted root, including the
-      `main-certificate` but excluding the root.
-   1. Validate that `main-certificate` has an `ocsp` property
-      ({{cert-chain-format}}) with a valid OCSP response whose lifetime
-      (`nextUpdate - thisUpdate`) is less than 7 days ({{!RFC6960}}). Note that
-      this does not check for revocation of intermediate certificates, and
-      clients SHOULD implement another mechanism for that.
-   1. Validate that `main-certificate` has an `sct` property
-      ({{cert-chain-format}}) containing valid SCTs from trusted logs.
-      ({{!RFC6962}})
-1. Return "valid".
 
 ### Open Questions ### {#oq-cross-origin-push}
 
@@ -1112,9 +1116,9 @@ Sleevi's recommendation.
 Clients MUST NOT trust an effective request URI claimed by an
 `application/http-exchange+cbor` resource ({{application-http-exchange}})
 without either ensuring the resource was transferred from a server that was
-authoritative (Section 9.1 of {{!RFC7230}}) for that URI's origin, or validating
-the resource's signature using a procedure like the one described in
-{{authority-chain-validation}}.
+authoritative (Section 9.1 of {{!RFC7230}}) for that URI's origin, or passing
+the exchange stored in the resource to the procedure in {{cross-origin-trust}},
+and getting "valid" back.
 
 # Privacy considerations
 
