@@ -177,7 +177,6 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 	if err := e.encodeRequestWithHeaders(enc); err != nil {
 		return err
 	}
-	// FIXME: Support "request payload"
 	if err := e.encodeResponseHeaders(enc, false); err != nil {
 		return err
 	}
