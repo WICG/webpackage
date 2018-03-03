@@ -41,6 +41,34 @@ normative:
     date: 2016
 
 informative:
+  DROWN:
+    target: https://drownattack.com/
+    title: The DROWN Attack
+    author:
+      - name: Nimrod Aviram
+      - name: Sebastian Schinzel
+      - name: Juraj Somorovsky
+      - name: Nadia Heninger
+      - name: Maik Dankel
+      - name: Jens Steube
+      - name: Luke Valenta
+      - name: David Adrian
+      - name: J. Alex Halderman
+      - name: Viktor Dukhovni
+      - name: Emilia Käsper
+      - name: Shaanan Cohney
+      - name: Susanne Engels
+      - name: Christof Paar
+      - name: Yuval Shavitt
+    date: 2016
+  ROBOT:
+    target: https://robotattack.org/
+    title: The ROBOT Attack
+    author:
+      - name: Hanno Böck
+      - name: Juraj Somorovsky
+      - name: Craig Young
+    date: 2017
   SRI: W3C.REC-SRI-20160623
 
 --- abstract
@@ -484,10 +512,7 @@ to retrieve an updated OCSP from the original server.
 1. If `expires` is more than 7 days (604800 seconds) after `date`, return
    "invalid".
 1. If the current time is before `date` or after `expires`, return "invalid".
-1. Let `message` be the concatenation of the following byte strings. This
-   matches the {{?I-D.ietf-tls-tls13}} format to avoid cross-protocol attacks
-   when TLS certificates are used to sign manifests.
-   1. A string that consists of octet 32 (0x20) repeated 64 times.
+1. Let `message` be the concatenation of the following byte strings:
    1. A context string: the ASCII encoding of “HTTP Exchange”.
    1. A single 0 byte which serves as a separator.
    1. The bytes of the canonical CBOR serialization ({{canonical-cbor}}) of a
@@ -528,8 +553,8 @@ valid.
 
 ### Open Questions ### {#oq-signature-validity}
 
-Should we ban RSA keys to avoid their vulnerability to Bleichenbacher attacks?
-Or just keys using the rsaEncryption OID?
+Should the signed message use the TLS format (with an initial 64 spaces) even
+though these certificates can't be used in TLS servers?
 
 ## Updating signature validity ## {#updating-validity}
 
@@ -814,6 +839,8 @@ returns "valid", return "valid". Otherwise, return "invalid".
       ({{!RFC5280}} and other undocumented conventions). Let `path` be the path
       that was used from the `main-certificate` to a trusted root, including the
       `main-certificate` but excluding the root.
+   1. Validate that `main-certificate` has the CanSignHttpExchanges extension
+      ({{cross-origin-cert-req}}).
    1. Validate that `main-certificate` has an `ocsp` property
       ({{cert-chain-format}}) with a valid OCSP response whose lifetime
       (`nextUpdate - thisUpdate`) is less than 7 days ({{!RFC6960}}). Note that
@@ -854,6 +881,36 @@ These include but are not limited to:
 * `Set-Cookie2`, {{?RFC2965}}
 * `SetProfile`, {{?W3C.NOTE-OPS-OverHTTP}}
 * `WWW-Authenticate`, {{?RFC7235}}
+
+## Certificate Requirements {#cross-origin-cert-req}
+
+We define a new X.509 extension, CanSignHttpExchanges to be used in the
+certificate when the certificate permits the usage of signed exchanges.  When
+this extension is not present the client MUST NOT accept a signature from the
+certificate as proof that a signed exchange is authoritative for a domain
+covered by the certificate. When it is present, the client MUST follow the
+validation procedure in {{cross-origin-trust}}.
+
+~~~asn.1
+   id-ce-canSignHttpExchanges OBJECT IDENTIFIER ::= { TBD }
+
+   CanSignHttpExchanges ::= BIT STRING { allowed (0) }
+~~~
+
+Leaf certificates without this extension need to be revoked if the private key
+is exposed to an unauthorized entity, but they generally don't need to be
+revoked if a signing oracle is exposed and then removed.
+
+CA certificates, by contrast, need to be revoked if an unauthorized entity is
+able to make even one unauthorized signature.
+
+Certificates with this extension MUST be revoked if an unauthorized entity is
+able to make even one unauthorized signature.
+
+Conforming CAs MUST mark this extension as critical, and clients MUST NOT accept
+certificates with this extension in TLS connections (Section 4.4.2.2 of
+{{!I-D.ietf-tls-tls13}}).  This prevents accidental signing oracles exposed by
+TLS servers from allowing package signing (e.g. {{DROWN}} and {{ROBOT}}).
 
 # Transferring a signed exchange {#transfer}
 
@@ -1174,7 +1231,7 @@ same-origin requirement).
 
 An attacker with temporary access to a signing oracle can sign "still valid"
 assertions with arbitrary timestamps and expiration times. As a result, when a
-signing oracle is removed, the keys it provided access to SHOULD be revoked so
+signing oracle is removed, the keys it provided access to MUST be revoked so
 that, even if the attacker used them to sign future-dated exchange validity
 assertions, the key's OCSP assertion will expire, causing the exchange as a
 whole to become untrusted.
@@ -1497,22 +1554,18 @@ If we re-use existing TLS server certificates, we incur the risks that:
 2. A server using an origin-trusted key for one purpose (e.g. TLS) might
    accidentally sign something that looks like an exchange, or vice versa.
 
-If these risks are too high, we could define a new Extended Key Usage (Section
-4.2.1.12 of {{?RFC5280}}) that requires CAs to issue new keys for this purpose
-or a new certificate extension to do the same. A new EKU would probably require
-CAs to also issue new intermediate certificates because of how browsers trust
-EKUs. Both an EKU and a new extension take a long time to deploy and allow CAs
-to charge exchange-signers more than normal server operators, which will reduce
-adoption.
-
-The rest of this document assumes we can re-use existing TLS server
-certificates.
+These risks are considered too high, so we define a new X.509 certificate
+extension in {{cross-origin-cert-req}} that requires CAs to issue new
+certificates for this purpose. We expect at least one low-cost CA to be willing
+to sign certificates with this extension.
 
 ### Signature constraints
 
 In order to prevent an attacker who can convince the server to sign some
-resource from causing those signed bytes to be interpreted as something else,
-signatures here need to:
+resource from causing those signed bytes to be interpreted as something else the
+new X.509 extension here is forbidden from being used in TLS servers. If
+{{cross-origin-cert-req}} changes to allow re-use in TLS servers, we would need
+to:
 
 1. Avoid key types that are used for non-TLS protocols whose output could be
    confused with a signature. That may be just the `rsaEncryption` OID from
@@ -1755,6 +1808,7 @@ draft-03
   format should ignore them, and apparently TLS implementations don't expose
   their message parsers enough to allow passing a message to a certificate
   verifier.
+* Require an X.509 extension for the signing certificate.
 
 draft-02
 
