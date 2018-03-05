@@ -210,7 +210,7 @@ Other requirements are similar to those from
 
 Some users may want to grant certain permissions only to applications that have
 been reviewed for security by a trusted third party. These third parties could
-provide guarantees similar to those provided by the iOS, Android, or ChromeOS
+provide guarantees similar to those provided by the iOS, Android, or Chrome OS
 app stores, which might allow browsers to offer more powerful capabilities than
 have been deemed safe for unaudited websites.
 
