@@ -84,19 +84,25 @@ including a Service Worker from origin `O`, and transmit it to their peer Bailey
 and then Bailey can install the Service Worker with a proof that it came from `O`.
 This saves Bailey the bandwidth costs of transferring the website.
 
-Associated requirements:
+There are roughly two ways to accomplish this:
 
-* {{urls}}{:format="title"}: Resources on the web are addressed by URL.
-* {{request-headers}}{:format="title"}: If Bailey's running a different browser
-  from Alex or has a different language configured, the `accept*` headers are
-  important for selecting which resource to use at each URL.
-* {{response-headers}}{:format="title"}: The meaning of a resource is heavily
-  influenced by its HTTP response headers.
+1. Package just the Service Worker Javascript and any other Javascript that it
+   [importScripts()](https://w3c.github.io/ServiceWorker/#importscripts), with
+   their URLs and enough metadata to synthesize a
+   [navigator.serviceWorker.register(scriptURL, options)
+   call](https://w3c.github.io/ServiceWorker/#navigator-service-worker-register),
+   along with an uninterpreted but signature-checked blob of data that the
+   Service Worker can interpret to fill in its caches.
+1. Package the resources so that the Service Worker can fetch() them to populate
+   its cache.
+
+Associated requirements for just the Service Worker:
+
+* {{urls}}{:format="title"}: The `register()` and `importScripts()` calls have
+  semantics that depend on the URL.
 * {{signing}}{:format="title"}: To prove that the file came from `O`.
 * {{existing-certs}}{:format="title"}: So `O` doesn't have to spend lots of
   money buying a specialized certificate.
-* {{multiple-origins}}{:format="title"}: So the site can
-  be [built from multiple components](#libraries).
 * {{crypto-agility}}{:format="title"}: Today's algorithms will eventually be
   obsolete and will need to be replaced.
 * {{revocation}}{:format="title"}: `O`'s certificate might be compromised or
@@ -105,6 +111,19 @@ Associated requirements:
 * {{no-downgrades}}{:format="title"}: `O`'s site might have an XSS
   vulnerability, and attackers with an old signed package shouldn't be able to
   take advantage of the XSS forever.
+* {{metadata}}{:format="title"}: Just enough to generate the `register()` call,
+  which is less than a full W3C Application Manifest.
+
+Additional associated requirements for packaged resources:
+
+* {{urls}}{:format="title"}: Resources on the web are addressed by URL.
+* {{request-headers}}{:format="title"}: If Bailey's running a different browser
+  from Alex or has a different language configured, the `accept*` headers are
+  important for selecting which resource to use at each URL.
+* {{response-headers}}{:format="title"}: The meaning of a resource is heavily
+  influenced by its HTTP response headers.
+* {{multiple-origins}}{:format="title"}: So the site can
+  be [built from multiple components](#libraries).
 * {{metadata}}{:format="title"}: The browser needs to know which resource within
   a package file to treat as its Service Worker and/or initial HTML page.
 
@@ -132,6 +151,10 @@ origin, save it to transferrable storage (e.g. an SD card), and hand it to their
 peer Bailey. Then Bailey can browse the website with a proof that it came from
 `O`. Bailey may not have the storage space to copy the website before browsing
 it.
+
+This use case is harder for publishers to support if we specialize
+{{offline-installation}} for Service Workers since it requires the publisher to
+adopt Service Workers before they can sign their site.
 
 Associated requirements beyond {{offline-installation}}{:format="title"}:
 
