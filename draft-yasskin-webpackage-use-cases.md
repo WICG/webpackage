@@ -229,6 +229,34 @@ Other requirements are similar to those from
   compromised or mis-issued, and an attacker shouldn't then get an infinite
   ability to mint packages.
 
+### Avoiding Censorship {#anti-censorship}
+
+Some users want to retrieve resources that their governments or network
+providers don't want them to see. Right now, it's straightforward for someone in
+a privileged network position to block access to particular hosts, but TLS makes
+it difficult to block access to particular resources on those hosts.
+
+Today it's straightforward to retrieve blocked content from a third party, but
+there's no guarantee that the third-party has sent the user an accurate
+representation of the content: the user has to trust the third party.
+
+With signed web packages, the user can re-gain assurance that the content is
+authentic, while still bypassing the censorship. Packages don't do anything to
+help discover this content.
+
+Systems that make censorship more difficult can also make legitimate content
+filtering more difficult. Because the client that processes a web package always
+knows the true URL, this forces content filtering to happen on the client
+instead of on the network.
+
+Associated requirements:
+
+* {{urls}}{:format="title"}: So the user can see that they're getting the
+  content they expected.
+* {{signing}}{:format="title"}: So that readers can be sure their copy is
+  authentic and so that copying the package preserves the URLs of the content
+  inside it.
+
 ### Third-party security review {#security-review}
 
 Some users may want to grant certain permissions only to applications that have
