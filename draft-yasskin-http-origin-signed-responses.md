@@ -415,8 +415,8 @@ signatures. Otherwise, each member of this list represents a signature with
 parameters.
 
 The client MUST use the following algorithm to determine whether each signature
-with parameters is invalid or potentially-valid. Potentially-valid results
-include:
+with parameters is invalid or potentially-valid for an `exchange`.
+Potentially-valid results include:
 
 * The signed headers of the exchange so that higher-level protocols can avoid
   relying on unsigned headers, and
@@ -429,7 +429,6 @@ actually invalid due to an expired OCSP response MAY retry with `forceFetch` set
 to retrieve an updated OCSP from the original server.
 {:#force-fetch}
 
-1. Let `exchange` be the signature's exchange.
 1. Let `payload` be the payload body (Section 3.3 of {{!RFC7230}}) of
    `exchange`. Note that the payload body is the message body with any transfer
    encodings removed.
@@ -787,19 +786,20 @@ Do I have the right structure for the labels indicating feature support?
 
 # Cross-origin trust {#cross-origin-trust}
 
-To determine whether to trust a cross-origin exchange, the client MUST parse the
-`Signature` header into a list of signatures according to the instructions in
-{{signature-validity}}, and run the following algorithm for each signature,
-stopping at the first one that returns "valid". If any signature returns
-"valid", return "valid". Otherwise, return "invalid".
+To determine whether to trust a cross-origin exchange, the client takes a
+`Signature` header field ({{signature-header}}) and the `exchange`. The client
+MUST parse the `Signature` header into a list of signatures according to the
+instructions in {{signature-validity}}, and run the following algorithm for each
+signature, stopping at the first one that returns "valid". If any signature
+returns "valid", return "valid". Otherwise, return "invalid".
 
 1. If the signature's ["validityUrl" parameter](#signature-validityurl) is not
    [same-origin](https://html.spec.whatwg.org/multipage/origin.html#same-origin)
-   with the exchange's effective request URI (Section 5.5 of {{!RFC7230}}),
-   return "invalid".
-1. Run {{signature-validity}} over the signature, getting `certificate-chain`
-   back. If this returned "invalid" or didn't return a certificate chain, return
+   with `exchange`'s effective request URI (Section 5.5 of {{!RFC7230}}), return
    "invalid".
+1. Use {{signature-validity}} to determine the signature's validity for
+   `exchange`, getting `certificate-chain` back. If this returned "invalid" or
+   didn't return a certificate chain, return "invalid".
 1. Let `authority` be the host component of `exchange`'s effective request URI.
 1. Validate the `certificate-chain` using the following substeps. If any of them
    fail, re-run {{signature-validity}} once over the signature with the
@@ -941,12 +941,14 @@ NOT treat a PUSH_PROMISE for which the server is not authoritative as a stream
 error (Section 5.4.2 of {{!RFC7540}}) of type PROTOCOL_ERROR, as described in
 Section 8.2 of {{?RFC7540}}.
 
-Instead, the client MUST validate such a PUSH_PROMISE and its response by
-passing the exchange they represent to the algorithm in {{cross-origin-trust}}.
-If this returns "invalid", the client MUST treat the response as a stream error
-(Section 5.4.2 of {{!RFC7540}}) of type NO_TRUSTED_EXCHANGE_SIGNATURE.
-Otherwise, the client MUST treat the pushed response as if the server were
-authoritative for the PUSH_PROMISE's authority.
+Instead, the client MUST validate such a PUSH_PROMISE and its response by taking
+the `Signature` header field from the response, and the exchange consisting of
+the PUSH_PROMISE and the response without that `Signature` header field, and
+passing them to the algorithm in {{cross-origin-trust}}. If this returns
+"invalid", the client MUST treat the response as a stream error (Section 5.4.2
+of {{!RFC7540}}) of type NO_TRUSTED_EXCHANGE_SIGNATURE. Otherwise, the client
+MUST treat the pushed response as if the server were authoritative for the
+PUSH_PROMISE's authority.
 
 #### Open Questions ### {#oq-cross-origin-push}
 
@@ -1131,8 +1133,9 @@ Clients MUST NOT trust an effective request URI claimed by an
 `application/http-exchange+cbor` resource ({{application-http-exchange}})
 without either ensuring the resource was transferred from a server that was
 authoritative (Section 9.1 of {{!RFC7230}}) for that URI's origin, or passing
-the exchange stored in the resource to the procedure in {{cross-origin-trust}},
-and getting "valid" back.
+the `Signature` response header field from the exchange stored in the resource,
+and that exchange without its `Signature` response header field, to the
+procedure in {{cross-origin-trust}}, and getting "valid" back.
 
 # Privacy considerations
 
