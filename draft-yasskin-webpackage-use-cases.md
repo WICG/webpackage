@@ -272,7 +272,7 @@ received.
 
 Associated requirements:
 
-* {{cross-signatures}}{:format="title"}
+* {{additional-signatures}}{:format="title"}
 
 ### Building packages from multiple libraries {#libraries}
 
@@ -545,7 +545,7 @@ The browser can load a package as it downloads.
 
 This conflicts with ZIP, since ZIP's index is at the end.
 
-### Cross-signatures {#cross-signatures}
+### Additional signatures {#additional-signatures}
 
 Third-parties can vouch for packages by signing them.
 
