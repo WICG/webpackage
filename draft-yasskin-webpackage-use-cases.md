@@ -17,6 +17,12 @@ author:
     email: jyasskin@chromium.org
 
 informative:
+  ISO28500:
+    date: 2017
+    target: "https://www.iso.org/standard/68004.html"
+    title: "WARC file format"
+    seriesinfo:
+      ISO: "28500:2017"
   JAR:
     date: 2014
     target: "https://docs.oracle.com/javase/7/docs/technotes/guides/jar/jar.html"
@@ -374,6 +380,30 @@ Associated requirements:
 * {{unsigned-content}}{:format="title"}: Signing same-origin content wastes
   space.
 
+### Archival {#archival}
+
+Existing formats like WARC ({{ISO28500}}) do a good job of accurately
+representing the state of a web server at a particular time, but a browser can't
+currently use them to give a person the experience of that website at the time
+it was archived. It's not obvious to the author of this draft that a new
+packaging format is likely to improve on WARC, compared to, for example,
+implementing support for WARC in browsers, but folks who know about archiving
+seem interested, e.g.:
+<https://twitter.com/anjacks0n/status/950861384266416134>.
+
+Because of the time scales involved in archival, any signatures from the
+original host would likely not be trusted anymore by the time the archive is
+viewed, so implementations would need to sandbox the content instead of running
+it on the original origin.
+
+Associated requirements:
+
+* {{urls}}{:format="title"}
+* {{response-headers}}{:format="title"}: To accurately record the server's
+  response.
+* {{unsigned-content}}{:format="title"}: To deal with expired signatures.
+* {{timeshifting}}{:format="title"}
+
 # Requirements {#requirements}
 
 ## Essential {#essential-reqs}
@@ -554,6 +584,13 @@ The package's length in bytes appears a fixed offset from the end of
 the package.
 
 This conflicts with {{MHTML}}.
+
+### Time-shifting execution {#timeshifting}
+
+In some unsigned packages, Javascript time-telling functions should return the
+timestamp of the package, rather than the true current time.
+
+We should explore if this has security implications.
 
 # Non-goals
 
