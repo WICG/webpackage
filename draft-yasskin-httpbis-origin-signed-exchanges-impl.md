@@ -311,37 +311,19 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 
 ## Loading a certificate chain ## {#cert-chain-format}
 
-TODO: Pull the TLS 1.3 Message format.
-
 The resource at a signature's `certUrl` MUST have the
-`application/cert-chain+cbor` content type, MUST be canonically-encoded CBOR
-({{canonical-cbor}}), and MUST match the following CDDL:
+`application/tls-cert-chain` content type and MUST contain a TLS 1.3 Certificate
+message (Section 4.4.2 of {{!I-D.ietf-tls-tls13}}) containing X.509v3
+certificates.
 
-~~~cddl
-cert-chain = [
-  "📜⛓", ; U+1F4DC U+26D3
-  + {
-    cert: bytes,
-    ? ocsp: bytes,
-    ? sct: bytes,
-    * tstr => any,
-  }
-]
-~~~
+Parsing notes:
+1. This resource MUST NOT include the 4-byte header that would appear in a
+   Handshake message.
+1. Since this fetch is not in response to a CertificateRequest, the
+   certificate_request_context MUST be empty, and a non-empty value MUST cause
+   the parse to fail.
 
-The first item in the CBOR array is treated as the end-entity certificate, and
-the client will attempt to build a path ({{?RFC5280}}) to it from a trusted root
-using the other certificates in the chain.
-
-1. Each `cert` value MUST be a DER-encoded X.509v3 certificate ({{!RFC5280}}).
-   Other key/value pairs in the same array item define properties of this
-   certificate.
-1. The first certificate's `ocsp` value if any MUST be a complete, DER-encoded
-   OCSP response for that certificate (using the ASN.1 type `OCSPResponse`
-   defined in {{!RFC2560}}). Subsequent certificates MUST NOT have an `ocsp`
-   value.
-1. Each certificate's `sct` value MUST be a `SignedCertificateTimestampList` for
-   that certificate as defined by Section 3.3 of {{!RFC6962}}.
+The client MUST ignore unknown or unexpected extensions.
 
 Loading a `certUrl` takes a `forceFetch` flag. The client MUST:
 
@@ -350,7 +332,8 @@ Loading a `certUrl` takes a `forceFetch` flag. The client MUST:
    normal HTTP semantics {{!RFC7234}}. If this fetch fails, return
    "invalid".
 1. Let `certificate-chain` be the array of certificates and properties produced
-   by parsing `raw-chain` using the CDDL above. If any of the requirements above
+   by parsing `raw-chain` as the TLS Certificate message as described above. If
+   any of the requirements above
    aren't satisfied, return "invalid". Note that this validation requirement
    might be impractical to completely achieve due to certificate validation
    implementations that don't enforce DER encoding or other standard
@@ -885,12 +868,56 @@ HTTP without TLS.
 
 # IANA considerations
 
-All IANA registrations are handled by
-{{?I-D.yasskin-http-origin-signed-responses}}. This depends on the subset of:
+This depends on the following IANA registrations in
+{{?I-D.yasskin-http-origin-signed-responses}}:
 
 * The `Signature` header field
 * application/signed-exchange;v=0
-* application/cert-chain+cbor
+
+This document also registers:
+
+## Internet Media Type application/tls-cert-chain
+
+Type name:  application
+
+Subtype name:  tls-cert-chain
+
+Required parameters:  N/A
+
+Optional parameters:  N/A
+
+Encoding considerations:  binary
+
+Security considerations:  N/A
+
+Interoperability considerations:  N/A
+
+Published specification:  This specification (see {{cert-chain-format}}).
+
+Applications that use this media type:  N/A
+
+Fragment identifier considerations:  N/A
+
+Additional information:
+
+  Deprecated alias names for this type:  N/A
+
+  Magic number(s): N/A
+
+  File extension(s): N/A
+
+  Macintosh file type code(s):  N/A
+
+Person and email address to contact for further information: See Authors'
+  Addresses section.
+
+Intended usage:  COMMON
+
+Restrictions on usage:  N/A
+
+Author:  See Authors' Addresses section.
+
+Change controller:  IESG
 
 --- back
 
