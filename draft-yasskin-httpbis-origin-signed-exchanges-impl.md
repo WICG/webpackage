@@ -43,37 +43,6 @@ normative:
       value: 1003.1-2008, 2016 Edition
     date: 2016
 
-informative:
-  DROWN:
-    target: https://drownattack.com/
-    title: The DROWN Attack
-    author:
-      - name: Nimrod Aviram
-      - name: Sebastian Schinzel
-      - name: Juraj Somorovsky
-      - name: Nadia Heninger
-      - name: Maik Dankel
-      - name: Jens Steube
-      - name: Luke Valenta
-      - name: David Adrian
-      - name: J. Alex Halderman
-      - name: Viktor Dukhovni
-      - name: Emilia Käsper
-      - name: Shaanan Cohney
-      - name: Susanne Engels
-      - name: Christof Paar
-      - name: Yuval Shavitt
-    date: 2016
-  ROBOT:
-    target: https://robotattack.org/
-    title: The ROBOT Attack
-    author:
-      - name: Hanno Böck
-      - name: Juraj Somorovsky
-      - name: Craig Young
-    date: 2017
-  SRI: W3C.REC-SRI-20160623
-
 --- abstract
 
 This document describes checkpoints of
@@ -819,5 +788,20 @@ draft-00
 Vs. {{?I-D.yasskin-http-origin-signed-responses}}:
 
 * Removed non-normative sections.
+* Only 1 signature is supported.
+* Only 2048-bit RSA keys are supported.
+* The certificate chain resource uses the TLS 1.3 Certificate message format
+  rather than a CBOR-based format.
+* OCSP responses and SCTs are not checked.
+* Certificates without the CanSignHttpExchanges extension are allowed.
+* The signature string starts with 64 0x20 octets like the TLS 1.3 signature
+  format.
+* The application/http-exchange+cbor format is replaced with a more specialized
+  application/signed-exchange format.
+* Signed exchanges can only be transmitted using the application/signed-exchange
+  format, not HTTP/2 Push or plain HTTP request/response pairs.
+* Only the MI payload-integrity header is supported.
+* The mi-sha256 encoding must have records <= 16kB.
+* The Accept-Signature header isn't used.
 
 # Acknowledgements
