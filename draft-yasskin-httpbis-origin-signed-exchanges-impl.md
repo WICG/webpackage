@@ -382,12 +382,8 @@ Potentially-valid results include:
   determine whether it's actually valid.
 
 This algorithm accepts a `forceFetch` flag that avoids the cache when fetching
-URLs. A client that determines that a potentially-valid certificate chain is
-actually invalid due to an expired OCSP response MAY retry with `forceFetch` set
-to retrieve an updated OCSP from the original server.
+URLs.
 {:#force-fetch}
-
-TODO: Remove OCSP and SCT requirements.
 
 1. Let `payload` be the payload body (Section 3.3 of {{!RFC7230}}) of
    `exchange`. Note that the payload body is the message body with any transfer
@@ -456,7 +452,9 @@ TODO: Remove OCSP and SCT requirements.
    Note that this intentionally differs from TLS 1.3, which signs the entire
    certificate chain in its Certificate Verify (Section 4.4.3 of
    {{?I-D.ietf-tls-tls13}}), in order to allow updating the stapled OCSP
-   response without updating signatures at the same time.
+   response without updating signatures at the same time. Note that this
+   difference doesn't matter for this version of this draft since OCSP responses
+   aren't checked.
 1. If `signature` is a valid signature of `message` by `publicKey` using
    `signing-alg`, return "potentially-valid" with `certificate-chain`.
    Otherwise, return "invalid".
@@ -481,13 +479,9 @@ though these certificates can't be used in TLS servers?
 
 ## Updating signature validity ## {#updating-validity}
 
-Both OCSP responses and signatures are designed to expire a short
+Signatures are designed to expire a short
 time after they're signed, so that revoked certificates and signed exchanges
 with known vulnerabilities are distrusted promptly.
-
-This specification provides no way to update OCSP responses by themselves.
-Instead, [clients need to re-fetch the "certUrl"](#force-fetch) to get a chain
-including a newer OCSP response.
 
 The ["validityUrl" parameter](#signature-validityurl) of the signatures provides
 a way to fetch new signatures or learn where to fetch a complete updated
@@ -635,21 +629,12 @@ returns "valid", return "valid". Otherwise, return "invalid".
       ({{!RFC5280}} and other undocumented conventions). Let `path` be the path
       that was used from the `main-certificate` to a trusted root, including the
       `main-certificate` but excluding the root.
-   1. Validate that `main-certificate` has the CanSignHttpExchanges extension
-      ({{cross-origin-cert-req}}).
-   1. Validate that `main-certificate` has an `ocsp` property
-      ({{cert-chain-format}}) with a valid OCSP response whose lifetime
-      (`nextUpdate - thisUpdate`) is less than 7 days ({{!RFC6960}}). Note that
-      this does not check for revocation of intermediate certificates, and
-      clients SHOULD implement another mechanism for that.
-   1. Validate that `main-certificate` has an `sct` property
-      ({{cert-chain-format}}) containing valid SCTs from trusted logs.
-      ({{!RFC6962}})
 1. Return "valid".
 
 ## Stateful header fields {#stateful-headers}
 
-As described in {{seccons-over-signing}}, a publisher can cause problems if they
+As described in Section 6.1 of {{?I-D.yasskin-http-origin-signed-responses}}, a
+publisher can cause problems if they
 sign an exchange that includes private information. There's no way for a client
 to be sure an exchange does or does not include private information, but header
 fields that store or convey stored state in the client are a good sign.
@@ -738,108 +723,14 @@ of the integrity proofs fail validation, parsing MUST fail.
 
 # Security considerations
 
-## Over-signing ## {#seccons-over-signing}
+All of the security considerations from Section 6 of
+{{!I-D.yasskin-http-origin-signed-responses}} apply.
 
-If a publisher blindly signs all responses as their origin, they can cause at
-least two kinds of problems, described below. To avoid this, publishers SHOULD
-design their systems to opt particular public content that doesn't depend on
-authentication status into signatures instead of signing by default.
-
-Signing systems SHOULD also incorporate the following mitigations to reduce the
-risk that private responses are signed:
-
-1. Strip the `Cookie` request header field and other identifying information
-   like client authentication and TLS session IDs from requests whose exchange
-   is destined to be signed, before forwarding the request to a backend.
-1. Only sign exchanges where the response includes a `Cache-Control: public`
-   header. Clients are not required to fail signature-checking for exchanges
-   that omit this `Cache-Control` response header field to reduce the risk that
-   naïve signing systems blindly add it.
-
-### Session fixation ### {#seccons-session-fixation}
-
-Blind signing can sign responses that create session cookies or otherwise change
-state on the client to identify a particular session. This breaks certain kinds
-of CSRF defense and can allow an attacker to force a user into the attacker's
-account, where the user might unintentionally save private information, like
-credit card numbers or addresses.
-
-This specification defends against cookie-based attacks by blocking the
-`Set-Cookie` response header, but it cannot prevent Javascript or other response
-content from changing state.
-
-### Misleading content ### {#seccons-misleading-content}
-
-If a site signs private information, an attacker might set up their own account
-to show particular private information, forward that signed information to a
-victim, and use that victim's confusion in a more sophisticated attack.
-
-Stripping authentication information from requests before sending them to
-backends is likely to prevent the backend from showing attacker-specific
-information in the signed response. It does not prevent the attacker from
-showing their victim a signed-out page when the victim is actually signed in,
-but while this is still misleading, it seems less likely to be useful to the
-attacker.
-
-## Off-path attackers ## {#seccons-off-path}
-
-Relaxing the requirement to consult DNS when determining authority for an origin
-means that an attacker who possesses a valid certificate no longer needs to be
-on-path to redirect traffic to them; instead of modifying DNS, they need only
-convince the user to visit another Web site in order to serve responses signed
-as the target. This consideration and mitigations for it are shared by the
-combination of {{?I-D.ietf-httpbis-origin-frame}} and
-{{?I-D.ietf-httpbis-http2-secondary-certs}}.
-
-## Downgrades ## {#seccons-downgrades}
-
-Signing a bad response can affect more users than simply serving a bad response,
-since a served response will only affect users who make a request while the bad
-version is live, while an attacker can forward a signed response until its
-signature expires. Authors should consider shorter signature expiration times
-than they use for cache expiration times.
-
-The current implementation does not re-check the
-["validityUrl"](#signature-validityurl) to get a TLS guarantee that the exchange
-isn't out of date.
-
-## Signing oracles are permanent ## {#seccons-signing-oracles}
-
-An attacker with temporary access to a signing oracle can sign "still valid"
-assertions with arbitrary timestamps and expiration times. As a result, when a
-signing oracle is removed, the keys it provided access to MUST be revoked so
-that, even if the attacker used them to sign future-dated exchange validity
-assertions, the key's OCSP assertion will expire, causing the exchange as a
-whole to become untrusted.
-
-## Unsigned headers ## {#seccons-unsigned-headers}
-
-The use of a single `Signed-Headers` header field prevents us from signing
-aspects of the request other than its effective request URI (Section 5.5 of
-{{?RFC7230}}). For example, if an author signs both `Content-Encoding: br` and
-`Content-Encoding: gzip` variants of a response, what's the impact if an
-attacker serves the brotli one for a request with `Accept-Encoding: gzip`?
-
-The simple form of `Signed-Headers` also prevents us from signing less than the
-full request URL. The SRI use case may benefit from being able to
-leave the authority less constrained.
-
-{{signature-validity}} can succeed when some delivered headers aren't included
-in the signed set. This accommodates current TLS-terminating intermediates and
-may be useful for SRI, but is risky for trusting cross-origin
-responses. {{cross-origin-push}} requires all headers to be
-included in the signature before trusting cross-origin pushed resources, at Ryan
-Sleevi's recommendation.
-
-## application/signed-exchange ## {#security-application-signed-exchange}
-
-Clients MUST NOT trust an effective request URI claimed by an
-`application/signed-exchange` resource ({{application-signed-exchange}})
-without either ensuring the resource was transferred from a server that was
-authoritative (Section 9.1 of {{!RFC7230}}) for that URI's origin, or passing
-the `Signature` response header field from the exchange stored in the resource,
-and that exchange without its `Signature` response header field, to the
-procedure in {{cross-origin-trust}}, and getting "valid" back.
+In addition, because this draft does not check for certificate revocation and
+allows signatures from certificates that can be used in normal TLS servers with
+no defense against future-dated signatures, clients MUST NOT trust signed
+exchanges as authoritative for their claimed origin without some explicit opt-in
+by their user.
 
 # Privacy considerations
 
