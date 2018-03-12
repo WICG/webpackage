@@ -11,3 +11,4 @@ venv/
 issues.json
 pulls.json
 draft-yasskin-dispatch-web-packaging.xml
+/lib
