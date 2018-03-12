@@ -99,14 +99,14 @@ func run() error {
 
 	reqHeader := http.Header{}
 	for _, h := range flagRequestHeader {
-		chunks := strings.Split(h, ":")
+		chunks := strings.SplitN(h, ":", 2)
 		reqHeader.Add(chunks[0], chunks[1])
 	}
 
 	resHeader := http.Header{}
 	resHeader.Add("content-type", "text/html; charset=utf-8")
 	for _, h := range flagResponseHeader {
-		chunks := strings.Split(h, ":")
+		chunks := strings.SplitN(h, ":", 2)
 		resHeader.Add(chunks[0], chunks[1])
 	}
 	e, err := signedexchange.NewExchange(parsedUrl, reqHeader, *flagResponseStatus, resHeader, payload, *flagMIRecordSize)
