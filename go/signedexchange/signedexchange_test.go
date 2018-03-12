@@ -171,7 +171,6 @@ func TestSignedExchange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e.AddSignedHeadersHeader()
 
 	now := time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
 	certs, err := ParseCertificates([]byte(pemCerts))

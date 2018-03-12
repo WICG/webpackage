@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -50,24 +49,6 @@ func (e *Exchange) miEncode(payload []byte, recordSize int) error {
 	e.responseHeaders.Add("Content-Encoding", "mi-sha256")
 	e.responseHeaders.Add("MI", mi)
 	return nil
-}
-
-// AddSignedHeadersHeader adds 'signed-headers' header to the response.
-//
-// Signed-Headers is a Structured Header as defined by
-// [I-D.ietf-httpbis-header-structure]. Its value MUST be a list (Section 4.8
-// of [I-D.ietf-httpbis-header-structure]) of lowercase strings (Section 4.2 of
-// [I-D.ietf-httpbis-header-structure]) naming HTTP response header fields.
-// Pseudo-header field names (Section 8.1.2.1 of [RFC7540]) MUST NOT appear in
-// this list.
-func (e *Exchange) AddSignedHeadersHeader() {
-	strs := []string{}
-	for k, _ := range e.responseHeaders {
-		strs = append(strs, fmt.Sprintf(`"%s"`, strings.ToLower(k)))
-	}
-	sort.Strings(strs)
-	s := strings.Join(strs, ", ")
-	e.responseHeaders.Add("signed-headers", s)
 }
 
 func (e *Exchange) AddSignatureHeader(s *Signer) error {
