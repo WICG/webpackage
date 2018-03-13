@@ -60,17 +60,6 @@ func (e *Exchange) AddSignatureHeader(s *Signer) error {
 	return nil
 }
 
-func (e *Exchange) parseSignedHeadersHeader() []string {
-	unparsed := e.responseHeaders.Get("signed-headers")
-
-	rawks := strings.Split(unparsed, ",")
-	ks := make([]string, 0, len(rawks))
-	for _, k := range rawks {
-		ks = append(ks, strings.Trim(k, "\" "))
-	}
-	return ks
-}
-
 func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder) []*cbor.MapEntryEncoder {
 	return []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
@@ -101,17 +90,7 @@ func (e *Exchange) encodeRequestWithHeaders(enc *cbor.Encoder) error {
 	return enc.EncodeMap(mes)
 }
 
-func (e *Exchange) encodeResponseHeaders(enc *cbor.Encoder, onlySignedHeaders bool) error {
-	// Only encode response headers which are specified in "signed-headers" header.
-	var m map[string]struct{}
-	if onlySignedHeaders {
-		m = map[string]struct{}{}
-		ks := e.parseSignedHeadersHeader()
-		for _, k := range ks {
-			m[k] = struct{}{}
-		}
-	}
-
+func (e *Exchange) encodeResponseHeaders(enc *cbor.Encoder) error {
 	mes := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString([]byte(":status"))
@@ -119,11 +98,6 @@ func (e *Exchange) encodeResponseHeaders(enc *cbor.Encoder, onlySignedHeaders bo
 		}),
 	}
 	for name, value := range e.responseHeaders {
-		if onlySignedHeaders {
-			if _, ok := m[strings.ToLower(name)]; !ok {
-				continue
-			}
-		}
 		mes = append(mes,
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeByteString([]byte(strings.ToLower(name)))
@@ -141,7 +115,7 @@ func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
 	if err := e.encodeRequest(enc); err != nil {
 		return err
 	}
-	if err := e.encodeResponseHeaders(enc, true); err != nil {
+	if err := e.encodeResponseHeaders(enc); err != nil {
 		return err
 	}
 	return nil
@@ -171,7 +145,7 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 		return err
 	}
 
-	if err := e.encodeResponseHeaders(enc, false); err != nil {
+	if err := e.encodeResponseHeaders(enc); err != nil {
 		return err
 	}
 
