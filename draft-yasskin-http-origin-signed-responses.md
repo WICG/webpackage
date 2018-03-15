@@ -1054,112 +1054,81 @@ This allows the mitigation against downgrades in {{seccons-downgrades}}, but
 prohibits intermediates from providing a cache of the validity information. We
 could do both with a list of URLs.
 
-## application/http-exchange+cbor format for HTTP/1 compatibility # {#application-http-exchange}
+## application/signed-exchange format # {#application-signed-exchange}
 
-To allow servers to serve cross-origin responses when either the client or the
-server hasn't implemented HTTP/2 Push (Section 8.2 of {{?RFC7540}}) support yet,
-we define a format that represents an HTTP exchange.
+To allow signed exchanges to be the targets of `<link rel=prefetch>` tags, we
+define the  `application/signed-exchange` content type that represents a signed
+HTTP exchange, including request metadata and header fields, response metadata
+and header fields, and a response payload.
 
-The `application/http-exchange+cbor` content type encodes an HTTP exchange,
-including request metadata and header fields, optionally a request body,
-response header fields and metadata, a payload body, and optionally trailer
-header fields.
+This content type consists of the concatenation of the following items:
 
-This content type consists of a canonically-serialized ({{canonical-cbor}}) CBOR
-array containing:
+1. The ASCII characters "sxg" followed by a 0 byte, to serve as a file
+   signature.
 
-1. The text string "htxg" to serve as a file signature, followed by
-1. Alternating member names encoded as text strings (Section 2.1 of
-   {{!RFC7049}}) and member values, with each value consisting of a single CBOR
-   item with a type and meaning determined by the member name.
+   Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC
+   MUST use this file signature, but implementations of drafts MUST NOT use it
+   and MUST use another implementation-specific string beginning with "sxg-" and
+   ending with a 0 byte instead.
+1. 3 bytes storing a big-endian integer `nonsignedLength`. If this is larger
+   than TBD, parsing MUST fail.
+1. `nonsignedLength` bytes holding the non-signed headers, a CBOR map containing
+   at least a key/value pair mapping the byte string 'signature' to a byte
+   string holding the `Signature` header field's value ({{signature-header}}).
+   If this CBOR item is not canonically serialized ({{canonical-cbor}}), parsing
+   MUST fail. Other key/value pairs MUST be ignored.
 
-This specification defines the following member names with their associated
-values:
+   Note: This is a map instead of just a byte string for future extensibility.
+1. 3 bytes storing a big-endian integer `headerLength`. If this is larger than
+   TBD, parsing MUST fail.
+1. `headerLength` bytes holding the signed headers, the canonical serialization
+   ({{canonical-cbor}}) of the CBOR representation of the request and response
+   headers of the exchange represented by the `application/signed-exchange`
+   resource ({{cbor-representation}}), excluding the `Signature` header field.
 
-"request"
+   Note that this is exactly the bytes used when checking signature validity in
+   {{signature-validity}}.
+1. The payload body (Section 3.3 of {{!RFC7230}}) of the exchange represented by
+   the `application/signed-exchange` resource.
 
-: A map from lowercase request header field names to their values, encoded as
-  byte strings ({{!RFC7049}}, section 2.1). The request header fields MUST
-  include two pseudo-header fields (Section 8.1.2.1 of {{!RFC7540}}):
+   Note that the use of the payload body here means that the `Transfer-Encoding`
+   header field has no effect.
 
-  * `':method'`: The method of the request (Section 4 of {{!RFC7231}}).
-  * `':url'`: The effective request URI of the request (Section 5.5 of
-    {{!RFC7230}}).
+### Cross-origin trust in application/signed-exchange {#co-trust-app-signed-exchange}
 
-"request payload"
+To determine whether to trust a cross-origin exchange stored in an
+`application/signed-exchange` resource, pass the `Signature` header field from
+the non-signed header section and an exchange consisting of the headers from the
+signed headers section and the payload body, to the algorithm in
+{{cross-origin-trust}}.
 
-: A byte string ({{!RFC7049}}, section 2.1) containing the request payload body
-  (Section 3.3 of {{!RFC7230}}).
+### Example ## {#example-application-signed-exchange}
 
-"response"
+An example `application/signed-exchange` file representing a possible signed
+exchange with <https://example.com/> follows, with lengths represented by
+descriptions in `<>`s, CBOR represented in the extended diagnostic format
+defined in Appendix G of {{?I-D.ietf-cbor-cddl}}, and most of the `Signature`
+header field and payload elided with a ...:
 
-: A map from lowercase response header field names to their values, encoded as
-  byte strings ({{!RFC7049}}, section 2.1). The response header fields MUST
-  include one pseudo-header field (Section 8.1.2.1 of {{!RFC7540}}):
-
-  * `':status'`: The response's 3-digit status code (Section 6 of
-    {{!RFC7231}}]).
-
-"payload"
-
-: A byte string ({{!RFC7049}}, section 2.1) containing the response payload body
-  (Section 3.3 of {{!RFC7230}}).
-
-"trailer"
-
-: A map of lowercase trailer header field names to their values, encoded as byte
-  strings (Section 2.1 of {{!RFC7049}}).
-
-A parser MAY return incremental information while parsing
-`application/http-exchange+cbor` content.
-
-Members "request", "response", and "payload" MUST be present. If one is missing,
-the parser MUST stop and report an error.
-
-The member names MUST appear in the order:
-
-1. "request"
-1. "request payload"
-1. "response"
-1. "payload"
-1. "trailer"
-
-If a member name is not a text string, appears out of order, or is followed by a
-value not matching its description above, the parser MUST stop and report an
-error.
-
-If the parser encounters an unknown member name, it MUST skip the following item
-and resume parsing at the next member name.
-
-### Example ## {#example-application-http-exchange}
-
-An example `application/http-exchange+cbor` file representing a possible
-exchange with <https://example.com/> follows, in the extended diagnostic format
-defined in Appendix G of {{?I-D.ietf-cbor-cddl}}:
-
-~~~cbor-diag
-[
-  "htxg",
-  "request",
+~~~
+sxg\0<3-byte length of the encoding of the following map>{
+  'signature': '...'
+}<3-byte length of the encoding of the following array>[
   {
     ':method': 'GET',
     ':url': 'https://example.com/',
     'accept', '*/*'
   },
-  "response",
   {
     ':status': '200',
     'content-type': 'text/html'
-  },
-  "payload",
-  '<!doctype html>\r\n<html>...'
-]
+  }
+]<!doctype html>\r\n<html>...
 ~~~
 
-### Open Questions ## {#oq-application-http-exchange}
+### Open Questions ## {#oq-application-signed-exchange}
 
-Should `application/http-exchange+cbor` support request payloads and trailers,
-or only the aspects needed for signed exchanges?
+Should this be a CBOR format, or is the current mix of binary and CBOR better?
 
 Are the mime type, extension, and magic number right?
 
@@ -1261,15 +1230,13 @@ responses ({{uc-pushed-subresources}}, {{uc-explicit-distributor}}, and
 included in the signature before trusting cross-origin pushed resources, at Ryan
 Sleevi's recommendation.
 
-## application/http-exchange+cbor ## {#security-application-http-exchange}
+## application/signed-exchange ## {#security-application-signed-exchange}
 
 Clients MUST NOT trust an effective request URI claimed by an
-`application/http-exchange+cbor` resource ({{application-http-exchange}})
-without either ensuring the resource was transferred from a server that was
-authoritative (Section 9.1 of {{!RFC7230}}) for that URI's origin, or passing
-the `Signature` response header field from the exchange stored in the resource,
-and that exchange without its `Signature` response header field, to the
-procedure in {{cross-origin-trust}}, and getting "valid" back.
+`application/signed-exchange` resource ({{application-signed-exchange}}) without
+either ensuring the resource was transferred from a server that was
+authoritative (Section 9.1 of {{!RFC7230}}) for that URI's origin, or calling
+the algorithm in {{co-trust-app-signed-exchange}} and getting "valid" back.
 
 # Privacy considerations
 
@@ -1342,24 +1309,35 @@ signed exchange.
 
 Specification: This document
 
-## Internet Media Type application/http-exchange+cbor
+## Internet Media Type application/signed-exchange
 
 Type name:  application
 
-Subtype name:  http-exchange+cbor
+Subtype name:  signed-exchange
 
-Required parameters:  N/A
+Required parameters:
+
+* v: An integer denoting the version of the file format. When used with the
+  `Accept` header field (Section 5.3.1 of {{!RFC7231}}), this parameter can be a
+  hyphen (-)-separated range of version numbers, or a comma (,)-separated list
+  of such ranges or individual version numbers. The server is then expected to
+  reply with a resource using a particular version within those ranges.
+
+  Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
+  specification MUST NOT use simple integers to describe their versions, and
+  MUST instead define implementation-specific strings to identify which draft is
+  implemented.
 
 Optional parameters:  N/A
 
 Encoding considerations:  binary
 
-Security considerations:  see {{security-application-http-exchange}}
+Security considerations:  see {{security-application-signed-exchange}}
 
 Interoperability considerations:  N/A
 
 Published specification:  This specification (see
-{{application-http-exchange}}).
+{{application-signed-exchange}}).
 
 Applications that use this media type:  N/A
 
@@ -1369,9 +1347,9 @@ Additional information:
 
   Deprecated alias names for this type:  N/A
 
-  Magic number(s):  8? 64 68 74 78 67
+  Magic number(s):  73 78 67 00
 
-  File extension(s): .htxg
+  File extension(s): .sxg
 
   Macintosh file type code(s):  N/A
 
@@ -1657,12 +1635,12 @@ problem, and it would be possible to introduce a response header to convey the
 expected request headers.
 
 Since proxies are unlikely to modify unknown content types, we can wrap the
-original exchange into an `application/http-exchange+cbor` format
-({{application-http-exchange}}) and include the `Cache-Control: no-transform`
+original exchange into an `application/signed-exchange` format
+({{application-signed-exchange}}) and include the `Cache-Control: no-transform`
 header when sending it.
 
 To reduce the likelihood of accidental modification by proxies, the
-`application/http-exchange+cbor` format includes a file signature that doesn't
+`application/signed-exchange` format includes a file signature that doesn't
 collide with other known signatures.
 
 To help the PUSHed subresources use case ({{uc-pushed-subresources}}), we might
@@ -1804,6 +1782,12 @@ RFC EDITOR PLEASE DELETE THIS SECTION.
 draft-04
 
 * Update to draft-ietf-httpbis-header-structure-04.
+* Replace the application/http-exchange+cbor format with a simpler
+  application/signed-exchange format that:
+  * Doesn't require a streaming CBOR parser parse it from a network stream.
+  * Doesn't allow request payloads or response trailers, which don't fit into
+    the signature model.
+  * Allows checking the signature before parsing the exchange headers.
 
 draft-03
 
