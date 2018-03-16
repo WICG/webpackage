@@ -172,7 +172,7 @@ Associated requirements beyond {{offline-installation}}{:format="title"}:
 ### Save and share a web page {#snapshot}
 
 Casey is viewing a web page and wants to save it either for offline use or to
-show it to their friend Dakota. Since Casey isn't the web page's author, they
+show it to their friend Dakota. Since Casey isn't the web page's publisher, they
 don't have the private key needed to sign the page. Browsers currently allow
 their users to save pages, but each browser uses a different format (MHTML, Web
 Archive, or files in a directory), so Dakota and Casey would need to be using
@@ -652,7 +652,7 @@ important to explicitly note that they don't appear in the list of
 ## Store confidential data {#confidential}
 
 Packages are designed to hold public information and to be shared to
-people with whom the original author never has an interactive
+people with whom the original publisher never has an interactive
 connection. In that situation, there's no way to keep the contents
 confidential: even if they were encrypted, to make the data public,
 anyone would have to be able to get the decryption key.
