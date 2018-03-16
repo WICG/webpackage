@@ -105,7 +105,7 @@ ways:
   transferred over a connection that isn't authoritative (Section 9.1 of
   {{?RFC7230}}) for that origin. See {{uc-pushed-subresources}} and
   {{uc-explicit-distributor}}.
-* A top-level resource can use a public key to identify an expected author for
+* A top-level resource can use a public key to identify an expected publisher for
   particular subresources, a system known as Subresource Integrity ({{SRI}}). An
   exchange's signature provides the matching proof of authorship. See
   {{uc-sri}}.
@@ -121,9 +121,13 @@ to standardize on their own.
 # Terminology
 
 Author
+: The entity that wrote the content in a particular resource. This specification
+  deals with publishers rather than authors.
+
+Publisher
 : The entity that controls the server for a particular origin {{?RFC6454}}. The
-  author can get a CA to issue certificates for their private keys and can run a
-  TLS server for their origin.
+  publisher can get a CA to issue certificates for their private keys and can
+  run a TLS server for their origin.
 
 Exchange (noun)
 : An HTTP request/response pair. This can either be a request from a client and
@@ -131,12 +135,12 @@ the matching response from a server or the request in a PUSH_PROMISE and its
 matching response stream. Defined by Section 8 of {{!RFC7540}}.
 
 Intermediate
-: An entity that fetches signed HTTP exchanges from an author or another
+: An entity that fetches signed HTTP exchanges from a publisher or another
   intermediate and forwards them to another intermediate or a client.
 
 Client
 : An entity that uses a signed HTTP exchange and needs to be able to prove that
-  the author vouched for it as coming from its claimed origin.
+  the publisher vouched for it as coming from its claimed origin.
 
 Unix time
 : Defined by {{POSIX}} [section
@@ -280,16 +284,17 @@ data while the old versions don't have known security bugs.
 The certificates at `https://example.com/oldcerts` and
 `https://example.com/newcerts` have `subjectAltName`s of `example.com`, meaning
 that if they and their signatures validate, the exchange can be trusted as
-having an origin of `https://example.com/`. The author might be using two
+having an origin of `https://example.com/`. The publisher might be using two
 certificates because their readers have disjoint sets of roots in their trust
 stores.
 
-The author signed with all three certificates at the same time, so they share a validity range: 7 days starting at 2017-11-19 21:53 UTC.
+The publisher signed with all three certificates at the same time, so they share
+a validity range: 7 days starting at 2017-11-19 21:53 UTC.
 
-The author then requested an additional signature from `thirdparty.example.com`,
-which did some validation or processing and then signed the resource at
-2017-11-19 23:11 UTC. `thirdparty.example.com` only grants 4-day signatures, so
-clients will need to re-validate more often.
+The publisher then requested an additional signature from
+`thirdparty.example.com`, which did some validation or processing and then
+signed the resource at 2017-11-19 23:11 UTC. `thirdparty.example.com` only
+grants 4-day signatures, so clients will need to re-validate more often.
 
 ### Open Questions ### {#oq-signature-header}
 
@@ -1218,7 +1223,7 @@ combination of {{?I-D.ietf-httpbis-origin-frame}} and
 Signing a bad response can affect more users than simply serving a bad response,
 since a served response will only affect users who make a request while the bad
 version is live, while an attacker can forward a signed response until its
-signature expires. Authors should consider shorter signature expiration times
+signature expires. Publishers should consider shorter signature expiration times
 than they use for cache expiration times.
 
 Clients MAY also check the ["validityUrl"](#signature-validityurl) of an
@@ -1240,7 +1245,7 @@ whole to become untrusted.
 
 The use of a single `Signed-Headers` header field prevents us from signing
 aspects of the request other than its effective request URI (Section 5.5 of
-{{?RFC7230}}). For example, if an author signs both `Content-Encoding: br` and
+{{?RFC7230}}). For example, if a publisher signs both `Content-Encoding: br` and
 `Content-Encoding: gzip` variants of a response, what's the impact if an
 attacker serves the brotli one for a request with `Accept-Encoding: gzip`?
 
@@ -1281,7 +1286,7 @@ entity that directed the client to `o1resource.js`, but there may be cases where
 this leaks extra information.
 
 For non-executable resource types, a signed response can improve the privacy
-situation by hiding the client's interest from the original author.
+situation by hiding the client's interest from the original publisher.
 
 To prevent network operators other than `o1.com` or `o2.com` from learning which
 exchanges were read, clients SHOULD only load exchanges fetched over a transport
@@ -1640,10 +1645,10 @@ headers.
 ### Conveying the signed headers
 
 HTTP headers are traditionally munged by proxies, making it impossible to
-guarantee that the client will see the same sequence of bytes as the author
-wrote. In the HTTPS world, we have more end-to-end header integrity, but it's
-still likely that there are enough TLS-terminating proxies that the author's
-signatures would tend to break before getting to the client.
+guarantee that the client will see the same sequence of bytes as the publisher
+published. In the HTTPS world, we have more end-to-end header integrity, but
+it's still likely that there are enough TLS-terminating proxies that the
+publisher's signatures would tend to break before getting to the client.
 
 There's also no way in current HTTP for the response to a client-initiated
 request (Section 8.1 of {{RFC7540}}) to convey the request headers it expected
@@ -1702,13 +1707,13 @@ These assertions could be structured as:
    This requires that signed responses need to include a version number or
    timestamp, but allows a server to provide a single signature covering all
    valid versions.
-1. A replacement for the whole exchange's signature. This requires the author to
+1. A replacement for the whole exchange's signature. This requires the publisher to
    separately re-sign each valid version and requires each version to include a
    different update URL, but allows intermediates to serve less data. This is
    the approach taken in {{proposal}}.
 1. A replacement for the exchange's signature and an update for the embedded
    `expires` and related cache-control HTTP headers {{?RFC7234}}. This naturally
-   extends authors' intuitions about cache expiration and the existing cache
+   extends publishers' intuitions about cache expiration and the existing cache
    revalidation behavior to signed exchanges. This is sketched and its downsides
    explored in {{validity-with-cache-control}}.
 
