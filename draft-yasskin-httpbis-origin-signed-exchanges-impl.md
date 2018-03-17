@@ -286,6 +286,7 @@ message (Section 4.4.2 of {{!I-D.ietf-tls-tls13}}) containing X.509v3
 certificates.
 
 Parsing notes:
+
 1. This resource MUST NOT include the 4-byte header that would appear in a
    Handshake message.
 1. Since this fetch is not in response to a CertificateRequest, the
@@ -500,25 +501,12 @@ Signature:
   ...
   validityUrl="https://example.com/resource.validity.1511157180";
   certUrl="https://example.com/oldcerts";
-  date=1511128380; expires=1511733180,
- sig2;
-  sig=*MEQCIG...;
-  ...
-  validityUrl="https://example.com/resource.validity.1511157180";
-  certUrl="https://example.com/newcerts";
-  date=1511128380; expires=1511733180,
- thirdpartysig;
-  sig=*MEYCIQ...;
-  ...
-  validityUrl="https://thirdparty.example.com/resource.validity.1511161860";
-  certUrl="https://thirdparty.example.com/certs";
-  date=1511478660; expires=1511824260
+  date=1511128380; expires=1511733180
 ~~~
 
-At 2017-11-27 11:02 UTC, `sig1` and `sig2` have expired, but `thirdpartysig`
-doesn't exipire until 23:11 that night, so the client needs to fetch
-`https://example.com/resource.validity.1511157180` (the `validityUrl` of `sig1`
-and `sig2`) to update those signatures. This URL might contain:
+At 2017-11-27 11:02 UTC, `sig1` has expired, so the client needs to fetch
+`https://example.com/resource.validity.1511157180` (the `validityUrl` of `sig1`)
+to update that signatures. This URL might contain:
 
 ~~~cbor-diag
 {
@@ -539,11 +527,9 @@ and `sig2`) to update those signatures. This URL might contain:
 
 This indicates that the client could fetch a newer version at
 `https://example.com/resource` (the original URL of the exchange), or that the
-validity period of the old version can be extended by replacing the first two of
-the original signatures (the ones with a validityUrl of
-`https://example.com/resource.validity.1511157180`) with the single new
-signature provided. (This might happen at the end of a migration to a new root
-certificate.) The signatures of the updated signed exchange would be:
+validity period of the old version can be extended by replacing the original
+signature with the new signature provided. The signature of the updated signed
+exchange would be:
 
 ~~~http
 Signature:
@@ -552,17 +538,8 @@ Signature:
   ...
   validityUrl="https://example.com/resource.validity.1511157180";
   certUrl="https://example.com/newcerts";
-  date=1511733180; expires=1512337980,
- thirdpartysig;
-  sig=*MEYCIQ...;
-  ...
-  validityUrl="https://thirdparty.example.com/resource.validity.1511161860";
-  certUrl="https://thirdparty.example.com/certs";
-  date=1511478660; expires=1511824260
+  date=1511733180; expires=1512337980
 ~~~
-
-`https://example.com/resource.validity.1511157180` could also expand the set of
-signatures if its `signatures` array contained more than 2 elements.
 
 ## The Accept-Signature header ## {#accept-signature}
 
