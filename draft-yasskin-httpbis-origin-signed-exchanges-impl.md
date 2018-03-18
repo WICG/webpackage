@@ -200,7 +200,7 @@ readability.
 Signature:
  sig1;
   sig=*t7LoYw6vwL2FSZRNJPYdNdYjfZSQkaCQeqpBD1whcy/6AAamVJ2OryXoXv6ACVBQgPV13o5de9oOVcOGGMX9fsf2ve1UDw/ITpeimB7n3zcuDEePzIcPbUnicicN2yodZAfr5il7BBJTs8L+V2ZERI16nJfrOZOvUfhvuUaMDGQXx5StIj7XLiX7/caxPz5ctwglgVAwCmoVPhmYFLq391O+hEssHSk2xkY6r/D9V2cKMikBBOTZ+JFyrnS/f2B4li7YASIY0YX64ifCmCw97cQTngXax6Upoie44IAe+6JngOie9JlDgcMF3YZ1uxNGWl9VwlalSwWgi1YA9Ff7mQ;
-  integrity="mi";
+  integrity="mi-draft2";
   validityUrl="https://example.com/resource.validity.1511128380";
   certUrl="https://example.com/certs";
   certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI;
@@ -209,7 +209,7 @@ Signature:
 
 The signatures uses a 2048-bit RSA certificate within `https://example.com/`.
 
-It relies on the `MI` response header to guard the integrity of the response
+It relies on the `MI-Draft2` response header to guard the integrity of the response
 payload.
 
 The signature includes a "validityUrl" that includes the first time the resource
@@ -270,8 +270,8 @@ Accept: */*
 
 HTTP/1.1 200
 Content-Type: text/html
-Content-Encoding: mi-sha256
-MI: mi-sha256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3
+Content-Encoding: mi-sha256-draft2
+MI: mi-sha256-draft2=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3
 
 <0x0000000000004000><!doctype html>
 <html>
@@ -288,10 +288,10 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
     ':method': 'GET',
   },
   {
-    'mi': 'mi-sha256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3',
+    'mi': 'mi-sha256-draft2=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3',
     ':status': '200',
     'content-type': 'text/html'
-    'content-encoding': 'mi-sha256',
+    'content-encoding': 'mi-sha256-draft2',
   }
 ]
 ~~~
@@ -385,13 +385,13 @@ URLs.
    * `date` be the signature's "date" parameter, interpreted as a Unix time.
    * `expires` be the signature's "expires" parameter, interpreted as a Unix
      time.
-1. If `integrity` names a header field other than `MI`
+1. If `integrity` names a header field other than `MI-Draft2`
    ({{!I-D.thomson-http-mice}}) or this header field is not present in
    `exchange`'s response headers or which the client cannot use to check the
    integrity of `payload` (for example, the header field is new and hasn't been
    implemented yet), then return "invalid". Clients MUST be able to check the
-   integrity of `payload` using the `MI` ({{!I-D.thomson-http-mice}}) header
-   field.
+   integrity of `payload` using the `MI-Draft2` header field, which is defined
+   equivalently to the `MI` header from draft 02 of {{!I-D.thomson-http-mice}}.
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. Assert: `certUrl` is present.
       1. Let `certificate-chain` be the result of loading the certificate chain
@@ -448,7 +448,7 @@ URLs.
 
 Note that the above algorithm can determine that an exchange's headers are
 potentially-valid before the exchange's payload is received. Similarly, if
-`integrity` identifies a header field like `MI` ({{?I-D.thomson-http-mice}})
+`integrity` identifies a header field like `MI-Draft2` ({{?I-D.thomson-http-mice}})
 that can incrementally validate the payload, early parts of the payload can be
 determined to be potentially-valid before later parts of the payload.
 Higher-level protocols MAY process parts of the exchange that have been
@@ -685,9 +685,11 @@ Pass the `Signature` response header and the exchange with that header removed
 to the algorithm in {{cross-origin-trust}}. Fail if this returns "invalid".
 
 The remainder of the resource is the exchange's payload, encoded with the
-`mi-sha256` content encoding ({{!I-D.thomson-http-mice}}). If the `mi-sha256`
-record length (the first 8 bytes of the payload) is greater than 16kB, or if any
-of the integrity proofs fail validation, parsing MUST fail.
+`mi-sha256-draft2` content encoding. The `mi-sha256-draft2` content encoding is
+the `mi-sha256` encoding defined in draft 02 of ({{!I-D.thomson-http-mice}}). If
+the `mi-sha256-draft2` record length (the first 8 bytes of the payload) is
+greater than 16kB, or if any of the integrity proofs fail validation, parsing
+MUST fail.
 
 # Security considerations
 
@@ -793,6 +795,11 @@ Change controller:  IESG
 --- back
 
 # Change Log
+
+draft-01
+
+* The mi-sha256 content-encoding is renamed to mi-sha256-draft2 in case
+  {{?I-D.thomson-http-mice}} changes.
 
 draft-00
 
