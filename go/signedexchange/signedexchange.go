@@ -78,13 +78,31 @@ func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
 	return enc.EncodeMap(mes)
 }
 
+func normalizeHeaderValues(values []string) string {
+	// RFC 2616 - Hypertext Transfer Protocol -- HTTP/1.1
+	// 4.2 Message Headers
+	// https://tools.ietf.org/html/rfc2616#section-4.2
+	//
+	// Multiple message-header fields with the same field-name MAY be
+	// present in a message if and only if the entire field-value for that
+	// header field is defined as a comma-separated list [i.e., #(values)].
+	// It MUST be possible to combine the multiple header fields into one
+	// "field-name: field-value" pair, without changing the semantics of the
+	// message, by appending each subsequent field-value to the first, each
+	// separated by a comma. The order in which header fields with the same
+	// field-name are received is therefore significant to the
+	// interpretation of the combined field value, and thus a proxy MUST NOT
+	// change the order of these field values when a message is forwarded.
+	return strings.Join(values, ",")
+}
+
 func (e *Exchange) encodeRequestWithHeaders(enc *cbor.Encoder) error {
 	mes := e.encodeRequestCommon(enc)
 	for name, value := range e.requestHeaders {
 		mes = append(mes,
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeByteString([]byte(strings.ToLower(name)))
-				valueE.EncodeByteString([]byte(value[0]))
+				valueE.EncodeByteString([]byte(normalizeHeaderValues(value)))
 			}))
 	}
 	return enc.EncodeMap(mes)
@@ -101,7 +119,7 @@ func (e *Exchange) encodeResponseHeaders(enc *cbor.Encoder) error {
 		mes = append(mes,
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeByteString([]byte(strings.ToLower(name)))
-				valueE.EncodeByteString([]byte(value[0]))
+				valueE.EncodeByteString([]byte(normalizeHeaderValues(value)))
 			}))
 	}
 	return enc.EncodeMap(mes)
