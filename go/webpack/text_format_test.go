@@ -181,7 +181,7 @@ func TestWriteText(t *testing.T) {
 	pack := Package{
 		manifest: Manifest{},
 		parts: []*PackPart{
-			&PackPart{
+			{
 				requestHeaders: HTTPHeaders{
 					httpHeader(":method", "GET"),
 					httpHeader(":scheme", "https"),

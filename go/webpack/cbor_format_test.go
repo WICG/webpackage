@@ -30,7 +30,7 @@ func hpackByteArray(headersAndValues ...string) []byte {
 func TestWriteCBOR(t *testing.T) {
 	pack := Package{
 		parts: []*PackPart{
-			&PackPart{
+			{
 				requestHeaders: HTTPHeaders{
 					httpHeader(":method", "GET"),
 					httpHeader(":scheme", "https"),
@@ -63,25 +63,25 @@ func TestWriteCBOR(t *testing.T) {
 		// sections.
 		cbor.Encoded(cbor.TypeMap, 1),
 		cbor.Encoded(cbor.TypeText, 15), []byte("indexed-content"),
-		[]byte{}, cbor.Encoded(cbor.TypeArray, 2),
-		[]byte{}, // index.
-		[]byte{}, cbor.Encoded(cbor.TypeArray, 1),
-		[]byte{}, cbor.Encoded(cbor.TypeArray, 2),
-		[]byte{}, hpackByteArray(
+		{}, cbor.Encoded(cbor.TypeArray, 2),
+		{}, // index.
+		{}, cbor.Encoded(cbor.TypeArray, 1),
+		{}, cbor.Encoded(cbor.TypeArray, 2),
+		{}, hpackByteArray(
 			":method", "GET",
 			":scheme", "https",
 			":authority", "example.com",
 			":path", "/index.html?query"),
-		[]byte{}, cbor.Encoded(cbor.TypePosInt, 1),
-		[]byte{}, // responses.
-		[]byte{}, cbor.Encoded(cbor.TypeArray, 1),
-		[]byte{}, cbor.Encoded(cbor.TypeArray, 2),
-		[]byte{}, hpackByteArray(
+		{}, cbor.Encoded(cbor.TypePosInt, 1),
+		{}, // responses.
+		{}, cbor.Encoded(cbor.TypeArray, 1),
+		{}, cbor.Encoded(cbor.TypeArray, 2),
+		{}, hpackByteArray(
 			":status", "200",
 			"content-type", "text/html",
 			"expires", "Mon, 1 Jan 2018 01:00:00 GMT"),
-		[]byte{}, cbor.Encoded(cbor.TypeBytes, 30),
-		[]byte{}, []byte("I am example.com's index.html\n"),
+		{}, cbor.Encoded(cbor.TypeBytes, 30),
+		{}, []byte("I am example.com's index.html\n"),
 		// length.
 		cbor.EncodedFixedLen(8, cbor.TypePosInt, len(cborPack.Bytes())),
 		// magic2.
