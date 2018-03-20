@@ -172,6 +172,9 @@ func TestSignedExchange(t *testing.T) {
 	header.Add("Foo", "Bar")
 	header.Add("Foo", "Baz")
 
+	// Stateful (response) header field is ignored
+	header.Add("Set-Cookie", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+
 	e, err := NewExchange(u, nil, 200, header, []byte(payload), 16)
 	if err != nil {
 		t.Fatal(err)
