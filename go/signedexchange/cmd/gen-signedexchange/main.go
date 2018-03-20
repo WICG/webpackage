@@ -36,6 +36,7 @@ var (
 	flagPrivateKey     = flag.String("privateKey", "cert-key.pem", "Private key PEM file of the origin")
 	flagOutput         = flag.String("o", "out.htxg", "Signed exchange output file")
 	flagMIRecordSize   = flag.Int("miRecordSize", 4096, "The record size of Merkle Integrity Content Encoding")
+	flagDate           = flag.String("date", "", "The datetime for the signed exchange in RFC3339 format (2006-01-02T15:04:05Z07:00). Use now by default.")
 	flagExpire         = flag.Duration("expire", 1*time.Hour, "The expire time of the signed exchange")
 
 	flagRequestHeader  = headerArgs{}
@@ -117,9 +118,20 @@ func run() error {
 		return err
 	}
 
+	var date time.Time
+	if *flagDate == "" {
+		date = time.Now()
+	} else {
+		var err error
+		date, err = time.Parse(time.RFC3339, *flagDate)
+		if err != nil {
+			return err
+		}
+	}
+
 	s := &signedexchange.Signer{
-		Date:        time.Now(),
-		Expires:     time.Now().Add(*flagExpire),
+		Date:        date,
+		Expires:     date.Add(*flagExpire),
 		Certs:       certs,
 		CertUrl:     certUrl,
 		ValidityUrl: validityUrl,
