@@ -20,6 +20,14 @@ TAG's Web Packaging Draft](https://w3ctag.github.io/packaging-on-the-web/)~~.
   - [Privacy-preserving prefetch](#privacy-preserving-prefetch)
   - [Packaged Web Publications](#packaged-web-publications)
   - [Third-party security review](#third-party-security-review)
+- [Loading sketch](#loading-sketch)
+  - [Fetch the physical URL](#fetch-the-physical-url)
+  - [Fetch the certificate chain](#fetch-the-certificate-chain)
+  - [Signature verification](#signature-verification)
+  - [Prefetching stops here](#prefetching-stops-here)
+  - [Caching the signed response](#caching-the-signed-response)
+  - [Navigations and subresources redirect](#navigations-and-subresources-redirect)
+  - [Matching prefetches with subresources](#matching-prefetches-with-subresources)
 - [FAQ](#faq)
   - [Why signing but not encryption? HTTPS provides both...](#why-signing-but-not-encryption-https-provides-both)
   - [What if a publisher accidentally signs a non-public resource?](#what-if-a-publisher-accidentally-signs-a-non-public-resource)
@@ -37,6 +45,10 @@ write) some content and owns the domain where it's published. A **client** (like
 Firefox) downloads content and uses it. An **intermediate** (like Fastly, the
 AMP cache, or old HTTP proxies) downloads content from its author (or another
 intermediate) and forwards it to a client (or another intermediate).
+
+When an HTTP exchange is encoded into a resource, the resource can be fetched
+from a **physical URL** that is different from the **logical URL** of the
+encoded exchange.
 
 ## Component documents
 
@@ -72,6 +84,16 @@ These signatures can be used in three related ways:
 3. When signed by a raw public key, the signatures enable [signature-based
    subresource integrity](https://github.com/mikewest/signature-based-sri).
 
+Signed exchanges can also be sent to a client in three ways:
+
+1. Using a `Signature` header in a normal HTTP response. This way is used for
+   non-origin signatures and to provide an origin-trusted signature to
+   intermediates.
+1. Enveloped into the `application/signed-exchange` content type. In this case,
+   the signed exchange has both the logical URL of its embedded request, and the
+   physical URL of the envelope itself.
+1. In an HTTP/2-Pushed exchange.
+
 We publish [periodic snapshots of this
 draft](https://tools.ietf.org/html/draft-yasskin-httpbis-origin-signed-exchanges-impl)
 so that test implementations can interoperate.
@@ -87,16 +109,22 @@ just file contents. It will probably incorporate compression to shrink headers,
 and even in compressed bundles will allow random access to resources without
 uncompressing other resources, like Zip rather than Gzipped Tar. It will be able
 to include [signed exchanges](#signed-http-exchanges) from multiple origins and
-will probably incorporate an optimization to reduce the number of public key
-operations for bundles containing many such signatures.
+will allow signers to sign a group of contained exchanges as a unit, both to
+optimize the number of public key operations and to prevent attackers from
+mixing versions of resources.
 
 Bundles will probably also include a way to depend on other bundles by reference
 without directly including their content.
+
+Like enveloped signed exchanges, bundles have a physical URL in addition to the
+logical URLs of their contained exchanges.
 
 <a id="loading"></a>
 ### Loading specification
 
 We'll need to specify how browsers load both signed exchanges and bundles of exchanges.
+
+For now, this explainer has [a sketch of how loading will work](#loading-sketch).
 
 ## Use cases
 
@@ -215,6 +243,162 @@ third-party then signs either the exchanges in a package or the package as a
 whole using a certificate whose metadata reflects whichever property was
 reviewed for.
 
+## Loading sketch
+
+When an **embedder** prefetches or embeds an enveloped signed exchange, or a
+client navigates from the embedder to an enveloped signed exchange, the
+client goes through several steps to open the envelope and load the signed
+resource.
+
+### Fetch the physical URL
+
+The client won't know that a URL holds a signed exchange until it receives the
+`Content-Type` in the response, so the initial request is identical to any other
+request in the same context. It follows redirects, is constrained by the
+embedder's and any parent frame's Content Security Policy, and goes through the
+embedder's or the physical URL's Service Worker.
+
+Once the response comes back, its `Content-Type: application/signed-exchange`
+header tells the client that it represents a signed exchange, but it's initially
+treated like any other response: the Response object shown to the Service Worker
+is the bytes of the `application/signed-exchange` resource, not the response
+inside it, and the client follows the remaining steps only if the Service Worker
+responds with an encoded `application/signed-exchange` resource. The
+`application/signed-exchange` also participates in caches the same way as any
+other resource.
+
+### Fetch the certificate chain
+
+The client parses the beginning of the `application/signed-exchange` resource to
+extract the [`Signature`
+header](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#signature-header).
+Each signature in the `Signature` header has a `cert-url` field that identifies a
+certificate chain to use to validate the signature, and each certificate chain
+is fetched and validated.
+
+The request for this certificate chain is made without credentials and skips Service
+Workers, for compatibility with browser network stack architectures. (This may
+change if network stacks prove to be less of a problem than expected.) The
+certificate is cached as a normal HTTP request.
+
+The client checks the leaf certificate's hash against the `cert-sha256` field of
+the `Signature` header and then validates the certificate chain. Certificate
+validation is a call to an OS-controlled library and may make further URL
+requests that aren't under the browser's control and therefore use a separate,
+probably ephemeral, cookie jar, cache, and set of service workers.
+
+Each signature with a valid certificate chain is passed on to the next step.
+
+### Signature verification
+
+Once the certificates are validated and enough of the
+`application/signed-exchange` resource is received to parse the claimed
+signed-exchange headers, the client extracts the logical URL from those headers
+and then tries to find a valid signature over the headers that is trusted for
+the claimed origin. If it can't find any, it either
+
+1. redirects to the logical URL as if the whole signed exchange were a 302
+   response, or
+2. fails with a network error.
+
+We're not yet certain which behavior is best. The first is slightly more
+resilient to clock skew, while the second encourages intermediates to get their
+implementations right.
+
+If the client does find a valid signature, it "releases" the headers for further
+processing and starts validating
+[mi-sha256](https://tools.ietf.org/html/draft-thomson-http-mice-02#section-2)
+records into a response stream as they arrive.
+
+### Prefetching stops here
+
+At this point, the client's behavior depends on whether the signed exchange was
+requested as a [prefetch](https://w3c.github.io/resource-hints/#prefetch). To
+satisfy the [privacy-preserving prefetch](#privacy-preserving-prefetch) use
+case, prefetches can't fully load the logical URL, which would create an HTTP
+cache entry that would be visible to the logical URL's server.
+
+Prefetches can and should process any `Link: <>; rel=preload` headers they find,
+as prefetches. If those point at signed exchanges, this process repeats.
+
+### Caching the signed response
+
+If the signed exchange was requested as a navigation or subresource (i.e. *not*
+prefetches), the client tries to cache it.
+
+This *doesn't* happen if:
+
+* The signed exchange's request headers aren't sufficiently similar (TBD) to the
+  request headers the client would use for a normal request in the same context.
+  This may avoid confusing the client?
+* There's a response in the HTTP (or preload?) cache with a newer Date header
+  than the signed exchange's response. This prevents some downgrade attacks.
+
+In either of these cases, the client just skips to the redirect in the next
+step.
+
+If we're still here, the signed exchange is put into the [preload
+cache](https://github.com/whatwg/fetch/issues/590) and, if the response headers
+allow it, the [HTTP cache](https://tools.ietf.org/html/rfc7234).
+
+Its freshness in the HTTP cache has to be bounded by the shorter of the normal
+HTTP cache lifetime or the signature's expiration. For *later* loads of the
+logical URL (in particular, not the load that's happening through the signed
+exchange, since it's fulfilled using the preload cache), a stale entry can be
+revalidated in the following ways:
+
+* If the `Signature` is expired but the HTTP caching information is fresh, the
+  client can fetch the `validity-url `to update just the signature. It *must not*
+  send an `If-None-Match` or `If-Modified-Since` request to update the cache,
+  because the `Signature` expiring means we don't trust the claimed ETag or date
+  anymore.
+* If the `Signature` is valid but the HTTP caching information is stale, the
+  client can send the logical URL an `If-None-Match` or `If-Modified-Since`
+  request hoping for a 304. Note that the client has to keep the original
+  response headers if it intends to use the `validity-url` to update the
+  signature in the future.
+* If neither is valid, the client could first update the signature and then
+  check for a 304 (or even do both concurrently), but it may be easier to just
+  do an unconditional request.
+
+### Navigations and subresources redirect
+
+At this point the client redirects to the signed exchange's logical URL. For
+navigations, this request goes through the logical URL's Service Worker. For
+subresources, the embedder's Service Worker already handled the request when it
+chose to return a signed exchange, so we currently think it doesn't need a
+second chance.
+
+If the request goes through a Service Worker (and caching wasn't skipped above),
+the `FetchEvent` needs to include some notification that there's a response
+available in the preload cache. We currently think the
+[`preloadResponse`](https://w3c.github.io/ServiceWorker/#fetch-event-preloadresponse)
+field in `FetchEvent` may be enough, although this doesn't provide a place to
+tell the Service Worker about any differences between the signed exchange's
+request and the client's request.
+
+The Service Worker can explicitly return the signed exchange's response using
+`e.respondWith(e.preloadResponse)`, implicitly return it either by returning
+without calling `e.respondWith()` or by calling
+`e.respondWith(fetch(e.request))`, or explicitly return something else by
+calling `e.respondWith(somethingElse)`.
+
+### Matching prefetches with subresources
+
+If page `A` prefetches two signed exchanges `B.sxg` and `C.sxg` containing
+logical URLs `B` and `C`, respectively, and the user then navigates to `B.sxg`,
+we'd like as many of `B`'s subresource fetches as possible to be fulfilled from
+the prefetched content. It's an open question whether:
+
+1. B can use `C.sxg` as a subresource and have that fulfilled by `A`'s prefetch
+   of `C.sxg`.
+1. B can use `C` as a subresource and have that fulfilled by `A`'s prefetch of
+   `C.sxg`.
+1. B can include a `Link: <C.sxg>; rel=preload` header and then have a `C`
+   subresource fulfilled by `A`'s prefetch.
+1. B can include a `Link: <C>; rel=preload` header and then have a `C`
+   subresource fulfilled by `A`'s prefetch.
+
 ## FAQ
 
 ### Why signing but not encryption? HTTPS provides both...
@@ -270,8 +454,11 @@ when the client's data plan renews. This question is tracked in
 
 The `expires` timestamp in the `Signature` header limits the lifetime of the
 resource in the same way as the OCSP response limits the lifetime of a
-certificate. When the author needs to replace a vulnerable resource, the signature's
-[`validityUrl`](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#updating-validity) would omit an updated signature, and the client would need to re-download the resource from its original location.
+certificate. When the author needs to replace a vulnerable resource, the
+signature's
+[`validity-url`](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#updating-validity)
+would omit an updated signature, and the client would need to re-download the
+resource from its original location.
 
 While a client is continuously offline, like with OCSP checks, it might choose
 to continue using the vulnerable resource somewhat past its expiration, to
