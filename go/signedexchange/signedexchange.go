@@ -51,10 +51,14 @@ var (
 
 func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte, miRecordSize int) (*Exchange, error) {
 	for h, _ := range statefulRequestHeaders {
-		requestHeaders.Del(h)
+		if _, ok := requestHeaders[h]; ok {
+			return nil, fmt.Errorf("signedexchange: request header %s is not available", h)
+		}
 	}
 	for h, _ := range statefulResponseHeaders {
-		responseHeaders.Del(h)
+		if _, ok := responseHeaders[h]; ok {
+			return nil, fmt.Errorf("signedexchange: response header %s is not available", h)
+		}
 	}
 
 	e := &Exchange{

@@ -172,9 +172,6 @@ func TestSignedExchange(t *testing.T) {
 	header.Add("Foo", "Bar")
 	header.Add("Foo", "Baz")
 
-	// Stateful (response) header field is ignored
-	header.Add("Set-Cookie", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-
 	e, err := NewExchange(u, nil, 200, header, []byte(payload), 16)
 	if err != nil {
 		t.Fatal(err)
@@ -220,5 +217,18 @@ func TestSignedExchange(t *testing.T) {
 
 	if got != want {
 		t.Errorf("WriteExchangeFile:\ngot: %v\nwant: %v", got, want)
+	}
+}
+
+func TestSignedExchangeStatefulHeader(t *testing.T) {
+	u, _ := url.Parse("https://example.com/")
+	header := http.Header{}
+	header.Add("Content-Type", "text/html; charset=utf-8")
+	// Set-Cookie is a stateful header and not available.
+	header.Add("Set-Cookie", "wow, such cookie")
+
+	_, err := NewExchange(u, nil, 200, header, []byte(payload), 16)
+	if err == nil {
+		t.Fail()
 	}
 }
