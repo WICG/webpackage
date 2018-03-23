@@ -52,12 +52,12 @@ var (
 func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte, miRecordSize int) (*Exchange, error) {
 	for h, _ := range statefulRequestHeaders {
 		if _, ok := requestHeaders[h]; ok {
-			return nil, fmt.Errorf("signedexchange: request header %s is not available", h)
+			return nil, fmt.Errorf("signedexchange: stateful request header %q can't be captured inside signed exchange", h)
 		}
 	}
 	for h, _ := range statefulResponseHeaders {
 		if _, ok := responseHeaders[h]; ok {
-			return nil, fmt.Errorf("signedexchange: response header %s is not available", h)
+			return nil, fmt.Errorf("signedexchange: stateful response header %q can't be captured inside signed exchange", h)
 		}
 	}
 
