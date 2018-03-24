@@ -42,6 +42,15 @@ normative:
       name: IEEE
       value: 1003.1-2008, 2016 Edition
     date: 2016
+  I-D.ietf-httpbis-header-structure-02:
+    target: https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-02
+    title: Structured Headers for HTTP
+    author:
+      - name: Mark Nottingham
+      - name: Poul-Henning Kamp
+    seriesinfo:
+      Internet-Draft: draft-ietf-httpbis-header-structure-02
+    date: 2017-11-27
 
 --- abstract
 
@@ -127,9 +136,9 @@ identifies one of those headers that enforces the integrity of the exchange's
 payload.
 
 The `Signature` header is a Structured Header as defined by
-{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 4.8 of
-{{!I-D.ietf-httpbis-header-structure}}) of parameterised labels (Section 4.4 of
-{{!I-D.ietf-httpbis-header-structure}}), and the list MUST contain exactly one
+{{I-D.ietf-httpbis-header-structure-02}}. Its value MUST be a list (Section 4.8 of
+{{I-D.ietf-httpbis-header-structure-02}}) of parameterised labels (Section 4.4 of
+{{I-D.ietf-httpbis-header-structure-02}}), and the list MUST contain exactly one
 element.
 
 Each parameterised label MUST have parameters named "sig", "integrity",
@@ -141,33 +150,33 @@ present parameters MUST have the following values:
 
 "sig"
 
-: Binary content (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Binary content (Section 4.5 of {{I-D.ietf-httpbis-header-structure-02}}) holding
   the signature of most of these parameters and the exchange's headers.
 
 "integrity"
 
-: A string (Section 4.2 of {{!I-D.ietf-httpbis-header-structure}}) containing
+: A string (Section 4.2 of {{I-D.ietf-httpbis-header-structure-02}}) containing
   the lowercase name of the response header field that guards the response
   payload's integrity.
 
 "certUrl"
 
-: A string (Section 4.2 of {{!I-D.ietf-httpbis-header-structure}}) containing a
+: A string (Section 4.2 of {{I-D.ietf-httpbis-header-structure-02}}) containing a
   [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
 
 "certSha256"
 
-: Binary content (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Binary content (Section 4.5 of {{I-D.ietf-httpbis-header-structure-02}}) holding
   the SHA-256 hash of the first certificate found at "certUrl".
 
 {:#signature-validityurl} "validityUrl"
 
-: A string (Section 4.2 of {{!I-D.ietf-httpbis-header-structure}}) containing a
+: A string (Section 4.2 of {{I-D.ietf-httpbis-header-structure-02}}) containing a
   [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
 
 "date" and "expires"
 
-: An unsigned integer (Section 4.1 of {{!I-D.ietf-httpbis-header-structure}})
+: An unsigned integer (Section 4.1 of {{I-D.ietf-httpbis-header-structure-02}})
   representing a Unix time.
 
 The "certUrl" parameter is *not* signed, so intermediates can update it with a
@@ -206,7 +215,7 @@ having an origin of `https://example.com/`.
 
 ### Open Questions ### {#oq-signature-header}
 
-{{?I-D.ietf-httpbis-header-structure}} provides a way to parameterise labels but
+{{I-D.ietf-httpbis-header-structure-02}} provides a way to parameterise labels but
 not other supported types like binary content. If the `Signature` header field
 is notionally a list of parameterised signatures, maybe we should add a
 "parameterised binary content" type.
@@ -214,7 +223,7 @@ is notionally a list of parameterised signatures, maybe we should add a
 
 Should the certUrl and validityUrl be lists so that intermediates can offer a
 cache without losing the original URLs? Putting lists in dictionary fields is
-more complex than {{?I-D.ietf-httpbis-header-structure}} allows, so they're
+more complex than {{I-D.ietf-httpbis-header-structure-02}} allows, so they're
 single items for now.
 
 ## CBOR representation of exchange headers ## {#cbor-representation}
@@ -336,7 +345,7 @@ complex data types, so it doesn't need rules to canonicalize those.
 ## Signature validity ## {#signature-validity}
 
 The client MUST parse the `Signature` header field as the list of parameterised
-values (Section 4.8.1 of {{!I-D.ietf-httpbis-header-structure}}) described in
+values (Section 4.8.1 of {{I-D.ietf-httpbis-header-structure-02}}) described in
 {{signature-header}}. If an error is thrown during this parsing or any of the
 requirements described there aren't satisfied, the exchange has no valid
 signatures. Otherwise, each member of this list represents a signature with
@@ -473,7 +482,7 @@ validity = {
 ~~~
 
 The elements of the `signatures` array are parameterised labels (Section 4.4 of
-{{!I-D.ietf-httpbis-header-structure}}) meant to replace the signatures within
+{{I-D.ietf-httpbis-header-structure-02}}) meant to replace the signatures within
 the `Signature` header field pointing to this validity data. If the signed
 exchange contains a bug severe enough that clients need to stop using the
 content, the `signatures` array MUST NOT be present.
