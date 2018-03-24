@@ -1078,9 +1078,9 @@ values:
 
 "request"
 
-: A map from request header field names to values, encoded as byte strings
-  ({{!RFC7049}}, section 2.1). The request header fields MUST include two
-  pseudo-header fields (Section 8.1.2.1 of {{!RFC7540}}):
+: A map from lowercase request header field names to their values, encoded as
+  byte strings ({{!RFC7049}}, section 2.1). The request header fields MUST
+  include two pseudo-header fields (Section 8.1.2.1 of {{!RFC7540}}):
 
   * `':method'`: The method of the request (Section 4 of {{!RFC7231}}).
   * `':url'`: The effective request URI of the request (Section 5.5 of
@@ -1093,9 +1093,9 @@ values:
 
 "response"
 
-: A map from response header field names to values, encoded as byte strings
-  ({{!RFC7049}}, section 2.1). The response header fields MUST include one
-  pseudo-header field (Section 8.1.2.1 of {{!RFC7540}}):
+: A map from lowercase response header field names to their values, encoded as
+  byte strings ({{!RFC7049}}, section 2.1). The response header fields MUST
+  include one pseudo-header field (Section 8.1.2.1 of {{!RFC7540}}):
 
   * `':status'`: The response's 3-digit status code (Section 6 of
     {{!RFC7231}}]).
@@ -1107,8 +1107,8 @@ values:
 
 "trailer"
 
-: A map of trailer header field names to values, encoded as byte strings
-  (Section 2.1 of {{!RFC7049}}).
+: A map of lowercase trailer header field names to their values, encoded as byte
+  strings (Section 2.1 of {{!RFC7049}}).
 
 A parser MAY return incremental information while parsing
 `application/http-exchange+cbor` content.
