@@ -180,51 +180,51 @@ identifies one of those headers that enforces the integrity of the exchange's
 payload.
 
 The `Signature` header is a Structured Header as defined by
-{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 4.8 of
-{{!I-D.ietf-httpbis-header-structure}}) of parameterised labels (Section 4.4 of
-{{!I-D.ietf-httpbis-header-structure}}).
+{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a parameterised list
+(Section 4.3 of {{!I-D.ietf-httpbis-header-structure}}).
 
-Each parameterised label MUST have parameters named "sig", "integrity",
-"validityUrl", "date", and "expires". Each parameterised label MUST also have
-either "certUrl" and "certSha256" parameters or an "ed25519Key" parameter. This
-specification gives no meaning to the label itself, which can be used as a
-human-readable identifier for the signature (see {{parameterised-binary}}). The
-present parameters MUST have the following values:
+Each parameterised identifier in the list MUST have parameters named "sig",
+"integrity", "validityUrl", "date", and "expires". Each parameterised identifier
+MUST also have either "certUrl" and "certSha256" parameters or an "ed25519Key"
+parameter. This specification gives no meaning to the identifier itself, which
+can be used as a human-readable identifier for the signature (see
+{{parameterised-binary}}). The present parameters MUST have the following
+values:
 
 "sig"
 
-: Binary content (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Binary content (Section 4.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
   the signature of most of these parameters and the exchange's headers.
 
 "integrity"
 
-: A string (Section 4.2 of {{!I-D.ietf-httpbis-header-structure}}) containing
+: A string (Section 4.7 of {{!I-D.ietf-httpbis-header-structure}}) containing
   the lowercase name of the response header field that guards the response
   payload's integrity.
 
 "certUrl"
 
-: A string (Section 4.2 of {{!I-D.ietf-httpbis-header-structure}}) containing a
+: A string (Section 4.7 of {{!I-D.ietf-httpbis-header-structure}}) containing a
   [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
 
 "certSha256"
 
-: Binary content (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Binary content (Section 4.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
   the SHA-256 hash of the first certificate found at "certUrl".
 
 "ed25519Key"
 
-: Binary content (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Binary content (Section 4.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
   an Ed25519 public key ({{!RFC8032}}).
 
 {:#signature-validityurl} "validityUrl"
 
-: A string (Section 4.2 of {{!I-D.ietf-httpbis-header-structure}}) containing a
+: A string (Section 4.7 of {{!I-D.ietf-httpbis-header-structure}}) containing a
   [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
 
 "date" and "expires"
 
-: An unsigned integer (Section 4.1 of {{!I-D.ietf-httpbis-header-structure}})
+: An integer (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}})
   representing a Unix time.
 
 The "certUrl" parameter is *not* signed, so intermediates can update it with a
@@ -239,31 +239,31 @@ readability.
 ~~~http
 Signature:
  sig1;
-  sig=*MEUCIQDXlI2gN3RNBlgFiuRNFpZXcDIaUpX6HIEwcZEc0cZYLAIga9DsVOMM+g5YpwEBdGW3sS+bvnmAJJiSMwhuBdqp5UY;
+  sig=*MEUCIQDXlI2gN3RNBlgFiuRNFpZXcDIaUpX6HIEwcZEc0cZYLAIga9DsVOMM+g5YpwEBdGW3sS+bvnmAJJiSMwhuBdqp5UY=*;
   integrity="mi";
   validityUrl="https://example.com/resource.validity.1511128380";
   certUrl="https://example.com/oldcerts";
-  certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI;
+  certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI=*;
   date=1511128380; expires=1511733180,
  sig2;
-  sig=*MEQCIGjZRqTRf9iKNkGFyzRMTFgwf/BrY2ZNIP/dykhUV0aYAiBTXg+8wujoT4n/W+cNgb7pGqQvIUGYZ8u8HZJ5YH26Qg;
+  sig=*MEQCIGjZRqTRf9iKNkGFyzRMTFgwf/BrY2ZNIP/dykhUV0aYAiBTXg+8wujoT4n/W+cNgb7pGqQvIUGYZ8u8HZJ5YH26Qg=*;
   integrity="mi";
   validityUrl="https://example.com/resource.validity.1511128380";
   certUrl="https://example.com/newcerts";
-  certSha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw;
+  certSha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw=*;
   date=1511128380; expires=1511733180,
  srisig;
-  sig=*lGZVaJJM5f2oGczFlLmBdKTDL+QADza4BgeO494ggACYJOvrof6uh5OJCcwKrk7DK+LBch0jssDYPp5CLc1SDA
+  sig=*lGZVaJJM5f2oGczFlLmBdKTDL+QADza4BgeO494ggACYJOvrof6uh5OJCcwKrk7DK+LBch0jssDYPp5CLc1SDA=*
   integrity="mi";
   validityUrl="https://example.com/resource.validity.1511128380";
-  ed25519Key=*zsSevyFsxyZHiUluVBDd4eypdRLTqyWRVOJuuKUz+A8
+  ed25519Key=*zsSevyFsxyZHiUluVBDd4eypdRLTqyWRVOJuuKUz+A8=*
   date=1511128380; expires=1511733180,
  thirdpartysig;
-  sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+;
+  sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+=*;
   integrity="mi";
   validityUrl="https://thirdparty.example.com/resource.validity.1511161860";
   certUrl="https://thirdparty.example.com/certs";
-  certSha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc;
+  certSha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc=*;
   date=1511133060; expires=1511478660,
 ~~~
 
@@ -298,10 +298,10 @@ grants 4-day signatures, so clients will need to re-validate more often.
 
 ### Open Questions ### {#oq-signature-header}
 
-{{?I-D.ietf-httpbis-header-structure}} provides a way to parameterise labels but
-not other supported types like binary content. If the `Signature` header field
-is notionally a list of parameterised signatures, maybe we should add a
-"parameterised binary content" type.
+{{?I-D.ietf-httpbis-header-structure}} provides a way to parameterise
+identifiers but not other supported types like binary content. If the
+`Signature` header field is notionally a list of parameterised signatures, maybe
+we should add a "parameterised binary content" type.
 {:#parameterised-binary}
 
 Should the certUrl and validityUrl be lists so that intermediates can offer a
@@ -440,8 +440,8 @@ complex data types, so it doesn't need rules to canonicalize those.
 
 ## Signature validity ## {#signature-validity}
 
-The client MUST parse the `Signature` header field as the list of parameterised
-values (Section 4.8.1 of {{!I-D.ietf-httpbis-header-structure}}) described in
+The client MUST parse the `Signature` header field as the parameterised list
+(Section 4.3.1 of {{!I-D.ietf-httpbis-header-structure}}) described in
 {{signature-header}}. If an error is thrown during this parsing or any of the
 requirements described there aren't satisfied, the exchange has no valid
 signatures. Otherwise, each member of this list represents a signature with
@@ -466,8 +466,8 @@ to retrieve an updated OCSP from the original server.
    `exchange`. Note that the payload body is the message body with any transfer
    encodings removed.
 1. Let:
-   * `signature` be the signature (binary content in the parameterised label's
-     "sig" parameter).
+   * `signature` be the signature (binary content in the parameterised
+     identifier's "sig" parameter).
    * `integrity` be the signature's "integrity" parameter.
    * `validityUrl` be the signature's "validityUrl" parameter.
    * `certUrl` be the signature's "certUrl" parameter, if any.
@@ -590,10 +590,10 @@ validity = {
 ]
 ~~~
 
-The elements of the `signatures` array are parameterised labels (Section 4.4 of
-{{!I-D.ietf-httpbis-header-structure}}) meant to replace the signatures within
-the `Signature` header field pointing to this validity data. If the signed
-exchange contains a bug severe enough that clients need to stop using the
+The elements of the `signatures` array are parameterised identifiers (Section
+4.3.2 of {{!I-D.ietf-httpbis-header-structure}}) meant to replace the signatures
+within the `Signature` header field pointing to this validity data. If the
+signed exchange contains a bug severe enough that clients need to stop using the
 content, the `signatures` array MUST NOT be present.
 
 If the the `update` map is present, that indicates that a new version of the
@@ -615,19 +615,19 @@ irrelevant fields omitted for ease of reading).
 ~~~http
 Signature:
  sig1;
-  sig=*MEUCIQ...;
+  sig=*MEUCIQ...*;
   ...
   validityUrl="https://example.com/resource.validity.1511157180";
   certUrl="https://example.com/oldcerts";
   date=1511128380; expires=1511733180,
  sig2;
-  sig=*MEQCIG...;
+  sig=*MEQCIG...*;
   ...
   validityUrl="https://example.com/resource.validity.1511157180";
   certUrl="https://example.com/newcerts";
   date=1511128380; expires=1511733180,
  thirdpartysig;
-  sig=*MEYCIQ...;
+  sig=*MEYCIQ...*;
   ...
   validityUrl="https://thirdparty.example.com/resource.validity.1511161860";
   certUrl="https://thirdparty.example.com/certs";
@@ -643,11 +643,11 @@ and `sig2`) to update those signatures. This URL might contain:
 {
   "signatures": [
     'sig1; '
-    'sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw; '
+    'sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw==*; '
     'validityUrl="https://example.com/resource.validity.1511157180"; '
     'integrity="mi"; '
     'certUrl="https://example.com/newcerts"; '
-    'certSha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw; '
+    'certSha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw=*; '
     'date=1511733180; expires=1512337980'
   ],
   "update": {
@@ -667,13 +667,13 @@ certificate.) The signatures of the updated signed exchange would be:
 ~~~http
 Signature:
  sig1;
-  sig=*MEQCIC...;
+  sig=*MEQCIC...*;
   ...
   validityUrl="https://example.com/resource.validity.1511157180";
   certUrl="https://example.com/newcerts";
   date=1511733180; expires=1512337980,
  thirdpartysig;
-  sig=*MEYCIQ...;
+  sig=*MEYCIQ...*;
   ...
   validityUrl="https://thirdparty.example.com/resource.validity.1511161860";
   certUrl="https://thirdparty.example.com/certs";
@@ -699,32 +699,31 @@ server MUST behave as if it hadn't received any `Accept-Signature` header at
 all.
 
 The `Accept-Signature` header field is a Structured Header as defined by
-{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 4.8 of
-{{!I-D.ietf-httpbis-header-structure}}) of parameterised labels (Section 4.4 of
-{{!I-D.ietf-httpbis-header-structure}}). The order of labels in the
-`Accept-Signature` list is not significant. Labels, ignoring any initial "-"
-character, MUST NOT be duplicated.
+{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a parameterised list
+(Section 4.3 of {{!I-D.ietf-httpbis-header-structure}}). The order of
+identifiers in the `Accept-Signature` list is not significant. Identifiers,
+ignoring any initial "-" character, MUST NOT be duplicated.
 
-Each label in the `Accept-Signature` header field's value indicates that a
+Each identifier in the `Accept-Signature` header field's value indicates that a
 feature of the `Signature` header field ({{signature-header}}) is supported. If
-the label begins with a "-" character, it instead indicates that the feature
-named by the rest of the label is not supported. Unknown labels and parameters
-MUST be ignored because new labels and new parameters on existing labels may be
-defined by future specifications.
+the identifier begins with a "-" character, it instead indicates that the
+feature named by the rest of the identifier is not supported. Unknown
+identifiers and parameters MUST be ignored because new identifiers and new
+parameters on existing identifiers may be defined by future specifications.
 
-### Integrity labels ### {#accept-signature-integrity}
+### Integrity identifiers ### {#accept-signature-integrity}
 
-Labels starting with "digest/" indicate that the client supports the `Digest`
-header field ({{!RFC3230}}) with the digest-algorithm from the
+Identifiers starting with "digest/" indicate that the client supports the
+`Digest` header field ({{!RFC3230}}) with the digest-algorithm from the
 <https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml> registry
-named in lower-case by the rest of the label. For example, "digest/sha-512"
+named in lower-case by the rest of the identifier. For example, "digest/sha-512"
 indicates support for the SHA-512 digest algorithm, and "-digest/sha-256"
 indicates non-support for the SHA-256 digest algorithm.
 
-Labels starting with "mi/" indicate that the client supports the `MI` header
-field ({{!I-D.thomson-http-mice}}) with the parameter from the HTTP MI Parameter
-Registry registry named in lower-case by the rest of the label. For example,
-"mi/mi-blake2" indicates support for Merkle integrity with the
+Identifiers starting with "mi/" indicate that the client supports the `MI`
+header field ({{!I-D.thomson-http-mice}}) with the parameter from the HTTP MI
+Parameter Registry registry named in lower-case by the rest of the identifier.
+For example, "mi/mi-blake2" indicates support for Merkle integrity with the
 as-yet-unspecified mi-blake2 parameter, and "-digest/mi-sha256" indicates
 non-support for Merkle integrity with the mi-sha256 content encoding.
 
@@ -732,40 +731,41 @@ If the `Accept-Signature` header field is present, servers SHOULD assume support
 for "digest/sha-256" and "mi/mi-sha256" unless the header field states
 otherwise.
 
-### Key type labels ### {#accept-signature-key-types}
+### Key type identifiers ### {#accept-signature-key-types}
 
-Labels starting with "rsa/" indicate that the client supports certificates
+Identifiers starting with "rsa/" indicate that the client supports certificates
 holding RSA public keys with a number of bits indicated by the digits after the
 "/".
 
-Labels starting with "ecdsa/" indicate that the client supports certificates
-holding ECDSA public keys on the curve named in lower-case by the rest of the
-label.
+Identifiers starting with "ecdsa/" indicate that the client supports
+certificates holding ECDSA public keys on the curve named in lower-case by the
+rest of the identifier.
 
 If the `Accept-Signature` header field is present, servers SHOULD assume support
 for "rsa/2048", "ecdsa/secp256r1", and "ecdsa/secp384r1" unless the header field
 states otherwise.
 
-### Key value labels ### {#accept-signature-key-values}
+### Key value identifiers ### {#accept-signature-key-values}
 
-The "ed25519key" label has parameters indicating the public keys that will be
-used to validate the returned signature. Each parameter's name is re-interpreted
-as binary content (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}})
-encoding a prefix of the public key. For example, if the
-client will validate signatures using the public key whose base64 encoding is
-`11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo`, valid `Accept-Signature` header fields include:
+The "ed25519key" identifier has parameters indicating the public keys that will
+be used to validate the returned signature. Each parameter's name is
+re-interpreted as binary content (Section 4.9 of
+{{!I-D.ietf-httpbis-header-structure}}) encoding a prefix of the public key. For
+example, if the client will validate signatures using the public key whose
+base64 encoding is `11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=`, valid
+`Accept-Signature` header fields include:
 
 ~~~http
-Accept-Signature: ..., ed25519key; *11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo
-Accept-Signature: ..., ed25519key; *11qYAYKxCrfVS/7TyWQHOg
-Accept-Signature: ..., ed25519key; *11qYAQ
-Accept-Signature: ..., ed25519key; *
+Accept-Signature: ..., ed25519key; *11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=*
+Accept-Signature: ..., ed25519key; *11qYAYKxCrfVS/7TyWQHOg==*
+Accept-Signature: ..., ed25519key; *11qYAQ==*
+Accept-Signature: ..., ed25519key; **
 ~~~
 
 but not
 
 ~~~http
-Accept-Signature: ..., ed25519key; *11qYA
+Accept-Signature: ..., ed25519key; *11qYA===*
 ~~~
 
 because 5 bytes isn't a valid length for encoded base64, and not
@@ -774,9 +774,9 @@ because 5 bytes isn't a valid length for encoded base64, and not
 Accept-Signature: ..., ed25519key; 11qYAQ
 ~~~
 
-because it doesn't start with the `*` that indicates binary content.
+because it doesn't start or end with the `*`s that indicate binary content.
 
-Note that `ed25519key; *` is an empty prefix, which matches all public keys, so
+Note that `ed25519key; **` is an empty prefix, which matches all public keys, so
 it's useful in subresource integrity ({{uc-sri}}) cases like `<link rel=preload
 as=script href="...">` where the public key isn't known until the matching
 `<script src="..." integrity="...">` tag.
@@ -812,7 +812,7 @@ ecosystem in the future.
 Is `Accept-Signature` the right spelling, or do we want to imitate `Want-Digest`
 (Section 4.3.1 of {{?RFC3230}}) instead?
 
-Do I have the right structure for the labels indicating feature support?
+Do I have the right structure for the identifiers indicating feature support?
 
 # Cross-origin trust {#cross-origin-trust}
 
@@ -979,8 +979,8 @@ See {{how-much-to-sign}} for a discussion of why only the URL from the request
 is included and not other request headers.
 
 `Signed-Headers` is a Structured Header as defined by
-{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 4.8 of
-{{!I-D.ietf-httpbis-header-structure}}) of lowercase strings (Section 4.2 of
+{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 4.2 of
+{{!I-D.ietf-httpbis-header-structure}}) of lowercase strings (Section 4.7 of
 {{!I-D.ietf-httpbis-header-structure}}) naming HTTP response header fields.
 Pseudo-header field names (Section 8.1.2.1 of {{!RFC7540}}) MUST NOT appear in
 this list.
@@ -1800,6 +1800,10 @@ exchange argues for embedding a signature's lifetime into the signature.
 # Change Log
 
 RFC EDITOR PLEASE DELETE THIS SECTION.
+
+draft-04
+
+* Update to draft-ietf-httpbis-header-structure-04.
 
 draft-03
 
