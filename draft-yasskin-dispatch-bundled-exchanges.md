@@ -312,7 +312,8 @@ A valid request item *R*:
 * Has exactly two keys starting with a ':' character, ':method' and ':url'.
 * *R*\[':method'] is an HTTP method defined as cacheable (Section 4.2.3 of
   {{!RFC7231}}) and safe (Section 4.2.1 of {{!RFC7231}}), as required for
-  PUSH_PROMISEd requests (Section 8.2 of {{?RFC7540}}).
+  PUSH_PROMISEd requests (Section 8.2 of {{?RFC7540}}). This currently consists
+  of only the `GET` and `HEAD` methods.
 * *R*\[':url'] is an absolute URI (Section 4.3 of {{!RFC3986}}).
 
 A valid request item *R* is interpreted as an HTTP request by interpreting
