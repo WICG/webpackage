@@ -37,7 +37,7 @@ type ecdsaSigningAlgorithm struct {
 
 func (e *ecdsaSigningAlgorithm) Sign(m []byte) ([]byte, error) {
 	type ecdsaSigValue struct {
-		r, s *big.Int
+		R, S *big.Int
 	}
 
 	hash := e.hash.New()
