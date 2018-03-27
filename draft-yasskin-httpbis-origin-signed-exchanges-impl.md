@@ -243,13 +243,13 @@ The CBOR representation of an exchange `exchange`'s headers is the CBOR
      request's method.
    * The byte string ':url' to the byte string containing `exchange`'s request's
      effective request URI.
-   * For each request header field in `exchange`, the header field's name as a
-     byte string to the header field's value as a byte string.
+   * For each request header field in `exchange`, the header field's lowercase
+     name as a byte string to the header field's value as a byte string.
 1. The map mapping:
    * the byte string ':status' to the byte string containing `exchange`'s
      response's 3-digit status code, and
-   * for each response header field in `exchange`, the header field's name as a
-     byte string to the header field's value as a byte string.
+   * for each response header field in `exchange`, the header field's lowercase
+     name as a byte string to the header field's value as a byte string.
 
 ### Example ### {#example-cbor-representation}
 
@@ -661,12 +661,15 @@ signed-exchange-header = [
 ]
 ~~~
 
-The first element of the array is interpreted as the exchange's request headers,
-with the request method in the ':method' key's value, and the effective request
-URI in the ':url' key's value.
+The first element of the array is interpreted as the exchange's request headers
+with lowercase names, with the request method in the ':method' key's value, and
+the effective request URI in the ':url' key's value.
 
 The second element of the array is interpreted as the exchange's response
-headers, with the 3-digit response status code in the ':status' key's value.
+headers with lowercase names, with the 3-digit response status code in the
+':status' key's value.
+
+If any header field name includes uppercase characters, parsing MUST fail.
 
 Pass the `Signature` response header and the exchange with that header removed
 to the algorithm in {{cross-origin-trust}}. Fail if this returns "invalid".
