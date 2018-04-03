@@ -1063,12 +1063,12 @@ and header fields, and a response payload.
 
 This content type consists of the concatenation of the following items:
 
-1. The ASCII characters "sxg" followed by a 0 byte, to serve as a file
+1. The ASCII characters "sxg1" followed by a 0 byte, to serve as a file
    signature.
 
    Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC
    MUST use this file signature, but implementations of drafts MUST NOT use it
-   and MUST use another implementation-specific string beginning with "sxg-" and
+   and MUST use another implementation-specific string beginning with "sxg1-" and
    ending with a 0 byte instead.
 1. 3 bytes storing a big-endian integer `sigLength`. If this is larger
    than TBD, parsing MUST fail.
@@ -1106,7 +1106,7 @@ defined in Appendix G of {{?I-D.ietf-cbor-cddl}}, and most of the `Signature`
 header field and payload elided with a ...:
 
 ~~~
-sxg\0<3-byte length of the following header
+sxg1\0<3-byte length of the following header
 value>sig1; sig=*...; integrity="mi"; ...<3-byte length of the encoding of the
 following array>[
   {
@@ -1312,11 +1312,12 @@ Subtype name:  signed-exchange
 
 Required parameters:
 
-* v: An integer denoting the version of the file format. When used with the
-  `Accept` header field (Section 5.3.1 of {{!RFC7231}}), this parameter can be a
-  hyphen (-)-separated range of version numbers, or a comma (,)-separated list
-  of such ranges or individual version numbers. The server is then expected to
-  reply with a resource using a particular version within those ranges.
+* v: An integer denoting the version of the file format. The version defined in
+  this specification is `1`. When used with the `Accept` header field (Section
+  5.3.1 of {{!RFC7231}}), this parameter can be a hyphen (-)-separated range of
+  version numbers, or a comma (,)-separated list of such ranges or individual
+  version numbers. The server is then expected to reply with a resource using a
+  particular version within those ranges.
 
   Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
   specification MUST NOT use simple integers to describe their versions, and
@@ -1342,7 +1343,7 @@ Additional information:
 
   Deprecated alias names for this type:  N/A
 
-  Magic number(s):  73 78 67 00
+  Magic number(s):  73 78 67 31 00
 
   File extension(s): .sxg
 
