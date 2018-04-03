@@ -1315,9 +1315,9 @@ Required parameters:
 * v: An integer denoting the version of the file format. The version defined in
   this specification is `1`. When used with the `Accept` header field (Section
   5.3.1 of {{!RFC7231}}), this parameter can be a hyphen (-)-separated range of
-  version numbers, or a comma (,)-separated list of such ranges or individual
-  version numbers. The server is then expected to reply with a resource using a
-  particular version within those ranges.
+  version numbers (less than 10000), or a comma (,)-separated list of such
+  ranges or individual version numbers. The server is then expected to reply
+  with a resource using a particular version within those ranges.
 
   Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
   specification MUST NOT use simple integers to describe their versions, and
