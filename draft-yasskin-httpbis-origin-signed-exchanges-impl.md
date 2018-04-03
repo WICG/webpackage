@@ -737,7 +737,7 @@ Required parameters:
   version numbers, or a comma (,)-separated list of such ranges or individual
   version numbers. The server is then expected to reply with a resource using a
   particular version within those ranges. `b0` matches a range of the form
-  `b0-b<positive-integer>`.
+  `b0-b<positive-integer>` where the integer is less than 10000.
 
   Note: As this is a snapshot of a draft of
   {{?I-D.yasskin-http-origin-signed-responses}}, it does not use a simple
