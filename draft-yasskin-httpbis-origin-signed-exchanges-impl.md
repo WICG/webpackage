@@ -717,13 +717,69 @@ HTTP without TLS.
 
 # IANA considerations
 
-This depends on the following IANA registrations in
+This depends on the following IANA registration in
 {{?I-D.yasskin-http-origin-signed-responses}}:
 
 * The `Signature` header field
-* application/signed-exchange;v=0
 
 This document also registers:
+
+## Internet Media Type application/signed-exchange
+
+Type name:  application
+
+Subtype name:  signed-exchange
+
+Required parameters:
+
+* v: A string denoting the version of the file format. The version defined in
+  this specification is `b0`. When used with the `Accept` header field (Section
+  5.3.1 of {{!RFC7231}}), this parameter can be a hyphen (-)-separated range of
+  version numbers, or a comma (,)-separated list of such ranges or individual
+  version numbers. The server is then expected to reply with a resource using a
+  particular version within those ranges. `b0` matches a range of the form
+  `b0-b<positive-integer>`.
+
+  Note: As this is a snapshot of a draft of
+  {{?I-D.yasskin-http-origin-signed-responses}}, it does not use a simple
+  integer to describe its version.
+
+Optional parameters:  N/A
+
+Encoding considerations:  binary
+
+Security considerations:  see Section 6.6 of
+{{!I-D.yasskin-http-origin-signed-responses}}
+
+Interoperability considerations:  N/A
+
+Published specification:  This specification (see
+{{application-signed-exchange}}).
+
+Applications that use this media type:  N/A
+
+Fragment identifier considerations:  N/A
+
+Additional information:
+
+  Deprecated alias names for this type:  N/A
+
+  Magic number(s):  82 A?
+
+  File extension(s): .sxg
+
+  Macintosh file type code(s):  N/A
+
+Person and email address to contact for further information: See Authors'
+  Addresses section.
+
+Intended usage:  COMMON
+
+Restrictions on usage:  N/A
+
+Author:  See Authors' Addresses section.
+
+Change controller:  IESG
 
 ## Internet Media Type application/tls-cert-chain
 
