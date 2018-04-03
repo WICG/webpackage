@@ -72,6 +72,10 @@ These signatures can be used in three related ways:
 3. When signed by a raw public key, the signatures enable [signature-based
    subresource integrity](https://github.com/mikewest/signature-based-sri).
 
+We publish [periodic snapshots of this
+draft](https://tools.ietf.org/html/draft-yasskin-httpbis-origin-signed-exchanges-impl)
+so that test implementations can interoperate.
+
 ### Bundled exchanges
 
 We're defining a new Zip-like archive format to serve the Web's needs. It
