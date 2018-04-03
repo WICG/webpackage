@@ -56,7 +56,7 @@ normative:
 
 This document describes checkpoints of
 {{?I-D.yasskin-http-origin-signed-responses}} to synchronize implementation
-between clients, intermediates, and authors.
+between clients, intermediates, and publishers.
 
 --- note_Note_to_Readers
 
@@ -73,16 +73,16 @@ in <https://github.com/WICG/webpackage>.
 
 Each version of this document describes a checkpoint of
 {{?I-D.yasskin-http-origin-signed-responses}} that can be implemented in sync by
-clients, intermediates, and authors. It defines a technique to detect which
+clients, intermediates, and publishers. It defines a technique to detect which
 version each party has implemented so that mismatches can be detected up-front.
 
 
 
 # Terminology
 
-Author
+Publisher
 : The entity that controls the server for a particular origin {{?RFC6454}}. The
-  author can get a CA to issue certificates for their private keys and can run a
+  publisher can get a CA to issue certificates for their private keys and can run a
   TLS server for their origin.
 
 Exchange (noun)
@@ -91,12 +91,12 @@ the matching response from a server or the request in a PUSH_PROMISE and its
 matching response stream. Defined by Section 8 of {{!RFC7540}}.
 
 Intermediate
-: An entity that fetches signed HTTP exchanges from an author or another
+: An entity that fetches signed HTTP exchanges from an publisher or another
   intermediate and forwards them to another intermediate or a client.
 
 Client
 : An entity that uses a signed HTTP exchange and needs to be able to prove that
-  the author vouched for it as coming from its claimed origin.
+  the publisher vouched for it as coming from its claimed origin.
 
 Unix time
 : Defined by {{POSIX}} [section
@@ -705,7 +705,7 @@ entity that directed the client to `o1resource.js`, but there may be cases where
 this leaks extra information.
 
 For non-executable resource types, a signed response can improve the privacy
-situation by hiding the client's interest from the original author.
+situation by hiding the client's interest from the original publisher.
 
 To prevent network operators other than `o1.com` or `o2.com` from learning which
 exchanges were read, clients SHOULD only load exchanges fetched over a transport
