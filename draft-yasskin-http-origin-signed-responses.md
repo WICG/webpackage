@@ -1070,15 +1070,10 @@ This content type consists of the concatenation of the following items:
    MUST use this file signature, but implementations of drafts MUST NOT use it
    and MUST use another implementation-specific string beginning with "sxg-" and
    ending with a 0 byte instead.
-1. 3 bytes storing a big-endian integer `nonsignedLength`. If this is larger
+1. 3 bytes storing a big-endian integer `sigLength`. If this is larger
    than TBD, parsing MUST fail.
-1. `nonsignedLength` bytes holding the non-signed headers, a CBOR map containing
-   at least a key/value pair mapping the byte string 'signature' to a byte
-   string holding the `Signature` header field's value ({{signature-header}}).
-   If this CBOR item is not canonically serialized ({{canonical-cbor}}), parsing
-   MUST fail. Other key/value pairs MUST be ignored.
-
-   Note: This is a map instead of just a byte string for future extensibility.
+1. `sigLength` bytes holding the `Signature` header field's value
+   ({{signature-header}}).
 1. 3 bytes storing a big-endian integer `headerLength`. If this is larger than
    TBD, parsing MUST fail.
 1. `headerLength` bytes holding the signed headers, the canonical serialization
@@ -1111,9 +1106,9 @@ defined in Appendix G of {{?I-D.ietf-cbor-cddl}}, and most of the `Signature`
 header field and payload elided with a ...:
 
 ~~~
-sxg\0<3-byte length of the encoding of the following map>{
-  'signature': '...'
-}<3-byte length of the encoding of the following array>[
+sxg\0<3-byte length of the following header
+value>sig1; sig=*...; integrity="mi"; ...<3-byte length of the encoding of the
+following array>[
   {
     ':method': 'GET',
     ':url': 'https://example.com/',
