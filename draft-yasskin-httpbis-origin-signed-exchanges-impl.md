@@ -289,8 +289,7 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 
 ## Loading a certificate chain ## {#cert-chain-format}
 
-The resource at a signature's `certUrl` MUST have the
-`application/tls-cert-chain` content type and MUST contain a TLS 1.3 Certificate
+The resource at a signature's `certUrl` MUST contain a TLS 1.3 Certificate
 message (Section 4.4.2 of {{!I-D.ietf-tls-tls13}}) containing X.509v3
 certificates.
 
@@ -767,49 +766,6 @@ Additional information:
   Magic number(s):  82 A?
 
   File extension(s): .sxg
-
-  Macintosh file type code(s):  N/A
-
-Person and email address to contact for further information: See Authors'
-  Addresses section.
-
-Intended usage:  COMMON
-
-Restrictions on usage:  N/A
-
-Author:  See Authors' Addresses section.
-
-Change controller:  IESG
-
-## Internet Media Type application/tls-cert-chain
-
-Type name:  application
-
-Subtype name:  tls-cert-chain
-
-Required parameters:  N/A
-
-Optional parameters:  N/A
-
-Encoding considerations:  binary
-
-Security considerations:  N/A
-
-Interoperability considerations:  N/A
-
-Published specification:  This specification (see {{cert-chain-format}}).
-
-Applications that use this media type:  N/A
-
-Fragment identifier considerations:  N/A
-
-Additional information:
-
-  Deprecated alias names for this type:  N/A
-
-  Magic number(s): N/A
-
-  File extension(s): N/A
 
   Macintosh file type code(s):  N/A
 
