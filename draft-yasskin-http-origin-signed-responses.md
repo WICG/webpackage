@@ -1064,7 +1064,8 @@ and header fields, and a response payload.
 This content type consists of the concatenation of the following items:
 
 1. The ASCII characters "sxg1" followed by a 0 byte, to serve as a file
-   signature.
+   signature. This is redundant with the MIME type, and receipients that receive
+   both MUST ignore the values in these first 5 bytes.
 
    Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC
    MUST use this file signature, but implementations of drafts MUST NOT use it
@@ -1072,10 +1073,10 @@ This content type consists of the concatenation of the following items:
    ending with a 0 byte instead.
 1. 3 bytes storing a big-endian integer `sigLength`. If this is larger
    than TBD, parsing MUST fail.
-1. `sigLength` bytes holding the `Signature` header field's value
-   ({{signature-header}}).
 1. 3 bytes storing a big-endian integer `headerLength`. If this is larger than
    TBD, parsing MUST fail.
+1. `sigLength` bytes holding the `Signature` header field's value
+   ({{signature-header}}).
 1. `headerLength` bytes holding the signed headers, the canonical serialization
    ({{canonical-cbor}}) of the CBOR representation of the request and response
    headers of the exchange represented by the `application/signed-exchange`
@@ -1086,8 +1087,10 @@ This content type consists of the concatenation of the following items:
 1. The payload body (Section 3.3 of {{!RFC7230}}) of the exchange represented by
    the `application/signed-exchange` resource.
 
-   Note that the use of the payload body here means that the `Transfer-Encoding`
-   header field has no effect.
+   Note that the use of the payload body here means that a `Transfer-Encoding`
+   header field inside the `application/signed-exchange` header block has no
+   effect. A `Transfer-Encoding` header field on the outer HTTP response that
+   transfers this resource still has its normal effect.
 
 ### Cross-origin trust in application/signed-exchange {#co-trust-app-signed-exchange}
 
@@ -1312,12 +1315,12 @@ Subtype name:  signed-exchange
 
 Required parameters:
 
-* v: An integer denoting the version of the file format. The version defined in
-  this specification is `1`. When used with the `Accept` header field (Section
-  5.3.1 of {{!RFC7231}}), this parameter can be a hyphen (-)-separated range of
-  version numbers (less than 10000), or a comma (,)-separated list of such
-  ranges or individual version numbers. The server is then expected to reply
-  with a resource using a particular version within those ranges.
+* v: A string denoting the version of the file format. ({{!RFC5234}} ABNF:
+  `version = DIGIT/%x61-7A`) The version defined in this specification is `1`.
+  When used with the `Accept` header field (Section 5.3.1 of {{!RFC7231}}), this
+  parameter can be a comma (,)-separated list of version strings. ({{!RFC5234}}
+  ABNF: `version-list = version *( "," version )`) The server is then expected
+  to reply with a resource using a particular version from that list.
 
   Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
   specification MUST NOT use simple integers to describe their versions, and
