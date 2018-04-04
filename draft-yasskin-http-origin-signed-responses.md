@@ -1065,7 +1065,7 @@ This content type consists of the concatenation of the following items:
 
 1. The ASCII characters "sxg1" followed by a 0 byte, to serve as a file
    signature. This is redundant with the MIME type, and receipients that receive
-   both MUST ignore the values in these first 5 bytes.
+   both MUST check that they match and stop parsing if they don't.
 
    Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC
    MUST use this file signature, but implementations of drafts MUST NOT use it
