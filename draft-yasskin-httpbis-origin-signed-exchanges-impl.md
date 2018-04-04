@@ -731,13 +731,12 @@ Subtype name:  signed-exchange
 
 Required parameters:
 
-* v: A string denoting the version of the file format. The version defined in
-  this specification is `b0`. When used with the `Accept` header field (Section
-  5.3.1 of {{!RFC7231}}), this parameter can be a hyphen (-)-separated range of
-  version numbers, or a comma (,)-separated list of such ranges or individual
-  version numbers. The server is then expected to reply with a resource using a
-  particular version within those ranges. `b0` matches a range of the form
-  `b0-b<positive-integer>` where the integer is less than 10000.
+* v: A string denoting the version of the file format. ({{!RFC5234}} ABNF:
+  `version = DIGIT/%x61-7A`) The version defined in this specification is `b0`.
+  When used with the `Accept` header field (Section 5.3.1 of {{!RFC7231}}), this
+  parameter can be a comma (,)-separated list of version strings. ({{!RFC5234}}
+  ABNF: `version-list = version *( "," version )`) The server is then expected
+  to reply with a resource using a particular version from that list.
 
   Note: As this is a snapshot of a draft of
   {{?I-D.yasskin-http-origin-signed-responses}}, it does not use a simple
