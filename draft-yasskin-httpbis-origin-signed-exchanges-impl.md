@@ -56,7 +56,7 @@ normative:
 
 This document describes checkpoints of
 {{?I-D.yasskin-http-origin-signed-responses}} to synchronize implementation
-between clients, intermediates, and authors.
+between clients, intermediates, and publishers.
 
 --- note_Note_to_Readers
 
@@ -73,16 +73,16 @@ in <https://github.com/WICG/webpackage>.
 
 Each version of this document describes a checkpoint of
 {{?I-D.yasskin-http-origin-signed-responses}} that can be implemented in sync by
-clients, intermediates, and authors. It defines a technique to detect which
+clients, intermediates, and publishers. It defines a technique to detect which
 version each party has implemented so that mismatches can be detected up-front.
 
 
 
 # Terminology
 
-Author
+Publisher
 : The entity that controls the server for a particular origin {{?RFC6454}}. The
-  author can get a CA to issue certificates for their private keys and can run a
+  publisher can get a CA to issue certificates for their private keys and can run a
   TLS server for their origin.
 
 Exchange (noun)
@@ -91,12 +91,12 @@ the matching response from a server or the request in a PUSH_PROMISE and its
 matching response stream. Defined by Section 8 of {{!RFC7540}}.
 
 Intermediate
-: An entity that fetches signed HTTP exchanges from an author or another
+: An entity that fetches signed HTTP exchanges from an publisher or another
   intermediate and forwards them to another intermediate or a client.
 
 Client
 : An entity that uses a signed HTTP exchange and needs to be able to prove that
-  the author vouched for it as coming from its claimed origin.
+  the publisher vouched for it as coming from its claimed origin.
 
 Unix time
 : Defined by {{POSIX}} [section
@@ -289,8 +289,7 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 
 ## Loading a certificate chain ## {#cert-chain-format}
 
-The resource at a signature's `certUrl` MUST have the
-`application/tls-cert-chain` content type and MUST contain a TLS 1.3 Certificate
+The resource at a signature's `certUrl` MUST contain a TLS 1.3 Certificate
 message (Section 4.4.2 of {{!I-D.ietf-tls-tls13}}) containing X.509v3
 certificates.
 
@@ -705,7 +704,7 @@ entity that directed the client to `o1resource.js`, but there may be cases where
 this leaks extra information.
 
 For non-executable resource types, a signed response can improve the privacy
-situation by hiding the client's interest from the original author.
+situation by hiding the client's interest from the original publisher.
 
 To prevent network operators other than `o1.com` or `o2.com` from learning which
 exchanges were read, clients SHOULD only load exchanges fetched over a transport
@@ -717,31 +716,43 @@ HTTP without TLS.
 
 # IANA considerations
 
-This depends on the following IANA registrations in
+This depends on the following IANA registration in
 {{?I-D.yasskin-http-origin-signed-responses}}:
 
 * The `Signature` header field
-* application/signed-exchange;v=0
 
 This document also registers:
 
-## Internet Media Type application/tls-cert-chain
+## Internet Media Type application/signed-exchange
 
 Type name:  application
 
-Subtype name:  tls-cert-chain
+Subtype name:  signed-exchange
 
-Required parameters:  N/A
+Required parameters:
+
+* v: A string denoting the version of the file format. ({{!RFC5234}} ABNF:
+  `version = DIGIT/%x61-7A`) The version defined in this specification is `b0`.
+  When used with the `Accept` header field (Section 5.3.1 of {{!RFC7231}}), this
+  parameter can be a comma (,)-separated list of version strings. ({{!RFC5234}}
+  ABNF: `version-list = version *( "," version )`) The server is then expected
+  to reply with a resource using a particular version from that list.
+
+  Note: As this is a snapshot of a draft of
+  {{?I-D.yasskin-http-origin-signed-responses}}, it does not use a simple
+  integer to describe its version.
 
 Optional parameters:  N/A
 
 Encoding considerations:  binary
 
-Security considerations:  N/A
+Security considerations:  see Section 6.6 of
+{{!I-D.yasskin-http-origin-signed-responses}}
 
 Interoperability considerations:  N/A
 
-Published specification:  This specification (see {{cert-chain-format}}).
+Published specification:  This specification (see
+{{application-signed-exchange}}).
 
 Applications that use this media type:  N/A
 
@@ -751,9 +762,9 @@ Additional information:
 
   Deprecated alias names for this type:  N/A
 
-  Magic number(s): N/A
+  Magic number(s):  82 A?
 
-  File extension(s): N/A
+  File extension(s): .sxg
 
   Macintosh file type code(s):  N/A
 
