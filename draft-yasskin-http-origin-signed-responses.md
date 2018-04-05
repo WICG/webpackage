@@ -39,6 +39,12 @@ normative:
       name: IEEE
       value: 1003.1-2008, 2016 Edition
     date: 2016
+  URL:
+    target: https://url.spec.whatwg.org/
+    title: URL
+    author:
+      org: WHATWG
+    date: Living Standard
 
 informative:
   DROWN:
@@ -204,8 +210,9 @@ values:
 
 "certUrl"
 
-: A string (Section 4.7 of {{!I-D.ietf-httpbis-header-structure}}) containing a
-  [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
+: A string (Section 4.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
+  [absolute-URL string](https://url.spec.whatwg.org/#absolute-url-string)
+  ({{URL}}).
 
 "certSha256"
 
@@ -219,8 +226,9 @@ values:
 
 {:#signature-validityurl} "validityUrl"
 
-: A string (Section 4.7 of {{!I-D.ietf-httpbis-header-structure}}) containing a
-  [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
+: A string (Section 4.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
+  [absolute-URL string](https://url.spec.whatwg.org/#absolute-url-string)
+  ({{URL}}).
 
 "date" and "expires"
 
@@ -325,7 +333,8 @@ The CBOR representation of an exchange `exchange`'s headers is the CBOR
    * The byte string ':method' to the byte string containing `exchange`'s
      request's method.
    * The byte string ':url' to the byte string containing `exchange`'s request's
-     effective request URI.
+     effective request URI, which MUST be an [absolute-URL
+     string](https://url.spec.whatwg.org/#absolute-url-string) ({{URL}}).
    * For each request header field in `exchange`, the header field's lowercase
      name as a byte string to the header field's value as a byte string.
 1. The map mapping:

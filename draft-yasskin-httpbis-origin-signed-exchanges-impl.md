@@ -42,6 +42,12 @@ normative:
       name: IEEE
       value: 1003.1-2008, 2016 Edition
     date: 2016
+  URL:
+    target: https://url.spec.whatwg.org/
+    title: URL
+    author:
+      org: WHATWG
+    date: Living Standard
   I-D.ietf-httpbis-header-structure-02:
     target: https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-02
     title: Structured Headers for HTTP
@@ -161,8 +167,9 @@ present parameters MUST have the following values:
 
 "certUrl"
 
-: A string (Section 4.2 of {{I-D.ietf-httpbis-header-structure-02}}) containing a
-  [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
+: A string (Section 4.2 of {{I-D.ietf-httpbis-header-structure-02}}) containing
+  an [absolute-URL string](https://url.spec.whatwg.org/#absolute-url-string)
+  ({{URL}}).
 
 "certSha256"
 
@@ -171,8 +178,9 @@ present parameters MUST have the following values:
 
 {:#signature-validityurl} "validityUrl"
 
-: A string (Section 4.2 of {{I-D.ietf-httpbis-header-structure-02}}) containing a
-  [valid URL string](https://url.spec.whatwg.org/#valid-url-string).
+: A string (Section 4.2 of {{I-D.ietf-httpbis-header-structure-02}}) containing
+  an [absolute-URL string](https://url.spec.whatwg.org/#absolute-url-string)
+  ({{URL}}).
 
 "date" and "expires"
 
@@ -242,7 +250,8 @@ The CBOR representation of an exchange `exchange`'s headers is the CBOR
    * The byte string ':method' to the byte string containing `exchange`'s
      request's method.
    * The byte string ':url' to the byte string containing `exchange`'s request's
-     effective request URI.
+     effective request URI, which MUST be an [absolute-URL
+     string](https://url.spec.whatwg.org/#absolute-url-string) ({{URL}}).
    * For each request header field in `exchange`, the header field's lowercase
      name as a byte string to the header field's value as a byte string.
 1. The map mapping:
@@ -662,7 +671,9 @@ signed-exchange-header = [
 
 The first element of the array is interpreted as the exchange's request headers
 with lowercase names, with the request method in the ':method' key's value, and
-the effective request URI in the ':url' key's value.
+the effective request URI, which MUST be an [absolute-URL
+string](https://url.spec.whatwg.org/#absolute-url-string) ({{URL}}), in the
+':url' key's value.
 
 The second element of the array is interpreted as the exchange's response
 headers with lowercase names, with the 3-digit response status code in the
