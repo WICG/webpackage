@@ -1796,6 +1796,7 @@ draft-04
   * Doesn't allow request payloads or response trailers, which don't fit into
     the signature model.
   * Allows checking the signature before parsing the exchange headers.
+* Require absolute URLs.
 
 draft-03
 

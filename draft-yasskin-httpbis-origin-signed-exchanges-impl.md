@@ -814,5 +814,6 @@ Vs. {{?I-D.yasskin-http-origin-signed-responses}}:
 * Only the MI payload-integrity header is supported.
 * The mi-sha256 encoding must have records <= 16kB.
 * The Accept-Signature header isn't used.
+* Require absolute URLs.
 
 # Acknowledgements
