@@ -21,4 +21,12 @@ install:
 
 script:
  - make
- - make ghpages || make ghpages
+ - make issues || make issues DISABLE_ISSUE_FETCH=true && make gh-issues
+ - make gh-pages
+
+deploy:
+  provider: script
+  script: make upload
+  skip_cleanup: true
+  on:
+    tags: true
