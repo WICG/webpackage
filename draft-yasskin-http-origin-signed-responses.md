@@ -863,6 +863,9 @@ returns "valid", return "valid". Otherwise, return "invalid".
    1. Validate that `main-certificate` has an `sct` property
       ({{cert-chain-format}}) containing valid SCTs from trusted logs.
       ({{!RFC6962}})
+
+      Note that SCTs embedded in the certificate via an X.509 extension or in
+      the OCSP response via an OCSP extension are ignored.
 1. Return "valid".
 
 ## Stateful header fields {#stateful-headers}
