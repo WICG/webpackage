@@ -860,12 +860,16 @@ returns "valid", return "valid". Otherwise, return "invalid".
       (`nextUpdate - thisUpdate`) is less than 7 days ({{!RFC6960}}). Note that
       this does not check for revocation of intermediate certificates, and
       clients SHOULD implement another mechanism for that.
-   1. Validate that `main-certificate` has an `sct` property
-      ({{cert-chain-format}}) containing valid SCTs from trusted logs.
-      ({{!RFC6962}})
+   1. Validate that valid SCTs from trusted logs are available from any of:
 
-      Note that SCTs embedded in the certificate via an X.509 extension or in
-      the OCSP response via an OCSP extension are ignored.
+      * The `SignedCertificateTimestampList` in `main-certificate`'s `sct`
+        property ({{cert-chain-format}}),
+      * An OCSP extension in the OCSP response in `main-certificate`'s `ocsp`
+        property, or
+      * An X.509 extension in the certificate in `main-certificate`'s `cert`
+        property,
+
+      as described by Section 3.3 of {{!RFC6962}}.
 1. Return "valid".
 
 ## Stateful header fields {#stateful-headers}
