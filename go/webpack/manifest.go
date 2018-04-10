@@ -9,17 +9,19 @@ import (
 )
 
 type Manifest struct {
-	metadata     Metadata
-	signatures   []SignWith
-	certificates []*x509.Certificate
-	hashTypes    []crypto.Hash
-	subpackages  []string
+	Metadata     Metadata
+	Signatures   []SignWith
+	Certificates []*x509.Certificate
+	HashTypes    []crypto.Hash
+	Subpackages  []string
 }
 
 type SignWith struct {
-	certificate *x509.Certificate
-	pemKey      *pem.Block
-	key         crypto.Signer
+	CertFilename string
+	Certificate  *x509.Certificate
+	KeyFilename  string
+	pemKey       *pem.Block
+	Key          crypto.Signer
 }
 
 // Loads a certificate and its key from two PEM files. The key can be PKCS#1,
@@ -29,6 +31,7 @@ type SignWith struct {
 // This operation is similar to tls.LoadX509KeyPair() except that if the key is
 // encrypted, it can be decrypted with result.GivePassword().
 func LoadSignWith(certFilename, keyFilename string) (result SignWith, err error) {
+	result.CertFilename = certFilename
 	var certs []*x509.Certificate
 	if err = LoadCertificatesFromFile(certFilename, &certs); err != nil {
 		return result, err
@@ -36,30 +39,37 @@ func LoadSignWith(certFilename, keyFilename string) (result SignWith, err error)
 	if len(certs) == 0 {
 		return result, fmt.Errorf("no certificates found in %q.", certFilename)
 	}
-	result.certificate = certs[0]
-	if keyFilename == "" {
-		// Without a key, stop after loading the certificate.
-		return result, nil
-	}
-	if result.pemKey, err = ReadPEMFile(keyFilename); err != nil {
-		return result, err
-	}
-	if !x509.IsEncryptedPEMBlock(result.pemKey) {
-		if result.pemKey.Type == "ENCRYPTED PRIVATE KEY" {
-			return result, errors.New("Go cannot decrypt PKCS#8-format encrypted keys.")
-		}
-		if result.key, err = ParsePrivateKey(result.certificate, result.pemKey.Bytes); err != nil {
+	result.Certificate = certs[0]
+	if keyFilename != "" {
+		if err := result.LoadKey(keyFilename); err != nil {
 			return result, err
 		}
 	}
-
 	return result, nil
+}
+
+// Loads the key for s's certificate from keyFilename.
+func (s *SignWith) LoadKey(keyFilename string) error {
+	s.KeyFilename = keyFilename
+	var err error
+	if s.pemKey, err = ReadPEMFile(keyFilename); err != nil {
+		return err
+	}
+	if !x509.IsEncryptedPEMBlock(s.pemKey) {
+		if s.pemKey.Type == "ENCRYPTED PRIVATE KEY" {
+			return errors.New("Go cannot decrypt PKCS#8-format encrypted keys.")
+		}
+		if s.Key, err = ParsePrivateKey(s.Certificate, s.pemKey.Bytes); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // If the key loaded into s was encrypted, the caller needs to supply a password
 // for it.
 func (s *SignWith) GivePassword(password []byte) error {
-	if s.key != nil {
+	if s.Key != nil {
 		return errors.New("Key isn't encrypted.")
 	}
 	if !x509.IsEncryptedPEMBlock(s.pemKey) {
@@ -69,10 +79,10 @@ func (s *SignWith) GivePassword(password []byte) error {
 	if err != nil {
 		return err
 	}
-	key, err := ParsePrivateKey(s.certificate, keyDer)
+	key, err := ParsePrivateKey(s.Certificate, keyDer)
 	if err != nil {
 		return err
 	}
-	s.key = key
+	s.Key = key
 	return nil
 }
