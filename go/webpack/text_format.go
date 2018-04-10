@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 )
 
@@ -72,9 +71,7 @@ func parseTextManifest(lines *bufio.Scanner, baseDir string) (Manifest, error) {
 					manifest.hashTypes = append(manifest.hashTypes, hash)
 				}
 			}
-			sort.Slice(manifest.hashTypes, func(i, j int) bool {
-				return manifest.hashTypes[i] < manifest.hashTypes[j]
-			})
+			SortHashByCBOR(manifest.hashTypes)
 		case "sign-with":
 			cert_key := semicolonSeparator.Split(header.Value, -1)
 			var certFilename, keyFilename string

@@ -20,6 +20,8 @@
 //  * Parsing
 package cbor
 
+import "bytes"
+
 type Type byte
 
 const (
@@ -32,3 +34,26 @@ const (
 	TypeTag
 	TypeOther
 )
+
+const (
+	TagTime uint64 = 1
+	TagURI         = 32
+)
+
+// cbor.CanonicalLessStrings compares strings in the order needed for map keys
+// in Canonical CBOR: https://tools.ietf.org/html/rfc7049#section-3.9
+func CanonicalLessStrings(a, b string) bool {
+	if len(a) != len(b) {
+		return len(a) < len(b)
+	}
+	return a < b
+}
+
+// cbor.CanonicalLessBytes compares []bytes in the order needed for map keys
+// in Canonical CBOR: https://tools.ietf.org/html/rfc7049#section-3.9
+func CanonicalLessBytes(a, b []byte) bool {
+	if len(a) != len(b) {
+		return len(a) < len(b)
+	}
+	return bytes.Compare(a, b) < 0
+}
