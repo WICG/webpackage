@@ -20,11 +20,12 @@ TAG's Web Packaging Draft](https://w3ctag.github.io/packaging-on-the-web/)~~.
   - [Privacy-preserving prefetch](#privacy-preserving-prefetch)
   - [Packaged Web Publications](#packaged-web-publications)
   - [Third-party security review](#third-party-security-review)
-- [Loading sketch](#loading-sketch)
+- [Signed Exchange Loading Sketch](#signed-exchange-loading-sketch)
   - [Fetch the physical URL](#fetch-the-physical-url)
   - [Fetch the certificate chain](#fetch-the-certificate-chain)
   - [Signature verification](#signature-verification)
   - [Prefetching stops here](#prefetching-stops-here)
+  - [No nested signed exchanges](#no-nested-signed-exchanges)
   - [Caching the signed response](#caching-the-signed-response)
   - [Navigations and subresources redirect](#navigations-and-subresources-redirect)
   - [Matching prefetches with subresources](#matching-prefetches-with-subresources)
@@ -124,7 +125,7 @@ logical URLs of their contained exchanges.
 
 We'll need to specify how browsers load both signed exchanges and bundles of exchanges.
 
-For now, this explainer has [a sketch of how loading will work](#loading-sketch).
+For now, this explainer has [a sketch of how loading will work](#signed-exchange-loading-sketch).
 
 ## Use cases
 
@@ -243,7 +244,7 @@ third-party then signs either the exchanges in a package or the package as a
 whole using a certificate whose metadata reflects whichever property was
 reviewed for.
 
-## Loading sketch
+## Signed Exchange Loading Sketch
 
 When an **embedder** prefetches or embeds an enveloped signed exchange, or a
 client navigates from the embedder to an enveloped signed exchange, the
@@ -256,16 +257,14 @@ The client won't know that a URL holds a signed exchange until it receives the
 `Content-Type` in the response, so the initial request is identical to any other
 request in the same context. It follows redirects, is constrained by the
 embedder's and any parent frame's Content Security Policy, and goes through the
-embedder's or the physical URL's Service Worker.
+physical URL's Service Worker for navigations or the embedder's otherwise.
 
 Once the response comes back, its `Content-Type: application/signed-exchange`
 header tells the client that it represents a signed exchange, but it's initially
 treated like any other response: the Response object shown to the Service Worker
-is the bytes of the `application/signed-exchange` resource, not the response
-inside it, and the client follows the remaining steps only if the Service Worker
-responds with an encoded `application/signed-exchange` resource. The
-`application/signed-exchange` also participates in caches the same way as any
-other resource.
+(if any) is the bytes of the `application/signed-exchange` resource, not the
+response inside it, and the `application/signed-exchange` participates in caches
+the same way as any other resource.
 
 ### Fetch the certificate chain
 
@@ -295,7 +294,7 @@ Once the certificates are validated and enough of the
 `application/signed-exchange` resource is received to parse the claimed
 signed-exchange headers, the client extracts the logical URL from those headers
 and then tries to find a valid signature over the headers that is trusted for
-the claimed origin. If it can't find any, it either
+the claimed origin. If none of the signatures are valid, it either
 
 1. redirects to the logical URL as if the whole signed exchange were a 302
    response, or
@@ -321,31 +320,45 @@ cache entry that would be visible to the logical URL's server.
 Prefetches can and should process any `Link: <>; rel=preload` headers they find,
 as prefetches. If those point at signed exchanges, this process repeats.
 
+### No nested signed exchanges
+
+To limit the complexity of the implementation, we're currently planning to
+disallow signed exchanges that contain either signed exchanges or redirects.
+This may change if use cases come up or if the implementation turns out to be
+simpler than expected.
+
 ### Caching the signed response
 
 If the signed exchange was requested as a navigation or subresource (i.e. *not*
-prefetches), the client tries to cache it.
+prefetches), the client tries to cache the request→response pair it contains.
 
 This *doesn't* happen if:
 
 * The signed exchange's request headers aren't sufficiently similar (TBD) to the
   request headers the client would use for a normal request in the same context.
-  This may avoid confusing the client?
-* There's a response in the HTTP (or preload?) cache with a newer Date header
+  This prevents a malicious intermediate from sticking the wrong
+  content-negotiated resource in the HTTP cache.
+* There's a response in the HTTP (or any?) cache with a newer Date header
   than the signed exchange's response. This prevents some downgrade attacks.
 
 In either of these cases, the client just skips to the redirect in the next
 step.
 
-If we're still here, the signed exchange is put into the [preload
-cache](https://github.com/whatwg/fetch/issues/590) and, if the response headers
-allow it, the [HTTP cache](https://tools.ietf.org/html/rfc7234).
+If we're still here, the signed exchange is put into a "use-once" cache similar
+to the [preload cache](https://github.com/whatwg/fetch/issues/590) and, if the
+response headers allow it (and review of this explainer indicates it's a good
+idea), the [HTTP cache](https://tools.ietf.org/html/rfc7234).
 
-Its freshness in the HTTP cache has to be bounded by the shorter of the normal
-HTTP cache lifetime or the signature's expiration. For *later* loads of the
-logical URL (in particular, not the load that's happening through the signed
-exchange, since it's fulfilled using the preload cache), a stale entry can be
-revalidated in the following ways:
+If we put the signed exchange in the HTTP cache, its freshness has to be bounded
+by the shorter of the normal HTTP cache lifetime or the signature's expiration.
+This is more strict than the bound on cache freshness when it crosses a
+certificate or OCSP response expiration in order to partially mitigate
+[downgrade
+attacks](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#seccons-downgrades).
+For *later* loads of the logical URL (in particular, not the load that's
+happening through the signed exchange, since it's fulfilled using the
+above-mentioned "use-once" cache), a stale entry can be revalidated in the
+following ways:
 
 * If the `Signature` is expired but the HTTP caching information is fresh, the
   client can fetch the `validity-url `to update just the signature. It *must not*
@@ -370,8 +383,9 @@ chose to return a signed exchange, so we currently think it doesn't need a
 second chance.
 
 If the request goes through a Service Worker (and caching wasn't skipped above),
-the `FetchEvent` needs to include some notification that there's a response
-available in the preload cache. We currently think the
+the Service Worker will probably want the `FetchEvent` to include some
+notification that there's a response available without a network request. It may
+be reasonable to ship without this, but we currently think the
 [`preloadResponse`](https://w3c.github.io/ServiceWorker/#fetch-event-preloadresponse)
 field in `FetchEvent` may be enough, although this doesn't provide a place to
 tell the Service Worker about any differences between the signed exchange's
