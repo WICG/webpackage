@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,17 +11,33 @@ import (
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
+var (
+	pemFilepath  = flag.String("pem", "", "PEM filepath")
+	ocspFilepath = flag.String("ocsp", "", "OCSP filepath")
+	sctFilepath  = flag.String("sct", "", "SCT filepath")
+)
+
 func showUsage(w io.Writer) {
-	fmt.Fprintf(w, "Usage: cert-url [pem-file] > certurlFile\n")
+	fmt.Fprintf(w, "Usage: cert-url [pem-file] [ocsp-file] [sct-file] > certurlFile\n")
 }
 
-func run(pemFilePath string) error {
+func run(pemFilePath, ocspFilePath, sctFilePath string) error {
 	in, err := ioutil.ReadFile(pemFilePath)
 	if err != nil {
 		return err
 	}
 
-	out, err := certurl.CertificateMessageFromPEM(in)
+	ocsp, err := ioutil.ReadFile(ocspFilePath)
+	if err != nil {
+		return err
+	}
+
+	sct, err := ioutil.ReadFile(sctFilePath)
+	if err != nil {
+		return err
+	}
+
+	out, err := certurl.CertificateMessageFromPEM(in, ocsp, sct)
 	if err != nil {
 		return err
 	}
@@ -32,11 +49,8 @@ func run(pemFilePath string) error {
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		showUsage(os.Stderr)
-		os.Exit(1)
-	}
-	if err := run(os.Args[1]); err != nil {
+	flag.Parse()
+	if err := run(*pemFilepath, *ocspFilepath, *sctFilepath); err != nil {
 		log.Fatal(err)
 	}
 }

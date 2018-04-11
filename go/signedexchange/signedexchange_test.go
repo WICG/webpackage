@@ -3,18 +3,15 @@ package signedexchange_test
 import (
 	"bytes"
 	"encoding/pem"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/ugorji/go/codec"
-
 	. "github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/signedexchange/internal/testhelper"
 )
 
 const (
@@ -130,39 +127,6 @@ func mustReadFile(path string) []byte {
 	return b
 }
 
-// readableString converts an arbitrary value v to a string.
-//
-// readableString does a basically same thing as fmt.Sprintf("%q", v), but
-// the difference is that map keys are ordered in alphabetical order so that
-// the results are deterministic.
-func readableString(v interface{}) string {
-	switch v := v.(type) {
-	case []interface{}:
-		vals := []string{}
-		for _, val := range v {
-			vals = append(vals, readableString(val))
-		}
-		return "[" + strings.Join(vals, " ") + "]"
-	case map[interface{}]interface{}:
-		keys := []string{}
-		// Assume that keys are strings.
-		for k := range v {
-			keys = append(keys, k.(string))
-		}
-		sort.Strings(keys)
-		vals := []string{}
-		for _, k := range keys {
-			val := v[k]
-			vals = append(vals, fmt.Sprintf("%q:", k)+readableString(val))
-		}
-		return "map[" + strings.Join(vals, " ") + "]"
-	case string, []byte:
-		return fmt.Sprintf("%q", v)
-	default:
-		panic(fmt.Sprintf("not supported type: %T", v))
-	}
-}
-
 func TestSignedExchange(t *testing.T) {
 	u, _ := url.Parse("https://example.com/")
 	header := http.Header{}
@@ -205,14 +169,10 @@ func TestSignedExchange(t *testing.T) {
 
 	var buf bytes.Buffer
 	WriteExchangeFile(&buf, e)
-
-	var decoded interface{}
-	handle := &codec.CborHandle{}
-	if err := codec.NewDecoder(&buf, handle).Decode(&decoded); err != nil {
+	got, err := testhelper.CborBinaryToReadableString(buf.Bytes())
+	if err != nil {
 		t.Fatal(err)
 	}
-
-	got := readableString(decoded)
 	want := strings.TrimSpace(string(mustReadFile("test-signedexchange-expected.txt")))
 
 	if got != want {
