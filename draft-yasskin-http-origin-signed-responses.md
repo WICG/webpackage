@@ -905,11 +905,9 @@ able to make even one unauthorized signature.
 Certificates with this extension MUST be revoked if an unauthorized entity is
 able to make even one unauthorized signature.
 
-Conforming CAs MUST mark this extension as critical, and clients MUST NOT accept
-certificates with this extension in TLS connections (Section 4.4.2.2 of
-{{!I-D.ietf-tls-tls13}}).  This simplifies security analysis of this protocol
-and avoids encouraging server operators to put exchange-signing keys on servers
-exposed directly to the internet.
+Conforming CAs MUST NOT mark this extension as critical, and the presence of
+this extension MUST NOT cause clients to reject a certificate in TLS connections
+(Section 4.4.2.2 of {{!I-D.ietf-tls-tls13}}).
 
 # Transferring a signed exchange {#transfer}
 
@@ -1818,6 +1816,8 @@ draft-04
 * Remove support for integrity protection using the Digest header field.
 * Limit the record size in the mi-sha256 encoding.
 * Forbid RSA keys, and only require clients to support secp256r1 keys.
+* Allow certificates with the CanSignHttpExchanges extension to be used as TLS
+  certificates.
 
 draft-03
 
