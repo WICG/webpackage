@@ -500,26 +500,14 @@ to retrieve an updated OCSP from the original server.
          this returns "invalid", return "invalid".
       1. Let `main-certificate` be the first certificate in `certificate-chain`.
       1. Set `publicKey` to `main-certificate`'s public key.
-      1. The client MUST define a partial function from public key types to
-         signing algorithms, and this function must at the minimum include the
-         following mappings:
-
-         RSA, 2048 bits:
-         : rsa_pss_rsae_sha256 or rsa_pss_pss_sha256, as defined in Section
-           4.2.3 of {{!I-D.ietf-tls-tls13}}, depending on which of the
-           rsaEncryption OID or RSASSA-PSS OID {{!RFC8017}} is used.
-
-         EC, with the secp256r1 curve:
-         : ecdsa_secp256r1_sha256 as defined in Section 4.2.3 of
-           {{!I-D.ietf-tls-tls13}}.
-
-         EC, with the secp384r1 curve:
-         : ecdsa_secp384r1_sha384 as defined in Section 4.2.3 of
-           {{!I-D.ietf-tls-tls13}}.
-
-         Set `signing-alg` to the result of applying this function to the type of
-         `main-certificate`'s public key. If the function is undefined on this
-         input, return "invalid".
+      1. If `publicKey` is an RSA key, return "invalid".
+      1. If `publicKey` is a key using the secp256r1 elliptic curve, set
+         `signing-alg` to ecdsa_secp256r1_sha256 as defined in Section 4.2.3 of
+         {{!I-D.ietf-tls-tls13}}.
+      1. Otherwise, either return "invalid" or set `signing-alg` to a non-legacy
+         signing algorithm defined by TLS 1.3 or later
+         ({{!I-D.ietf-tls-tls13}}). This choice MUST depend only on
+         `publicKey`'s type and not on any other context.
    1. If `ed25519key` is present, set `publicKey` to `ed25519key` and
       `signing-alg` to ed25519, as defined by {{!RFC8032}}
 1. If `expires` is more than 7 days (604800 seconds) after `date`, return
@@ -737,17 +725,12 @@ for "mi/mi-sha256" unless the header field states otherwise.
 
 ### Key type identifiers ### {#accept-signature-key-types}
 
-Identifiers starting with "rsa/" indicate that the client supports certificates
-holding RSA public keys with a number of bits indicated by the digits after the
-"/".
-
 Identifiers starting with "ecdsa/" indicate that the client supports
 certificates holding ECDSA public keys on the curve named in lower-case by the
 rest of the identifier.
 
 If the `Accept-Signature` header field is present, servers SHOULD assume support
-for "rsa/2048", "ecdsa/secp256r1", and "ecdsa/secp384r1" unless the header field
-states otherwise.
+for "ecdsa/secp256r1" unless the header field states otherwise.
 
 ### Key value identifiers ### {#accept-signature-key-values}
 
@@ -794,15 +777,14 @@ Accept-Signature: mi/mi-sha256
 states that the client will accept signatures with payload integrity assured by
 the `MI` header and `mi-sha256` content encoding and implies that the client
 will accept integrity assured by the `Digest: SHA-256` header and signatures
-from 2048-bit RSA keys and ECDSA keys on the secp256r1 and secp384r1 curves.
+from ECDSA keys on the secp256r1 curve.
 
 ~~~http
-Accept-Signature: -rsa/2048, rsa/4096
+Accept-Signature: -ecdsa/secp256r1, ecdsa/secp384r1
 ~~~
 
-states that the client will accept 4096-bit RSA keys but not 2048-bit RSA keys,
-and implies that the client will accept ECDSA keys on the secp256r1 and
-secp384r1 curves and payload integrity assured with the `MI: mi-sha256` header
+states that the client will accept ECDSA keys on the secp384r1 curve but not the
+secp256r1 curve and payload integrity assured with the `MI: mi-sha256` header
 field.
 
 ### Open Questions ### {#oq-accept-signature}
@@ -925,8 +907,9 @@ able to make even one unauthorized signature.
 
 Conforming CAs MUST mark this extension as critical, and clients MUST NOT accept
 certificates with this extension in TLS connections (Section 4.4.2.2 of
-{{!I-D.ietf-tls-tls13}}).  This prevents accidental signing oracles exposed by
-TLS servers from allowing package signing (e.g. {{DROWN}} and {{ROBOT}}).
+{{!I-D.ietf-tls-tls13}}).  This simplifies security analysis of this protocol
+and avoids encouraging server operators to put exchange-signing keys on servers
+exposed directly to the internet.
 
 # Transferring a signed exchange {#transfer}
 
@@ -1834,6 +1817,7 @@ draft-04
 * Switch back to the TLS 1.3 signature format.
 * Remove support for integrity protection using the Digest header field.
 * Limit the record size in the mi-sha256 encoding.
+* Forbid RSA keys, and only require clients to support secp256r1 keys.
 
 draft-03
 
