@@ -190,8 +190,8 @@ The `Signature` header is a Structured Header as defined by
 (Section 4.3 of {{!I-D.ietf-httpbis-header-structure}}).
 
 Each parameterised identifier in the list MUST have parameters named "sig",
-"integrity", "validityUrl", "date", and "expires". Each parameterised identifier
-MUST also have either "certUrl" and "certSha256" parameters or an "ed25519Key"
+"integrity", "validity-url", "date", and "expires". Each parameterised identifier
+MUST also have either "cert-url" and "cert-sha256" parameters or an "ed25519key"
 parameter. This specification gives no meaning to the identifier itself, which
 can be used as a human-readable identifier for the signature (see
 {{parameterised-binary}}). The present parameters MUST have the following
@@ -208,23 +208,23 @@ values:
   the lowercase name of the response header field that guards the response
   payload's integrity.
 
-"certUrl"
+"cert-url"
 
 : A string (Section 4.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
   [absolute-URL string](https://url.spec.whatwg.org/#absolute-url-string)
   ({{URL}}).
 
-"certSha256"
+"cert-sha256"
 
 : Binary content (Section 4.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
-  the SHA-256 hash of the first certificate found at "certUrl".
+  the SHA-256 hash of the first certificate found at "cert-url".
 
-"ed25519Key"
+"ed25519key"
 
 : Binary content (Section 4.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
   an Ed25519 public key ({{!RFC8032}}).
 
-{:#signature-validityurl} "validityUrl"
+{:#signature-validityurl} "validity-url"
 
 : A string (Section 4.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
   [absolute-URL string](https://url.spec.whatwg.org/#absolute-url-string)
@@ -235,7 +235,7 @@ values:
 : An integer (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}})
   representing a Unix time.
 
-The "certUrl" parameter is *not* signed, so intermediates can update it with a
+The "cert-url" parameter is *not* signed, so intermediates can update it with a
 pointer to a cached version.
 
 ### Examples ### {#example-signature-header}
@@ -249,29 +249,29 @@ Signature:
  sig1;
   sig=*MEUCIQDXlI2gN3RNBlgFiuRNFpZXcDIaUpX6HIEwcZEc0cZYLAIga9DsVOMM+g5YpwEBdGW3sS+bvnmAJJiSMwhuBdqp5UY=*;
   integrity="mi";
-  validityUrl="https://example.com/resource.validity.1511128380";
-  certUrl="https://example.com/oldcerts";
-  certSha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI=*;
+  validity-url="https://example.com/resource.validity.1511128380";
+  cert-url="https://example.com/oldcerts";
+  cert-sha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI=*;
   date=1511128380; expires=1511733180,
  sig2;
   sig=*MEQCIGjZRqTRf9iKNkGFyzRMTFgwf/BrY2ZNIP/dykhUV0aYAiBTXg+8wujoT4n/W+cNgb7pGqQvIUGYZ8u8HZJ5YH26Qg=*;
   integrity="mi";
-  validityUrl="https://example.com/resource.validity.1511128380";
-  certUrl="https://example.com/newcerts";
-  certSha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw=*;
+  validity-url="https://example.com/resource.validity.1511128380";
+  cert-url="https://example.com/newcerts";
+  cert-sha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw=*;
   date=1511128380; expires=1511733180,
  srisig;
   sig=*lGZVaJJM5f2oGczFlLmBdKTDL+QADza4BgeO494ggACYJOvrof6uh5OJCcwKrk7DK+LBch0jssDYPp5CLc1SDA=*
   integrity="mi";
-  validityUrl="https://example.com/resource.validity.1511128380";
-  ed25519Key=*zsSevyFsxyZHiUluVBDd4eypdRLTqyWRVOJuuKUz+A8=*
+  validity-url="https://example.com/resource.validity.1511128380";
+  ed25519key=*zsSevyFsxyZHiUluVBDd4eypdRLTqyWRVOJuuKUz+A8=*
   date=1511128380; expires=1511733180,
  thirdpartysig;
   sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+=*;
   integrity="mi";
-  validityUrl="https://thirdparty.example.com/resource.validity.1511161860";
-  certUrl="https://thirdparty.example.com/certs";
-  certSha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc=*;
+  validity-url="https://thirdparty.example.com/resource.validity.1511161860";
+  cert-url="https://thirdparty.example.com/certs";
+  cert-sha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc=*;
   date=1511133060; expires=1511478660,
 ~~~
 
@@ -284,7 +284,7 @@ All 4 signatures rely on the `MI` response header to guard the integrity of the
 response payload. This isn't strictly required---some signatures could use `MI`
 while others use `Digest`---but there's not much benefit to mixing them.
 
-The signatures include a "validityUrl" that includes the first time the resource
+The signatures include a "validity-url" that includes the first time the resource
 was seen. This allows multiple versions of a resource at the same URL to be
 updated with new signatures, which allows clients to avoid transferring extra
 data while the old versions don't have known security bugs.
@@ -312,7 +312,7 @@ identifiers but not other supported types like binary content. If the
 we should add a "parameterised binary content" type.
 {:#parameterised-binary}
 
-Should the certUrl and validityUrl be lists so that intermediates can offer a
+Should the cert-url and validity-url be lists so that intermediates can offer a
 cache without losing the original URLs? Putting lists in dictionary fields is
 more complex than {{?I-D.ietf-httpbis-header-structure}} allows, so they're
 single items for now.
@@ -380,7 +380,7 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 
 ## Loading a certificate chain ## {#cert-chain-format}
 
-The resource at a signature's `certUrl` MUST have the
+The resource at a signature's `cert-url` MUST have the
 `application/cert-chain+cbor` content type, MUST be canonically-encoded CBOR
 ({{canonical-cbor}}), and MUST match the following CDDL:
 
@@ -410,9 +410,9 @@ using the other certificates in the chain.
 1. Each certificate's `sct` value MUST be a `SignedCertificateTimestampList` for
    that certificate as defined by Section 3.3 of {{!RFC6962}}.
 
-Loading a `certUrl` takes a `forceFetch` flag. The client MUST:
+Loading a `cert-url` takes a `forceFetch` flag. The client MUST:
 
-1. Let `raw-chain` be the result of fetching ({{FETCH}}) `certUrl`. If
+1. Let `raw-chain` be the result of fetching ({{FETCH}}) `cert-url`. If
    `forceFetch` is *not* set, the fetch can be fulfilled from a cache using
    normal HTTP semantics {{!RFC7234}}. If this fetch fails, return
    "invalid".
@@ -478,10 +478,10 @@ to retrieve an updated OCSP from the original server.
    * `signature` be the signature (binary content in the parameterised
      identifier's "sig" parameter).
    * `integrity` be the signature's "integrity" parameter.
-   * `validityUrl` be the signature's "validityUrl" parameter.
-   * `certUrl` be the signature's "certUrl" parameter, if any.
-   * `certSha256` be the signature's "certSha256" parameter, if any.
-   * `ed25519Key` be the signature's "ed25519Key" parameter, if any.
+   * `validity-url` be the signature's "validity-url" parameter.
+   * `cert-url` be the signature's "cert-url" parameter, if any.
+   * `cert-sha256` be the signature's "cert-sha256" parameter, if any.
+   * `ed25519key` be the signature's "ed25519key" parameter, if any.
    * `date` be the signature's "date" parameter, interpreted as a Unix time.
    * `expires` be the signature's "expires" parameter, interpreted as a Unix
      time.
@@ -495,9 +495,9 @@ to retrieve an updated OCSP from the original server.
    (<https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml>) stronger
    than `SHA`, then return "invalid".
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
-   1. If `certUrl` is present:
+   1. If `cert-url` is present:
       1. Let `certificate-chain` be the result of loading the certificate chain
-         at `certUrl` passing the `forceFetch` flag ({{cert-chain-format}}). If
+         at `cert-url` passing the `forceFetch` flag ({{cert-chain-format}}). If
          this returns "invalid", return "invalid".
       1. Let `main-certificate` be the first certificate in `certificate-chain`.
       1. Set `publicKey` to `main-certificate`'s public key.
@@ -521,7 +521,7 @@ to retrieve an updated OCSP from the original server.
          Set `signing-alg` to the result of applying this function to the type of
          `main-certificate`'s public key. If the function is undefined on this
          input, return "invalid".
-   1. If `ed25519Key` is present, set `publicKey` to `ed25519Key` and
+   1. If `ed25519key` is present, set `publicKey` to `ed25519key` and
       `signing-alg` to ed25519, as defined by {{!RFC8032}}
 1. If `expires` is more than 7 days (604800 seconds) after `date`, return
    "invalid".
@@ -531,17 +531,17 @@ to retrieve an updated OCSP from the original server.
    1. A single 0 byte which serves as a separator.
    1. The bytes of the canonical CBOR serialization ({{canonical-cbor}}) of a
       CBOR map mapping:
-      1. If `certSha256` is set:
-         1. The text string "certSha256" to the byte string value of
-            `certSha256`.
-      1. The text string "validityUrl" to the byte string value of
-         `validityUrl`.
+      1. If `cert-sha256` is set:
+         1. The text string "cert-sha256" to the byte string value of
+            `cert-sha256`.
+      1. The text string "validity-url" to the byte string value of
+         `validity-url`.
       1. The text string "date" to the integer value of `date`.
       1. The text string "expires" to the integer value of `expires`.
       1. The text string "headers" to the CBOR representation
          ({{cbor-representation}}) of `exchange`'s headers.
-1. If `certUrl` is present and the SHA-256 hash of `main-certificate`'s
-   `cert_data` is not equal to `certSha256` (whose presence was checked when the
+1. If `cert-url` is present and the SHA-256 hash of `main-certificate`'s
+   `cert_data` is not equal to `cert-sha256` (whose presence was checked when the
    `Signature` header field was parsed), return "invalid".
 
    Note that this intentionally differs from TLS 1.3, which signs the entire
@@ -550,7 +550,7 @@ to retrieve an updated OCSP from the original server.
    response without updating signatures at the same time.
 1. If `signature` is a valid signature of `message` by `publicKey` using
    `signing-alg`, return "potentially-valid" with whichever is present of
-   `certificate-chain` or `ed25519Key`. Otherwise, return "invalid".
+   `certificate-chain` or `ed25519key`. Otherwise, return "invalid".
 
 Note that the above algorithm can determine that an exchange's headers are
 potentially-valid before the exchange's payload is received. Similarly, if
@@ -577,17 +577,17 @@ time after they're signed, so that revoked certificates and signed exchanges
 with known vulnerabilities are distrusted promptly.
 
 This specification provides no way to update OCSP responses by themselves.
-Instead, [clients need to re-fetch the "certUrl"](#force-fetch) to get a chain
+Instead, [clients need to re-fetch the "cert-url"](#force-fetch) to get a chain
 including a newer OCSP response.
 
-The ["validityUrl" parameter](#signature-validityurl) of the signatures provides
+The ["validity-url" parameter](#signature-validityurl) of the signatures provides
 a way to fetch new signatures or learn where to fetch a complete updated
 exchange.
 
 Each version of a signed exchange SHOULD have its own validity URLs, since each
 version needs different signatures and becomes obsolete at different times.
 
-The resource at a "validityUrl" is "validity data", a CBOR map matching the
+The resource at a "validity-url" is "validity data", a CBOR map matching the
 following CDDL ({{!I-D.ietf-cbor-cddl}}):
 
 ~~~cddl
@@ -626,26 +626,26 @@ Signature:
  sig1;
   sig=*MEUCIQ...*;
   ...
-  validityUrl="https://example.com/resource.validity.1511157180";
-  certUrl="https://example.com/oldcerts";
+  validity-url="https://example.com/resource.validity.1511157180";
+  cert-url="https://example.com/oldcerts";
   date=1511128380; expires=1511733180,
  sig2;
   sig=*MEQCIG...*;
   ...
-  validityUrl="https://example.com/resource.validity.1511157180";
-  certUrl="https://example.com/newcerts";
+  validity-url="https://example.com/resource.validity.1511157180";
+  cert-url="https://example.com/newcerts";
   date=1511128380; expires=1511733180,
  thirdpartysig;
   sig=*MEYCIQ...*;
   ...
-  validityUrl="https://thirdparty.example.com/resource.validity.1511161860";
-  certUrl="https://thirdparty.example.com/certs";
+  validity-url="https://thirdparty.example.com/resource.validity.1511161860";
+  cert-url="https://thirdparty.example.com/certs";
   date=1511478660; expires=1511824260
 ~~~
 
 At 2017-11-27 11:02 UTC, `sig1` and `sig2` have expired, but `thirdpartysig`
 doesn't exipire until 23:11 that night, so the client needs to fetch
-`https://example.com/resource.validity.1511157180` (the `validityUrl` of `sig1`
+`https://example.com/resource.validity.1511157180` (the `validity-url` of `sig1`
 and `sig2`) to update those signatures. This URL might contain:
 
 ~~~cbor-diag
@@ -653,10 +653,10 @@ and `sig2`) to update those signatures. This URL might contain:
   "signatures": [
     'sig1; '
     'sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw==*; '
-    'validityUrl="https://example.com/resource.validity.1511157180"; '
+    'validity-url="https://example.com/resource.validity.1511157180"; '
     'integrity="mi"; '
-    'certUrl="https://example.com/newcerts"; '
-    'certSha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw=*; '
+    'cert-url="https://example.com/newcerts"; '
+    'cert-sha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw=*; '
     'date=1511733180; expires=1512337980'
   ],
   "update": {
@@ -668,7 +668,7 @@ and `sig2`) to update those signatures. This URL might contain:
 This indicates that the client could fetch a newer version at
 `https://example.com/resource` (the original URL of the exchange), or that the
 validity period of the old version can be extended by replacing the first two of
-the original signatures (the ones with a validityUrl of
+the original signatures (the ones with a validity-url of
 `https://example.com/resource.validity.1511157180`) with the single new
 signature provided. (This might happen at the end of a migration to a new root
 certificate.) The signatures of the updated signed exchange would be:
@@ -678,14 +678,14 @@ Signature:
  sig1;
   sig=*MEQCIC...*;
   ...
-  validityUrl="https://example.com/resource.validity.1511157180";
-  certUrl="https://example.com/newcerts";
+  validity-url="https://example.com/resource.validity.1511157180";
+  cert-url="https://example.com/newcerts";
   date=1511733180; expires=1512337980,
  thirdpartysig;
   sig=*MEYCIQ...*;
   ...
-  validityUrl="https://thirdparty.example.com/resource.validity.1511161860";
-  certUrl="https://thirdparty.example.com/certs";
+  validity-url="https://thirdparty.example.com/resource.validity.1511161860";
+  cert-url="https://thirdparty.example.com/certs";
   date=1511478660; expires=1511824260
 ~~~
 
@@ -832,7 +832,7 @@ instructions in {{signature-validity}}, and run the following algorithm for each
 signature, stopping at the first one that returns "valid". If any signature
 returns "valid", return "valid". Otherwise, return "invalid".
 
-1. If the signature's ["validityUrl" parameter](#signature-validityurl) is not
+1. If the signature's ["validity-url" parameter](#signature-validityurl) is not
    [same-origin](https://html.spec.whatwg.org/multipage/origin.html#same-origin)
    with `exchange`'s effective request URI (Section 5.5 of {{!RFC7230}}), return
    "invalid".
@@ -1065,7 +1065,7 @@ PUSH_PROMISE's authority.
 
 #### Open Questions ### {#oq-cross-origin-push}
 
-Is it right that "validityUrl" is required to be same-origin with the exchange?
+Is it right that "validity-url" is required to be same-origin with the exchange?
 This allows the mitigation against downgrades in {{seccons-downgrades}}, but
 prohibits intermediates from providing a cache of the validity information. We
 could do both with a list of URLs.
@@ -1209,7 +1209,7 @@ version is live, while an attacker can forward a signed response until its
 signature expires. Publishers should consider shorter signature expiration times
 than they use for cache expiration times.
 
-Clients MAY also check the ["validityUrl"](#signature-validityurl) of an
+Clients MAY also check the ["validity-url"](#signature-validityurl) of an
 exchange more often than the signature's expiration would require. Doing so for
 an exchange with an HTTPS request URI provides a TLS guarantee that the exchange
 isn't out of date (as long as {{oq-cross-origin-push}} is resolved to keep the
@@ -1279,7 +1279,7 @@ HTTP without TLS.
 
 # IANA considerations
 
-TODO: possibly register the validityUrl format.
+TODO: possibly register the validity-url format.
 
 ## Signature Header Field Registration
 
@@ -1489,7 +1489,7 @@ Their needs are simpler than most other use cases in that the
 `integrity="ed25519-[public-key]"` attribute and CSP-based ways of expressing a
 public key don't need that key to be wrapped into a certificate.
 
-The "ed25519Key" signature parameter supports this simpler way of attaching a
+The "ed25519key" signature parameter supports this simpler way of attaching a
 key.
 
 The current proposal for signature-based SRI describes signing only the content
@@ -1782,7 +1782,7 @@ Date: Sat, 25 Nov 2017 10:00:00 UTC
 
 In an exchange with multiple signatures, using cache control to expire
 signatures forces all signatures to initially live for the same period. Worse,
-the update from one signature's "validityUrl" might not match the update for
+the update from one signature's "validity-url" might not match the update for
 another signature. Clients would need to maintain a current set of headers for
 each signature, and then decide which set to use when actually parsing the
 resource itself.
@@ -1804,6 +1804,7 @@ draft-04
     the signature model.
   * Allows checking the signature before parsing the exchange headers.
 * Require absolute URLs.
+* Make all identifiers in headers lower-case, as required by Structured Headers.
 
 draft-03
 
