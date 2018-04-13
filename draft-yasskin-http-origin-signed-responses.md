@@ -1824,7 +1824,7 @@ draft-02
 
 * Signatures identify a header (e.g. Digest or MI) to guard the payload's
   integrity instead of directly signing over the payload.
-* The validity-url is signed.
+* The validityUrl is signed.
 * Use CBOR maps where appropriate, and define how they're canonicalized.
 * Remove the update.url field from signature validity updates, in favor of just
   re-fetching the original request URL.
