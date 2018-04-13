@@ -526,7 +526,11 @@ to retrieve an updated OCSP from the original server.
 1. If `expires` is more than 7 days (604800 seconds) after `date`, return
    "invalid".
 1. If the current time is before `date` or after `expires`, return "invalid".
-1. Let `message` be the concatenation of the following byte strings:
+1. Let `message` be the concatenation of the following byte strings. This
+   matches the {{?I-D.ietf-tls-tls13}} format to avoid cross-protocol attacks if
+   anyone uses the same key in a TLS certificate and an exchange-signing
+   certificate.
+   1. A string that consists of octet 32 (0x20) repeated 64 times.
    1. A context string: the ASCII encoding of “HTTP Exchange”.
    1. A single 0 byte which serves as a separator.
    1. The bytes of the canonical CBOR serialization ({{canonical-cbor}}) of a
@@ -1805,6 +1809,7 @@ draft-04
   * Allows checking the signature before parsing the exchange headers.
 * Require absolute URLs.
 * Make all identifiers in headers lower-case, as required by Structured Headers.
+* Switch back to the TLS 1.3 signature format.
 
 draft-03
 
