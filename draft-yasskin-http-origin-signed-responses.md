@@ -347,7 +347,8 @@ The CBOR representation of an exchange `exchange`'s headers is the CBOR
 Given the HTTP exchange:
 
 ~~~http
-GET https://example.com/ HTTP/1.1
+GET / HTTP/1.1
+Host: example.com
 Accept: */*
 
 HTTP/1.1 200
@@ -1756,7 +1757,8 @@ exchange's response header fields.
 For example, given a stored exchange of:
 
 ~~~http
-GET https://example.com/ HTTP/1.1
+GET  / HTTP/1.1
+Host: example.com
 Accept: */*
 
 HTTP/1.1 200
@@ -1780,7 +1782,8 @@ Date: Sat, 25 Nov 2017 10:00:00 UTC
 The resulting stored exchange would be:
 
 ~~~http
-GET https://example.com/ HTTP/1.1
+GET / HTTP/1.1
+Host: example.com
 Accept: */*
 
 HTTP/1.1 200
