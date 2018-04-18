@@ -488,9 +488,11 @@ to retrieve an updated OCSP from the original server.
    response headers or which the client cannot use to check the integrity of
    `payload` (for example, the header field is new and hasn't been implemented
    yet), then return "invalid". If the selected header field provides integrity
-   guarantees weaker than SHA-256, return "invalid". Clients MUST implement at
-   least the `MI` ({{!I-D.thomson-http-mice}}) header field with its `mi-sha256`
-   content encoding.
+   guarantees weaker than SHA-256, return "invalid". If validating integrity
+   using the selected header field requires the client to process records larger
+   than TBD bytes, return "invalid". Clients MUST implement at least the `MI`
+   ({{!I-D.thomson-http-mice}}) header field with its `mi-sha256` content
+   encoding.
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. If `cert-url` is present:
       1. Let `certificate-chain` be the result of loading the certificate chain
@@ -1723,7 +1725,8 @@ to disk.
 
 To allow the network layer to verify signed exchanges using a bounded amount of
 memory, {{application-signed-exchange}} requires the signature and headers to be
-less than TBD bytes long. This allows the network layer to validate a bounded
+less than TBD bytes long, and {{signature-validity}} requires that the MI record
+size be less than TBD bytes. This allows the network layer to validate a bounded
 chunk at a time, and pass that chunk on to a renderer, and then forget about
 that chunk before processing the next one.
 
@@ -1824,6 +1827,7 @@ draft-04
 * Make all identifiers in headers lower-case, as required by Structured Headers.
 * Switch back to the TLS 1.3 signature format.
 * Remove support for integrity protection using the Digest header field.
+* Limit the record size in the mi-sha256 encoding.
 
 draft-03
 
