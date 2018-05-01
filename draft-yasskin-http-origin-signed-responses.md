@@ -1714,6 +1714,12 @@ Simpler implementations are, all things equal, less likely to include bugs. This
 section describes decisions that were made in the rest of the specification to
 reduce complexity.
 
+### Limited choices
+
+In general, we're trying to eliminate unnecessary choices in the specification.
+For example, instead of requiring clients to support two methods for verifying
+payload integrity, we only require one.
+
 ### Bounded-buffering integrity checking
 
 Clients can be designed with a more-trusted network layer that decides how to
