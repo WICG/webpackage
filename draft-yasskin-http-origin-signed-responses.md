@@ -281,8 +281,7 @@ controlled by `example.com`, and a fourth using a secp256r1 certificate owned by
 `thirdparty.example.com`.
 
 All 4 signatures rely on the `MI` response header to guard the integrity of the
-response payload. This isn't strictly required---some signatures could use `MI`
-while others use `Digest`---but there's not much benefit to mixing them.
+response payload.
 
 The signatures include a "validity-url" that includes the first time the resource
 was seen. This allows multiple versions of a resource at the same URL to be
@@ -353,8 +352,8 @@ Accept: */*
 
 HTTP/1.1 200
 Content-Type: text/html
-Digest: SHA-256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3
-Signed-Headers: "content-type", "digest"
+MI: mi-sha256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3
+Signed-Headers: "content-type", "mi"
 
 <!doctype html>
 <html>
@@ -371,7 +370,7 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
     ':method': 'GET',
   },
   {
-    'digest': 'SHA-256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3',
+    'mi': 'mi-sha256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3',
     ':status': '200',
     'content-type': 'text/html'
   }
@@ -488,12 +487,12 @@ to retrieve an updated OCSP from the original server.
 1. If `integrity` names a header field that is not present in `exchange`'s
    response headers or which the client cannot use to check the integrity of
    `payload` (for example, the header field is new and hasn't been implemented
-   yet), then return "invalid". Clients MUST implement at least the `Digest`
-   ({{!RFC3230}}) and `MI` ({{!I-D.thomson-http-mice}}) header fields.
-1. If `integrity` is "digest", and the `Digest` header field in `exchange`'s
-   response headers contains no digest-algorithms
-   (<https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml>) stronger
-   than `SHA`, then return "invalid".
+   yet), then return "invalid". If the selected header field provides integrity
+   guarantees weaker than SHA-256, return "invalid". If validating integrity
+   using the selected header field requires the client to process records larger
+   than TBD bytes, return "invalid". Clients MUST implement at least the `MI`
+   ({{!I-D.thomson-http-mice}}) header field with its `mi-sha256` content
+   encoding.
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. If `cert-url` is present:
       1. Let `certificate-chain` be the result of loading the certificate chain
@@ -726,13 +725,6 @@ parameters on existing identifiers may be defined by future specifications.
 
 ### Integrity identifiers ### {#accept-signature-integrity}
 
-Identifiers starting with "digest/" indicate that the client supports the
-`Digest` header field ({{!RFC3230}}) with the digest-algorithm from the
-<https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml> registry
-named in lower-case by the rest of the identifier. For example, "digest/sha-512"
-indicates support for the SHA-512 digest algorithm, and "-digest/sha-256"
-indicates non-support for the SHA-256 digest algorithm.
-
 Identifiers starting with "mi/" indicate that the client supports the `MI`
 header field ({{!I-D.thomson-http-mice}}) with the parameter from the HTTP MI
 Parameter Registry registry named in lower-case by the rest of the identifier.
@@ -741,8 +733,7 @@ as-yet-unspecified mi-blake2 parameter, and "-digest/mi-sha256" indicates
 non-support for Merkle integrity with the mi-sha256 content encoding.
 
 If the `Accept-Signature` header field is present, servers SHOULD assume support
-for "digest/sha-256" and "mi/mi-sha256" unless the header field states
-otherwise.
+for "mi/mi-sha256" unless the header field states otherwise.
 
 ### Key type identifiers ### {#accept-signature-key-types}
 
@@ -811,8 +802,8 @@ Accept-Signature: -rsa/2048, rsa/4096
 
 states that the client will accept 4096-bit RSA keys but not 2048-bit RSA keys,
 and implies that the client will accept ECDSA keys on the secp256r1 and
-secp384r1 curves and payload integrity assured with the `MI: mi-sha256` and
-`Digest: SHA-256` header fields.
+secp384r1 curves and payload integrity assured with the `MI: mi-sha256` header
+field.
 
 ### Open Questions ### {#oq-accept-signature}
 
@@ -1717,6 +1708,37 @@ These assertions could be structured as:
 The signature also needs to include instructions to intermediates for how to
 fetch updated validity assertions.
 
+## Low implementation complexity
+
+Simpler implementations are, all things equal, less likely to include bugs. This
+section describes decisions that were made in the rest of the specification to
+reduce complexity.
+
+### Limited choices
+
+In general, we're trying to eliminate unnecessary choices in the specification.
+For example, instead of requiring clients to support two methods for verifying
+payload integrity, we only require one.
+
+### Bounded-buffering integrity checking
+
+Clients can be designed with a more-trusted network layer that decides how to
+trust resources and then provides those resources to less-trusted rendering
+processes along with handles to the storage and other resources they're allowed
+to access. If the network layer can enforce that it only operates on chunks of
+data up to a certain size, it can avoid the complexity of spooling large files
+to disk.
+
+To allow the network layer to verify signed exchanges using a bounded amount of
+memory, {{application-signed-exchange}} requires the signature and headers to be
+less than TBD bytes long, and {{signature-validity}} requires that the MI record
+size be less than TBD bytes. This allows the network layer to validate a bounded
+chunk at a time, and pass that chunk on to a renderer, and then forget about
+that chunk before processing the next one.
+
+The `Digest` header field from {{!RFC3230}} requires the network layer to buffer
+the entire response body, so it's disallowed.
+
 # Determining validity using cache control # {#validity-with-cache-control}
 
 This draft could expire signature validity using the normal HTTP cache control
@@ -1810,6 +1832,8 @@ draft-04
 * Require absolute URLs.
 * Make all identifiers in headers lower-case, as required by Structured Headers.
 * Switch back to the TLS 1.3 signature format.
+* Remove support for integrity protection using the Digest header field.
+* Limit the record size in the mi-sha256 encoding.
 
 draft-03
 
