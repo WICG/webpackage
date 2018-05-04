@@ -248,6 +248,13 @@ reviewed for.
 
 ## Signed Exchange Loading Sketch
 
+Signed exchanges fit into the loading stack between the prefetch cache and
+Service Workers, leading to a stack with the following layers:
+
+Network → HTTP/2 Push cache → HTTP Cache → prefetch cache → **signed exchange
+handling** → Service Workers → preload cache → memory/image cache → actual
+rendering
+
 When an **embedder** prefetches or embeds an application/signed-exchange
 resource, or a client navigates from the embedder to an
 application/signed-exchange, the client goes through several steps to open the
@@ -261,11 +268,11 @@ request in the same context. It follows redirects, is constrained by the
 embedder's and any parent frame's Content Security Policy, and goes through the
 distributing URL's Service Worker for navigations or the embedder's otherwise.
 
-Once the response comes back, its `Content-Type: application/signed-exchange`
-header tells the client that it's the outer resource of a signed exchange, but
-it's initially treated like any other response: the Response object shown to the
-Service Worker (if any) is the bytes of the outer, not the inner response, and
-the outer resource participates in caches the same way as any other resource.
+Once the response comes back, it's cached in the HTTP layer like any other
+response, but the `Content-Type: application/signed-exchange` header tells the
+client that it's the outer resource of a signed exchange, which causes the
+signed-exchange handler to return either an annotated redirect or a network
+error to higher layers.
 
 ### Fetch the certificate chain
 
@@ -277,12 +284,11 @@ a certificate chain to use to validate the signature, and each certificate chain
 is fetched and validated.
 
 The request for this certificate chain is made without credentials and skips
-Service Workers, for compatibility with browser network stack architectures.
-(This may change if network stacks prove to be less of a problem than expected.)
-The request may be fulfilled from the HTTP cache, and its response is cached as
-a normal HTTP response. We might also define an additional content-addressed
-cache using the `cert-sha256` field, if we can show that this avoids the
-[privacy problems of the SRI
+Service Workers, due to the layering of signed-exchange handling. The request
+may be fulfilled from the HTTP cache, and its response is cached as a normal
+HTTP response. We might also define an additional content-addressed cache using
+the `cert-sha256` field, if we can show that this avoids the [privacy problems
+of the SRI
 cache](https://hillbrad.github.io/sri-addressable-caching/sri-addressable-caching.html).
 
 The client checks the leaf certificate's hash against the `cert-sha256` field of
@@ -319,8 +325,8 @@ records into a response stream as they arrive.
 At this point, the client's behavior depends on whether the outer exchange was
 requested as a [prefetch](https://w3c.github.io/resource-hints/#prefetch). To
 satisfy the [privacy-preserving prefetch](#privacy-preserving-prefetch) use
-case, prefetches can't fully load the publishing URL, which would create an HTTP
-cache entry that would be visible to the publishing URL's server.
+case, prefetches have to be careful not to store the inner response in the HTTP
+cache or anywhere else that would be visible to the publishing URL's server.
 
 Prefetches can and should process any `Link: <>; rel=preload` headers they find,
 as prefetches. If those point at signed exchanges, this process repeats.
@@ -345,13 +351,15 @@ If the Service Worker fetches a matching URL from the network, either by
 returning without calling `e.respondWith()` or by calling `fetch(...)`, this
 tries to return the response stream that was attached to the redirect. However,
 if either of the following conditions is met, the fetch bypasses the attached
-exchange and continues down to the HTTP cache:
+exchange and continues down to the lower caches and the network:
 
 * The inner request headers aren't sufficiently similar (TBD) to the headers in
-  the Request the SW sent. This prevents a malicious intermediate from sticking
-  the wrong content-negotiated resource in the HTTP cache.
-* There's a response in the HTTP (or any?) cache with a newer Date header than
-  the inner response's Date header. This prevents some downgrade attacks.
+  the Request the SW sent. This prevents a malicious intermediate from causing
+  the client to use the wrong content-negotiated resource. If we later put inner
+  responses in the HTTP cache, this also prevents the intermediate from putting
+  the wrong resource there.
+* There's a response in a lower cache with a newer Date header than the inner
+  response's Date header. This prevents some downgrade attacks.
    * Content-negotiated responses may need to allow separate
      monotonically-increasing `Date` sequences for each
      [variant](https://tools.ietf.org/html/draft-nottingham-variants-02). We're
