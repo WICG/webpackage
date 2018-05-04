@@ -21,7 +21,7 @@ TAG's Web Packaging Draft](https://w3ctag.github.io/packaging-on-the-web/)~~.
   - [Packaged Web Publications](#packaged-web-publications)
   - [Third-party security review](#third-party-security-review)
 - [Signed Exchange Loading Sketch](#signed-exchange-loading-sketch)
-  - [Fetch the physical URL](#fetch-the-physical-url)
+  - [Fetch the distributing URL](#fetch-the-distributing-url)
   - [Fetch the certificate chain](#fetch-the-certificate-chain)
   - [Signature verification](#signature-verification)
   - [Prefetching stops here](#prefetching-stops-here)
@@ -48,7 +48,7 @@ AMP cache, or old HTTP proxies) downloads content from its author (or another
 intermediate) and forwards it to a client (or another intermediate).
 
 When an HTTP exchange is encoded into a resource, the resource can be fetched
-from a **physical URL** that is different from the **logical URL** of the
+from a **distributing URL** that is different from the **publishing URL** of the
 encoded exchange. We talk about the **inner** exchange and its inner request and
 response, the **outer** resource it's encoded into, and sometimes the outer
 exchange that fetches the outer resource.
@@ -93,8 +93,8 @@ Signed exchanges can also be sent to a client in three ways:
    non-origin signatures and to provide an origin-trusted signature to
    intermediates.
 1. Enveloped into the `application/signed-exchange` content type. In this case,
-   the signed exchange has both the logical URL of its inner request, and the
-   physical URL of the outer envelope.
+   the signed exchange has both the publishing URL of its inner request, and the
+   distributing URL of the outer envelope.
 1. In an HTTP/2-Pushed exchange.
 
 We publish [periodic snapshots of this
@@ -119,8 +119,8 @@ mixing versions of resources.
 Bundles will probably also include a way to depend on other bundles by reference
 without directly including their content.
 
-Like enveloped signed exchanges, bundles have a physical URL in addition to the
-logical URLs of their contained exchanges.
+Like enveloped signed exchanges, bundles have a distributing URL in addition to
+the publishing URLs of their contained exchanges.
 
 <a id="loading"></a>
 ### Loading specification
@@ -253,13 +253,13 @@ resource, or a client navigates from the embedder to an
 application/signed-exchange, the client goes through several steps to open the
 outer envelope and load the inner exchange.
 
-### Fetch the physical URL
+### Fetch the distributing URL
 
 The client won't know that a URL holds a signed exchange until it receives the
 `Content-Type` in the response, so the initial request is identical to any other
 request in the same context. It follows redirects, is constrained by the
 embedder's and any parent frame's Content Security Policy, and goes through the
-physical URL's Service Worker for navigations or the embedder's otherwise.
+distributing URL's Service Worker for navigations or the embedder's otherwise.
 
 Once the response comes back, its `Content-Type: application/signed-exchange`
 header tells the client that it's the outer resource of a signed exchange, but
@@ -292,12 +292,13 @@ Each signature with a valid certificate chain is passed on to the next step.
 ### Signature verification
 
 Once the certificates are validated and enough of the outer resource is received
-to parse the claimed inner headers, the client extracts the logical URL from
+to parse the claimed inner headers, the client extracts the publishing URL from
 those headers and then tries to find a valid signature over the headers that is
-trusted for the logical URL's origin. If none of the signatures are valid, it
+trusted for the publishing URL's origin. If none of the signatures are valid, it
 either
 
-1. redirects to the logical URL as if the outer response were a 302 redirect, or
+1. redirects to the publishing URL as if the outer response were a 302 redirect,
+   or
 2. fails with a network error.
 
 We're not yet certain which behavior is best. The first is slightly more
@@ -314,8 +315,8 @@ records into a response stream as they arrive.
 At this point, the client's behavior depends on whether the outer exchange was
 requested as a [prefetch](https://w3c.github.io/resource-hints/#prefetch). To
 satisfy the [privacy-preserving prefetch](#privacy-preserving-prefetch) use
-case, prefetches can't fully load the logical URL, which would create an HTTP
-cache entry that would be visible to the logical URL's server.
+case, prefetches can't fully load the publishing URL, which would create an HTTP
+cache entry that would be visible to the publishing URL's server.
 
 Prefetches can and should process any `Link: <>; rel=preload` headers they find,
 as prefetches. If those point at signed exchanges, this process repeats.
@@ -358,7 +359,7 @@ This is more strict than the bound on cache freshness when it crosses a
 certificate or OCSP response expiration in order to partially mitigate
 [downgrade
 attacks](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#seccons-downgrades).
-For *later* loads of the logical URL (in particular, not the load that's
+For *later* loads of the publishing URL (in particular, not the load that's
 happening through the signed exchange, since it's fulfilled using the
 above-mentioned prefetch cache), a stale entry can be revalidated in the
 following ways:
@@ -369,7 +370,7 @@ following ways:
   because the `Signature` expiring means we don't trust the claimed ETag or date
   anymore.
 * If the `Signature` is valid but the HTTP caching information is stale, the
-  client can send the logical URL an `If-None-Match` or `If-Modified-Since`
+  client can send the publishing URL an `If-None-Match` or `If-Modified-Since`
   request hoping for a 304. Note that the client has to keep the original
   response headers if it intends to use the `validity-url` to update the
   signature in the future.
@@ -379,8 +380,8 @@ following ways:
 
 ### Navigations and subresources redirect
 
-At this point the client redirects to the signed exchange's logical URL. For
-navigations, this request goes through the logical URL's Service Worker. For
+At this point the client redirects to the signed exchange's publishing URL. For
+navigations, this request goes through the publishing URL's Service Worker. For
 subresources, it goes through the embedder's Service Worker again.
 
 If the Service Worker forwards its `FetchEvent` to the network, either by
@@ -402,7 +403,7 @@ browser's request in `e.request`.
 ### Matching prefetches with subresources
 
 If page `A` prefetches two signed exchanges `B.sxg` and `C.sxg` containing
-logical URLs `B` and `C`, respectively, and the user then navigates to `B.sxg`,
+publishing URLs `B` and `C`, respectively, and the user then navigates to `B.sxg`,
 we'd like as many of `B`'s subresource fetches as possible to be fulfilled from
 the prefetched content. However, the privacy restriction that prefetches can't
 populate the HTTP cache, combined with considerations around implementation
@@ -421,13 +422,14 @@ However,
    subresource fulfilled by `A`'s prefetch.
 
 This means that a page with subresources that wants its referring sites to be
-able to prefetch it in a privacy-preserving way, has to use physical URLs for
-internal links, which means it must be re-signed for each distributing cache.
+able to prefetch it in a privacy-preserving way, has to use distributing URLs
+for internal links, which means it must be re-signed for each distributing
+cache.
 
 We consider the centralizing properties of that restriction to be a bug. When
 [bundles](#bundled-exchanges) are more fully specified, we expect sites to be
-able to use logical URLs in their internal links by including both `B` and `C`
-in a single bundle, and then a single signed bundle can be used for multiple
+able to use publishing URLs in their internal links by including both `B` and
+`C` in a single bundle, and then a single signed bundle can be used for multiple
 distributing caches.
 
 ## FAQ
