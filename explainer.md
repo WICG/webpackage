@@ -26,9 +26,9 @@ TAG's Web Packaging Draft](https://w3ctag.github.io/packaging-on-the-web/)~~.
   - [Signature verification](#signature-verification)
   - [Prefetching stops here](#prefetching-stops-here)
   - [No nested signed exchanges](#no-nested-signed-exchanges)
-  - [Caching the signed response](#caching-the-signed-response)
   - [Navigations and subresources redirect](#navigations-and-subresources-redirect)
   - [Matching prefetches with subresources](#matching-prefetches-with-subresources)
+  - [To consider: Cache the inner exchange](#to-consider-cache-the-inner-exchange)
 - [FAQ](#faq)
   - [Why signing but not encryption? HTTPS provides both...](#why-signing-but-not-encryption-https-provides-both)
   - [What if a publisher accidentally signs a non-public resource?](#what-if-a-publisher-accidentally-signs-a-non-public-resource)
@@ -272,14 +272,18 @@ the outer resource participates in caches the same way as any other resource.
 The client parses the beginning of the `application/signed-exchange` resource to
 extract the [`Signature`
 header](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#signature-header).
-Each signature in the `Signature` header has a `cert-url` field that identifies a
-certificate chain to use to validate the signature, and each certificate chain
+Each signature in the `Signature` header has a `cert-url` field that identifies
+a certificate chain to use to validate the signature, and each certificate chain
 is fetched and validated.
 
-The request for this certificate chain is made without credentials and skips Service
-Workers, for compatibility with browser network stack architectures. (This may
-change if network stacks prove to be less of a problem than expected.) The
-certificate is cached as a normal HTTP request.
+The request for this certificate chain is made without credentials and skips
+Service Workers, for compatibility with browser network stack architectures.
+(This may change if network stacks prove to be less of a problem than expected.)
+The request may be fulfilled from the HTTP cache, and its response is cached as
+a normal HTTP response. We might also define an additional content-addressed
+cache using the `cert-sha256` field, if we can show that this avoids the
+[privacy problems of the SRI
+cache](https://hillbrad.github.io/sri-addressable-caching/sri-addressable-caching.html).
 
 The client checks the leaf certificate's hash against the `cert-sha256` field of
 the `Signature` header and then validates the certificate chain. Certificate
@@ -294,8 +298,8 @@ Each signature with a valid certificate chain is passed on to the next step.
 Once the certificates are validated and enough of the outer resource is received
 to parse the claimed inner headers, the client extracts the publishing URL from
 those headers and then tries to find a valid signature over the headers that is
-trusted for the publishing URL's origin. If none of the signatures are valid, it
-either
+trusted for the publishing URL's origin. If none of the signatures are valid and
+trusted, it either
 
 1. redirects to the publishing URL as if the outer response were a 302 redirect,
    or
@@ -328,91 +332,60 @@ disallow signed exchanges that contain either signed exchanges or redirects.
 This may change if use cases come up or if the implementation turns out to be
 simpler than expected.
 
-### Caching the signed response
-
-If the signed exchange was requested as a navigation or subresource (i.e. *not*
-prefetches), the client tries to cache the inner exchange.
-
-This *doesn't* happen if:
-
-* The inner request headers aren't sufficiently similar (TBD) to the
-  request headers the client would use for a normal request in the same context.
-  This prevents a malicious intermediate from sticking the wrong
-  content-negotiated resource in the HTTP cache.
-* There's a response in the HTTP (or any?) cache with a newer Date header than
-  the inner response's Date header. This prevents some downgrade attacks.
-
-In either of these cases, the client just skips to the redirect in the next
-step.
-
-If we're still here, the inner exchange is treated as if it had been prefetched
-from the original origin. Note that the [prefetch
-specification](https://w3c.github.io/resource-hints/) doesn't say exactly what
-this means. It is similar to the [preload
-cache](https://github.com/whatwg/fetch/issues/590) but situated between the HTTP
-cache and the Service Worker, and not exactly the same in other respects.
-
-If this behavior puts the inner exchange in the [HTTP
-cache](https://tools.ietf.org/html/rfc7234), its freshness has to be bounded by
-the shorter of the normal HTTP cache lifetime or the signature's expiration.
-This is more strict than the bound on cache freshness when it crosses a
-certificate or OCSP response expiration in order to partially mitigate
-[downgrade
-attacks](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#seccons-downgrades).
-For *later* loads of the publishing URL (in particular, not the load that's
-happening through the signed exchange, since it's fulfilled using the
-above-mentioned prefetch cache), a stale entry can be revalidated in the
-following ways:
-
-* If the `Signature` is expired but the HTTP caching information is fresh, the
-  client can fetch the `validity-url `to update just the signature. It *must not*
-  send an `If-None-Match` or `If-Modified-Since` request to update the cache,
-  because the `Signature` expiring means we don't trust the claimed ETag or date
-  anymore.
-* If the `Signature` is valid but the HTTP caching information is stale, the
-  client can send the publishing URL an `If-None-Match` or `If-Modified-Since`
-  request hoping for a 304. Note that the client has to keep the original
-  response headers if it intends to use the `validity-url` to update the
-  signature in the future.
-* If neither is valid, the client could first update the signature and then
-  check for a 304 (or even do both concurrently), but it may be easier to just
-  do an unconditional request.
-
 ### Navigations and subresources redirect
 
-At this point the client redirects to the signed exchange's publishing URL. For
-navigations, this request goes through the publishing URL's Service Worker. For
-subresources, it goes through the embedder's Service Worker again.
+At this point the client redirects to the signed exchange's publishing URL, with
+the inner request and response stream "attached". (TBD how this fits into
+[Fetch](https://fetch.spec.whatwg.org/)'s terminology.) For navigations, this
+request goes through the publishing URL's Service Worker. For subresources, it
+goes through the embedder's Service Worker again. (TODO: Check that redirects
+actually work this way.)
 
-If the Service Worker forwards its `FetchEvent` to the network, either by
-returning without calling `e.respondWith()` or by calling
-`e.respondWith(fetch(e.request))`, this returns the inner response. The Service
-Worker can also explicitly return something else by calling
+If the Service Worker fetches a matching URL from the network, either by
+returning without calling `e.respondWith()` or by calling `fetch(...)`, this
+tries to return the response stream that was attached to the redirect. However,
+if either of the following conditions is met, the fetch bypasses the attached
+exchange and continues down to the HTTP cache:
+
+* The inner request headers aren't sufficiently similar (TBD) to the headers in
+  the Request the SW sent. This prevents a malicious intermediate from sticking
+  the wrong content-negotiated resource in the HTTP cache.
+* There's a response in the HTTP (or any?) cache with a newer Date header than
+  the inner response's Date header. This prevents some downgrade attacks.
+   * Content-negotiated responses may need to allow separate
+     monotonically-increasing `Date` sequences for each
+     [variant](https://tools.ietf.org/html/draft-nottingham-variants-02). We're
+     not addressing this for V1 because it seems rare to expect a single client
+     to see multiple different variants for the same URL.
+
+The Service Worker can also explicitly return something else by calling
 `e.respondWith(somethingElse)`.
 
 For now, there's no explicit notification to the Service Worker that this
-request is part of handling a signed exchange. Because the inner exchange is in
-the prefetch cache, the Service Worker can check whether it's there by doing a
-fetch with the "only-if-cached" [cache
-mode](https://fetch.spec.whatwg.org/#concept-request-cache-mode), and it might
-make sense to attach some metadata to that response describing the situation,
-but we don't currently propose that metadata. The Service Worker also currently
-gets no description of any differences between the signed inner request and the
+request is part of handling a signed exchange. Because the inner exchange is
+attached, as described above, the Service Worker can check whether it's
+immediately available by doing a fetch with the "only-if-cached" [cache
+mode](https://fetch.spec.whatwg.org/#concept-request-cache-mode). It might make
+sense to attach some metadata to that response describing the situation, but we
+don't currently propose that metadata. The Service Worker also currently gets no
+description of any differences between the signed inner request and the
 browser's request in `e.request`.
 
 ### Matching prefetches with subresources
 
 If page `A` prefetches two signed exchanges `B.sxg` and `C.sxg` containing
-publishing URLs `B` and `C`, respectively, and the user then navigates to `B.sxg`,
-we'd like as many of `B`'s subresource fetches as possible to be fulfilled from
-the prefetched content. However, the privacy restriction that prefetches can't
-populate the HTTP cache, combined with considerations around implementation
-complexity, limit which ones we can wire up.
+publishing URLs `B` and `C`, respectively, and the user then navigates to
+`B.sxg`, we'd like as many of `B`'s subresource fetches as possible to be
+fulfilled from the prefetched content. However, the fact that we don't put the
+inner exchange into the HTTP cache limits which ones we can wire up.
 
 1. B can use `C.sxg` as a subresource and have that fulfilled by `A`'s prefetch
    of `C.sxg`.
 1. B can include a `Link: <C.sxg>; rel=preload` header and then have a `C`
-   subresource fulfilled by `A`'s prefetch.
+   subresource fulfilled by `A`'s prefetch. This works because the preload cache
+   is populated from the Service Worker's response, so it sees the result of the
+   redirect. TODO: Check that this doesn't violate the security requirements
+   around exposing redirects.
 
 However,
 
@@ -431,6 +404,59 @@ We consider the centralizing properties of that restriction to be a bug. When
 able to use publishing URLs in their internal links by including both `B` and
 `C` in a single bundle, and then a single signed bundle can be used for multiple
 distributing caches.
+
+### To consider: Cache the inner exchange
+
+If the signed exchange was requested as a navigation or subresource (i.e. *not*
+prefetches), we may want to add the inner exchange to the HTTP cache, or to a
+layer above the HTTP cache that's roughly equivalent.
+
+We aren't specifying or implementing this yet in order to provide time for
+security folks to decide whether it's safe. However, we're considering the
+following:
+
+This entry needs to have the same lifetime-extension semantics as the request
+that retrieved the outer response. For example, if the outer response was
+[prefetched](https://w3c.github.io/resource-hints/), the inner one's lifetime in
+the cache needs to be [at least 5
+minutes](https://github.com/w3c/ServiceWorker/issues/1302#issuecomment-382043843).
+If the outer response was preloaded, the inner one needs to live in the [preload
+cache](https://github.com/whatwg/fetch/issues/590) for the fetch group.
+
+It's probably unsafe for the inner exchange to stay in the cache longer than the
+outer signature is valid. This makes it more difficult for an attacker to get
+persistent access to an XSS vulnerability by sending a signed response with a
+long HTTP cache lifetime, since the Signature will expire more quickly. Some
+concerns have been raised about allowing a Service Worker to add signed
+responses to the long-lived SW Cache, but this should be safe since the SW
+script itself will expire, and newer SW scripts can explicitly reject particular
+vulnerable resources. (TODO: Figure out whether developers can be that careful
+in practice.)
+
+This increases the number of ways a resource can be "stale":
+
+1. The HTTP caching information is fresh, but the `Signature` header's
+   certificate expiration, OCSP response's `nextUpdate`, or signature expiration
+   has passed.
+1. The `Signature` header isn't expired, but the HTTP cache entry is stale.
+1. Both.
+
+For *later* loads of the publishing URL (in particular, not the load that's
+happening through the signed exchange, since it's fulfilled using the
+above-mentioned prefetch cache), a stale entry can be revalidated in the
+following ways:
+
+1. If only the `Signature` is expired, the client can fetch the `validity-url
+   `to update just the signature. It *must not* send an `If-None-Match` or
+   `If-Modified-Since` request to update the cache, because the `Signature`
+   expiring means we don't trust the claimed ETag or date anymore.
+1. If only the HTTP caching information is stale, the client can send the
+   publishing URL an `If-None-Match` or `If-Modified-Since` request hoping for a
+   304. Note that the client has to keep the original response headers if it
+   intends to use the `validity-url` to update the signature in the future.
+1. If both are stale, the client could first update the signature and then check
+   for a 304 (or even do both concurrently), but it may be easier to just do an
+   unconditional request.
 
 ## FAQ
 
