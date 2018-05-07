@@ -51,7 +51,7 @@ When an HTTP exchange is encoded into a resource, the resource can be fetched
 from a **distributing URL** that is different from the **publishing URL** of the
 encoded exchange. We talk about the **inner** exchange and its inner request and
 response, the **outer** resource it's encoded into, and sometimes the outer
-exchange that fetches the outer resource.
+exchange whose response contains the outer resource.
 
 ## Component documents
 
@@ -343,21 +343,22 @@ simpler than expected.
 At this point the client redirects to the signed exchange's publishing URL, with
 the inner request and response stream "attached". (TBD how this fits into
 [Fetch](https://fetch.spec.whatwg.org/)'s terminology.) For navigations, this
-request goes through the publishing URL's Service Worker. For subresources, it
-goes through the embedder's Service Worker again. (TODO: Check that redirects
-actually work this way.)
+request goes through the publishing URL's Service Worker, if any. For
+subresources, it goes through the embedder's Service Worker, if any, again.
+(TODO: Check that redirects actually work this way.)
 
-If the Service Worker fetches a matching URL from the network, either by
-returning without calling `e.respondWith()` or by calling `fetch(...)`, this
-tries to return the response stream that was attached to the redirect. However,
-if either of the following conditions is met, the fetch bypasses the attached
-exchange and continues down to the lower caches and the network:
+If there's no Service Worker handling this `fetch` event or the Service Worker's
+handler fetches a matching URL from the network, either by returning without
+calling `e.respondWith()` or by calling `fetch(...)`, this tries to return the
+response stream that was attached to the redirect. However, if either of the
+following conditions is met, the fetch bypasses the attached exchange and
+continues down to the lower caches and the network:
 
 * The inner request headers aren't sufficiently similar (TBD) to the headers in
   the Request the SW sent. This prevents a malicious intermediate from causing
   the client to use the wrong content-negotiated resource. If we later put inner
-  responses in the HTTP cache, this also prevents the intermediate from putting
-  the wrong resource there.
+  responses in the HTTP cache (TBD), this also prevents the intermediate from
+  putting the wrong resource there.
 * There's a response in a lower cache with a newer Date header than the inner
   response's Date header. This prevents some downgrade attacks.
    * Content-negotiated responses may need to allow separate
