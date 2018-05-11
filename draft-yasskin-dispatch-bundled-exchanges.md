@@ -18,7 +18,25 @@ author:
 
 normative:
   appmanifest: W3C.WD-appmanifest-20171129
+  FETCH:
+    target: https://fetch.spec.whatwg.org/
+    title: Fetch
+    author:
+      org: WHATWG
+    date: Living Standard
+  INFRA:
+    target: https://infra.spec.whatwg.org/
+    title: Infra
+    author:
+      org: WHATWG
+    date: Living Standard
   SRI: W3C.REC-SRI-20160623
+  URL:
+    target: https://url.spec.whatwg.org/
+    title: URL
+    author:
+      org: WHATWG
+    date: Living Standard
 
 --- abstract
 
@@ -59,109 +77,123 @@ NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED",
 described in BCP 14 {{!RFC2119}} {{!RFC8174}} when, and only when, they
 appear in all capitals, as shown here.
 
-# Semantics
+## Mode of specification {#mode}
 
-A bundle is logically a set of HTTP exchanges, with one identified as the App
-Manifest ({{appmanifest}}) of the bundle itself. That App Manifest then
-identifies other significant exchanges within the bundle, for example, a start
+This specification defines how conformant bundle parsers work. It does not
+constrain how encoders produce a bundle: although there are some guidelines in
+{{authoring-guidelines}}, encoders MAY produce any sequence of bytes that a
+conformant parser would parse into the intended semantics.
+
+This specification uses the conventions and terminology defined in the Infra
+Standard ({{INFRA}}).
+
+# Semantics {#semantics}
+
+A bundle is logically a set of HTTP exchanges, with a URL identifying the
+manifest(s) of the bundle itself. A client uses content negotiation to pick a
+particular response for that URL, often an App Manifest ({{appmanifest}}), which
+then identifies other significant exchanges within the bundle, like a start
 page.
 
 While the order of the exchanges is not semantically meaningful, it can
 significantly affect performance when the bundle is loaded from a network
 stream.
 
-Bundle parsers support two operations, each of which can fail:
+A bundle is parsed from a stream of bytes, which is assumed to have the attributes and operations described in {{stream-operations}}:
 
-## Load a bundle's metadata ## {#semantics-load-metadata}
+Bundle parsers support two operations, defined in {{semantics-load-metadata}}
+and {{semantics-load-response}} each of which can return an error instead of
+their normal result.
 
-This takes a sequence of bytes representing the bundle and returns the set of
-HTTP requests for the exchanges in the bundle, metadata for each request to be
-passed to {{semantics-load-response}}, and identifies the request for the
-bundle's App Manifest ({{appmanifest}}).
+## Stream attributes and operations {#stream-operations}
 
-This sequence of bytes can be embedded in a longer sequence and identified by
-only its start or end point.
+* A sequence of **available** bytes. As the stream delivers bytes, these are
+  appended to the available bytes.
+* An **EOF** flag that's true if the available bytes include the entire stream.
+* A **current offset** within the available bytes.
+* A **wait for N bytes** operation, which blocks until the available bytes
+  include at least N bytes past the current offset. A wait operation fails if
+  the stream ends before enough bytes are received, either due to a network
+  error or because the stream has a finite length.
+* A **seek** operation to change the current offset, relative to either the
+  beginning of the available bytes or to the old current offset. A seek past the
+  end of the available bytes is an *error in this specification*.
+* A **read N bytes** operation, which returns the sequence of N bytes starting
+  at the current offset, and then seeks forward by N bytes. A read past the end
+  of the available bytes is also an error in this specification.
 
-When the bundle is identified by its start point, for example when it's being
-downloaded over a network stream, this operation only inspects a prefix of the
-bytes that, if the bundle is encoded with the "responses" section last, ends
-before the first response.
+## Load a bundle's metadata {#semantics-load-metadata}
+
+This takes the bundle's stream and returns a struct ({{INFRA}}) of metadata
+containing at least items named:
+
+requests
+
+: A map ({{INFRA}}) whose keys are the HTTP requests ({{FETCH}}) for the
+  exchanges in the bundle, and whose values are opaque metadata that
+  {{semantics-load-response}}{:format="title"} can use to find the matching
+  response.
+
+manifest
+
+: The URL of the bundle's manifest(s). This is a URL to support bundles with
+  multiple different manifests, where the client uses content negotiation to
+  select the most appropriate one.
+
+The struct may include other items added by sections defined in the
+{{section-name-registry}}{:format="title"}.
+
+This operation only waits for a prefix of the stream that, if the bundle is
+encoded with the "responses" section last, ends before the first response.
 
 This operation's implementation is in {{load-metadata}}.
 
-## Load a response from a bundle ## {#semantics-load-response}
+### Load a bundle's metadata from the end {#semantics-load-metadata-from-end}
 
-This takes the sequence of bytes representing the bundle, and the metadata
-returned for one request from {{semantics-load-metadata}}, and returns the
-response matching that request.
+If a bundle's bytes are embedded in a longer sequence rather than being
+streamed, a parser can also load them starting from a pointer to the last byte
+of the bundle. This returns the same data as {{semantics-load-metadata}}.
+
+This operation's implementation is in {{from-end}}.
+
+## Load a response from a bundle {#semantics-load-response}
+
+This takes the sequence of bytes representing the bundle and one request
+returned from {{semantics-load-metadata}} with its metadata, and returns the
+response ({{FETCH}}) matching that request.
 
 This operation can be completed without inspecting bytes other than those that
 make up the loaded response, although higher-level operations like proving that
 an exchange is correctly signed ({{I-D.yasskin-http-origin-signed-responses}})
 may need to load other responses.
 
+Note that this operation uses the metadata for a particular request returned by
+{{semantics-load-metadata}}, while a client will generally want to load the
+response for a request that the client generated. This specification does not
+define how a client determines the best available bundled response, if any, for
+that client-generated request.
+
 This operation's implementation is in {{load-response}}.
 
-# Format   {#format}
+# Format {#format}
 
-## Mode of specification  {#mode}
+## Top-level structure {#top-level}
 
-This specification defines how conformant bundle parsers convert a sequence of
-bytes into the semantics of a bundle. It does not constrain how encoders produce
-such a bundle: although there are some guidelines in {{authoring-guidelines}},
-encoders MAY produce any sequence of bytes that a conformant parser would parse
-into the intended semantics.
+*This section is non-normative.*
 
-In places, this specification says the parser "MUST fail". The parser MAY report
-these failures to its caller in any way, but MUST NOT return any data it has
-parsed so far.
-
-This specification creates local variables with the phrase "Let *variable-name*
-be ...". Use of a variable before it's created is a defect in this
-specification.
-
-## Canonical encoding ## {#canonical-encoding}
-
-A bundle parser MUST fail to parse CBOR items that are not encoded canonically, using the rules in this section. These rules are based on Section 3.9 of {{?RFC7049}} with erratum 4964 applied.
-
-* Integers MUST be as small as possible.
-  * 0 to 23 and -1 to -24 MUST be expressed in the same byte as the major type;
-  * 24 to 255 and -25 to -256 MUST be expressed only with an additional uint8_t;
-  * 256 to 65535 and -257 to -65536 MUST be expressed only with an additional
-    uint16_t;
-  * 65536 to 4294967295 and -65537 to -4294967296 MUST be expressed only with an
-    additional uint32_t.
-* The expression of lengths in major types 2 through 5 MUST be as short as
-  possible.  The rules for these lengths follow the above rule for integers.
-* The keys in every map MUST be sorted in the bytewise lexicographic order of
-  their canonical encodings. For example, the following keys are correctly sorted:
-  1. 10, encoded as 0A.
-  1. 100, encoded as 18 64.
-  1. -1, encoded as 20.
-  1. "z", encoded as 61 7A.
-  1. "aa", encoded as 62 61 61.
-  1. \[100], encoded as 81 18 64.
-  1. \[-1], encoded as 81 20.
-  1. false, encoded as F4.
-* Indefinite-length items MUST NOT appear.
-
-This format does not use floating point values or tags, so there's no need to
-canonicalize those.
-
-## Top-level structure  {#top-level}
-
-The bundle is roughly a CBOR item ({{?RFC7049}}) with the following CDDL
-({{?I-D.ietf-cbor-cddl}}) schema, but bundle parsers are required
+The bundle is roughly a CBOR item ({{?I-D.ietf-cbor-7049bis}}) with the
+following CDDL ({{?I-D.ietf-cbor-cddl}}) schema, but bundle parsers are required
 to successfully parse some byte strings that aren't valid CBOR. For example,
-sections may have padding between them, or even overlap, as long as the embedded
-relative offsets cause the parsing algorithms in this specification to return
-data.
+sections might have padding between them, or even overlap, as long as the
+embedded relative offsets cause the parsing algorithms in this specification to
+return data.
 
 ~~~~~ cddl
-bundle = [
+webbundle = [
   ; 🌐📦 in UTF-8.
   magic: h'F0 9F 8C 90 F0 9F 93 A6',
-  section-offsets: {* (($section-name .within tstr) => uint) },
+  section-offsets: bytes .cbor {* ($section-name .within tstr) =>
+                                  [ offset: uint, length: uint] },
   sections: [* $section ],
   length: bytes .size 8,  ; Big-endian number of bytes in the bundle.
 ]
@@ -174,159 +206,187 @@ responses = [*response]
 
 ~~~~~
 
-## Load a bundle's metadata ## {#load-metadata}
+## Load a bundle's metadata {#load-metadata}
 
-This operation takes as input a sequence of bytes representing the bundle,
-identified by either its first or last byte.
-
-If the sequence is identified by its last byte, use the procedure in
-{{from-end}} to identify the first byte.
-
-If the first 10 bytes of the bundle are not "84 48 F0 9F 8C 90 F0 9F 93 A6" (the
-CBOR encoding of the 4-item array initial byte and 8-byte bytestring initial
-byte, followed by 🌐📦 in UTF-8), parsing MUST fail.
-
-Parse one CBOR item ({{!RFC7049}}) starting at the 11th byte of the bundle. If
-this does not match the CDDL ({{!I-D.ietf-cbor-cddl}}):
+A bundle holds a series of sections, which can be accessed randomly using the
+information in the `section-offset` CBOR item:
 
 ~~~~~ cddl
-section-offsets = {* tstr => uint },
+section-offsets = {* tstr => [ offset: uint, length: uint] },
 ~~~~~
 
-or it is not encoded canonically ({{canonical-encoding}}), parsing MUST fail.
+Offsets in this item are relative to the *end* of the section-offset item.
 
-Let *sections-start* be the offset of the byte after the `section-offsets`
-item. For example, if `section-offsets` were 52 bytes long, *sections-start*
-would be 63.
+To implement {{semantics-load-metadata}}, the parser MUST run the following
+steps, taking the `stream` as input.
 
-Data in a bundle is expressed in named sections. The `section-offsets` item maps
-the name of a section to the byte at which that section's data starts. Sections
-generally consist of CBOR items, so their length is discoverable by parsing
-them.
+1. Seek to the start of `stream`.
 
-For each "*key*"/*value* pair in `section-offsets`, parse the "*key*" section
-using the instructions in the section of this document identified below, passing
-*sections-start* + *value* as the start byte of the section. So, for example,
-the "index" section would be parsed starting at *sections-start* +
-`section-offsets`\["index"] using the instructions in {{index-section}}.
+1. Wait for 10 bytes to be available from `stream`.
 
-The parser MUST ignore unknown keys in the `section-offsets` map, except as
-specified in {{critical-section}}, to be compatible with future versions of this
-specification.
+1. If the wait fails or if reading 10 bytes from `stream` doesn't return the
+   bytes with hex encoding "84 48 F0 9F 8C 90 F0 9F 93 A6" (the CBOR encoding of
+   the 4-item array initial byte and 8-byte bytestring initial byte, followed by
+   🌐📦 in UTF-8), return an error.
 
-This specification defines four sections:
+1. Let `sectionOffsetsLength be the result of getting the length of the CBOR
+   bytestring header from `stream` ({{parse-bytestring}}). If this is an error,
+   return that error.
 
-"index"
-: {{index-section}}; this section also uses the value of *sections-start* +
-  `section-offsets`\["responses"].
+1. If `sectionOffsetsLength` is TBD or greater, return an error.
 
-"manifest"
-: {{manifest-section}}
+1. Wait for `sectionOffsetsLength` bytes to be available from `stream`. If this
+   fails, return an error.
 
-"critical"
-: {{critical-section}}
+1. Read `sectionOffsetsLength` bytes from `stream`, and let `section-offsets` be
+   the result of parsing one CBOR item ({{parse-cbor}}) from them, matching the
+   section-offsets rule in the CDDL ({{!I-D.ietf-cbor-cddl}}) above. If
+   `section-offsets` is an error, return an error.
 
-"responses"
-: This section is not parsed while loading a bundle's metadata and is instead
-  used to load individual exchanges from the bundle ({{load-response}}).
+1. Let `sectionsStart` be the current offset within `stream`. For example, if
+   `sectionOffsetsLength` were 52, `sectionsStart` would be 64.
 
-If the "responses" section is not present, parsing MUST fail. If the "index"
-section or another section with equivalent information (for example, a
-compressed index defined by a future specification) is not present, parsing MUST
-fail.
+1. Let `knownSections` be the subset of the {{section-name-registry}} that this
+   client has implemented.
 
-Return the values returned by parsing each section.
+1. Let `ignoredSections` be an empty set.
+
+1. For each `"name"` key in `section-offsets`, if `"name"`'s specification in
+   `knownSections` says not to process other sections, add those sections' names
+   to `ignoredSections`.
+
+1. Let `metadata` be a struct ({{INFRA}}) with no items.
+
+1. Assert: The current offset of the stream is just after the `section-offsets`
+   item.
+
+1. For each `"name"`/\[`offset`, `length`] triple in `section-offsets`:
+
+   1. If `"name"` isn't in `knownSections`, continue to the next triple.
+   1. If `"name"`'s Metadata field is "No", continue to the next triple.
+   1. If `"name"` is in `ignoredSections`, continue to the next triple.
+   1. Wait for `offset + length` bytes to be available from `stream`. If this
+      fails, return an error.
+   1. Let `sectionContents` be the available bytes in `stream` in the range
+      [`sectionsStart + offset`, `sectionsStart + offset + length`).
+   1. Follow `"name"`'s specification from `knownSections` to process the
+      section, passing `sectionContents`, `stream`, `section-offsets`,
+      `sectionsStart`, and `metadata`. If this returns an error, return it.
+
+1. If `metadata` doesn't have items named "requests" and "manifest", return an
+   error.
+
+1. Return `metadata`.
 
 ### Parsing the index section {#index-section}
 
-To parse the index, starting at offset *index-start*, with a "responses" section
-starting at *responses-start*, the parser MUST do the following:
-
-Load a CBOR item starting at *index-start*. Parsing MUST fail if any of the
-following is true:
-
-* This item doesn't match the `index` rule in the following CDDL
-  ({{!I-D.ietf-cbor-cddl}}).
-* This item isn't encoded canonically ({{canonical-encoding}}).
-* Any key is not a valid request item ({{request-items}}).
+The "index" section defines the set of HTTP requests in the bundle and
+identifies their locations in the "responses" section.
 
 ~~~ cddl
-index = {* http-request => [ offset: uint,
-                             length: uint] }
+index = {* headers => [ offset: uint,
+                        length: uint] }
 ~~~
 
-Adjust all of the offsets by adding *responses-start*, so they point at the
-start of the response relative to the start of the whole bundle. Note that
-offsets are stored relative to the responses section instead of the start of the
-whole bundle so that they don't need to incorporate their own size, which would
-make it more difficult to encode them canonically.
+To parse the index section, given its `sectionContents`, the `sectionsStart`
+offset, the `section-offsets` CBOR item, and the `metadata` struct to fill in,
+the parser MUST do the following:
 
-Interpret the keys as requests as described in {{request-items}}, and return
-this set of requests with each request's adjusted offset and length attached.
+1. Let `index` be the result of parsing `sectionContents` as a CBOR item
+   matching the `index` rule in the above CDDL ({{parse-cbor}}). If `index` is
+   an error, return an error.
+
+1. Let `requests` be an initially-empty map ({{INFRA}}) from HTTP requests
+   ({{FETCH}}) to structs ({{INFRA}}) with items named "offset" and "length".
+
+1. For each `cbor-http-request`/\[`offset`, `length`] triple in `index`:
+   1. Let `headers`/`pseudos` be the result of converting `cbor-http-request` to
+      a header list and pseudoheaders using the algorithm in {{cbor-headers}}.
+      If this returns an error, return that error.
+   1. If `pseudos` does not have keys named ':method' and ':url', or its size
+      isn't 2, return an error.
+   1. If `pseudos[':method']` is not an HTTP method defined as cacheable (Section
+      4.2.3) of {{!RFC7231}}) and safe (Section 4.2.1 of {{!RFC7231}}) (as
+      required for PUSH_PROMISEd requests (Section 8.2 of {{?RFC7540}})), return
+      an error. This currently requires `pseudos[':method']` to be one of 'GET' or
+      'HEAD'.
+   1. Let `parsedUrl` be the result of parsing ({{URL}}) `pseudos[':url']` with
+      no base URL.
+   1. If `parsedUrl` is a failure, its fragment is not null, or it includes
+      credentials, return an error.
+   1. Let `http-request` be a new request ({{FETCH}}) whose:
+      * method is `pseudos[':method']`,
+      * url is `parsedUrl`,
+      * header list is `headers`, and
+      * client is null.
+
+   1. Let `streamOffset` be `sectionsStart + section-offsets\["responses"].offset
+      + offset`. That is, offsets in the index are relative to the start of the
+      "responses" section.
+   1. If `offset + length` is greater than
+      `section-offsets\["responses"].length`, return an error.
+   1. Set `requests`\[`http-request`] to a struct whose "offset" item is
+      `streamOffset` and whose "length" item is `length`.
+
+1. Set `metadata`'s "requests" item to `requests`.
 
 ### Parsing the manifest section {#manifest-section}
 
-To parse the manifest section, starting at offset *manifest-start*, the parser
-MUST load a CBOR item starting at *manifest-start*. If this item isn't a valid
-request item, as defined by {{request-items}}, the parser MUST fail.
+The "manifest" section records a single URL identifying the manifest of the
+bundle. The bundle can contain multiple resources at this URL, and the client is
+expected to content-negotiate for the best one. For example, a client might
+select the one with an `accept` header of `application/manifest+json` and an
+`accept-language` header of `es-419`.
 
 ~~~ cddl
-manifest = http-request
+manifest = text
 ~~~
 
-Return the request represented by this parsed item, interpreted as defined by
-{{request-items}}.
+To parse the manifest section, given its `sectionContents` and the `metadata`
+struct to fill in, the parser MUST do the following:
+
+1. Let `urlString` be the result of parsing `sectionContents` as a CBOR item
+   matching the above `manifest` rule ({{parse-cbor}}. If `urlString` is an
+   error, return that error.
+
+1. Let `url` be the result of parsing ({{URL}}) `urlString` with no base URL.
+
+1. If `url` is a failure, its fragment is not null, or it includes credentials,
+   return an error.
+
+1. Set `metadata`'s "manifest" item to `url`.
 
 ### Parsing the critical section {#critical-section}
 
-To parse the critical section, starting at offset *critical-start*, the parser
-MUST load a CBOR item starting at *critical-start*. If this item doesn't match
-the `critical` rule in the following CDDL ({{!I-D.ietf-cbor-cddl}}), the parser
-MUST fail.
+The "critical" section lists sections of the bundle that the client needs to
+understand in order to load the bundle correctly. Other sections are assumed to
+be optional.
 
 ~~~ cddl
 critical = [*tstr]
 ~~~
 
-For each value *section-name* in the `critical` list, if the parser does not
-support sections named *section-name*, the parser MUST fail.
+To parse the critical section, given its `sectionContents` and the `metadata`
+struct to fill in, the parser MUST do the following:
 
-This section returns no information.
+1. Let `critical` be the result of parsing `sectionContents` as a CBOR item
+   matching the above `critical` rule ({{parse-cbor}}. If `critical` is an
+   error, return that error.
+1. For each value `sectionName` in the `critical` list, if the client has not
+   implemented sections named `sectionName`, return an error.
 
-### Interpreting request CBOR items {#request-items}
+This section does not modify the returned metadata.
 
-HTTP requests are represented by CBOR items matching the following CDDL
-({{!I-D.ietf-cbor-cddl}}).
+### The responses section {#responses-section}
 
-~~~ cddl
-http-request = {
-  * bstr => bstr
-}
-~~~
-
-A valid request item *R*:
-
-* Matches the above CDDL.
-* Has only lower-case ASCII keys, matching the requirement in Section 8.1.2 of
-  {{?RFC7540}}.
-* Has exactly two keys starting with a ':' character, ':method' and ':url'.
-* *R*\[':method'] is an HTTP method defined as cacheable (Section 4.2.3 of
-  {{!RFC7231}}) and safe (Section 4.2.1 of {{!RFC7231}}), as required for
-  PUSH_PROMISEd requests (Section 8.2 of {{?RFC7540}}). This currently consists
-  of only the `GET` and `HEAD` methods.
-* *R*\[':url'] is an absolute URI (Section 4.3 of {{!RFC3986}}).
-
-A valid request item *R* is interpreted as an HTTP request by interpreting
-*R*\[':method'] as the request's method (Section 4 of {{!RFC7231}}),
-*R*\[':url'] as the request's effective request URI (Section 5.5 of
-{{!RFC7230}}), and the remaining key/value pairs as the request's header fields.
+The responses section does not add any items to the bundle metadata struct.
+Instead, its offset and length are used in processing the index section
+({{index-section}}).
 
 ### Starting from the end {#from-end}
 
-If the 8th byte before the last isn't 0x48 (the CBOR ({{?RFC7049}}) initial byte
-for an 8-byte byte string), the parser MUST fail. Otherwise, load the last 8
-bytes as a big-endian integer `length`. The first byte of the bundle is `length
-- 1` bytes before the end byte.
+The length of a bundle is encoded as a big-endian integer inside a CBOR byte
+string at the end of the bundle.
 
 ~~~ ascii-art
 
@@ -341,46 +401,190 @@ bytes as a big-endian integer `length`. The first byte of the bundle is `length
 Parsing from the end allows the bundle to be appended to another format such as
 a self-extracting executable.
 
-## Load a response from a bundle ## {#load-response}
+To implement {{semantics-load-metadata-from-end}}, taking a sequence of bytes
+`bytes`, the client MUST:
 
-To parse the response from a *bundle* for a *request*'s *offset* and *length*,
-the parser MUST do the following:
+1. Let `byteStringHeader` be `bytes[bytes.length - 9]`. If `byteStringHeader is
+   not `0x48` (the CBOR ({{?I-D.ietf-cbor-7049bis}}) initial byte for an 8-byte
+   byte string), return an error.
+1. Let `bundleLength` be `[bytes[bytes.length - 8], bytes[bytes.length])` (the
+   last 8 bytes) interpreted as a big-endian integer.
+1. If `bundleLength > bytes.length`, return an error.
+1. Let `stream` be a new stream whose:
+   * Available bytes are `[bytes[bytes.length - bundleLength],
+     bytes[bytes.length])`.
+   * EOF flag is set.
+   * Current offset is initially 0.
+   * The wait for N bytes operation succeeds immediately if `currentOffset + N
+     <= bundleLength` and fails otherwise.
+1. Return the result of running {{load-metadata}} with `stream` as input.
 
-Parse one CBOR item *R* starting at *offset*. Parsing MUST fail if any of the
-following is true:
+## Load a response from a bundle {#load-response}
 
-* This item does not take exactly *length* bytes.
-* This item isn't encoded canonically ({{canonical-encoding}}).
-* This item doesn't match the `response` rule in the following CDDL
-  ({{!I-D.ietf-cbor-cddl}}).
-* The `headers` map doesn't have a ':status' key.
-* The `headers` map has any other key starting with a ':' character.
+The result of {{load-metadata}}{:format="title"} maps each request to a
+response, which consists of headers and a payload. The headers can be loaded
+from the bundle's stream before waiting for the payload, and similarly the
+payload can be streamed to downstream consumers.
 
 ~~~~~ cddl
-response = [headers: {* bstr => bstr}, payload: bstr]
+response = [headers: bstr .cbor headers, payload: bstr]
 ~~~~~
 
-Return an HTTP response with a status code (Section 3.1.2 of {{!RFC7230}}) of
-*R*.headers\[':status'], header fields (Section 3.2 of {{!RFC7230}}) consisting
-of the other key/value pairs in *R*.headers, and a payload body (Section 3.3 of
-{{!RFC7230}}) consisting of *R*.payload.
+To implement {{semantics-load-response}}, the parser MUST run the following
+steps, taking the bundle's `stream` and one `request` and its `requestMetadata`
+as returned by {{semantics-load-metadata}}.
+
+1. Seek to the start of `stream`, and wait for `requestMetadata.offset + 10`
+   bytes (array item header + the maximum length of a byte string item header)
+   to be available. If this fails, return an error.
+1. Seek forward by `requestMetadata.offset` bytes.
+1. Read 1 byte from `stream`. If it isn't `0x82`, return an error.
+1. Let `headerLength` be the result of getting the length of a CBOR bytestring
+   header from `stream` ({{parse-bytestring}}). If `headerLength` is an error,
+   return that error.
+1. If `headerLength` is TBD or greater, return an error.
+1. Wait for `headerLength` bytes to be available on `stream`. If this fails,
+   return an error.
+1. Let `headerCbor` be the result of reading `headerLength` bytes from `stream`
+   and  parsing a CBOR item from them matching the `headers` CDDL rule. If this
+   returns an error, return that error.
+1. Let `headers`/`pseudos` be the result of converting `cbor-http-request` to a
+   header list and pseudoheaders using the algorithm in {{cbor-headers}}. If
+   this returns an error, return that error.
+1. If `pseudos` does not have a key named ':status' or its size isn't 1, return
+   an error.
+1. If `pseudos[':status']` isn't exactly 3 ASCII decimal digits, return an
+   error.
+
+1. Let `payloadLength` be the result of getting the length of a CBOR bytestring
+   header from `stream` ({{parse-bytestring}}). If `payloadLength` is an error,
+   return that error.
+1. If `stream.currentOffset + payloadLength != requestMetadata.offset +
+   requestMetadata.length`, return an error.
+
+1. Let `body` be a new body ({{FETCH}}) whose stream is a tee'd copy of `stream`
+   starting at the current offset and ending after `payloadLength` bytes.
+
+   TODO: Add the rest of the details of creating a `ReadableStream` object.
+
+1. Let `response` be a new response ({{FETCH}}) whose:
+   * Url list is `request`'s url list,
+   * status is `pseudos[':status']`,
+   * header list is `headers`, and
+   * body is `body`.
+
+1. Return `response`.
+
+## Parsing CBOR items {#parse-cbor}
+
+Parsing a bundle involves parsing many CBOR items. All of these items need to be
+canonically encoded.
+
+### Parse a known-length item {#parse-known-length}
+
+To parse a CBOR item ({{!I-D.ietf-cbor-7049bis}}), optionally matching a CDDL
+rule ({{!I-D.ietf-cbor-cddl}}), from a sequence of bytes, `bytes`, the parser
+MUST do the following:
+
+1. If `bytes` are not a well-formed CBOR item, return an error.
+1. If `bytes` does not satisfy the core canonicalization requirements from
+   Section 4.9 of {{!I-D.ietf-cbor-7049bis}}, return an error. This format does
+   not use floating point values or tags, so this specification does not add any
+   canonicalization rules for them.
+1. If `bytes` includes extra bytes after the encoding of a CBOR item, return an
+   error.
+1. Let `item` be the result of decoding `bytes` as a CBOR item.
+1. If a CDDL rule was specified, but `item` does not match it, return an error.
+1. Return `item`.
+
+### Parsing variable-length data from a bytestring {#parse-bytestring}
+
+Bundles encode variable-length data in CBOR bytestrings, which are prefixed with
+their length. This algorithm returns the number of bytes in the variable-length
+item and sets the stream's current offset to  the first byte of the contents.
+
+To get the length of a CBOR bytestring header from a bundle's stream, the parser MUST do the following:
+
+1. Wait for 9 bytes to be available on the stream. If this fails, return an
+   error. Note that because of the 8-byte length at the end of a bundle, this
+   will never fail for a well-formed bundle.
+1. Let `firstByte` be the result of reading 1 byte from the stream.
+1. If `firstByte & 0xE0` is not `0x40`, the item is not a bytestring. Return an
+   error.
+1. If `firstByte & 0x1F` is:
+
+   0..23, inclusive
+   : Return `firstByte`.
+
+   24
+   : Let `content` be the result of reading 1 byte from the stream. If `content`
+     is less than 24, return an error.
+
+   25
+   : Let `content` be the result of reading 2 bytes from the stream. If the
+     first byte of `content` is 0, return an error.
+
+   26
+   : Let `content` be the result of reading 4 bytes from the stream. If the
+     first two bytes of `content` are 0, return an error.
+
+   27
+   : Let `content` be the result of reading 8 bytes from the stream. If the
+     first four bytes of `content` are 0, return an error.
+
+   28..31, inclusive
+   : Return an error.
+1. Return the big-endian integer encoded in `content`.
+
+## Interpreting CBOR HTTP headers {#cbor-headers}
+
+Bundles represent HTTP requests and responses as a list of headers, matching the
+following CDDL ({{!I-D.ietf-cbor-cddl}}):
+
+~~~ cddl
+headers = {* bstr => bstr}
+~~~
+
+Pseudo-headers starting with a `:` provide the non-header information needed to
+create a request or response as appropriate
+
+To convert a CBOR item `item` into a {{FETCH}} header list and pseudoheaders,
+parsers MUST do the following:
+
+1. If `item` doesn't match the `headers` rule in the above CDDL, return an
+   error.
+1. Let `headers` be a new header list ({{FETCH}}).
+1. Let `pseudos` be an empty map ({{INFRA}}).
+
+1. For each pair `name`/`value` in `item`:
+   1. If `name` contains any non-ASCII or upper-case characters, return an
+      error. This matches the requirement in Section 8.1.2 of {{?RFC7540}}.
+   1. If `name` starts with a ':':
+      1. If `pseudos[name]` exists, return an error.
+      1. Set `pseudos[name]` to `value`.
+      1. Continue.
+   1. If `headers` contains ({{FETCH}}) `name`, return an error.
+   1. Append `name`/`value` to `headers.
+
+1. Return `headers`/`pseudos`.
 
 # Guidelines for bundle authors {#authoring-guidelines}
 
-Bundles SHOULD consist of a single canonical CBOR item ({{canonical-encoding}})
-matching the `webbundle` CDDL rule in {{top-level}}.
+Bundles SHOULD consist of a single CBOR item satisfying the core
+canonicalization requirements ({{parse-cbor}}) and matching the `webbundle` CDDL
+rule in {{top-level}}.
 
-# Security Considerations # {#security}
+# Security Considerations {#security}
 
-Bundles currently have no mechanism for ensuring that they signed exchanges they
+Bundles currently have no mechanism for ensuring that the signed exchanges they
 contain constitute a consistent version of those resources. Even if a website
 never has a security vulnerability when resources are fetched at a single time,
 an attacker might be able to combine a set of resources pulled from different
 versions of the website to build a vulnerable site. While the vulnerable site
 could have occurred by chance on a client's machine due to normal HTTP caching,
-bundling allows an attacker to guarantee that it happens. Future work in the
-{{appmanifest}} specification might allow a bundle to constrain its resources to
-come from a consistent version.
+bundling allows an attacker to guarantee that it happens. Future work in this
+specification might allow a bundle to constrain its resources to come from a
+consistent version.
 
 # IANA considerations
 
@@ -431,6 +635,36 @@ at <https://www.iana.org/assignments/media-types>.
   The IESG <iesg@ietf.org>
 
 * Provisional registration? (standards tree only): Not yet.
+
+## Web Bundle Section Name Registry {#section-name-registry}
+
+IANA is directed to create a new registry with the following attributes:
+
+Name: Web Bundle Section Names
+
+Review Process: Specification Required
+
+Initial Assignments:
+
+| Section Name | Specification | Metadata |
+| "index" | {{index-section}} | Yes |
+| "manifest | {{manifest-section}} | Yes |
+| "critical | {{critical-section}} | Yes |
+| "responses" | {{responses-section}} | No |
+
+Requirements on new assignments:
+
+Section Names MUST be encoded in UTF-8.
+
+Assignments must specify whether the section is parsed during
+{{load-metadata}}{:format="title"} (Metadata=Yes) or not (Metadata=No).
+
+The section's specification can use the bytes making up the section, the
+bundle's stream ({{stream-operations}}), the `section-offsets` CBOR item
+({{load-metadata}}), and the offset within the stream where sections start, as
+input, and MUST say if an error is returned, and otherwise what items, if any,
+are added to the struct that {{load-metadata}} returns. A section's
+specification MAY say that, if it is present, another section is not processed.
 
 --- back
 
