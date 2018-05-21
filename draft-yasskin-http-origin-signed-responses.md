@@ -1057,14 +1057,14 @@ and header fields, and a response payload.
 
 This content type consists of the concatenation of the following items:
 
-1. The ASCII characters "sxg1" followed by a 0 byte, to serve as a file
-   signature. This is redundant with the MIME type, and receipients that receive
-   both MUST check that they match and stop parsing if they don't.
+1. The ASCII characters "sxg1" followed by 0 byte repeated 4 times, to serve as
+   a file signature. This is redundant with the MIME type, and receipients that
+   receive both MUST check that they match and stop parsing if they don't.
 
    Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC
    MUST use this file signature, but implementations of drafts MUST NOT use it
-   and MUST use another implementation-specific string beginning with "sxg1-" and
-   ending with a 0 byte instead.
+   and MUST use another implementation-specific string beginning with "sxg1-"
+   instead, and have it padded with 0 bytes to preserve total length of 8 bytes.
 1. 3 bytes storing a big-endian integer `sigLength`. If this is larger
    than TBD, parsing MUST fail.
 1. 3 bytes storing a big-endian integer `headerLength`. If this is larger than
