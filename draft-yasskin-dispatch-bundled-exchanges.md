@@ -305,11 +305,13 @@ the parser MUST do the following:
       If this returns an error, return that error.
    1. If `pseudos` does not have keys named ':method' and ':url', or its size
       isn't 2, return an error.
-   1. If `pseudos[':method']` is not an HTTP method defined as cacheable (Section
-      4.2.3) of {{!RFC7231}}) and safe (Section 4.2.1 of {{!RFC7231}}) (as
-      required for PUSH_PROMISEd requests (Section 8.2 of {{?RFC7540}})), return
-      an error. This currently requires `pseudos[':method']` to be one of 'GET' or
-      'HEAD'.
+   1. If `pseudos[':method']` is not 'GET', return an error.
+
+      Note: This could probably support any cacheable (Section 4.2.3) of
+      {{!RFC7231}}) and safe (Section 4.2.1 of {{!RFC7231}}) method, matching
+      PUSH_PROMISE (Section 8.2 of {{?RFC7540}}), but today that's only HEAD and
+      GET, and HEAD can be served as a transformation of GET, so this version of
+      the specification keeps the method simple.
    1. Let `parsedUrl` be the result of parsing ({{URL}}) `pseudos[':url']` with
       no base URL.
    1. If `parsedUrl` is a failure, its fragment is not null, or it includes
@@ -563,8 +565,10 @@ parsers MUST do the following:
       1. If `pseudos[name]` exists, return an error.
       1. Set `pseudos[name]` to `value`.
       1. Continue.
+   1. If `name` or `value` doesn't satisfy the requirements for a header in
+      {{FETCH}}, return an error.
    1. If `headers` contains ({{FETCH}}) `name`, return an error.
-   1. Append `name`/`value` to `headers.
+   1. Append `name`/`value` to `headers`.
 
 1. Return `headers`/`pseudos`.
 
