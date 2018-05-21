@@ -129,6 +129,6 @@ func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
 	expiresUnix := s.Expires.Unix()
 
 	return fmt.Sprintf(
-		"%s; sig=*%s; validityUrl=%q; integrity=%q; certUrl=%q; certSha256=*%s; date=%d; expires=%d",
+		"%s; sig=*%s; validity-url=%q; integrity=%q; cert-url=%q; cert-sha256=*%s; date=%d; expires=%d",
 		label, sigb64, validityUrl, integrityStr, certUrl, certSha256b64, dateUnix, expiresUnix), nil
 }
