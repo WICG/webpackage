@@ -107,7 +107,7 @@ their normal result.
 
 ## Stream attributes and operations {#stream-operations}
 
-* A sequence of **available** bytes. As the stream delivers bytes, these are
+* A sequence of **available bytes**. As the stream delivers bytes, these are
   appended to the available bytes.
 * An **EOF** flag that's true if the available bytes include the entire stream.
 * A **current offset** within the available bytes.
@@ -229,7 +229,7 @@ steps, taking the `stream` as input.
    the 4-item array initial byte and 8-byte bytestring initial byte, followed by
    🌐📦 in UTF-8), return an error.
 
-1. Let `sectionOffsetsLength be the result of getting the length of the CBOR
+1. Let `sectionOffsetsLength` be the result of getting the length of the CBOR
    bytestring header from `stream` ({{parse-bytestring}}). If this is an error,
    return that error.
 
@@ -326,7 +326,7 @@ the parser MUST do the following:
       + offset`. That is, offsets in the index are relative to the start of the
       "responses" section.
    1. If `offset + length` is greater than
-      `section-offsets\["responses"].length`, return an error.
+      `section-offsets["responses"].length`, return an error.
    1. Set `requests`\[`http-request`] to a struct whose "offset" item is
       `streamOffset` and whose "length" item is `length`.
 
@@ -372,7 +372,7 @@ To parse the critical section, given its `sectionContents` and the `metadata`
 struct to fill in, the parser MUST do the following:
 
 1. Let `critical` be the result of parsing `sectionContents` as a CBOR item
-   matching the above `critical` rule ({{parse-cbor}}. If `critical` is an
+   matching the above `critical` rule ({{parse-cbor}}). If `critical` is an
    error, return that error.
 1. For each value `sectionName` in the `critical` list, if the client has not
    implemented sections named `sectionName`, return an error.
