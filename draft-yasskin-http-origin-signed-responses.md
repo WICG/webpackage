@@ -367,7 +367,9 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 ~~~cbor-diag
 [
   {
-    ':url': 'https://example.com/'
+    ':url': 'https://example.com/',
+    'host': 'example.com',
+    'accept': '*/*',
     ':method': 'GET',
   },
   {
