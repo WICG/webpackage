@@ -51,21 +51,21 @@ func (s *Signer) serializeSignedMessage(e *Exchange) ([]byte, error) {
 	// mapping:" [spec text]
 	mes := []*cbor.MapEntryEncoder{}
 
-	// "3.1. If certSha256 is set: The text string "certSha256" to the byte string
-	// certSha256." [spec text]
+	// "3.1. If cert-sha256 is set: The text string "cert-sha256" to the byte string
+	// cert-sha256." [spec text]
 	if b := certSha256(s.Certs); len(b) > 0 {
 		mes = append(mes,
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-				keyE.EncodeTextString("certSha256")
+				keyE.EncodeTextString("cert-sha256")
 				valueE.EncodeByteString(b)
 			}))
 	}
 
 	mes = append(mes,
-		// "3.2. The text string "validityUrl" to the byte string value of validityUrl."
+		// "3.2. The text string "validity-url" to the byte string value of validity-url."
 		// [spec text]
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-			keyE.EncodeTextString("validityUrl")
+			keyE.EncodeTextString("validity-url")
 			valueE.EncodeByteString([]byte(s.ValidityUrl.String()))
 		}),
 		// "3.3. The text string "date" to the integer value of date."
