@@ -120,15 +120,15 @@ func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
 	}
 
 	label := "label"
-	sigb64 := base64.RawStdEncoding.EncodeToString(sig)
+	sigb64 := base64.StdEncoding.EncodeToString(sig)
 	integrityStr := "mi"
 	certUrl := s.CertUrl.String()
 	validityUrl := s.ValidityUrl.String()
-	certSha256b64 := base64.RawStdEncoding.EncodeToString(certSha256(s.Certs))
+	certSha256b64 := base64.StdEncoding.EncodeToString(certSha256(s.Certs))
 	dateUnix := s.Date.Unix()
 	expiresUnix := s.Expires.Unix()
 
 	return fmt.Sprintf(
-		"%s; sig=*%s; validityUrl=%q; integrity=%q; certUrl=%q; certSha256=*%s; date=%d; expires=%d",
+		"%s; sig=*%s*; validity-url=%q; integrity=%q; cert-url=%q; cert-sha256=*%s*; date=%d; expires=%d",
 		label, sigb64, validityUrl, integrityStr, certUrl, certSha256b64, dateUnix, expiresUnix), nil
 }
