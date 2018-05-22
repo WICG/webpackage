@@ -3,6 +3,7 @@ package signedexchange_test
 import (
 	"bytes"
 	"encoding/pem"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -108,6 +109,7 @@ s5B6gZsV/ojttR+aaeRknfrhQwEIA/k2r2oZE9yp8djzyiiqGswgw8yO0WSJztbx
 GRqzPwjon7ESIVpKLrVuh5qlMhUkOFUeF9wvViWX4qnV5Fvg
 -----END RSA PRIVATE KEY-----
 `
+	expectedSignatureHeader = "label; sig=*Ps6tOmsrdWWG0yHEOIfDhlVHPGMDHHWH5uatD054w7qcJy6l9TPu1lVBTy7bI1uK0Iz4IYcw8ObpbBTzdBVwyVy63axMVBiAjrYodCjKENC17Po3WJQ3IHnBAsxu9jOU+1Wsx7Jwg+kSBo075shBMs5AI9xmRdJVzEH2FySpxTK6SpPa77ZI7Cvf07WQ1OhRLefUAhy3+CcJGR/N8QdAgv/POvKv2xTcRcNNKJkcjlHrG0l5Zll9V9AE9b64Jj7jmM7ugBTfRopFAdqpLokBqf+Ip2vO/HGol4M93+M71h/YNPoVlpRakgK4dqVhZ3JzFi4ScvdktCv8F3BTru94tA==*; validity-url=\"https://example.com/resource.validity\"; integrity=\"mi\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*ZC3lTYTDBJQVf1P2V7+fibTqbIsWNR/X7CWNVW+CEEA=*; date=1517418800; expires=1517422400"
 )
 
 type zeroReader struct{}
@@ -168,8 +170,49 @@ func TestSignedExchange(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	WriteExchangeFile(&buf, e)
-	got, err := testhelper.CborBinaryToReadableString(buf.Bytes())
+	if err := WriteExchangeFile(&buf, e); err != nil {
+		t.Fatal(err)
+	}
+
+	magic, err := buf.ReadBytes(0x00)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(magic, HeaderMagicBytes) {
+		t.Errorf("unexpected magic: %q", magic)
+	}
+
+	var encodedSigLength [3]byte
+	if _, err := io.ReadFull(&buf, encodedSigLength[:]); err != nil {
+		t.Fatal(err)
+	}
+	sigLength := Decode3BytesBigEndianUint(encodedSigLength)
+
+	if sigLength != len(expectedSignatureHeader) {
+		t.Errorf("Unexpected sigLength: %d", sigLength)
+	}
+
+	var encodedHeaderLength [3]byte
+	if _, err := io.ReadFull(&buf, encodedHeaderLength[:]); err != nil {
+		t.Fatal(err)
+	}
+	headerLength := Decode3BytesBigEndianUint(encodedHeaderLength)
+
+	signatureHeaderBytes := make([]byte, sigLength)
+	if _, err := io.ReadFull(&buf, signatureHeaderBytes); err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(signatureHeaderBytes, []byte(expectedSignatureHeader)) {
+		t.Errorf("Unexpected signature header: %q", signatureHeaderBytes)
+	}
+
+	encodedHeader := make([]byte, headerLength)
+	if _, err := io.ReadFull(&buf, encodedHeader); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := testhelper.CborBinaryToReadableString(encodedHeader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,6 +220,12 @@ func TestSignedExchange(t *testing.T) {
 
 	if got != want {
 		t.Errorf("WriteExchangeFile:\ngot: %v\nwant: %v", got, want)
+	}
+
+	gotPayload := buf.Bytes()
+	wantPayload := mustReadFile("test-signedexchange-expected-payload-mi.bin")
+	if !bytes.Equal(gotPayload, wantPayload) {
+		t.Errorf("payload mismatch")
 	}
 }
 
