@@ -41,9 +41,9 @@ normative:
 --- abstract
 
 Bundled exchanges provide a way to bundle up groups of HTTP request+response
-pairs to transmit or store them together. The component exchanges can be signed
-using {{?I-D.yasskin-http-origin-signed-responses}} to establish their
-authenticity.
+pairs to transmit or store them together. They can include multiple top-level
+resources with one identified as the default by a manifest, provide random
+access to their component exchanges, and efficiently store 8-bit resources.
 
 --- note_Note_to_Readers
 
@@ -67,7 +67,7 @@ format.
 ## Terminology
 
 Exchange (noun)
-: An HTTP request/response pair. This can either be a request from a client and
+: An HTTP request+response pair. This can either be a request from a client and
 the matching response from a server or the request in a PUSH_PROMISE and its
 matching response stream. Defined by Section 8 of {{!RFC7540}}.
 
@@ -111,21 +111,21 @@ their normal result.
   appended to the available bytes.
 * An **EOF** flag that's true if the available bytes include the entire stream.
 * A **current offset** within the available bytes.
-* A **wait for N bytes** operation, which blocks until the available bytes
-  include at least N bytes past the current offset. A wait operation fails if
-  the stream ends before enough bytes are received, either due to a network
-  error or because the stream has a finite length.
-* A **seek** operation to change the current offset, relative to either the
-  beginning of the available bytes or to the old current offset. A seek past the
-  end of the available bytes is an *error in this specification*.
-* A **read N bytes** operation, which returns the sequence of N bytes starting
-  at the current offset, and then seeks forward by N bytes. A read past the end
-  of the available bytes is also an error in this specification.
+* A **seek to offset N** operation to set the current offset to N bytes past the
+  beginning of the available bytes. A seek past the end of the available bytes
+  blocks until N bytes are available. If the stream ends before enough bytes are
+  received, either due to a network error or because the stream has a finite
+  length, the seek fails.
+* A **read N bytes** operation, which blocks until N bytes are available past
+  the current offset, and then returns them and seeks forward by N bytes. If the
+  stream ends before enough bytes are received, either due to a network error or
+  because the stream has a finite length, the read operation returns an error
+  instead.
 
 ## Load a bundle's metadata {#semantics-load-metadata}
 
-This takes the bundle's stream and returns a struct ({{INFRA}}) of metadata
-containing at least items named:
+This takes the bundle's stream and returns a map ({{INFRA}}) of metadata
+containing at least keys named:
 
 requests
 
@@ -140,7 +140,7 @@ manifest
   multiple different manifests, where the client uses content negotiation to
   select the most appropriate one.
 
-The struct may include other items added by sections defined in the
+The map may include other items added by sections defined in the
 {{section-name-registry}}{:format="title"}.
 
 This operation only waits for a prefix of the stream that, if the bundle is
@@ -220,11 +220,9 @@ Offsets in this item are relative to the *end* of the section-offset item.
 To implement {{semantics-load-metadata}}, the parser MUST run the following
 steps, taking the `stream` as input.
 
-1. Seek to the start of `stream`.
+1. Seek to offset 0 in `stream`. Assert: this operation doesn't fail.
 
-1. Wait for 10 bytes to be available from `stream`.
-
-1. If the wait fails or if reading 10 bytes from `stream` doesn't return the
+1. If reading 10 bytes from `stream` returns an error or doesn't return the
    bytes with hex encoding "84 48 F0 9F 8C 90 F0 9F 93 A6" (the CBOR encoding of
    the 4-item array initial byte and 8-byte bytestring initial byte, followed by
    🌐📦 in UTF-8), return an error.
@@ -235,13 +233,13 @@ steps, taking the `stream` as input.
 
 1. If `sectionOffsetsLength` is TBD or greater, return an error.
 
-1. Wait for `sectionOffsetsLength` bytes to be available from `stream`. If this
-   fails, return an error.
+1. Let `sectionOffsetsBytes` be the result of reading `sectionOffsetsLength`
+   bytes from `stream`. If `sectionOffsetsBytes` is an error, return that error.
 
-1. Read `sectionOffsetsLength` bytes from `stream`, and let `section-offsets` be
-   the result of parsing one CBOR item ({{parse-cbor}}) from them, matching the
-   section-offsets rule in the CDDL ({{!I-D.ietf-cbor-cddl}}) above. If
-   `section-offsets` is an error, return an error.
+1. Let `sectionOffsets` be the result of parsing one CBOR item ({{parse-cbor}})
+   from `sectionOffsetsBytes`, matching the section-offsets rule in the CDDL
+   ({{!I-D.ietf-cbor-cddl}}) above. If `sectionOffsets` is an error, return an
+   error.
 
 1. Let `sectionsStart` be the current offset within `stream`. For example, if
    `sectionOffsetsLength` were 52, `sectionsStart` would be 64.
@@ -251,30 +249,26 @@ steps, taking the `stream` as input.
 
 1. Let `ignoredSections` be an empty set.
 
-1. For each `"name"` key in `section-offsets`, if `"name"`'s specification in
+1. For each `"name"` key in `sectionOffsets`, if `"name"`'s specification in
    `knownSections` says not to process other sections, add those sections' names
    to `ignoredSections`.
 
-1. Let `metadata` be a struct ({{INFRA}}) with no items.
+1. Let `metadata` be an empty map ({{INFRA}}).
 
-1. Assert: The current offset of the stream is just after the `section-offsets`
-   item.
-
-1. For each `"name"`/\[`offset`, `length`] triple in `section-offsets`:
-
+1. For each `"name"`/\[`offset`, `length`] triple in `sectionOffsets`:
    1. If `"name"` isn't in `knownSections`, continue to the next triple.
    1. If `"name"`'s Metadata field is "No", continue to the next triple.
    1. If `"name"` is in `ignoredSections`, continue to the next triple.
-   1. Wait for `offset + length` bytes to be available from `stream`. If this
-      fails, return an error.
-   1. Let `sectionContents` be the available bytes in `stream` in the range
-      [`sectionsStart + offset`, `sectionsStart + offset + length`).
+   1. Seek to offset `sectionsStart + offset` in `stream`. If this fails, return
+      an error.
+   1. Let `sectionContents` be the result of reading `length` bytes from
+      `stream`. If `sectionContents` is an error, return that error.
    1. Follow `"name"`'s specification from `knownSections` to process the
-      section, passing `sectionContents`, `stream`, `section-offsets`,
+      section, passing `sectionContents`, `stream`, `sectionOffsets`,
       `sectionsStart`, and `metadata`. If this returns an error, return it.
 
-1. If `metadata` doesn't have items named "requests" and "manifest", return an
-   error.
+1. If `metadata` doesn't have entries with keys "requests" and "manifest",
+   return an error.
 
 1. Return `metadata`.
 
@@ -289,7 +283,7 @@ index = {* headers => [ offset: uint,
 ~~~
 
 To parse the index section, given its `sectionContents`, the `sectionsStart`
-offset, the `section-offsets` CBOR item, and the `metadata` struct to fill in,
+offset, the `sectionOffsets` CBOR item, and the `metadata` map to fill in,
 the parser MUST do the following:
 
 1. Let `index` be the result of parsing `sectionContents` as a CBOR item
@@ -326,11 +320,11 @@ the parser MUST do the following:
       + offset`. That is, offsets in the index are relative to the start of the
       "responses" section.
    1. If `offset + length` is greater than
-      `section-offsets["responses"].length`, return an error.
+      `sectionOffsets["responses"].length`, return an error.
    1. Set `requests`\[`http-request`] to a struct whose "offset" item is
       `streamOffset` and whose "length" item is `length`.
 
-1. Set `metadata`'s "requests" item to `requests`.
+1. Set `metadata["requests"]` to `requests`.
 
 ### Parsing the manifest section {#manifest-section}
 
@@ -345,7 +339,7 @@ manifest = text
 ~~~
 
 To parse the manifest section, given its `sectionContents` and the `metadata`
-struct to fill in, the parser MUST do the following:
+map to fill in, the parser MUST do the following:
 
 1. Let `urlString` be the result of parsing `sectionContents` as a CBOR item
    matching the above `manifest` rule ({{parse-cbor}}. If `urlString` is an
@@ -356,7 +350,7 @@ struct to fill in, the parser MUST do the following:
 1. If `url` is a failure, its fragment is not null, or it includes credentials,
    return an error.
 
-1. Set `metadata`'s "manifest" item to `url`.
+1. Set `metadata["manifest"]` to `url`.
 
 ### Parsing the critical section {#critical-section}
 
@@ -369,7 +363,7 @@ critical = [*tstr]
 ~~~
 
 To parse the critical section, given its `sectionContents` and the `metadata`
-struct to fill in, the parser MUST do the following:
+map to fill in, the parser MUST do the following:
 
 1. Let `critical` be the result of parsing `sectionContents` as a CBOR item
    matching the above `critical` rule ({{parse-cbor}}). If `critical` is an
@@ -381,7 +375,7 @@ This section does not modify the returned metadata.
 
 ### The responses section {#responses-section}
 
-The responses section does not add any items to the bundle metadata struct.
+The responses section does not add any items to the bundle metadata map.
 Instead, its offset and length are used in processing the index section
 ({{index-section}}).
 
@@ -417,8 +411,8 @@ To implement {{semantics-load-metadata-from-end}}, taking a sequence of bytes
      bytes[bytes.length])`.
    * EOF flag is set.
    * Current offset is initially 0.
-   * The wait for N bytes operation succeeds immediately if `currentOffset + N
-     <= bundleLength` and fails otherwise.
+   * The seek to offset N and read N bytes operations succeed immediately if
+     `currentOffset + N <= bundleLength` and fail otherwise.
 1. Return the result of running {{load-metadata}} with `stream` as input.
 
 ## Load a response from a bundle {#load-response}
@@ -436,20 +430,17 @@ To implement {{semantics-load-response}}, the parser MUST run the following
 steps, taking the bundle's `stream` and one `request` and its `requestMetadata`
 as returned by {{semantics-load-metadata}}.
 
-1. Seek to the start of `stream`, and wait for `requestMetadata.offset + 10`
-   bytes (array item header + the maximum length of a byte string item header)
-   to be available. If this fails, return an error.
-1. Seek forward by `requestMetadata.offset` bytes.
-1. Read 1 byte from `stream`. If it isn't `0x82`, return an error.
+1. Seek to offset `requestMetadata.offset` in `stream`. If this fails, return an
+   error.
+1. Read 1 byte from `stream`. If this is an error or isn't `0x82`, return an
+   error.
 1. Let `headerLength` be the result of getting the length of a CBOR bytestring
    header from `stream` ({{parse-bytestring}}). If `headerLength` is an error,
    return that error.
 1. If `headerLength` is TBD or greater, return an error.
-1. Wait for `headerLength` bytes to be available on `stream`. If this fails,
-   return an error.
 1. Let `headerCbor` be the result of reading `headerLength` bytes from `stream`
-   and  parsing a CBOR item from them matching the `headers` CDDL rule. If this
-   returns an error, return that error.
+   and parsing a CBOR item from them matching the `headers` CDDL rule. If either
+   the read or parse returns an error, return that error.
 1. Let `headers`/`pseudos` be the result of converting `cbor-http-request` to a
    header list and pseudoheaders using the algorithm in {{cbor-headers}}. If
    this returns an error, return that error.
@@ -507,10 +498,8 @@ item and sets the stream's current offset to  the first byte of the contents.
 
 To get the length of a CBOR bytestring header from a bundle's stream, the parser MUST do the following:
 
-1. Wait for 9 bytes to be available on the stream. If this fails, return an
-   error. Note that because of the 8-byte length at the end of a bundle, this
-   will never fail for a well-formed bundle.
-1. Let `firstByte` be the result of reading 1 byte from the stream.
+1. Let `firstByte` be the result of reading 1 byte from the stream. If
+   `firstByte` is an error, return that error.
 1. If `firstByte & 0xE0` is not `0x40`, the item is not a bytestring. Return an
    error.
 1. If `firstByte & 0x1F` is:
@@ -520,19 +509,19 @@ To get the length of a CBOR bytestring header from a bundle's stream, the parser
 
    24
    : Let `content` be the result of reading 1 byte from the stream. If `content`
-     is less than 24, return an error.
+     is an error or is less than 24, return an error.
 
    25
-   : Let `content` be the result of reading 2 bytes from the stream. If the
-     first byte of `content` is 0, return an error.
+   : Let `content` be the result of reading 2 bytes from the stream. If
+     `content` is an error or its first byte is 0, return an error.
 
    26
-   : Let `content` be the result of reading 4 bytes from the stream. If the
-     first two bytes of `content` are 0, return an error.
+   : Let `content` be the result of reading 4 bytes from the stream. If
+     `content` is an error or its first two bytes are 0, return an error.
 
    27
-   : Let `content` be the result of reading 8 bytes from the stream. If the
-     first four bytes of `content` are 0, return an error.
+   : Let `content` be the result of reading 8 bytes from the stream. If
+     `content` is an error or its first four bytes are 0, return an error.
 
    28..31, inclusive
    : Return an error.
@@ -559,15 +548,22 @@ parsers MUST do the following:
 1. Let `pseudos` be an empty map ({{INFRA}}).
 
 1. For each pair `name`/`value` in `item`:
-   1. If `name` contains any non-ASCII or upper-case characters, return an
+   1. If `name` contains any upper-case or non-ASCII characters, return an
       error. This matches the requirement in Section 8.1.2 of {{?RFC7540}}.
    1. If `name` starts with a ':':
-      1. If `pseudos[name]` exists, return an error.
+      1. Assert: `pseudos[name]` does not exist, because CBOR maps cannot
+         contain duplicate keys.
       1. Set `pseudos[name]` to `value`.
       1. Continue.
    1. If `name` or `value` doesn't satisfy the requirements for a header in
       {{FETCH}}, return an error.
-   1. If `headers` contains ({{FETCH}}) `name`, return an error.
+   1. Assert: `headers` does not contain ({{FETCH}}) `name`, because CBOR maps
+      cannot contain duplicate keys and an earlier step rejected upper-case
+      bytes.
+
+      Note: This means that a response cannot set more than one cookie, because
+      the `Set-Cookie` header ({{?RFC6265}}) has to appear multiple times to set
+      multiple cookies.
    1. Append `name`/`value` to `headers`.
 
 1. Return `headers`/`pseudos`.
@@ -664,10 +660,10 @@ Assignments must specify whether the section is parsed during
 {{load-metadata}}{:format="title"} (Metadata=Yes) or not (Metadata=No).
 
 The section's specification can use the bytes making up the section, the
-bundle's stream ({{stream-operations}}), the `section-offsets` CBOR item
+bundle's stream ({{stream-operations}}), the `sectionOffsets` CBOR item
 ({{load-metadata}}), and the offset within the stream where sections start, as
 input, and MUST say if an error is returned, and otherwise what items, if any,
-are added to the struct that {{load-metadata}} returns. A section's
+are added to the map that {{load-metadata}} returns. A section's
 specification MAY say that, if it is present, another section is not processed.
 
 --- back
