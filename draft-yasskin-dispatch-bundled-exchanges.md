@@ -133,8 +133,8 @@ containing at least keys named:
 
 requests
 
-: A map ({{INFRA}}) whose keys are the HTTP requests ({{FETCH}}) for the
-  exchanges in the bundle, and whose values are opaque metadata that
+: A map ({{INFRA}}) whose keys are {{FETCH}} requests for the HTTP exchanges in
+  the bundle, and whose values are opaque metadata that
   {{semantics-load-response}}{:format="title"} can use to find the matching
   response.
 
