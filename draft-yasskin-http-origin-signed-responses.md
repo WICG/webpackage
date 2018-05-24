@@ -1821,6 +1821,7 @@ draft-04
 * Require absolute URLs.
 * Make all identifiers in headers lower-case, as required by Structured Headers.
 * Switch back to the TLS 1.3 signature format.
+* Include the version and draft number in the signature context string.
 * Remove support for integrity protection using the Digest header field.
 * Limit the record size in the mi-sha256 encoding.
 * Forbid RSA keys, and only require clients to support secp256r1 keys.
