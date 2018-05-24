@@ -32,9 +32,12 @@ func run(pemFilePath, ocspFilePath, sctFilePath string) error {
 		return err
 	}
 
-	sct, err := ioutil.ReadFile(sctFilePath)
-	if err != nil {
-		return err
+	var sct []byte
+	if sctFilePath != "" {
+		sct, err = ioutil.ReadFile(sctFilePath)
+		if err != nil {
+			return err
+		}
 	}
 
 	out, err := certurl.CertificateMessageFromPEM(in, ocsp, sct)
