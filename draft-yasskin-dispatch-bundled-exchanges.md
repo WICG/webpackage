@@ -173,9 +173,9 @@ may need to load other responses.
 
 Note that this operation uses the metadata for a particular request returned by
 {{semantics-load-metadata}}, while a client will generally want to load the
-response for a request that the client generated. This specification does not
-define how a client determines the best available bundled response, if any, for
-that client-generated request.
+response for a request that the client generated. TODO: Specify how a client
+determines the best available bundled response, if any, for that
+client-generated request, in this or another document.
 
 This operation's implementation is in {{load-response}}.
 
