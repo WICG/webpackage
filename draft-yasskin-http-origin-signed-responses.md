@@ -518,7 +518,13 @@ to retrieve an updated OCSP from the original server.
    anyone uses the same key in a TLS certificate and an exchange-signing
    certificate.
    1. A string that consists of octet 32 (0x20) repeated 64 times.
-   1. A context string: the ASCII encoding of “HTTP Exchange”.
+   1. A context string: the ASCII encoding of "HTTP Exchange 1".
+
+      Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final
+      RFC MUST use this context string, but implementations of drafts MUST NOT
+      use it and MUST use another draft-specific string beginning with "HTTP
+      Exchange 1 ” instead. This ensures that signers can predict how their
+      signatures will be used.
    1. A single 0 byte which serves as a separator.
    1. The bytes of the canonical CBOR serialization ({{canonical-cbor}}) of a
       CBOR map mapping:
@@ -1815,6 +1821,7 @@ draft-04
 * Require absolute URLs.
 * Make all identifiers in headers lower-case, as required by Structured Headers.
 * Switch back to the TLS 1.3 signature format.
+* Include the version and draft number in the signature context string.
 * Remove support for integrity protection using the Digest header field.
 * Limit the record size in the mi-sha256 encoding.
 * Forbid RSA keys, and only require clients to support secp256r1 keys.
