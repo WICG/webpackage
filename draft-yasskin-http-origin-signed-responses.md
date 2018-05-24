@@ -334,8 +334,12 @@ The CBOR representation of an exchange `exchange`'s headers is the CBOR
    * The byte string ':url' to the byte string containing `exchange`'s request's
      effective request URI, which MUST be an [absolute-URL
      string](https://url.spec.whatwg.org/#absolute-url-string) ({{URL}}).
-   * For each request header field in `exchange`, the header field's lowercase
-     name as a byte string to the header field's value as a byte string.
+   * For each request header field in `exchange` except for the `Host` header
+     field, the header field's lowercase name as a byte string to the header
+     field's value as a byte string.
+
+     Note: `Host` is excluded because it is already part of the effective
+     request URI.
 1. The map mapping:
    * the byte string ':status' to the byte string containing `exchange`'s
      response's 3-digit status code, and
@@ -368,7 +372,6 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 [
   {
     ':url': 'https://example.com/',
-    'host': 'example.com',
     'accept': '*/*',
     ':method': 'GET',
   },
