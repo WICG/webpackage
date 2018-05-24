@@ -611,7 +611,7 @@ at <https://www.iana.org/assignments/media-types>.
 
 * Type name: application
 
-* Subtype name: webbundle+cbor
+* Subtype name: webbundle
 
 * Required parameters: N/A
 
