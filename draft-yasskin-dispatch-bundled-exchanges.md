@@ -17,7 +17,7 @@ author:
     email: jyasskin@chromium.org
 
 normative:
-  appmanifest: W3C.WD-appmanifest-20171129
+  appmanifest: W3C.WD-appmanifest-20180523
   FETCH:
     target: https://fetch.spec.whatwg.org/
     title: Fetch
@@ -90,20 +90,24 @@ Standard ({{INFRA}}).
 # Semantics {#semantics}
 
 A bundle is logically a set of HTTP exchanges, with a URL identifying the
-manifest(s) of the bundle itself. A client uses content negotiation to pick a
-particular response for that URL, often an App Manifest ({{appmanifest}}), which
-then identifies other significant exchanges within the bundle, like a start
-page.
+manifest(s) of the bundle itself.
 
 While the order of the exchanges is not semantically meaningful, it can
 significantly affect performance when the bundle is loaded from a network
 stream.
 
-A bundle is parsed from a stream of bytes, which is assumed to have the attributes and operations described in {{stream-operations}}:
+A bundle is parsed from a stream of bytes, which is assumed to have the
+attributes and operations described in {{stream-operations}}.
 
-Bundle parsers support two operations, defined in {{semantics-load-metadata}}
-and {{semantics-load-response}} each of which can return an error instead of
-their normal result.
+Bundle parsers support two operations,
+{{semantics-load-metadata}}{:format="title"} ({{semantics-load-metadata}}) and
+{{semantics-load-response}}{:format="title"} ({{semantics-load-response}}) each
+of which can return an error instead of their normal result.
+
+A client is expected to load the metadata for a bundle as soon as it start
+downloading it or otherwise discovers it. Then, when fetching ({{FETCH}}) a
+request, the cliend is expected to match it against the requests in the
+metadata, and if one matches, load that request's response.
 
 ## Stream attributes and operations {#stream-operations}
 
@@ -180,6 +184,18 @@ This operation's implementation is in {{load-response}}.
 ## Top-level structure {#top-level}
 
 *This section is non-normative.*
+
+A bundle holds a series of named sections. The beginning of the bundle maps
+section names to the range of bytes holding that section. The most important
+section is the "index" ({{index-section}}), which similarly maps serialized HTTP
+requests to the range of bytes holding that request's serialized response. Byte
+ranges are represented using an offset from some point in the bundle *after* the
+encoding of the range itself, to reduce the amount of work needed to use the
+shortest possible encoding of the range.
+
+Future specifications can define new sections with extra data, and if necessary,
+these sections can be marked "critical" ({{critical-section}}) to prevent older
+parsers from using the rest of the bundle incorrectly.
 
 The bundle is roughly a CBOR item ({{?I-D.ietf-cbor-7049bis}}) with the
 following CDDL ({{?I-D.ietf-cbor-cddl}}) schema, but bundle parsers are required
@@ -331,8 +347,8 @@ the parser MUST do the following:
 The "manifest" section records a single URL identifying the manifest of the
 bundle. The bundle can contain multiple resources at this URL, and the client is
 expected to content-negotiate for the best one. For example, a client might
-select the one with an `accept` header of `application/manifest+json` and an
-`accept-language` header of `es-419`.
+select the one with an `accept` header of `application/manifest+json`
+({{appmanifest}}) and an `accept-language` header of `es-419`.
 
 ~~~ cddl
 manifest = text
