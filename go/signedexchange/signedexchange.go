@@ -27,7 +27,7 @@ type Exchange struct {
 	payload []byte
 }
 
-var HeaderMagicBytes = []byte("sxg1-\x00")
+var HeaderMagicBytes = []byte("sxg1-b1\x00")
 
 // https://jyasskin.github.io/webpackage/implementation-draft/draft-yasskin-httpbis-origin-signed-exchanges-impl.html#stateful-headers.
 var (
