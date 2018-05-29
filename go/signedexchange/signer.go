@@ -15,6 +15,10 @@ import (
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
 )
 
+// contextString is the "context string" in Step 7.2 of
+// https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#signature-validity
+const contextString = "HTTP Exchange 1 b1"
+
 type Signer struct {
 	Date        time.Time
 	Expires     time.Time
@@ -42,7 +46,7 @@ func (s *Signer) serializeSignedMessage(e *Exchange) ([]byte, error) {
 	var buf bytes.Buffer
 
 	// "1. A context string: the ASCII encoding of "HTTP Exchange"." [spec text]
-	buf.WriteString("HTTP Exchange")
+	buf.WriteString(contextString)
 
 	// "2. A single 0 byte which serves as a separator." [spec text]
 	buf.WriteByte(0)

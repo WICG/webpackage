@@ -109,7 +109,7 @@ s5B6gZsV/ojttR+aaeRknfrhQwEIA/k2r2oZE9yp8djzyiiqGswgw8yO0WSJztbx
 GRqzPwjon7ESIVpKLrVuh5qlMhUkOFUeF9wvViWX4qnV5Fvg
 -----END RSA PRIVATE KEY-----
 `
-	expectedSignatureHeader = "label; sig=*Lmp9BbKLyARNvPkCec5oV/G9kbd/OzMbMBZq1502RZl5ieR3mcHxaeQyyIcJT3FUyMJTNV4lDtBWV2AobiF3J1ZXAOFrOp1SzYamGzjoRkJkEbKTgOu79zQTXq43D/pPIy//lCTKsRC+QoprnwdThxLXXvk73n7aG4CnKZUW1p0LzFcxFWDQ+xMCF4CYWVfL/AIGDu2+DsnYzyFO05jKeEAzR1jyc8ru2LYS2PgT19yC4jzFExNM+xz8lSRL5sDBsNSJ+yqfz2G3B+9fZIgyS8QeIMcXO4rrZtHxleIbVGXVgyZzz9dv7QkLgMWpChrBU6AQzljhDhknopyaPAzK3A==*; validity-url=\"https://example.com/resource.validity\"; integrity=\"mi\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*ZC3lTYTDBJQVf1P2V7+fibTqbIsWNR/X7CWNVW+CEEA=*; date=1517418800; expires=1517422400"
+	expectedSignatureHeader = "label; sig=*KKhJTqL1HCJYlh8ejPwuc0QucGsJoIW1OY0HV8AfF93+51K/QYtijCoWG0jefNGCOf2MOA/syhMwRtEqWzmBR92uBTWs27YSq6gO9ObC+IUXeUIUJX+Tr3spvDejWL20SR9qkLepa7/JrJdmM7Kw9brEd8LlcmKPYXqiDyfdtDdRvb5LuxVdZjZ2UvRcvGlfHVrQ7NA5tr7QF4tcwdL6xHeBiPkn9r0sPBtaOcXU04xTraQgSzusvjQjyqqnij1UcvpQsLL5ENsJJlVhAz+d8SMa4v0hHyvmvpoW+DYpvZRZMXhtoponfSszQxQdcZ230VG+FyZ5yDkMR4pz5iD5eQ==*; validity-url=\"https://example.com/resource.validity\"; integrity=\"mi\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*ZC3lTYTDBJQVf1P2V7+fibTqbIsWNR/X7CWNVW+CEEA=*; date=1517418800; expires=1517422400"
 )
 
 type zeroReader struct{}
