@@ -904,8 +904,11 @@ validation procedure in {{cross-origin-trust}}.
 ~~~asn.1
    id-ce-canSignHttpExchanges OBJECT IDENTIFIER ::= { TBD }
 
-   CanSignHttpExchanges ::= BIT STRING { allowed (0) }
+   CanSignHttpExchanges ::= NULL
 ~~~
+
+Note that this extension contains an ASN.1 NULL (bytes `05 00`) because some
+implementations have bugs with empty extensions.
 
 Leaf certificates without this extension need to be revoked if the private key
 is exposed to an unauthorized entity, but they generally don't need to be
@@ -922,6 +925,19 @@ certificates with this extension in TLS connections (Section 4.4.2.2 of
 {{!I-D.ietf-tls-tls13}}).  This simplifies security analysis of this protocol
 and avoids encouraging server operators to put exchange-signing keys on servers
 exposed directly to the internet.
+
+RFC EDITOR PLEASE DELETE THE REST OF THE PARAGRAPHS IN THIS SECTION
+
+~~~asn.1
+   id-ce-google OBJECT IDENTIFIER ::= { 1 3 6 1 4 1 11129 }
+   id-ce-testCanSignHttpExchanges OBJECT IDENTIFIER ::= { id-ce-google 2 1 22 }
+~~~
+
+Implementations of drafts of this specification MAY recognize the
+`id-ce-testCanSignHttpExchanges` OID as identifying the CanSignHttpExchanges
+extension. This OID might or might not be used as the final OID for the
+extension, so certificates including it might need to be reissued once the final
+RFC is published.
 
 # Transferring a signed exchange {#transfer}
 
