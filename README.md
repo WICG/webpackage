@@ -26,15 +26,16 @@ The specifications come in a couple layers:
      is an Internet Draft, and a [draft of the next
      snapshot](https://wicg.github.io/webpackage/draft-yasskin-httpbis-origin-signed-exchanges-impl.html)
      is in this repository.
-1. [Bundled HTTP exchanges](https://github.com/WICG/webpackage/pull/98): A
-   collection of exchanges, each of which could be signed or unsigned, with some
-   metadata describing how to interpret the bundle as a whole. This
+1. [Bundled HTTP exchanges](https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html):
+   A collection of exchanges, each of which could be signed or unsigned, with
+   some metadata describing how to interpret the bundle as a whole. This
    specification has an initial draft in a PR, but isn't finished yet. This work
    may proceed through either the IETF or the W3C/WHATWG.
 1. Loading: A description of how browsers load signed and bundled exchanges.
    This will be initially specified in the WICG and then will merge into the
    appropriate specs, e.g. [Fetch](https://fetch.spec.whatwg.org/), that live in
-   either the W3C or WHATWG.
+   either the W3C or WHATWG. Currently we only have a [sketch](https://github.com/WICG/webpackage/blob/master/explainer.md#signed-exchange-loading-sketch)
+   for signed exchange cases.
 
 A previous draft of the format combined layers 1 and 2 into a single format for
 signed packages:
@@ -60,4 +61,8 @@ https://github.com/martinthomson/i-d-template/blob/master/doc/SETUP.md.
 ### Packaging tool.
 
 Install this with `go install github.com/WICG/webpackage/go/signed-exchange/cmd/gen-signedexchange`.
-This tool is not yet documented well.
+
+This tool is not yet documented well, but you can refer to
+[README](https://cs.chromium.org/chromium/src/content/test/data/htxg/README)
+in Chromium's code repository to see how to generate necessary files for
+testing.
