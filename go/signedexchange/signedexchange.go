@@ -29,39 +29,14 @@ type Exchange struct {
 
 var HeaderMagicBytes = []byte("sxg1-b1\x00")
 
-// https://jyasskin.github.io/webpackage/implementation-draft/draft-yasskin-httpbis-origin-signed-exchanges-impl.html#stateful-headers.
-var (
-	StatefulRequestHeaders = map[string]struct{}{
-		"authorization":       struct{}{},
-		"cookie":              struct{}{},
-		"cookie2":             struct{}{},
-		"proxy-authorization": struct{}{},
-		"sec-websocket-key":   struct{}{},
-	}
-	StatefulResponseHeaders = map[string]struct{}{
-		"authentication-control":    struct{}{},
-		"authentication-info":       struct{}{},
-		"optional-www-authenticate": struct{}{},
-		"proxy-authenticate":        struct{}{},
-		"proxy-authentication-info": struct{}{},
-		"sec-webSocket-accept":      struct{}{},
-		"set-cookie":                struct{}{},
-		"set-cookie2":               struct{}{},
-		"setprofile":                struct{}{},
-		"www-authenticate":          struct{}{},
-	}
-)
-
 func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte, miRecordSize int) (*Exchange, error) {
 	for name, _ := range requestHeaders {
-		cname := strings.ToLower(name)
-		if _, banned := StatefulRequestHeaders[cname]; banned {
+		if IsStatefulRequestHeader(name) {
 			return nil, fmt.Errorf("signedexchange: stateful request header %q can't be captured inside signed exchange", name)
 		}
 	}
 	for name, _ := range responseHeaders {
-		cname := strings.ToLower(name)
-		if _, banned := StatefulResponseHeaders[cname]; banned {
+		if IsStatefulResponseHeader(name) {
 			return nil, fmt.Errorf("signedexchange: stateful response header %q can't be captured inside signed exchange", name)
 		}
 	}
