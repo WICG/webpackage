@@ -21,19 +21,19 @@ func (d *Decoder) ReadByte() (byte, error) {
 	return b[0], nil
 }
 
-const (
-	MaskType                  = 0xe0
-	MaskAdditionalInformation = 0x1f
-)
-
 func (d *Decoder) decodeTypedUInt() (Type, uint64, error) {
+	const (
+		maskType                  = 0xe0
+		maskAdditionalInformation = 0x1f
+	)
+
 	b, err := d.ReadByte()
 	if err != nil {
 		return TypeOther, 0, err
 	}
 
-	t := Type(b & MaskType)
-	ai := b & MaskAdditionalInformation
+	t := Type(b & maskType)
+	ai := b & maskAdditionalInformation
 	nfollow := 0
 	switch ai {
 	case 24:
