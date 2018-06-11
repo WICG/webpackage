@@ -30,12 +30,12 @@ type Exchange struct {
 var HeaderMagicBytes = []byte("sxg1-b1\x00")
 
 func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte, miRecordSize int) (*Exchange, error) {
-	for name, _ := range requestHeaders {
+	for name := range requestHeaders {
 		if IsStatefulRequestHeader(name) {
 			return nil, fmt.Errorf("signedexchange: stateful request header %q can't be captured inside signed exchange", name)
 		}
 	}
-	for name, _ := range responseHeaders {
+	for name := range responseHeaders {
 		if IsStatefulResponseHeader(name) {
 			return nil, fmt.Errorf("signedexchange: stateful response header %q can't be captured inside signed exchange", name)
 		}
