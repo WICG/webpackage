@@ -138,8 +138,11 @@ func TestSignedExchange(t *testing.T) {
 	header.Add("Foo", "Bar")
 	header.Add("Foo", "Baz")
 
-	e, err := NewExchange(u, nil, 200, header, []byte(payload), 16)
+	e, err := NewExchange(u, nil, 200, header, []byte(payload))
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.MiEncodePayload(16); err != nil {
 		t.Fatal(err)
 	}
 
@@ -236,8 +239,8 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	// Set-Cookie is a stateful header and not available.
 	header.Add("Set-Cookie", "wow, such cookie")
 
-	if _, err := NewExchange(u, nil, 200, header, []byte(payload), 16); err == nil {
-		t.Fail()
+	if _, err := NewExchange(u, nil, 200, header, []byte(payload)); err == nil {
+		t.Fatal(err)
 	}
 
 	// Header names are case-insensitive.
@@ -246,7 +249,7 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	header.Add("cOnTent-TyPe", "text/html; charset=utf-8")
 	header.Add("setProfile", "profile X")
 
-	if _, err := NewExchange(u, nil, 200, header, []byte(payload), 16); err == nil {
-		t.Fail()
+	if _, err := NewExchange(u, nil, 200, header, []byte(payload)); err == nil {
+		t.Fatal(err)
 	}
 }
