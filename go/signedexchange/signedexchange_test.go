@@ -236,8 +236,17 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	// Set-Cookie is a stateful header and not available.
 	header.Add("Set-Cookie", "wow, such cookie")
 
-	_, err := NewExchange(u, nil, 200, header, []byte(payload), 16)
-	if err == nil {
+	if _, err := NewExchange(u, nil, 200, header, []byte(payload), 16); err == nil {
+		t.Fail()
+	}
+
+	// Header names are case-insensitive.
+	u, _ = url.Parse("https://example.com/")
+	header = http.Header{}
+	header.Add("cOnTent-TyPe", "text/html; charset=utf-8")
+	header.Add("setProfile", "profile X")
+
+	if _, err := NewExchange(u, nil, 200, header, []byte(payload), 16); err == nil {
 		t.Fail()
 	}
 }
