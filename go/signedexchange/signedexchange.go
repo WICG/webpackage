@@ -2,6 +2,7 @@ package signedexchange
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,7 +30,7 @@ type Exchange struct {
 
 var HeaderMagicBytes = []byte("sxg1-b1\x00")
 
-func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte, miRecordSize int) (*Exchange, error) {
+func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte) (*Exchange, error) {
 	for name := range requestHeaders {
 		if IsStatefulRequestHeader(name) {
 			return nil, fmt.Errorf("signedexchange: stateful request header %q can't be captured inside signed exchange", name)
@@ -41,21 +42,22 @@ func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseH
 		}
 	}
 
-	e := &Exchange{
+	return &Exchange{
 		requestUri:      uri,
 		responseStatus:  status,
 		requestHeaders:  requestHeaders,
 		responseHeaders: responseHeaders,
-	}
-	if err := e.miEncode(payload, miRecordSize); err != nil {
-		return nil, err
-	}
-	return e, nil
+		payload:         payload,
+	}, nil
 }
 
-func (e *Exchange) miEncode(payload []byte, recordSize int) error {
+func (e *Exchange) MiEncodePayload(recordSize int) error {
+	if e.responseHeaders.Get("MI") != "" {
+		return errors.New("Payload already MI encoded.")
+	}
+
 	var buf bytes.Buffer
-	mi, err := mice.Encode(&buf, payload, recordSize)
+	mi, err := mice.Encode(&buf, e.payload, recordSize)
 	if err != nil {
 		return err
 	}

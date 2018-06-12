@@ -113,8 +113,11 @@ func run() error {
 	if resHeader.Get("content-type") == "" {
 		resHeader.Add("content-type", "text/html; charset=utf-8")
 	}
-	e, err := signedexchange.NewExchange(parsedUrl, reqHeader, *flagResponseStatus, resHeader, payload, *flagMIRecordSize)
+	e, err := signedexchange.NewExchange(parsedUrl, reqHeader, *flagResponseStatus, resHeader, payload)
 	if err != nil {
+		return err
+	}
+	if err := e.MiEncodePayload(*flagMIRecordSize); err != nil {
 		return err
 	}
 
