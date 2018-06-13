@@ -100,9 +100,9 @@ func run() error {
 		es = append(es, se)
 	}
 
-	i := &bundle.Input{Exchanges: es}
+	b := &bundle.Bundle{Exchanges: es}
 
-	if err := bundle.WriteBundle(fo, i); err != nil {
+	if _, err := b.WriteTo(fo); err != nil {
 		return fmt.Errorf("Failed to write exchange. err: %v", err)
 	}
 	return nil
