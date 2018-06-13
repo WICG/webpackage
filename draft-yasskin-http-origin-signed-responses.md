@@ -187,7 +187,9 @@ payload.
 
 The `Signature` header is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a parameterised list
-(Section 4.3 of {{!I-D.ietf-httpbis-header-structure}}).
+(Section 3.3 of {{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
+
+    Signature = sh-param-list
 
 Each parameterised identifier in the list MUST have parameters named "sig",
 "integrity", "validity-url", "date", and "expires". Each parameterised identifier
@@ -199,40 +201,40 @@ values:
 
 "sig"
 
-: Binary content (Section 4.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Binary content (Section 3.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
   the signature of most of these parameters and the exchange's headers.
 
 "integrity"
 
-: A string (Section 4.7 of {{!I-D.ietf-httpbis-header-structure}}) containing
+: A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing
   the lowercase name of the response header field that guards the response
   payload's integrity.
 
 "cert-url"
 
-: A string (Section 4.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
+: A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
   [absolute-URL string](https://url.spec.whatwg.org/#absolute-url-string)
   ({{URL}}).
 
 "cert-sha256"
 
-: Binary content (Section 4.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Binary content (Section 3.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
   the SHA-256 hash of the first certificate found at "cert-url".
 
 "ed25519key"
 
-: Binary content (Section 4.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Binary content (Section 3.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
   an Ed25519 public key ({{!RFC8032}}).
 
 {:#signature-validityurl} "validity-url"
 
-: A string (Section 4.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
+: A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
   [absolute-URL string](https://url.spec.whatwg.org/#absolute-url-string)
   ({{URL}}).
 
 "date" and "expires"
 
-: An integer (Section 4.5 of {{!I-D.ietf-httpbis-header-structure}})
+: An integer (Section 3.5 of {{!I-D.ietf-httpbis-header-structure}})
   representing a Unix time.
 
 The "cert-url" parameter is *not* signed, so intermediates can update it with a
@@ -455,7 +457,7 @@ complex data types, so it doesn't need rules to canonicalize those.
 ## Signature validity ## {#signature-validity}
 
 The client MUST parse the `Signature` header field as the parameterised list
-(Section 4.3.1 of {{!I-D.ietf-httpbis-header-structure}}) described in
+(Section 4.2.3 of {{!I-D.ietf-httpbis-header-structure}}) described in
 {{signature-header}}. If an error is thrown during this parsing or any of the
 requirements described there aren't satisfied, the exchange has no valid
 signatures. Otherwise, each member of this list represents a signature with
@@ -603,7 +605,7 @@ validity = {
 ~~~
 
 The elements of the `signatures` array are parameterised identifiers (Section
-4.3.2 of {{!I-D.ietf-httpbis-header-structure}}) meant to replace the signatures
+4.2.4 of {{!I-D.ietf-httpbis-header-structure}}) meant to replace the signatures
 within the `Signature` header field pointing to this validity data. If the
 signed exchange contains a bug severe enough that clients need to stop using the
 content, the `signatures` array MUST NOT be present.
@@ -712,9 +714,12 @@ all.
 
 The `Accept-Signature` header field is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a parameterised list
-(Section 4.3 of {{!I-D.ietf-httpbis-header-structure}}). The order of
-identifiers in the `Accept-Signature` list is not significant. Identifiers,
-ignoring any initial "-" character, MUST NOT be duplicated.
+(Section 3.3 of {{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
+
+    Accept-Signature = sh-param-list
+
+The order of identifiers in the `Accept-Signature` list is not significant.
+Identifiers, ignoring any initial "-" character, MUST NOT be duplicated.
 
 Each identifier in the `Accept-Signature` header field's value indicates that a
 feature of the `Signature` header field ({{signature-header}}) is supported. If
@@ -748,7 +753,7 @@ for "ecdsa/secp256r1" unless the header field states otherwise.
 
 The "ed25519key" identifier has parameters indicating the public keys that will
 be used to validate the returned signature. Each parameter's name is
-re-interpreted as binary content (Section 4.9 of
+re-interpreted as binary content (Section 3.9 of
 {{!I-D.ietf-httpbis-header-structure}}) encoding a prefix of the public key. For
 example, if the client will validate signatures using the public key whose
 base64 encoding is `11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=`, valid
@@ -1001,11 +1006,15 @@ See {{how-much-to-sign}} for a discussion of why only the URL from the request
 is included and not other request headers.
 
 `Signed-Headers` is a Structured Header as defined by
-{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 4.2 of
-{{!I-D.ietf-httpbis-header-structure}}) of lowercase strings (Section 4.7 of
-{{!I-D.ietf-httpbis-header-structure}}) naming HTTP response header fields.
-Pseudo-header field names (Section 8.1.2.1 of {{!RFC7540}}) MUST NOT appear in
-this list.
+{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 3.2 of
+{{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
+
+    Signed-Headers = sh-list
+
+Each element of the `Signed-Headers` list must be a lowercase string (Section
+3.7 of {{!I-D.ietf-httpbis-header-structure}}) naming an HTTP response header
+field. Pseudo-header field names (Section 8.1.2.1 of {{!RFC7540}}) MUST NOT
+appear in this list.
 
 Higher-level protocols SHOULD place requirements on the minimum set of headers
 to include in the `Signed-Headers` header field.
@@ -1835,7 +1844,7 @@ RFC EDITOR PLEASE DELETE THIS SECTION.
 
 draft-04
 
-* Update to draft-ietf-httpbis-header-structure-04.
+* Update to draft-ietf-httpbis-header-structure-06.
 * Replace the application/http-exchange+cbor format with a simpler
   application/signed-exchange format that:
   * Doesn't require a streaming CBOR parser parse it from a network stream.
