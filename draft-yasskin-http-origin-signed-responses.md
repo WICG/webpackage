@@ -1311,6 +1311,36 @@ Author/Change controller:  IETF
 
 Specification document(s):  {{signature-header}} of this document
 
+## Accept-Signature Header Field Registration
+
+This section registers the `Accept-Signature` header field in the "Permanent
+Message Header Field Names" registry ({{!RFC3864}}).
+
+Header field name:  `Accept-Signature`
+
+Applicable protocol:  http
+
+Status:  standard
+
+Author/Change controller:  IETF
+
+Specification document(s):  {{accept-signature}} of this document
+
+## Signed-Headers Header Field Registration
+
+This section registers the `Signed-Headers` header field in the "Permanent
+Message Header Field Names" registry ({{!RFC3864}}).
+
+Header field name:  `Signed-Headers`
+
+Applicable protocol:  http
+
+Status:  standard
+
+Author/Change controller:  IETF
+
+Specification document(s):  {{signed-headers}} of this document
+
 ## HTTP/2 Settings
 
 This section establishes an entry for the HTTP/2 Settings Registry that was
