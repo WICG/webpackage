@@ -12,9 +12,11 @@ import (
 
 var HeaderMagicBytes = []byte{0x84, 0x48, 0xf0, 0x9f, 0x8c, 0x90, 0xf0, 0x9f, 0x93, 0xa6}
 
-type Input struct {
+type Bundle struct {
 	Exchanges []*signedexchange.Exchange
 }
+
+var _ = io.WriterTo(&Bundle{})
 
 // staging area for writing index section
 type indexSection struct {
@@ -195,19 +197,19 @@ func writeFooter(w io.Writer, offset int) error {
 	return nil
 }
 
-func WriteBundle(w io.Writer, i *Input) error {
+func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 	cw := NewCountingWriter(w)
 
 	is := &indexSection{}
-	rs := newResponsesSection(len(i.Exchanges))
+	rs := newResponsesSection(len(b.Exchanges))
 
-	for _, e := range i.Exchanges {
+	for _, e := range b.Exchanges {
 		if err := addExchange(is, rs, e); err != nil {
-			return err
+			return cw.Written, err
 		}
 	}
 	if err := is.Finalize(); err != nil {
-		return err
+		return cw.Written, err
 	}
 
 	var so sectionOffsets
@@ -215,23 +217,23 @@ func WriteBundle(w io.Writer, i *Input) error {
 	so.AddSection("responses", rs.Len())
 
 	if _, err := cw.Write(HeaderMagicBytes); err != nil {
-		return err
+		return cw.Written, err
 	}
 	if err := writeSectionOffsets(cw, so); err != nil {
-		return err
+		return cw.Written, err
 	}
 	if err := writeSectionHeader(cw, len(so)); err != nil {
-		return err
+		return cw.Written, err
 	}
 	if _, err := cw.Write(is.Bytes()); err != nil {
-		return err
+		return cw.Written, err
 	}
 	if _, err := cw.Write(rs.Bytes()); err != nil {
-		return err
+		return cw.Written, err
 	}
 	if err := writeFooter(cw, int(cw.Written)); err != nil {
-		return err
+		return cw.Written, err
 	}
 
-	return nil
+	return cw.Written, nil
 }
