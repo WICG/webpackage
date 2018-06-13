@@ -26,7 +26,7 @@ The specifications come in a couple layers:
      is an Internet Draft, and a [draft of the next
      snapshot](https://wicg.github.io/webpackage/draft-yasskin-httpbis-origin-signed-exchanges-impl.html)
      is in this repository.
-1. [Bundled HTTP exchanges](https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html):
+1. [Bundled HTTP exchanges](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html):
    A collection of exchanges, each of which could be signed or unsigned, with
    some metadata describing how to interpret the bundle as a whole. This
    specification has an initial draft in a PR, but isn't finished yet. This work

@@ -2,7 +2,7 @@
 coding: utf-8
 
 title: Bundled HTTP Exchanges
-docname: draft-yasskin-dispatch-bundled-exchanges-latest
+docname: draft-yasskin-wpack-bundled-exchanges-latest
 category: std
 
 ipr: trust200902
