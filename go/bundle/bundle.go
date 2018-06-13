@@ -12,8 +12,6 @@ import (
 
 var HeaderMagicBytes = []byte{0x84, 0x48, 0xf0, 0x9f, 0x8c, 0x90, 0xf0, 0x9f, 0x93, 0xa6}
 
-const FooterLength = 9
-
 type Input struct {
 	Exchanges []*signedexchange.Exchange
 }
@@ -178,7 +176,9 @@ func writeSectionHeader(w io.Writer, numSections int) error {
 }
 
 func writeFooter(w io.Writer, offset int) error {
-	bundleSize := uint64(offset) + FooterLength
+	const footerLength = 9
+
+	bundleSize := uint64(offset) + footerLength
 
 	var b bytes.Buffer
 	if err := binary.Write(&b, binary.BigEndian, bundleSize); err != nil {

@@ -51,6 +51,8 @@ func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseH
 	}, nil
 }
 
+// Payload returns the slice holding the payload.
+// The caller should not modify the returned content.
 func (e *Exchange) Payload() []byte {
 	return e.payload
 }
