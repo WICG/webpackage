@@ -412,7 +412,7 @@ using the other certificates in the chain.
    certificate.
 1. The first certificate's `ocsp` value if any MUST be a complete, DER-encoded
    OCSP response for that certificate (using the ASN.1 type `OCSPResponse`
-   defined in {{!RFC2560}}). Subsequent certificates MUST NOT have an `ocsp`
+   defined in {{!RFC6960}}). Subsequent certificates MUST NOT have an `ocsp`
    value.
 1. Each certificate's `sct` value MUST be a `SignedCertificateTimestampList` for
    that certificate as defined by Section 3.3 of {{!RFC6962}}.
@@ -1213,8 +1213,7 @@ means that an attacker who possesses a valid certificate no longer needs to be
 on-path to redirect traffic to them; instead of modifying DNS, they need only
 convince the user to visit another Web site in order to serve responses signed
 as the target. This consideration and mitigations for it are shared by the
-combination of {{?I-D.ietf-httpbis-origin-frame}} and
-{{?I-D.ietf-httpbis-http2-secondary-certs}}.
+combination of {{?RFC8336}} and {{?I-D.ietf-httpbis-http2-secondary-certs}}.
 
 ## Downgrades ## {#seccons-downgrades}
 
