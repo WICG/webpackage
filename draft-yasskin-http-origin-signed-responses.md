@@ -1888,6 +1888,7 @@ draft-04
 * Remove support for integrity protection using the Digest header field.
 * Limit the record size in the mi-sha256 encoding.
 * Forbid RSA keys, and only require clients to support secp256r1 keys.
+* Add a test OID for the CanSignHttpExchanges X.509 extension.
 
 draft-03
 
