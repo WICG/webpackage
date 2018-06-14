@@ -663,8 +663,8 @@ Initial Assignments:
 
 | Section Name | Specification | Metadata |
 | "index" | {{index-section}} | Yes |
-| "manifest | {{manifest-section}} | Yes |
-| "critical | {{critical-section}} | Yes |
+| "manifest" | {{manifest-section}} | Yes |
+| "critical" | {{critical-section}} | Yes |
 | "responses" | {{responses-section}} | No |
 
 Requirements on new assignments:
