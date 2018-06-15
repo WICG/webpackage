@@ -268,6 +268,10 @@ steps, taking the `stream` as input.
    `knownSections` says not to process other sections, add those sections' names
    to `ignoredSections`.
 
+   Note: The `ignoredSections` enables sections that supercede other sections
+   to be introduced in the future. Implementations that don't implement any such
+   sections are free to omit the relevant steps.
+
 1. Let `metadata` be an empty map ({{INFRA}}).
 
 1. For each `"name"`/\[`offset`, `length`] triple in `sectionOffsets`:
