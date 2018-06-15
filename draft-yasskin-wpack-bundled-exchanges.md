@@ -332,7 +332,7 @@ the parser MUST do the following:
       * client is null.
 
    1. Let `streamOffset` be `sectionsStart +
-      section-offsets["responses"].offset + offset`. That is, offsets in the
+      sectionOffsets["responses"].offset + offset`. That is, offsets in the
       index are relative to the start of the "responses" section.
    1. If `offset + length` is greater than
       `sectionOffsets["responses"].length`, return an error.
