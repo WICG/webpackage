@@ -3,6 +3,7 @@ package cbor
 import (
 	"fmt"
 	"io"
+	"unicode/utf8"
 )
 
 type Decoder struct {
@@ -77,6 +78,10 @@ func (d *Decoder) decodeUintOfType(expected Type) (uint64, error) {
 	return n, nil
 }
 
+func (d *Decoder) DecodeUInt() (uint64, error) {
+	return d.decodeUintOfType(TypePosInt)
+}
+
 func (d *Decoder) DecodeArrayHeader() (uint64, error) {
 	return d.decodeUintOfType(TypeArray)
 }
@@ -95,6 +100,17 @@ func (d *Decoder) decodeBytesOfType(expected Type) ([]byte, error) {
 		return nil, err
 	}
 	return bs, nil
+}
+
+func (d *Decoder) DecodeTextString() (string, error) {
+	bs, err := d.decodeBytesOfType(TypeText)
+	if err != nil {
+		return "", err
+	}
+	if !utf8.Valid(bs) {
+		return "", ErrInvalidUTF8
+	}
+	return string(bs), nil
 }
 
 func (d *Decoder) DecodeByteString() ([]byte, error) {

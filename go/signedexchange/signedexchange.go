@@ -51,10 +51,61 @@ func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseH
 	}, nil
 }
 
+// RequestURI returns the exchange's request URI.
+// The caller should not modify the returned content.
+func (e *Exchange) RequestURI() *url.URL {
+	return e.requestUri
+}
+
 // Payload returns the slice holding the payload.
 // The caller should not modify the returned content.
 func (e *Exchange) Payload() []byte {
 	return e.payload
+}
+
+type DumpOptions struct {
+	DumpContentText bool
+}
+
+func (e *Exchange) Dump(w io.Writer, opts DumpOptions) error {
+	if _, err := fmt.Fprintf(w, "> :url: %v\n", e.requestUri); err != nil {
+		return err
+	}
+	for k, v := range e.requestHeaders {
+		if _, err := fmt.Fprintf(w, "> %v: %v\n", k, v); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintf(w, "< :status: %d\n", e.responseStatus); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(w, "<*Signature: %v\n", e.signatureHeaderValue); err != nil {
+		return err
+	}
+	for k, v := range e.responseHeaders {
+		if _, err := fmt.Fprintf(w, "< %v: %v\n", k, v); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintf(w, "< [len(payload)]: %d\n", len(e.payload)); err != nil {
+		return err
+	}
+	if opts.DumpContentText {
+		ctype := e.responseHeaders.Get("content-type")
+		if strings.Contains(ctype, "text") {
+			if _, err := fmt.Fprint(w, string(e.payload)); err != nil {
+				return err
+			}
+			if _, err := fmt.Fprint(w, "\n"); err != nil {
+				return err
+			}
+		} else {
+			if _, err := fmt.Fprint(w, "[non-text payload]\n"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (e *Exchange) MiEncodePayload(recordSize int) error {
