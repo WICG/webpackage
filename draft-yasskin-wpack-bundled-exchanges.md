@@ -276,7 +276,8 @@ steps, taking the `stream` as input.
 
 1. For each `"name"`/\[`offset`, `length`] triple in `sectionOffsets`:
    1. If `"name"` isn't in `knownSections`, continue to the next triple.
-   1. If `"name"`'s Metadata field is "No", continue to the next triple.
+   1. If `"name"`'s Metadata field ({{section-name-registry}}) is "No", continue
+      to the next triple.
    1. If `"name"` is in `ignoredSections`, continue to the next triple.
    1. Seek to offset `sectionsStart + offset` in `stream`. If this fails, return
       an error.
