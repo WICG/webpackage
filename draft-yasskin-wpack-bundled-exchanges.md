@@ -456,7 +456,7 @@ as returned by {{semantics-load-metadata}}.
 1. Let `headerCbor` be the result of reading `headerLength` bytes from `stream`
    and parsing a CBOR item from them matching the `headers` CDDL rule. If either
    the read or parse returns an error, return that error.
-1. Let `headers`/`pseudos` be the result of converting `cbor-http-request` to a
+1. Let `headers`/`pseudos` be the result of converting `headerCbor` to a
    header list and pseudoheaders using the algorithm in {{cbor-headers}}. If
    this returns an error, return that error.
 1. If `pseudos` does not have a key named ':status' or its size isn't 1, return
