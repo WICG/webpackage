@@ -103,9 +103,9 @@ Bundle parsers support two operations,
 {{semantics-load-response}}{:format="title"} ({{semantics-load-response}}) each
 of which can return an error instead of their normal result.
 
-A client is expected to load the metadata for a bundle as soon as it start
+A client is expected to load the metadata for a bundle as soon as it starts
 downloading it or otherwise discovers it. Then, when fetching ({{FETCH}}) a
-request, the cliend is expected to match it against the requests in the
+request, the client is expected to match it against the requests in the
 metadata, and if one matches, load that request's response.
 
 ## Stream attributes and operations {#stream-operations}
