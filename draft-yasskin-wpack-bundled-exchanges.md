@@ -203,12 +203,11 @@ The bundle is a CBOR item ({{?I-D.ietf-cbor-7049bis}}) with the following CDDL
 webbundle = [
   ; 🌐📦 in UTF-8.
   magic: h'F0 9F 8C 90 F0 9F 93 A6',
-  section-lengths: bytes .cbor [* (section-name, length: uint) ],
-  sections: [* $section ],
+  section-lengths: bytes .cbor [* (section-name: tstr, length: uint) ],
+  sections: [* any ],
   length: bytes .size 8,  ; Big-endian number of bytes in the bundle.
 ]
 
-section-name = $section-name .within tstr
 $section-name /= "index" / "manifest" / "critical" / "responses"
 
 $section /= index / manifest / critical / responses
@@ -224,7 +223,7 @@ information in the `section-lengths` CBOR item, which holds a list of
 alternating section names and section lengths:
 
 ~~~~~ cddl
-section-lengths = [* (section-name, length: uint) ],
+section-lengths = [* (section-name: tstr, length: uint) ],
 ~~~~~
 
 To implement {{semantics-load-metadata}}, the parser MUST run the following
