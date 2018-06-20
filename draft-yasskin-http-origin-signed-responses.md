@@ -1095,7 +1095,7 @@ and header fields, and a response payload.
 This content type consists of the concatenation of the following items:
 
 1. The ASCII characters "sxg1" followed by a 0 byte, to serve as a file
-   signature. This is redundant with the MIME type, and receipients that receive
+   signature. This is redundant with the MIME type, and recipients that receive
    both MUST check that they match and stop parsing if they don't.
 
    Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC
