@@ -124,7 +124,15 @@ will provide a way to group signed exchanges into bundles that can be
 transmitted and stored together, but single signed exchanges are useful enough
 to standardize on their own.
 
-# Terminology
+# Terminology {#terminology}
+
+Absolute URL
+: A string for which the [URL
+ parser](https://url.spec.whatwg.org/#concept-url-parser) ({{URL}}), when run
+ without a base URL, returns a URL rather than a failure, and for which that URL
+ has a null fragment. This is similar to the [absolute-URL
+ string](https://url.spec.whatwg.org/#absolute-url-string) concept defined by
+ ({{URL}}) but might not include exactly the same strings.
 
 Author
 : The entity that wrote the content in a particular resource. This specification
@@ -213,8 +221,7 @@ values:
 "cert-url"
 
 : A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
-  [absolute-URL string](https://url.spec.whatwg.org/#absolute-url-string)
-  ({{URL}}).
+  absolute URL ({{terminology}}) with a scheme of "https" or "data".
 
 "cert-sha256"
 
@@ -229,8 +236,7 @@ values:
 {:#signature-validityurl} "validity-url"
 
 : A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
-  [absolute-URL string](https://url.spec.whatwg.org/#absolute-url-string)
-  ({{URL}}).
+  absolute URL ({{terminology}}) with a scheme of "https".
 
 "date" and "expires"
 
@@ -334,8 +340,8 @@ The CBOR representation of an exchange `exchange`'s headers is the CBOR
    * The byte string ':method' to the byte string containing `exchange`'s
      request's method.
    * The byte string ':url' to the byte string containing `exchange`'s request's
-     effective request URI, which MUST be an [absolute-URL
-     string](https://url.spec.whatwg.org/#absolute-url-string) ({{URL}}).
+     effective request URI, which MUST be an absolute URL ({{terminology}}) with
+     a scheme of "https".
    * For each request header field in `exchange` except for the `Host` header
      field, the header field's lowercase name as a byte string to the header
      field's value as a byte string.
@@ -1870,6 +1876,10 @@ exchange argues for embedding a signature's lifetime into the signature.
 # Change Log
 
 RFC EDITOR PLEASE DELETE THIS SECTION.
+
+draft-05
+
+* Define absolute URLs, and limit the schemes each instance can use.
 
 draft-04
 
