@@ -196,23 +196,19 @@ Future specifications can define new sections with extra data, and if necessary,
 these sections can be marked "critical" ({{critical-section}}) to prevent older
 parsers from using the rest of the bundle incorrectly.
 
-The bundle is roughly a CBOR item ({{?I-D.ietf-cbor-7049bis}}) with the
-following CDDL ({{?I-D.ietf-cbor-cddl}}) schema, but bundle parsers are required
-to successfully parse some byte strings that aren't valid CBOR. For example,
-sections might have padding between them, or even overlap, as long as the
-embedded relative offsets cause the parsing algorithms in this specification to
-return data.
+The bundle is a CBOR item ({{?I-D.ietf-cbor-7049bis}}) with the following CDDL
+({{?I-D.ietf-cbor-cddl}}) schema:
 
 ~~~~~ cddl
 webbundle = [
   ; 🌐📦 in UTF-8.
   magic: h'F0 9F 8C 90 F0 9F 93 A6',
-  section-offsets: bytes .cbor {* ($section-name .within tstr) =>
-                                  [ offset: uint, length: uint] },
+  section-lengths: bytes .cbor [* (section-name, length: uint) ],
   sections: [* $section ],
   length: bytes .size 8,  ; Big-endian number of bytes in the bundle.
 ]
 
+section-name = $section-name .within tstr
 $section-name /= "index" / "manifest" / "critical" / "responses"
 
 $section /= index / manifest / critical / responses
@@ -224,13 +220,12 @@ responses = [*response]
 ## Load a bundle's metadata {#load-metadata}
 
 A bundle holds a series of sections, which can be accessed randomly using the
-information in the `section-offset` CBOR item:
+information in the `section-lengths` CBOR item, which holds a list of
+alternating section names and section lengths:
 
 ~~~~~ cddl
-section-offsets = {* tstr => [ offset: uint, length: uint] },
+section-lengths = [* (section-name, length: uint) ],
 ~~~~~
-
-Offsets in this item are relative to the *end* of the section-offset item.
 
 To implement {{semantics-load-metadata}}, the parser MUST run the following
 steps, taking the `stream` as input.
@@ -242,50 +237,72 @@ steps, taking the `stream` as input.
    the 4-item array initial byte and 8-byte bytestring initial byte, followed by
    🌐📦 in UTF-8), return an error.
 
-1. Let `sectionOffsetsLength` be the result of getting the length of the CBOR
+1. Let `sectionLengthsLength` be the result of getting the length of the CBOR
    bytestring header from `stream` ({{parse-bytestring}}). If this is an error,
    return that error.
 
-1. If `sectionOffsetsLength` is TBD or greater, return an error.
+1. If `sectionLengthsLength` is TBD or greater, return an error.
 
-1. Let `sectionOffsetsBytes` be the result of reading `sectionOffsetsLength`
-   bytes from `stream`. If `sectionOffsetsBytes` is an error, return that error.
+1. Let `sectionLengthsBytes` be the result of reading `sectionLengthsLength`
+   bytes from `stream`. If `sectionLengthsBytes` is an error, return that error.
 
-1. Let `sectionOffsets` be the result of parsing one CBOR item ({{parse-cbor}})
-   from `sectionOffsetsBytes`, matching the section-offsets rule in the CDDL
-   ({{!I-D.ietf-cbor-cddl}}) above. If `sectionOffsets` is an error, return an
+1. Let `sectionLengths` be the result of parsing one CBOR item ({{parse-cbor}})
+   from `sectionLengthsBytes`, matching the section-lengths rule in the CDDL
+   ({{!I-D.ietf-cbor-cddl}}) above. If `sectionLengths` is an error, return an
    error.
 
-1. Let `sectionsStart` be the current offset within `stream`. For example, if
-   `sectionOffsetsLength` were 52, `sectionsStart` would be 64.
+1. Let (`sectionsType`, `numSections`) be the result of parsing the type and
+   argument of a CBOR item from `stream` ({{parse-type-argument}}).
+
+1. If `sectionsType` is not `4` (a CBOR array) or `numSections` is not half of
+   the length of `sectionLengths`, return an error.
+
+1. Let `sectionsStart` be the current offset within `stream`.
+
+   For example, if `sectionLengthsLength` were 52 and `sectionLengths` contained
+   4 items (2 sections), `sectionsStart` would be 65 (10 initial bytes + a
+   2-byte bytestring header to describe a 52-byte bytestring + 52 bytes of
+   section lengths + a 1-byte array header for the 2 sections).
 
 1. Let `knownSections` be the subset of the {{section-name-registry}} that this
    client has implemented.
 
 1. Let `ignoredSections` be an empty set.
 
-1. For each `"name"` key in `sectionOffsets`, if `"name"`'s specification in
-   `knownSections` says not to process other sections, add those sections' names
-   to `ignoredSections`.
+1. Let `sectionOffsets` be an empty map ({{INFRA}}) from section names to
+   (offset, length) pairs. These offsets are relative to the start of `stream`.
 
-   Note: The `ignoredSections` enables sections that supercede other sections
-   to be introduced in the future. Implementations that don't implement any such
-   sections are free to omit the relevant steps.
+1. Let `currentOffset` be `sectionsStart`.
+
+1. For each (`"name"`, `length`) pair of adjacent elements in `sectionLengths`:
+   1. If `"name"`'s specification in `knownSections` says not to process other
+      sections, add those sections' names to `ignoredSections`.
+
+      Note: The `ignoredSections` enables sections that supercede other sections
+      to be introduced in the future. Implementations that don't implement any
+      such sections are free to omit the relevant steps.
+   1. If `sectionOffsets["name"]` exists, return an error. That is, duplicate
+      sections are forbidden.
+   1. Set `sectionOffsets["name"]` to (`currentOffset`, `length`).
+   1. Set `currentOffset` to `currentOffset + length`.
+
+1. If the "responses" section is not last in `sectionLengths`, return an error.
+   This allows a streaming parser to assume that it'll know the requests by the
+   time their responses arrive.
 
 1. Let `metadata` be an empty map ({{INFRA}}).
 
-1. For each (`"name"`, \[`offset`, `length`]) triple in `sectionOffsets`:
+1. For each `"name"` → (`offset`, `length`) triple in `sectionOffsets`:
    1. If `"name"` isn't in `knownSections`, continue to the next triple.
    1. If `"name"`'s Metadata field ({{section-name-registry}}) is "No", continue
       to the next triple.
    1. If `"name"` is in `ignoredSections`, continue to the next triple.
-   1. Seek to offset `sectionsStart + offset` in `stream`. If this fails, return
-      an error.
+   1. Seek to offset `offset` in `stream`. If this fails, return an error.
    1. Let `sectionContents` be the result of reading `length` bytes from
       `stream`. If `sectionContents` is an error, return that error.
    1. Follow `"name"`'s specification from `knownSections` to process the
-      section, passing `sectionContents`, `stream`, `sectionOffsets`,
-      `sectionsStart`, and `metadata`. If this returns an error, return it.
+      section, passing `sectionContents`, `stream`, `sectionOffsets`, and
+      `metadata`. If this returns an error, return it.
 
 1. If `metadata` doesn't have entries with keys "requests" and "manifest",
    return an error.
@@ -295,25 +312,42 @@ steps, taking the `stream` as input.
 ### Parsing the index section {#index-section}
 
 The "index" section defines the set of HTTP requests in the bundle and
-identifies their locations in the "responses" section.
+identifies their locations in the "responses" section. It consists of a sequence
+of alternating request headers and response lengths:
 
 ~~~ cddl
-index = {* headers => [ offset: uint,
-                        length: uint] }
+index = [* (headers, length: uint) ]
 ~~~
 
-To parse the index section, given its `sectionContents`, the `sectionsStart`
-offset, the `sectionOffsets` CBOR item, and the `metadata` map to fill in,
-the parser MUST do the following:
+To parse the index section, given its `sectionContents`, the `sectionOffsets`
+map, and the `metadata` map to fill in, the parser MUST do the following:
 
 1. Let `index` be the result of parsing `sectionContents` as a CBOR item
    matching the `index` rule in the above CDDL ({{parse-cbor}}). If `index` is
    an error, return an error.
 
+1. Let `currentOffset` be a positive integer.
+
+1. Check that the responses array has the right number of items, and compute `currentOffset`:
+   1. Seek to offset `sectionOffsets["responses"].offset` in `stream`. If this
+      fails, return an error.
+
+   1. Let (`responsesType`, `numResponses`) be the result of parsing the type
+      and argument of a CBOR item from the stream ({{parse-type-argument}}). If
+      this returns an error, return that error.
+
+   1. If `responsesType` is not `4` (a CBOR array) or `numResponses` is not half
+      of the length of `index`, return an error.
+
+   1. Set `currentOffset` to the current offset within `stream` minus
+      `sectionOffsets["responses"].offset`. That is, the length of the array
+      header for the responses array.
+
 1. Let `requests` be an initially-empty map ({{INFRA}}) from HTTP requests
    ({{FETCH}}) to structs ({{INFRA}}) with items named "offset" and "length".
 
-1. For each (`cbor-http-request`, \[`offset`, `length`]) triple in `index`:
+1. For each (`cbor-http-request`, `length`) pair of adjacent elements in
+   `index`:
    1. Let (`headers`, `pseudos`) be the result of converting `cbor-http-request`
       to a header list and pseudoheaders using the algorithm in
       {{cbor-headers}}. If this returns an error, return that error.
@@ -336,13 +370,16 @@ the parser MUST do the following:
       * header list is `headers`, and
       * client is null.
 
-   1. Let `streamOffset` be `sectionsStart +
-      sectionOffsets["responses"].offset + offset`. That is, offsets in the
-      index are relative to the start of the "responses" section.
-   1. If `offset + length` is greater than
+   1. Let `streamOffset` be `sectionOffsets["responses"].offset +
+      currentOffset`. That is, offsets in the index are relative to the start of
+      the "responses" section.
+   1. If `currentOffset + length` is greater than
       `sectionOffsets["responses"].length`, return an error.
+   1. If `requests`\[`http-request`] exists, return an error. That is, duplicate
+      requests are forbidden.
    1. Set `requests`\[`http-request`] to a struct whose "offset" item is
       `streamOffset` and whose "length" item is `length`.
+   1. Set `currentOffset` to `currentOffset + length`.
 
 1. Set `metadata["requests"]` to `requests`.
 
@@ -518,14 +555,25 @@ item and sets the stream's current offset to  the first byte of the contents.
 
 To get the length of a CBOR bytestring header from a bundle's stream, the parser MUST do the following:
 
+1. Let (`type`, `argument`) be the result of parsing the type and argument of a
+   CBOR item from the stream ({{parse-type-argument}}). If this returns an
+   error, return that error.
+1. If `type` is not `2`, the item is not a bytestring. Return an error.
+1. Return `argument`.
+
+### Parsing the type and argument of a CBOR item {#parse-type-argument}
+
+To parse the type and argument of a CBOR item from a bundle's stream, the parser
+MUST do the following. This algorithm returns a pair of the CBOR major type 0--7
+inclusive, and a 64-bit integral argument for the CBOR item:
+
 1. Let `firstByte` be the result of reading 1 byte from the stream. If
    `firstByte` is an error, return that error.
-1. If `firstByte & 0xE0` is not `0x40`, the item is not a bytestring. Return an
-   error.
+1. Let `type` be `(firstByte & 0xE0) / 0x20`.
 1. If `firstByte & 0x1F` is:
 
    0..23, inclusive
-   : Return `firstByte`.
+   : Return (`type`, `firstByte & 0x1F`).
 
    24
    : Let `content` be the result of reading 1 byte from the stream. If `content`
@@ -545,7 +593,10 @@ To get the length of a CBOR bytestring header from a bundle's stream, the parser
 
    28..31, inclusive
    : Return an error.
-1. Return the big-endian integer encoded in `content`.
+
+     Note: This intentionally does not support indefinite-length items.
+1. Let `argument` be the big-endian integer encoded in `content`.
+1. Return (`type`, `argument`).
 
 ## Interpreting CBOR HTTP headers {#cbor-headers}
 
@@ -680,12 +731,24 @@ Assignments must specify whether the section is parsed during
 {{load-metadata}}{:format="title"} (Metadata=Yes) or not (Metadata=No).
 
 The section's specification can use the bytes making up the section, the
-bundle's stream ({{stream-operations}}), the `sectionOffsets` CBOR item
-({{load-metadata}}), and the offset within the stream where sections start, as
-input, and MUST say if an error is returned, and otherwise what items, if any,
-are added to the map that {{load-metadata}} returns. A section's
-specification MAY say that, if it is present, another section is not processed.
+bundle's stream ({{stream-operations}}), and the `sectionOffsets` map
+({{load-metadata}}), as input, and MUST say if an error is returned, and
+otherwise what items, if any, are added to the map that {{load-metadata}}
+returns. A section's specification MAY say that, if it is present, another
+section is not processed.
 
 --- back
 
+# Change Log
+
+RFC EDITOR PLEASE DELETE THIS SECTION.
+
+draft-01
+
+* Order the index in the same order as the responses, and require responses to
+  be sequential without gaps.
+
 # Acknowledgements
+
+Thanks to the Chrome loading team, especially Kinuko Yasuda and Kouhei Ueno for
+making the format work well when streamed.
