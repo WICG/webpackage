@@ -274,7 +274,7 @@ steps, taking the `stream` as input.
 
 1. Let `metadata` be an empty map ({{INFRA}}).
 
-1. For each `"name"`/\[`offset`, `length`] triple in `sectionOffsets`:
+1. For each (`"name"`, \[`offset`, `length`]) triple in `sectionOffsets`:
    1. If `"name"` isn't in `knownSections`, continue to the next triple.
    1. If `"name"`'s Metadata field ({{section-name-registry}}) is "No", continue
       to the next triple.
@@ -313,10 +313,10 @@ the parser MUST do the following:
 1. Let `requests` be an initially-empty map ({{INFRA}}) from HTTP requests
    ({{FETCH}}) to structs ({{INFRA}}) with items named "offset" and "length".
 
-1. For each `cbor-http-request`/\[`offset`, `length`] triple in `index`:
-   1. Let `headers`/`pseudos` be the result of converting `cbor-http-request` to
-      a header list and pseudoheaders using the algorithm in {{cbor-headers}}.
-      If this returns an error, return that error.
+1. For each (`cbor-http-request`, \[`offset`, `length`]) triple in `index`:
+   1. Let (`headers`, `pseudos`) be the result of converting `cbor-http-request`
+      to a header list and pseudoheaders using the algorithm in
+      {{cbor-headers}}. If this returns an error, return that error.
    1. If `pseudos` does not have keys named ':method' and ':url', or its size
       isn't 2, return an error.
    1. If `pseudos[':method']` is not 'GET', return an error.
@@ -461,7 +461,7 @@ as returned by {{semantics-load-metadata}}.
 1. Let `headerCbor` be the result of reading `headerLength` bytes from `stream`
    and parsing a CBOR item from them matching the `headers` CDDL rule. If either
    the read or parse returns an error, return that error.
-1. Let `headers`/`pseudos` be the result of converting `headerCbor` to a
+1. Let (`headers`, `pseudos`) be the result of converting `headerCbor` to a
    header list and pseudoheaders using the algorithm in {{cbor-headers}}. If
    this returns an error, return that error.
 1. If `pseudos` does not have a key named ':status' or its size isn't 1, return
@@ -567,7 +567,7 @@ parsers MUST do the following:
 1. Let `headers` be a new header list ({{FETCH}}).
 1. Let `pseudos` be an empty map ({{INFRA}}).
 
-1. For each pair `name`/`value` in `item`:
+1. For each pair (`name`, `value`) in `item`:
    1. If `name` contains any upper-case or non-ASCII characters, return an
       error. This matches the requirement in Section 8.1.2 of {{?RFC7540}}.
    1. If `name` starts with a ':':
@@ -584,9 +584,9 @@ parsers MUST do the following:
       Note: This means that a response cannot set more than one cookie, because
       the `Set-Cookie` header ({{?RFC6265}}) has to appear multiple times to set
       multiple cookies.
-   1. Append `name`/`value` to `headers`.
+   1. Append (`name`, `value`) to `headers`.
 
-1. Return `headers`/`pseudos`.
+1. Return (`headers`, `pseudos`).
 
 # Guidelines for bundle authors {#authoring-guidelines}
 
