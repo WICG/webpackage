@@ -326,9 +326,7 @@ map, and the `metadata` map to fill in, the parser MUST do the following:
    matching the `index` rule in the above CDDL ({{parse-cbor}}). If `index` is
    an error, return an error.
 
-1. Let `currentOffset` be a positive integer.
-
-1. Check that the responses array has the right number of items, and compute `currentOffset`:
+1. Check that the responses array has the right number of items:
    1. Seek to offset `sectionOffsets["responses"].offset` in `stream`. If this
       fails, return an error.
 
@@ -339,9 +337,10 @@ map, and the `metadata` map to fill in, the parser MUST do the following:
    1. If `responsesType` is not `4` (a CBOR array) or `numResponses` is not half
       of the length of `index`, return an error.
 
-   1. Set `currentOffset` to the current offset within `stream` minus
-      `sectionOffsets["responses"].offset`. That is, the length of the array
-      header for the responses array.
+1. Let `currentOffset` be the current offset within `stream` minus
+   `sectionOffsets["responses"].offset`. That is, the length of the array header
+   for the responses array. This will track the offset of the current response
+   relative to the start of the responses array.
 
 1. Let `requests` be an initially-empty map ({{INFRA}}) from HTTP requests
    ({{FETCH}}) to structs ({{INFRA}}) with items named "offset" and "length".
@@ -370,15 +369,14 @@ map, and the `metadata` map to fill in, the parser MUST do the following:
       * header list is `headers`, and
       * client is null.
 
-   1. Let `streamOffset` be `sectionOffsets["responses"].offset +
-      currentOffset`. That is, offsets in the index are relative to the start of
-      the "responses" section.
+   1. Let `responseOffset` be `sectionOffsets["responses"].offset +
+      currentOffset`. This is relative to the start of the stream.
    1. If `currentOffset + length` is greater than
       `sectionOffsets["responses"].length`, return an error.
    1. If `requests`\[`http-request`] exists, return an error. That is, duplicate
       requests are forbidden.
    1. Set `requests`\[`http-request`] to a struct whose "offset" item is
-      `streamOffset` and whose "length" item is `length`.
+      `responseOffset` and whose "length" item is `length`.
    1. Set `currentOffset` to `currentOffset + length`.
 
 1. Set `metadata["requests"]` to `requests`.
