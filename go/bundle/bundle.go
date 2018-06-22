@@ -7,13 +7,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/WICG/webpackage/go/signedexchange"
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
@@ -27,28 +25,40 @@ type Bundle struct {
 
 var _ = io.WriterTo(&Bundle{})
 
+type requestEntry struct {
+	*url.URL
+	http.Header
+	Length uint64
+}
+
+func (r requestEntry) String() string {
+	return fmt.Sprintf("{URL: %v, Header: %v, Length: %d}", r.URL, r.Header, r.Length)
+}
+
+type requestEntryWithOffset struct {
+	*url.URL
+	http.Header
+	Length uint64
+	Offset uint64
+}
+
+func (r requestEntryWithOffset) String() string {
+	return fmt.Sprintf("{URL: %v, Header: %v, Offset: %d, Length: %d}", r.URL, r.Header, r.Offset, r.Length)
+}
+
 // staging area for writing index section
 type indexSection struct {
-	mes   []*cbor.MapEntryEncoder
+	es    []requestEntry
 	bytes []byte
 }
 
-func (is *indexSection) addExchange(e *signedexchange.Exchange, offset, length int) error {
-	me := cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-		if err := e.EncodeRequestWithHeaders(keyE); err != nil {
-			panic(err) // fixme
-		}
-		if err := valueE.EncodeArrayHeader(2); err != nil {
-			panic(err)
-		}
-		if err := valueE.EncodeUInt(uint64(offset)); err != nil {
-			panic(err)
-		}
-		if err := valueE.EncodeUInt(uint64(length)); err != nil {
-			panic(err)
-		}
-	})
-	is.mes = append(is.mes, me)
+func (is *indexSection) addExchange(e *signedexchange.Exchange, length int) error {
+	ent := requestEntry{
+		URL:    e.RequestURI(),
+		Header: e.RequestHeaders(),
+		Length: uint64(length),
+	}
+	is.es = append(is.es, ent)
 	return nil
 }
 
@@ -59,8 +69,50 @@ func (is *indexSection) Finalize() error {
 
 	var b bytes.Buffer
 	enc := cbor.NewEncoder(&b)
-	if err := enc.EncodeMap(is.mes); err != nil {
+	if err := enc.EncodeArrayHeader(len(is.es) * 2); err != nil {
 		return err
+	}
+
+	for _, e := range is.es {
+		mes := []*cbor.MapEntryEncoder{
+			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				if err := keyE.EncodeByteString([]byte(":method")); err != nil {
+					panic(err)
+				}
+				if err := valueE.EncodeByteString([]byte("GET")); err != nil {
+					panic(err)
+				}
+			}),
+			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				if err := keyE.EncodeByteString([]byte(":url")); err != nil {
+					panic(err)
+				}
+				if err := valueE.EncodeByteString([]byte(e.URL.String())); err != nil {
+					panic(err)
+				}
+			}),
+		}
+		h := e.Header
+		for name, _ := range h {
+			lname := strings.ToLower(name)
+			value := h.Get(name)
+			me := cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				if err := keyE.EncodeByteString([]byte(lname)); err != nil {
+					panic(err)
+				}
+				if err := valueE.EncodeByteString([]byte(value)); err != nil {
+					panic(err)
+				}
+			})
+			mes = append(mes, me)
+		}
+
+		if err := enc.EncodeMap(mes); err != nil {
+			return err
+		}
+		if err := enc.EncodeUInt(uint64(e.Length)); err != nil {
+			return err
+		}
 	}
 
 	is.bytes = b.Bytes()
@@ -97,39 +149,39 @@ func newResponsesSection(n int) *responsesSection {
 	return ret
 }
 
-func (rs *responsesSection) addExchange(e *signedexchange.Exchange) (int, int, error) {
+func (rs *responsesSection) addExchange(e *signedexchange.Exchange) (int, error) {
 	offset := rs.buf.Len()
 
 	var resHdrBuf bytes.Buffer
 	if err := signedexchange.WriteResponseHeaders(&resHdrBuf, e); err != nil {
-		return 0, 0, err
+		return 0, err
 	}
 
 	enc := cbor.NewEncoder(&rs.buf)
 	if err := enc.EncodeArrayHeader(2); err != nil {
-		return 0, 0, fmt.Errorf("bundle: failed to encode response array header: %v", err)
+		return 0, fmt.Errorf("bundle: failed to encode response array header: %v", err)
 	}
 	if err := enc.EncodeByteString(resHdrBuf.Bytes()); err != nil {
-		return 0, 0, fmt.Errorf("bundle: failed to encode response header cbor bytestring: %v", err)
+		return 0, fmt.Errorf("bundle: failed to encode response header cbor bytestring: %v", err)
 	}
 	if err := enc.EncodeByteString(e.Payload()); err != nil {
-		return 0, 0, fmt.Errorf("bundle: failed to encode response payload bytestring: %v", err)
+		return 0, fmt.Errorf("bundle: failed to encode response payload bytestring: %v", err)
 	}
 
 	length := rs.buf.Len() - offset
-	return offset, length, nil
+	return length, nil
 }
 
 func (rs *responsesSection) Len() int      { return rs.buf.Len() }
 func (rs *responsesSection) Bytes() []byte { return rs.buf.Bytes() }
 
 func addExchange(is *indexSection, rs *responsesSection, e *signedexchange.Exchange) error {
-	offset, length, err := rs.addExchange(e)
+	length, err := rs.addExchange(e)
 	if err != nil {
 		return err
 	}
 
-	if err := is.addExchange(e, offset, length); err != nil {
+	if err := is.addExchange(e, length); err != nil {
 		return err
 	}
 	return nil
@@ -137,52 +189,35 @@ func addExchange(is *indexSection, rs *responsesSection, e *signedexchange.Excha
 
 type sectionOffset struct {
 	Name   string
-	Offset uint64
 	Length uint64
 }
 
-type sectionOffsets []sectionOffset
-
-func (so *sectionOffsets) AddSectionOrdered(name string, length uint64) {
+func FindSection(sos []sectionOffset, name string) (sectionOffset, uint64, bool) {
 	offset := uint64(0)
-	if len(*so) > 0 {
-		last := (*so)[len(*so)-1]
-		offset = last.Offset + last.Length
-	}
-	*so = append(*so, sectionOffset{name, offset, length})
-}
-
-func (so *sectionOffsets) FindSection(name string) (sectionOffset, bool) {
-	for _, e := range *so {
+	for _, e := range sos {
 		if name == e.Name {
-			return e, true
+			return e, offset, true
 		}
+		offset += e.Length
 	}
-	return sectionOffset{}, false
+	return sectionOffset{}, 0, false
 }
 
 // https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html#load-metadata
 // Steps 3-7.
-func writeSectionOffsets(w io.Writer, so sectionOffsets) error {
-	sectionHeaderSize := 1 //fixme
-
-	mes := []*cbor.MapEntryEncoder{}
-	for _, e := range so {
-		me := cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-			// TODO(kouhei): error plumbing
-			keyE.EncodeTextString(e.Name)
-			valueE.EncodeArrayHeader(2)
-			valueE.EncodeUInt(e.Offset + uint64(sectionHeaderSize))
-			valueE.EncodeUInt(e.Length)
-		})
-
-		mes = append(mes, me)
-	}
-
+func writeSectionOffsets(w io.Writer, sos []sectionOffset) error {
 	var b bytes.Buffer
-	nestedEnc := cbor.NewEncoder(&b)
-	if err := nestedEnc.EncodeMap(mes); err != nil {
+	nenc := cbor.NewEncoder(&b)
+	if err := nenc.EncodeArrayHeader(len(sos) * 2); err != nil {
 		return err
+	}
+	for _, so := range sos {
+		if err := nenc.EncodeTextString(so.Name); err != nil {
+			return err
+		}
+		if err := nenc.EncodeUInt(so.Length); err != nil {
+			return err
+		}
 	}
 
 	enc := cbor.NewEncoder(w)
@@ -217,64 +252,49 @@ func writeFooter(w io.Writer, offset int) error {
 	return nil
 }
 
-type requestEntry struct {
-	*url.URL
-	http.Header
-	Offset uint64
-	Length uint64
-}
-
-func (r requestEntry) String() string {
-	return fmt.Sprintf("{URL: %v, Header: %v, Offset: %d, Length: %d}", r.URL, r.Header, r.Offset, r.Length)
-}
-
 type meta struct {
-	sectionOffsets
-	sectionsStart uint64
-	requests      []requestEntry
+	sectionOffsets []sectionOffset
+	sectionsStart  uint64
+	requests       []requestEntryWithOffset
 }
 
-func decodeSectionOffsetsCBOR(bs []byte) (sectionOffsets, error) {
-	// section-offsets = {* tstr => [ offset: uint, length: uint] },
+func decodeSectionLengthsCBOR(bs []byte) ([]sectionOffset, error) {
+	// section-lengths = [* (section-name: tstr, length: uint) ],
 
-	so := make(sectionOffsets, 0)
+	sos := []sectionOffset{}
 	dec := cbor.NewDecoder(bytes.NewBuffer(bs))
 
-	n, err := dec.DecodeMapHeader()
+	n, err := dec.DecodeArrayHeader()
 	if err != nil {
-		return nil, fmt.Errorf("bundle: Failed to decode sectionOffset map header: %v", err)
+		return nil, fmt.Errorf("bundle: Failed to decode sectionOffset array header: %v", err)
 	}
 
-	for i := uint64(0); i < n; i++ {
+	for i := uint64(0); i < n; i += 2 {
 		name, err := dec.DecodeTextString()
 		if err != nil {
-			return nil, fmt.Errorf("bundle: Failed to decode sectionOffset map key: %v", err)
-		}
-		if _, exists := so.FindSection(name); exists {
-			return nil, fmt.Errorf("bundle: Duplicated section in sectionOffset map: %q", name)
+			return nil, fmt.Errorf("bundle.sectionLengths[%d]: Failed to decode sectionOffset name: %v", i, err)
 		}
 
-		m, err := dec.DecodeArrayHeader()
-		if err != nil {
-			return nil, fmt.Errorf("bundle: Failed to decode sectionOffset map value: %v", err)
-		}
-		if m != 2 {
-			return nil, fmt.Errorf("bundle: Failed to decode sectionOffset map value. Array of invalid length %d", m)
+		// Step 14.2 "If sectionOffsets["name"] exists, return an error. That is, duplicate sections are forbidden" [spec text]
+		if _, _, exists := FindSection(sos, name); exists {
+			return nil, fmt.Errorf("bundle.sectionLengths[%d]: Duplicate section in sectionOffset array: %q", i, name)
 		}
 
-		offset, err := dec.DecodeUInt()
-		if err != nil {
-			return nil, fmt.Errorf("bundle: Failed to decode sectionOffset[%q].offset: %v", name, err)
-		}
 		length, err := dec.DecodeUInt()
 		if err != nil {
-			return nil, fmt.Errorf("bundle: Failed to decode sectionOffset[%q].length: %v", name, err)
+			return nil, fmt.Errorf("bundle.sectionLengths[%d]: Failed to decode sectionOffset[%q].length: %v", i, name, err)
 		}
 
-		so = append(so, sectionOffset{Name: name, Offset: offset, Length: length})
+		sos = append(sos, sectionOffset{Name: name, Length: length})
 	}
 
-	return so, nil
+	return sos, nil
+}
+
+var reIsAscii = regexp.MustCompile("^[[:ascii:]]*$")
+
+func isAscii(s string) bool {
+	return reIsAscii.MatchString(s)
 }
 
 // https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html#cbor-headers
@@ -304,16 +324,16 @@ func decodeCborHeaders(dec *cbor.Decoder) (http.Header, map[string]string, error
 
 		name := string(namebs)
 		value := string(valuebs)
-		if !utf8.Valid(namebs) { // FIXME: should be isAscii
-			return nil, nil, fmt.Errorf("Failed to decode request headers map key: Invalid UTF8")
+		if !isAscii(name) {
+			return nil, nil, fmt.Errorf("Failed to decode request headers map key: non-ascii %q", name)
 		}
-		if !utf8.Valid(valuebs) { // FIXME: should be isAscii
-			return nil, nil, fmt.Errorf("Failed to decode request headers map value: Invalid UTF8")
+		if !isAscii(value) {
+			return nil, nil, fmt.Errorf("Failed to decode request headers map value: non-ascii %q", value)
 		}
 
 		// Step 4.1. "If name contains any upper-case or non-ASCII characters, return an error. This matches the requirement in Section 8.1.2 of [RFC7540]." [spec text]
 		if strings.ToLower(name) != name {
-			return nil, nil, fmt.Errorf("Failed to decode request headers map key: Invalid UTF8")
+			return nil, nil, fmt.Errorf("Failed to decode request headers map key: %q contains upper-case.")
 		}
 
 		// Step 4.2. "If name starts with a ':':" [spec text]
@@ -348,49 +368,56 @@ func decodeCborHeaders(dec *cbor.Decoder) (http.Header, map[string]string, error
 
 // https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html#index-section
 // "To parse the index section, given its sectionContents, the sectionsStart offset, the sectionOffsets CBOR item, and the metadata map to fill in, the parser MUST do the following:" [spec text]
-func parseIndexSection(sectionContents []byte, sectionsStart uint64, sectionOffsets sectionOffsets) ([]requestEntry, error) {
-	respso, found := sectionOffsets.FindSection("responses")
+func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []sectionOffset, bs []byte) ([]requestEntryWithOffset, error) {
+	// Step 1. "Let index be the result of parsing sectionContents as a CBOR item matching the index rule in the above CDDL (Section 3.4). If index is an error, return nil, an error." [spec text]
+	idxdec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
+	nidx, err := idxdec.DecodeArrayHeader()
+	if err != nil {
+		return nil, fmt.Errorf("bundle.index: Failed to decode \"index\" array header: %v", err)
+	}
+
+	// Step 2. "Check that the responses array has the right number of items:" [spec text]
+	// Step 2.1. "Seek to offset sectionOffsets["responses"].offset in stream. If this fails, return an error." [spec text]
+	respso, respSectionRelOffset, found := FindSection(sos, "responses")
 	if !found {
 		return nil, fmt.Errorf("bundle.index: \"responses\" section not found")
 	}
+	respSectionOffset := sectionsStart + respSectionRelOffset
 
-	// Step 1. "Let index be the result of parsing sectionContents as a CBOR item matching the index rule in the above CDDL (Section 3.4). If index is an error, return nil, an error." [spec text]
-	dec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
-	n, err := dec.DecodeMapHeader()
+	// Step 2.2. "Let (responsesType, numResponses) be the result of parsing the type and argument of a CBOR item from the stream. If this returns an error, return that error." [spec text]
+	respb := bytes.NewBuffer(bs[respSectionOffset : respSectionOffset+respso.Length])
+	respdec := cbor.NewDecoder(respb)
+	// Step 2.3. "If responsesType is not 4 (a CBOR array) or ..." [spec text]
+	nresp, err := respdec.DecodeArrayHeader()
 	if err != nil {
-		return nil, fmt.Errorf("bundle.index: Failed to decode map header: %v", err)
+		return nil, fmt.Errorf("bundle.index: Failed to decode \"response\" array header: %v", err)
+	}
+	// "numResponses is not half of the length of index, return an error." [spec text
+	if nresp*2 != nidx {
+		return nil, fmt.Errorf("bundle.index: numResponses=%d is not half of the length of index=%d", nresp, nidx)
 	}
 
-	// Step 2. "Let requests be an initially-empty map from HTTP requests to structs with items named "offset" and "length"." [spec text]
+	// Step 2.4. "Let currentOffset be the current offset within stream minus sectionOffsets["responses"].offset" [spec text]
+	currentOffset := respso.Length - uint64(respb.Len())
 
-	// Step 3. "For each cbor-http-request/[offset, length] triple in index:" [spec text]
-	requests := []requestEntry{}
-	for i := uint64(0); i < n; i++ {
-		// Step 3.1. "Let headers/pseudos be the result of converting cbor-http-request to a header list and pseudoheaders using the algorithm in Section 3.5. If this returns an error, return nil, that error."
-		headers, pseudos, err := decodeCborHeaders(dec)
+	// Step 3. "Let requests be an initially-empty map from HTTP requests to structs with items named "offset" and "length"." [spec text]
+	requests := []requestEntryWithOffset{}
+
+	// Step 4. "For each (cbor-http-request, length) pair of adjacent elements in index:" [spec text]
+	for i := uint64(0); i < nresp; i++ {
+		// Step 4.1. "Let headers/pseudos be the result of converting cbor-http-request to a header list and pseudoheaders using the algorithm in Section 3.5. If this returns an error, return nil, that error."
+		headers, pseudos, err := decodeCborHeaders(idxdec)
 		if err != nil {
 			return nil, fmt.Errorf("bundle.index[%d]: %v", i, err)
 		}
 
-		// parse [offset,length]
-		m, err := dec.DecodeArrayHeader()
+		// parse length.
+		length, err := idxdec.DecodeUInt()
 		if err != nil {
-			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode response byte-range array", i, err)
-		}
-		if m != 2 {
-			return nil, fmt.Errorf("bundle.index[%d]: The response byte-range array must be composed of 2 elements.", i, err)
+			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode encoded response length", i, err)
 		}
 
-		offset, err := dec.DecodeUInt()
-		if err != nil {
-			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode response byte-range offset", i, err)
-		}
-		length, err := dec.DecodeUInt()
-		if err != nil {
-			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode response byte-range length", i, err)
-		}
-
-		// Step 3.2. "If pseudos does not have keys named ':method' and ':url', or its size isn't 2, return nil, an error." [spec text]
+		// Step 4.2. "If pseudos does not have keys named ':method' and ':url', or its size isn't 2, return nil, an error." [spec text]
 		method, exists := pseudos[":method"]
 		if !exists {
 			return nil, fmt.Errorf("bundle.index[%d]: The pseudo map must have key named \":method\"", i)
@@ -403,15 +430,15 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sectionOffs
 			return nil, fmt.Errorf("bundle.index[%d]: The size of pseudo map must be 2", i)
 		}
 
-		// Step 3.3. "If pseudos[':method'] is not 'GET', return nil, an error." [spec text]
+		// Step 4.3. "If pseudos[':method'] is not 'GET', return nil, an error." [spec text]
 		if method != "GET" {
 			return nil, fmt.Errorf("bundle.index[%d]: pseudo[\":method\"] must be \"GET\"", i)
 		}
 
-		// Step 3.4. "Let parsedUrl be the result of parsing ([URL]) pseudos[':url'] with no base URL." [spec text]
+		// Step 4.4. "Let parsedUrl be the result of parsing ([URL]) pseudos[':url'] with no base URL." [spec text]
 		parsedUrl, err := url.Parse(rawurl)
 
-		// Step 3.5. "If parsedUrl is a failure, its fragment is not null, or it includes credentials, return nil, an error."
+		// Step 4.5. "If parsedUrl is a failure, its fragment is not null, or it includes credentials, return nil, an error."
 		if err != nil {
 			return nil, fmt.Errorf("bundle.index[%d]: Failed to parse URL: %v", i, err)
 		}
@@ -422,34 +449,38 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sectionOffs
 			return nil, fmt.Errorf("bundle.index[%d]: URL contains credentials: %q", i, rawurl)
 		}
 
-		// Step 3.6 appears later.
+		// Step 4.6 appears later.
 
-		// Step 3.7. "Let streamOffset be sectionsStart + section-offsets["responses"].offset + offset. That is, offsets in the index are relative to the start of the "responses" section." [spec text]
-		streamOffset := sectionsStart + respso.Offset + offset
+		// Step 4.7. "Let responseOffset be sectionOffsets["responses"].offset + currentOffset." [spec text]
+		responseOffset := respSectionOffset + currentOffset
 
-		// Step 3.8. "If offset + length is greater than sectionOffsets["responses"].length, return nil, an error." [spec text]
-		if offset+length > respso.Length {
+		// Step 4.8. "If currentOffset + length is greater than sectionOffsets["responses"].length, return nil, an error." [spec text]
+		if currentOffset+length > respso.Length {
 			return nil, fmt.Errorf("bundle.index[%d]: responses length out-of-range")
 		}
 
-		// Step 3.6. "Let http-request be a new request ([FETCH]) whose:..." [spec text]
-		// Step 3.9. "Set requests[http-request] to a struct ..." [spec text]
-		e := requestEntry{
-			// "... method is pseudos[':method'], ..." => omitted, since this must be always "GET"
+		// Step 4.6. "Let http-request be a new request ([FETCH]) whose:..." [spec text]
+		// Step 4.9. "Set requests[http-request] to a struct ..." [spec text]
+		e := requestEntryWithOffset{
+			// Step 4.6. cont "... method is pseudos[':method'], ..." => omitted, since this must be always "GET"
 			// "... url is parsedUrl, ... "
 			URL: parsedUrl,
 			// "... header list is headers, and ..."
 			Header: headers,
 			// "... client is null." => not impl
 
-			// "whose "offset" item is streamOffset and whose "length" item is length." [spec text]
-			Offset: streamOffset,
+			// Step 4.9. cont "... whose "offset" item is responseOffset and ..."
+			Offset: responseOffset,
+			// "... whose "length" item is length." [spec text]
 			Length: length,
 		}
 		requests = append(requests, e)
+
+		// Step 4.10. "Set currentOffset to currentOffset + length".
+		currentOffset += length
 	}
 
-	// Step 4. "Set metadata["requests"] to requests." [spec text]
+	// Step 5. "Set metadata["requests"] to requests." [spec text]
 	return requests, nil
 }
 
@@ -473,83 +504,115 @@ func loadMetadata(bs []byte) (*meta, error) {
 		return nil, errors.New("bundle: Header magic mismatch.")
 	}
 
-	// Step 3. "Let sectionOffsetsLength be the result of getting the length of the CBOR bytestring header from stream (Section 3.4.2). If this is an error, return that error." [spec text]
-	// Step 4. "If sectionOffsetsLength is TBD or greater, return an error." [spec text]
+	// Step 3. "Let sectionLengthsLength be the result of getting the length of the CBOR bytestring header from stream (Section 3.4.2). If this is an error, return that error." [spec text]
+	// Step 4. "If sectionLengthsLength is TBD or greater, return an error." [spec text]
 	// TODO(kouhei): Not Implemented
-	// Step 5. "Let sectionOffsetsBytes be the result of reading sectionOffsetsLength bytes from stream. If sectionOffsetsBytes is an error, return that error." [spec text]
+	// Step 5. "Let sectionLengthsBytes be the result of reading sectionLengthsLength bytes from stream. If sectionLengthsBytes is an error, return that error." [spec text]
 	dec := cbor.NewDecoder(r)
-	sobytes, err := dec.DecodeByteString()
+	slbytes, err := dec.DecodeByteString()
 	if err != nil {
-		return nil, fmt.Errorf("bundle: Failed to read sectionOffset byte string: %v", err)
+		return nil, fmt.Errorf("bundle: Failed to read sectionLengths byte string: %v", err)
 	}
 
-	// Step 6. "Let sectionOffsets be the result of parsing one CBOR item (Section 3.4) from sectionOffsetsBytes, matching the section-offsets rule in the CDDL ([I-D.ietf-cbor-cddl]) above. If sectionOffsets is an error, return an error." [spec text]
-	so, err := decodeSectionOffsetsCBOR(sobytes)
+	// Step 6. "Let sectionLengths be the result of parsing one CBOR item (Section 3.4) from sectionLengthsBytes, matching the section-lengths rule in the CDDL ([I-D.ietf-cbor-cddl]) above. If sectionLengths is an error, return an error." [spec text]
+	sos, err := decodeSectionLengthsCBOR(slbytes)
 	if err != nil {
 		return nil, err
 	}
 
-	// Step 7. "Let sectionsStart be the current offset within stream. For example, if sectionOffsetsLength were 52, sectionsStart would be 64." [spec text]
-	sectionsStart := 12 + uint64(len(sobytes))
+	// Step 7. "Let (sectionsType, numSections) be the result of parsing the type and argument of a CBOR item from stream." [spec text]
+	numSections, err := dec.DecodeArrayHeader()
+	// Step 8. "If sectionsType is not 4 (a CBOR array) or..." [spec text]
+	if err != nil {
+		return nil, fmt.Errorf("bundle: Failed to read section header.")
+	}
+	// "numSections is not half of the length of sectionLengths, return an error." [spec text]
+	if numSections != uint64(len(sos)) {
+		return nil, fmt.Errorf("bundle: Expected %d sections, got %d sections", len(sos), numSections)
+	}
 
-	// Step 8. "Let knownSections be the subset of the Section 6.2 that this client has implemented." [spec text]
-	// Step 9. "Let ignoredSections be an empty set." [spec text]
-	// Step 10. "For each "name" key in sectionOffsets, if "name"'s specification in knownSections says not to process other sections, add those sections' names to ignoredSections." [spec text]
-	// Note: Per discussion in #218, the steps 9-10 are not implemented since they are no-ops as of now.
+	// Step 9. "Let sectionsStart be the current offset within stream" [spec text]
+	sectionsStart := uint64(len(bs) - r.Len())
 
-	// Step 11. Let metadata be an empty map
+	// Step 10. "Let knownSections be the subset of the Section 6.2 that this client has implemented." [spec text]
+	// Step 11. "Let ignoredSections be an empty set." [spec text]
+
+	// Step 12. "Let sectionOffsets be an empty map from section names to (offset, length) pairs. These offsets are relative to the start of stream." [spec text]
+	// Note: We store this on "sos"
+
+	// Step 13. "Let currentOffset be sectionsStart"
+	// currentOffset := sectionsStart
+
+	// Step 14. "For each ("name", length) pair of adjacent elements in sectionLengths:" [spec text]
+	// for _, so := range sos {
+	// Step 14.1 "If "name"'s specification in knownSections says not to process other sections, add those sections' names to ignoredSections." [spec text]
+	// Not implemented
+
+	// Step 14.2-14.4 implemented inside decodeSectionLengthsCBOR()
+	// }
+
+	// Step 15. "If responses section is not last in sectionLengths, return an error." [spec text]
+	if len(sos) == 0 || sos[len(sos)-1].Name != "responses" {
+		return nil, fmt.Errorf("bundle: Last section is not \"responses\"")
+	}
+
+	// Step 16. "Let metadata be an empty map" [spec text]
 	// Note: We use a struct rather than a map here.
 	meta := &meta{
-		sectionOffsets: so,
+		sectionOffsets: sos,
 		sectionsStart:  sectionsStart,
 	}
 
-	// Step 12. For each "name"/[offset, length] triple in sectionOffsets:
-	for _, e := range so {
-		// Step 12.1. If "name" isn't in knownSections, continue to the next triple.
-		if _, exists := knownSections[e.Name]; !exists {
+	offset := sectionsStart
+
+	// Step 17. "For each "name" -> (offset, length) triple in sectionOffsets:" [spec text]
+	for _, so := range sos {
+		// Step 17.1. "If "name" isn't in knownSections, continue to the next triple." [spec text]
+		if _, exists := knownSections[so.Name]; !exists {
 			continue
 		}
-		// Step 12.2. If "name"’s Metadata field is "No", continue to the next triple.
+		// Step 17.2. "If "name"'s Metadata field is "No", continue to the next triple." [spec text]
 		// Note: the "responses" section is currently the only section with its Metadata field "No".
-		if e.Name == "responses" {
+		if so.Name == "responses" {
 			continue
 		}
-		// Step 12.3. If "name" is in ignoredSections, continue to the next triple.
+		// Step 17.3. "If "name" is in ignoredSections, continue to the next triple." [spec text]
 		// Note: Per discussion in #218, the step 12.3 is not implemented since it is no-op as of now.
 
-		// Step 12.4. Seek to offset sectionsStart + offset in stream. If this fails, return an error.
-		offset := sectionsStart + e.Offset
+		// Step 17.4. "Seek to offset offset in stream. If this fails, return an error." [spec text]
 		if uint64(len(bs)) <= offset {
-			return nil, fmt.Errorf("bundle: section %q's computed offset %q out-of-range.", e.Name, offset)
+			return nil, fmt.Errorf("bundle: section %q's computed offset %q out-of-range.", so.Name, offset)
 		}
-		end := offset + e.Length
+		end := offset + so.Length
 		if uint64(len(bs)) <= end {
-			return nil, fmt.Errorf("bundle: section %q's end %q out-of-range.", e.Name, end)
+			return nil, fmt.Errorf("bundle: section %q's end %q out-of-range.", so.Name, end)
 		}
 
-		// Step 12.5. Let sectionContents be the result of reading length bytes from stream. If sectionContents is an error, return that error.
+		// Step 17.5. "Let sectionContents be the result of reading length bytes from stream. If sectionContents is an error, return that error."
 		sectionContents := bs[offset:end]
-		//log.Printf("Section[%q] stream offset %x end %x", e.Name, offset, end)
+		//log.Printf("Section[%q] stream offset %x end %x", so.Name, offset, end)
 
-		// Step 12.6. Follow "name"'s specification from knownSections to process the section, passing sectionContents, stream, sectionOffsets, sectionsStart, and metadata. If this returns an error, return it.
-		switch e.Name {
+		// Step 17.6. "Follow "name"'s specification from knownSections to process the section, passing sectionContents, stream, sectionOffsets, and metadata. If this returns an error, return it." [spec text]
+		switch so.Name {
 		case "index":
-			requests, err := parseIndexSection(sectionContents, sectionsStart, so)
+			requests, err := parseIndexSection(sectionContents, sectionsStart, sos, bs)
 			if err != nil {
 				return nil, err
 			}
 			meta.requests = requests
 		case "responses":
-			// FIXME
+			continue
 		default:
-			panic("aaa")
+			return nil, fmt.Errorf("bundle: unknown section: %q", so.Name)
 		}
+
+		offset = end
 	}
 
-	// Step 13. If metadata doesn't have entries with keys "requests" and "manifest", return an error.
+	// Step 18. If metadata doesn't have entries with keys "requests" and "manifest", return an error.
+	// FIXME
 
-	// Step 14. Return metadata.
+	// Step 19. Return metadata.
 	return meta, nil
 }
 
@@ -567,7 +630,7 @@ func (r Response) String() string {
 var reStatus = regexp.MustCompile("^\\d\\d\\d$")
 
 // https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html#load-response
-func loadResponse(req requestEntry, bs []byte) (Response, error) {
+func loadResponse(req requestEntryWithOffset, bs []byte) (Response, error) {
 	// Step 1. "Seek to offset requestMetadata.offset in stream. If this fails, return an error." [spec text]
 	r := bytes.NewBuffer(bs[req.Offset : req.Offset+req.Length])
 
@@ -650,7 +713,7 @@ func Read(r io.Reader) (*Bundle, error) {
 		return nil, err
 	}
 
-	log.Printf("meta: %+v", m)
+	// log.Printf("meta: %+v", m)
 
 	es := []*signedexchange.Exchange{}
 	for _, req := range m.requests {
@@ -696,17 +759,18 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 		return cw.Written, err
 	}
 
-	var so sectionOffsets
-	so.AddSectionOrdered("index", uint64(is.Len()))
-	so.AddSectionOrdered("responses", uint64(rs.Len()))
+	sos := []sectionOffset{
+		sectionOffset{"index", uint64(is.Len())},
+		sectionOffset{"responses", uint64(rs.Len())},
+	}
 
 	if _, err := cw.Write(HeaderMagicBytes); err != nil {
 		return cw.Written, err
 	}
-	if err := writeSectionOffsets(cw, so); err != nil {
+	if err := writeSectionOffsets(cw, sos); err != nil {
 		return cw.Written, err
 	}
-	if err := writeSectionHeader(cw, len(so)); err != nil {
+	if err := writeSectionHeader(cw, len(sos)); err != nil {
 		return cw.Written, err
 	}
 	if _, err := cw.Write(is.Bytes()); err != nil {

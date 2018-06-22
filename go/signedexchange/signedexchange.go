@@ -57,6 +57,12 @@ func (e *Exchange) RequestURI() *url.URL {
 	return e.requestUri
 }
 
+// RequestHeaders returns the exchange's request headers.
+// The caller should not modify the returned content.
+func (e *Exchange) RequestHeaders() http.Header {
+	return e.requestHeaders
+}
+
 // Payload returns the slice holding the payload.
 // The caller should not modify the returned content.
 func (e *Exchange) Payload() []byte {
