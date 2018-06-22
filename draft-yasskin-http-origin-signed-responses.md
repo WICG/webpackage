@@ -23,12 +23,6 @@ normative:
     author:
       org: WHATWG
     date: Living Standard
-  HTML:
-    target: https://html.spec.whatwg.org/multipage
-    title: HTML
-    author:
-      org: WHATWG
-    date: Living Standard
   POSIX:
     target: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/
     title: The Open Group Base Specifications Issue 7
@@ -47,34 +41,6 @@ normative:
     date: Living Standard
 
 informative:
-  DROWN:
-    target: https://drownattack.com/
-    title: The DROWN Attack
-    author:
-      - name: Nimrod Aviram
-      - name: Sebastian Schinzel
-      - name: Juraj Somorovsky
-      - name: Nadia Heninger
-      - name: Maik Dankel
-      - name: Jens Steube
-      - name: Luke Valenta
-      - name: David Adrian
-      - name: J. Alex Halderman
-      - name: Viktor Dukhovni
-      - name: Emilia Käsper
-      - name: Shaanan Cohney
-      - name: Susanne Engels
-      - name: Christof Paar
-      - name: Yuval Shavitt
-    date: 2016
-  ROBOT:
-    target: https://robotattack.org/
-    title: The ROBOT Attack
-    author:
-      - name: Hanno Böck
-      - name: Juraj Somorovsky
-      - name: Craig Young
-    date: 2017
   SRI: W3C.REC-SRI-20160623
 
 --- abstract
