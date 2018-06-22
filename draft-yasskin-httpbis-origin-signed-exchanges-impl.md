@@ -953,56 +953,7 @@ to include in the `Signed-Headers` header field.
 
 ## HTTP/2 extension for cross-origin Server Push # {#cross-origin-push}
 
-To allow servers to Server-Push (Section 8.2 of {{?RFC7540}}) signed exchanges
-({{proposal}}) signed by an authority for which the server is not authoritative
-(Section 9.1 of {{?RFC7230}}), this section defines an HTTP/2 extension.
-
-### Indicating support for cross-origin Server Push # {#setting}
-
-Clients that might accept signed Server Pushes with an authority for which the
-server is not authoritative indicate this using the HTTP/2 SETTINGS parameter
-ENABLE_CROSS_ORIGIN_PUSH (0xSETTING-TBD).
-
-An ENABLE_CROSS_ORIGIN_PUSH value of 0 indicates that the client does not
-support cross-origin Push. A value of 1 indicates that the client does support
-cross-origin Push.
-
-A client MUST NOT send a ENABLE_CROSS_ORIGIN_PUSH setting with a value other
-than 0 or 1 or a value of 0 after previously sending a value of 1. If a server
-receives a value that violates these rules, it MUST treat it as a connection
-error (Section 5.4.1 of {{!RFC7540}}) of type PROTOCOL_ERROR.
-
-The use of a SETTINGS parameter to opt-in to an otherwise incompatible protocol
-change is a use of "Extending HTTP/2" defined by Section 5.5 of {{?RFC7540}}. If
-a server were to send a cross-origin Push without first receiving a
-ENABLE_CROSS_ORIGIN_PUSH setting with the value of 1 it would be a protocol
-violation.
-
-### NO_TRUSTED_EXCHANGE_SIGNATURE error code {#error-code}
-
-The signatures on a Pushed cross-origin exchange may be untrusted for several
-reasons, for example that the certificate could not be fetched, that the
-certificate does not chain to a trusted root, that the signature itself doesn't
-validate, that the signature is expired, etc. This draft conflates all of these
-possible failures into one error code, NO_TRUSTED_EXCHANGE_SIGNATURE
-(0xERROR-TBD).
-
-### Validating a cross-origin Push ## {#validating-cross-origin-push}
-
-If the client has set the ENABLE_CROSS_ORIGIN_PUSH setting to 1, the server MAY
-Push a signed exchange for which it is not authoritative, and the client MUST
-NOT treat a PUSH_PROMISE for which the server is not authoritative as a stream
-error (Section 5.4.2 of {{!RFC7540}}) of type PROTOCOL_ERROR, as described in
-Section 8.2 of {{?RFC7540}}.
-
-Instead, the client MUST validate such a PUSH_PROMISE and its response by taking
-the `Signature` header field from the response, and the exchange consisting of
-the PUSH_PROMISE and the response without that `Signature` header field, and
-passing them to the algorithm in {{cross-origin-trust}}. If this returns
-"invalid", the client MUST treat the response as a stream error (Section 5.4.2
-of {{!RFC7540}}) of type NO_TRUSTED_EXCHANGE_SIGNATURE. Otherwise, the client
-MUST treat the pushed response as if the server were authoritative for the
-PUSH_PROMISE's authority.
+Cross origin push is not implemented.
 
 ## application/signed-exchange format # {#application-signed-exchange}
 
@@ -1153,33 +1104,6 @@ Author/Change controller:  IETF
 
 Specification document(s):  {{signed-headers}} of this document
 
-## HTTP/2 Settings
-
-This section establishes an entry for the HTTP/2 Settings Registry that was
-established by Section 11.3 of {{!RFC7540}}
-
-Name: ENABLE_CROSS_ORIGIN_PUSH
-
-Code: 0xSETTING-TBD
-
-Initial Value: 0
-
-Specification: This document
-
-## HTTP/2 Error code
-
-This section establishes an entry for the HTTP/2 Error Code Registry that was
-established by Section 11.4 of {{!RFC7540}}
-
-Name: NO_TRUSTED_EXCHANGE_SIGNATURE
-
-Code: 0xERROR-TBD
-
-Description: The client does not trust the signature for a cross-origin Pushed
-signed exchange.
-
-Specification: This document
-
 ## Internet Media Type application/signed-exchange
 
 Type name:  application
@@ -1289,6 +1213,7 @@ Vs. {{I-D.yasskin-http-origin-signed-responses-04}}:
 
 * The mi-sha256 content-encoding is renamed to mi-sha256-draft2 in case
   {{?I-D.thomson-http-mice}} changes.
+* Signed exchanges cannot be transmitted using HTTP/2 Push.
 * Removed non-normative sections.
 
 draft-00
