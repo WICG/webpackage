@@ -44,6 +44,22 @@ normative:
     date: Living Standard
 
 informative:
+  I-D.yasskin-http-origin-signed-responses-03:
+    target: https://tools.ietf.org/html/draft-yasskin-http-origin-signed-responses-03
+    title: Signed HTTP Exchanges
+    author:
+      - name: Jeffrey Yasskin
+    seriesinfo:
+      Internet-Draft: draft-yasskin-http-origin-signed-responses-03
+    date: 2018-03-05
+  I-D.yasskin-http-origin-signed-responses-04:
+    target: https://tools.ietf.org/html/draft-yasskin-http-origin-signed-responses-04
+    title: Signed HTTP Exchanges
+    author:
+      - name: Jeffrey Yasskin
+    seriesinfo:
+      Internet-Draft: draft-yasskin-http-origin-signed-responses-04
+    date: 2018-06-14
   SRI: W3C.REC-SRI-20160623
 
 --- abstract
@@ -1823,12 +1839,14 @@ exchange argues for embedding a signature's lifetime into the signature.
 
 draft-01
 
+Vs. {{I-D.yasskin-http-origin-signed-responses-04}}:
+
 * The mi-sha256 content-encoding is renamed to mi-sha256-draft2 in case
   {{?I-D.thomson-http-mice}} changes.
 
 draft-00
 
-Vs. {{?I-D.yasskin-http-origin-signed-responses}}:
+Vs. {{I-D.yasskin-http-origin-signed-responses-03}}:
 
 * Removed non-normative sections.
 * Only 1 signature is supported.
