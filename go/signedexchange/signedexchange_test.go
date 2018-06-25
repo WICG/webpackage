@@ -240,7 +240,7 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	header.Add("Set-Cookie", "wow, such cookie")
 
 	if _, err := NewExchange(u, nil, 200, header, []byte(payload)); err == nil {
-		t.Fatal(err)
+		t.Errorf("stateful header unexpectedly allowed in an exchange")
 	}
 
 	// Header names are case-insensitive.
@@ -250,6 +250,43 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	header.Add("setProfile", "profile X")
 
 	if _, err := NewExchange(u, nil, 200, header, []byte(payload)); err == nil {
+		t.Errorf("stateful header unexpectedly allowed in an exchange")
+	}
+}
+
+func TestSignedExchangeNonHttps(t *testing.T) {
+	u, _ := url.Parse("http://example.com/")
+	if _, err := NewExchange(u, nil, 200, http.Header{}, []byte(payload)); err == nil {
+		t.Errorf("non-https resource URI unexpectedly allowed in an exchange")
+	}
+}
+
+func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
+	u, _ := url.Parse("https://example.com/")
+	e, err := NewExchange(u, nil, 200, http.Header{}, []byte(payload))
+	if err != nil {
 		t.Fatal(err)
+	}
+	if err := e.MiEncodePayload(16); err != nil {
+		t.Fatal(err)
+	}
+
+	now := time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
+	certs, _ := ParseCertificates([]byte(pemCerts))
+	certUrl, _ := url.Parse("http://example.com/cert.msg")
+	validityUrl, _ := url.Parse("https://example.com/resource.validity")
+	derPrivateKey, _ := pem.Decode([]byte(pemPrivateKey))
+	privKey, _ := ParsePrivateKey(derPrivateKey.Bytes)
+	s := &Signer{
+		Date:        now,
+		Expires:     now.Add(1 * time.Hour),
+		Certs:       certs,
+		CertUrl:     certUrl,
+		ValidityUrl: validityUrl,
+		PrivKey:     privKey,
+		Rand:        zeroReader{},
+	}
+	if err := e.AddSignatureHeader(s); err == nil {
+		t.Errorf("non-{https,data} cert-url unexpectedly allowed in an exchange")
 	}
 }
