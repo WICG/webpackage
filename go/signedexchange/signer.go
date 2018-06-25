@@ -123,6 +123,13 @@ func (s *Signer) sign(e *Exchange) ([]byte, error) {
 }
 
 func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
+	switch s.CertUrl.Scheme {
+	case "https", "data":
+		break
+	default:
+		return "", fmt.Errorf("signedexchange: cert-url with disallowed scheme %q. cert-url must have a scheme of \"https\" or \"data\".", s.CertUrl.Scheme)
+	}
+
 	sig, err := s.sign(e)
 	if err != nil {
 		return "", err
