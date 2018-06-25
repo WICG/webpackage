@@ -907,11 +907,11 @@ RFC EDITOR PLEASE DELETE THE REST OF THE PARAGRAPHS IN THIS SECTION
 
 ~~~asn.1
    id-ce-google OBJECT IDENTIFIER ::= { 1 3 6 1 4 1 11129 }
-   id-ce-testCanSignHttpExchanges OBJECT IDENTIFIER ::= { id-ce-google 2 1 22 }
+   id-ce-canSignHttpExchangesDraft OBJECT IDENTIFIER ::= { id-ce-google 2 1 22 }
 ~~~
 
 Implementations of drafts of this specification MAY recognize the
-`id-ce-testCanSignHttpExchanges` OID as identifying the CanSignHttpExchanges
+`id-ce-canSignHttpExchangesDraft` OID as identifying the CanSignHttpExchanges
 extension. This OID might or might not be used as the final OID for the
 extension, so certificates including it might need to be reissued once the final
 RFC is published.
