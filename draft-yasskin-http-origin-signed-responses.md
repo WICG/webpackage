@@ -331,7 +331,7 @@ Accept: */*
 
 HTTP/1.1 200
 Content-Type: text/html
-MI: mi-sha256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3
+MI: mi-sha256=dcRDgR2GM35DluAV13PzgnG6-pvQwPywfFvAu1UeFrs==
 Signed-Headers: "content-type", "mi"
 
 <!doctype html>
@@ -350,7 +350,7 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
     ':method': 'GET',
   },
   {
-    'mi': 'mi-sha256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3',
+    'mi': 'mi-sha256=dcRDgR2GM35DluAV13PzgnG6-pvQwPywfFvAu1UeFrs==',
     ':status': '200',
     'content-type': 'text/html'
   }
