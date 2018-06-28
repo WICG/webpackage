@@ -10,24 +10,120 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 
-	"github.com/WICG/webpackage/go/signedexchange"
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
 )
 
 var HeaderMagicBytes = []byte{0x84, 0x48, 0xf0, 0x9f, 0x8c, 0x90, 0xf0, 0x9f, 0x93, 0xa6}
 
+type Request struct {
+	*url.URL
+	http.Header
+}
+
+type Response struct {
+	Status string
+	http.Header
+	Body []byte
+}
+
+func (r Response) String() string {
+	return fmt.Sprintf("{Status: %q, Header: %v, body: %v}", r.Status, r.Header, string(r.Body))
+}
+
+func normalizeHeaderValues(values []string) string {
+	// RFC 2616 - Hypertext Transfer Protocol -- HTTP/1.1
+	// 4.2 Message Headers
+	// https://tools.ietf.org/html/rfc2616#section-4.2
+	//
+	// Multiple message-header fields with the same field-name MAY be
+	// present in a message if and only if the entire field-value for that
+	// header field is defined as a comma-separated list [i.e., #(values)].
+	// It MUST be possible to combine the multiple header fields into one
+	// "field-name: field-value" pair, without changing the semantics of the
+	// message, by appending each subsequent field-value to the first, each
+	// separated by a comma. The order in which header fields with the same
+	// field-name are received is therefore significant to the
+	// interpretation of the combined field value, and thus a proxy MUST NOT
+	// change the order of these field values when a message is forwarded.
+	return strings.Join(values, ",")
+}
+
+func (r Response) EncodeHeader() ([]byte, error) {
+	var b bytes.Buffer
+	enc := cbor.NewEncoder(&b)
+
+	mes := []*cbor.MapEntryEncoder{
+		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+			keyE.EncodeByteString([]byte(":status"))
+			valueE.EncodeByteString([]byte(r.Status))
+		}),
+	}
+	for name, value := range r.Header {
+		mes = append(mes,
+			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				keyE.EncodeByteString([]byte(strings.ToLower(name)))
+				valueE.EncodeByteString([]byte(normalizeHeaderValues(value)))
+			}))
+	}
+	if err := enc.EncodeMap(mes); err != nil {
+		return nil, fmt.Errorf("bundle: Failed to encode response header: %v", err)
+	}
+	return b.Bytes(), nil
+}
+
+type Exchange struct {
+	Request
+	Response
+}
+
+func (e *Exchange) Dump(w io.Writer, dumpContentText bool) error {
+	if _, err := fmt.Fprintf(w, "> :url: %v\n", e.Request.URL); err != nil {
+		return err
+	}
+	for k, v := range e.Request.Header {
+		if _, err := fmt.Fprintf(w, "> %v: %v\n", k, v); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintf(w, "< :status: %d\n", e.Response.Status); err != nil {
+		return err
+	}
+	for k, v := range e.Response.Header {
+		if _, err := fmt.Fprintf(w, "< %v: %v\n", k, v); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintf(w, "< [len(Body)]: %d\n", len(e.Response.Body)); err != nil {
+		return err
+	}
+	if dumpContentText {
+		ctype := e.Response.Header.Get("content-type")
+		if strings.Contains(ctype, "text") {
+			if _, err := fmt.Fprint(w, string(e.Response.Body)); err != nil {
+				return err
+			}
+			if _, err := fmt.Fprint(w, "\n"); err != nil {
+				return err
+			}
+		} else {
+			if _, err := fmt.Fprint(w, "[non-text body]\n"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 type Bundle struct {
-	Exchanges []*signedexchange.Exchange
+	Exchanges []*Exchange
 }
 
 var _ = io.WriterTo(&Bundle{})
 
 type requestEntry struct {
-	*url.URL
-	http.Header
+	Request
 	Length uint64
 }
 
@@ -36,14 +132,9 @@ func (r requestEntry) String() string {
 }
 
 type requestEntryWithOffset struct {
-	*url.URL
-	http.Header
+	Request
 	Length uint64
 	Offset uint64
-}
-
-func (r requestEntryWithOffset) String() string {
-	return fmt.Sprintf("{URL: %v, Header: %v, Offset: %d, Length: %d}", r.URL, r.Header, r.Offset, r.Length)
 }
 
 // staging area for writing index section
@@ -52,11 +143,10 @@ type indexSection struct {
 	bytes []byte
 }
 
-func (is *indexSection) addExchange(e *signedexchange.Exchange, length int) error {
+func (is *indexSection) addRequest(r Request, length int) error {
 	ent := requestEntry{
-		URL:    e.RequestURI(),
-		Header: e.RequestHeaders(),
-		Length: uint64(length),
+		Request: r,
+		Length:  uint64(length),
 	}
 	is.es = append(is.es, ent)
 	return nil
@@ -110,7 +200,7 @@ func (is *indexSection) Finalize() error {
 		if err := enc.EncodeMap(mes); err != nil {
 			return err
 		}
-		if err := enc.EncodeUInt(uint64(e.Length)); err != nil {
+		if err := enc.EncodeUint(uint64(e.Length)); err != nil {
 			return err
 		}
 	}
@@ -149,11 +239,11 @@ func newResponsesSection(n int) *responsesSection {
 	return ret
 }
 
-func (rs *responsesSection) addExchange(e *signedexchange.Exchange) (int, error) {
+func (rs *responsesSection) addResponse(r Response) (int, error) {
 	offset := rs.buf.Len()
 
-	var resHdrBuf bytes.Buffer
-	if err := signedexchange.WriteResponseHeaders(&resHdrBuf, e); err != nil {
+	headerCbor, err := r.EncodeHeader()
+	if err != nil {
 		return 0, err
 	}
 
@@ -161,10 +251,10 @@ func (rs *responsesSection) addExchange(e *signedexchange.Exchange) (int, error)
 	if err := enc.EncodeArrayHeader(2); err != nil {
 		return 0, fmt.Errorf("bundle: failed to encode response array header: %v", err)
 	}
-	if err := enc.EncodeByteString(resHdrBuf.Bytes()); err != nil {
+	if err := enc.EncodeByteString(headerCbor); err != nil {
 		return 0, fmt.Errorf("bundle: failed to encode response header cbor bytestring: %v", err)
 	}
-	if err := enc.EncodeByteString(e.Payload()); err != nil {
+	if err := enc.EncodeByteString(r.Body); err != nil {
 		return 0, fmt.Errorf("bundle: failed to encode response payload bytestring: %v", err)
 	}
 
@@ -175,13 +265,13 @@ func (rs *responsesSection) addExchange(e *signedexchange.Exchange) (int, error)
 func (rs *responsesSection) Len() int      { return rs.buf.Len() }
 func (rs *responsesSection) Bytes() []byte { return rs.buf.Bytes() }
 
-func addExchange(is *indexSection, rs *responsesSection, e *signedexchange.Exchange) error {
-	length, err := rs.addExchange(e)
+func addExchange(is *indexSection, rs *responsesSection, e *Exchange) error {
+	length, err := rs.addResponse(e.Response)
 	if err != nil {
 		return err
 	}
 
-	if err := is.addExchange(e, length); err != nil {
+	if err := is.addRequest(e.Request, length); err != nil {
 		return err
 	}
 	return nil
@@ -215,7 +305,7 @@ func writeSectionOffsets(w io.Writer, sos []sectionOffset) error {
 		if err := nenc.EncodeTextString(so.Name); err != nil {
 			return err
 		}
-		if err := nenc.EncodeUInt(so.Length); err != nil {
+		if err := nenc.EncodeUint(so.Length); err != nil {
 			return err
 		}
 	}
@@ -280,7 +370,7 @@ func decodeSectionLengthsCBOR(bs []byte) ([]sectionOffset, error) {
 			return nil, fmt.Errorf("bundle.sectionLengths[%d]: Duplicate section in sectionOffset array: %q", i, name)
 		}
 
-		length, err := dec.DecodeUInt()
+		length, err := dec.DecodeUint()
 		if err != nil {
 			return nil, fmt.Errorf("bundle.sectionLengths[%d]: Failed to decode sectionOffset[%q].length: %v", i, name, err)
 		}
@@ -412,7 +502,7 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []secti
 		}
 
 		// parse length.
-		length, err := idxdec.DecodeUInt()
+		length, err := idxdec.DecodeUint()
 		if err != nil {
 			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode encoded response length", i, err)
 		}
@@ -463,10 +553,13 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []secti
 		// Step 4.9. "Set requests[http-request] to a struct ..." [spec text]
 		e := requestEntryWithOffset{
 			// Step 4.6. cont "... method is pseudos[':method'], ..." => omitted, since this must be always "GET"
-			// "... url is parsedUrl, ... "
-			URL: parsedUrl,
-			// "... header list is headers, and ..."
-			Header: headers,
+			Request: Request{
+				// "... url is parsedUrl, ... "
+				URL: parsedUrl,
+				// "... header list is headers, and ..."
+				Header: headers,
+			},
+
 			// "... client is null." => not impl
 
 			// Step 4.9. cont "... whose "offset" item is responseOffset and ..."
@@ -616,17 +709,6 @@ func loadMetadata(bs []byte) (*meta, error) {
 	return meta, nil
 }
 
-type Response struct {
-	*url.URL
-	Status string
-	http.Header
-	Body []byte
-}
-
-func (r Response) String() string {
-	return fmt.Sprintf("{URL: %v, Status: %q, Header: %v, body: %v}", r.URL, r.Status, r.Header, string(r.Body))
-}
-
 var reStatus = regexp.MustCompile("^\\d\\d\\d$")
 
 // https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html#load-response
@@ -689,7 +771,7 @@ func loadResponse(req requestEntryWithOffset, bs []byte) (Response, error) {
 	// Step 12. "Let response be a new response ([FETCH]) whose:" [spec text]
 	res := Response{
 		// "... Url list is request’s url list, ..." [spec text]
-		URL: req.URL,
+		// URL: req.URL,
 		// "... status is pseudos[':status'], ..." [spec text]
 		Status: status,
 		// "... header list is headers, and ..." [spec text]
@@ -715,29 +797,18 @@ func Read(r io.Reader) (*Bundle, error) {
 
 	// log.Printf("meta: %+v", m)
 
-	es := []*signedexchange.Exchange{}
+	es := []*Exchange{}
 	for _, req := range m.requests {
 		res, err := loadResponse(req, bs)
 		if err != nil {
 			return nil, err
 		}
-		nstatus, err := strconv.Atoi(res.Status)
-		if err != nil {
-			panic("Atoi(status) must not fail here, since loadResponse ensures that it is 3digit int")
-		}
 
-		e, err := signedexchange.NewExchange(
-			req.URL, req.Header,
-			nstatus, res.Header, res.Body,
-		)
-		if err != nil {
-			return nil, err
+		e := &Exchange{
+			Request:  req.Request,
+			Response: res,
 		}
 		es = append(es, e)
-
-		// log.Printf("req: %+v", req)
-		// log.Printf("res: %+v", res)
-		// log.Printf("-------------------------------------------------------")
 	}
 
 	b := &Bundle{Exchanges: es}

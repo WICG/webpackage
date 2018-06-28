@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/WICG/webpackage/go/bundle"
-	"github.com/WICG/webpackage/go/signedexchange"
 )
 
 var (
@@ -30,12 +29,8 @@ func run() error {
 		return err
 	}
 
-	dopts := signedexchange.DumpOptions{
-		DumpContentText: *flagDumpContentText,
-	}
 	for _, e := range b.Exchanges {
-		err := e.Dump(os.Stdout, dopts)
-		if err != nil {
+		if err := e.Dump(os.Stdout, *flagDumpContentText); err != nil {
 			return err
 		}
 	}

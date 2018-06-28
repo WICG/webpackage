@@ -22,7 +22,7 @@ func (d *Decoder) ReadByte() (byte, error) {
 	return b[0], nil
 }
 
-func (d *Decoder) decodeTypedUInt() (Type, uint64, error) {
+func (d *Decoder) decodeTypedUint() (Type, uint64, error) {
 	const (
 		maskType                  = 0xe0
 		maskAdditionalInformation = 0x1f
@@ -67,8 +67,8 @@ func (d *Decoder) decodeTypedUInt() (Type, uint64, error) {
 	return t, n, nil
 }
 
-func (d *Decoder) decodeUintOfType(expected Type) (uint64, error) {
-	t, n, err := d.decodeTypedUInt()
+func (d *Decoder) decodeOfType(expected Type) (uint64, error) {
+	t, n, err := d.decodeTypedUint()
 	if err != nil {
 		return 0, err
 	}
@@ -78,20 +78,20 @@ func (d *Decoder) decodeUintOfType(expected Type) (uint64, error) {
 	return n, nil
 }
 
-func (d *Decoder) DecodeUInt() (uint64, error) {
-	return d.decodeUintOfType(TypePosInt)
+func (d *Decoder) DecodeUint() (uint64, error) {
+	return d.decodeOfType(TypePosInt)
 }
 
 func (d *Decoder) DecodeArrayHeader() (uint64, error) {
-	return d.decodeUintOfType(TypeArray)
+	return d.decodeOfType(TypeArray)
 }
 
 func (d *Decoder) DecodeMapHeader() (uint64, error) {
-	return d.decodeUintOfType(TypeMap)
+	return d.decodeOfType(TypeMap)
 }
 
 func (d *Decoder) decodeBytesOfType(expected Type) ([]byte, error) {
-	n, err := d.decodeUintOfType(expected)
+	n, err := d.decodeOfType(expected)
 	if err != nil {
 		return nil, err
 	}
