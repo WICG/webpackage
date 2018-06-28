@@ -54,12 +54,6 @@ func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseH
 	}, nil
 }
 
-// Payload returns the slice holding the payload.
-// The caller should not modify the returned content.
-func (e *Exchange) Payload() []byte {
-	return e.payload
-}
-
 func (e *Exchange) MiEncodePayload(recordSize int) error {
 	if e.responseHeaders.Get("MI") != "" {
 		return errors.New("Payload already MI encoded.")
@@ -148,11 +142,6 @@ func (e *Exchange) encodeResponseHeaders(enc *cbor.Encoder) error {
 			}))
 	}
 	return enc.EncodeMap(mes)
-}
-
-func WriteResponseHeaders(w io.Writer, e *Exchange) error {
-	enc := cbor.NewEncoder(w)
-	return e.encodeResponseHeaders(enc)
 }
 
 // draft-yasskin-http-origin-signed-responses.html#rfc.section.3.4
