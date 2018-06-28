@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
@@ -23,7 +24,7 @@ type Request struct {
 }
 
 type Response struct {
-	Status string
+	Status int
 	http.Header
 	Body []byte
 }
@@ -57,7 +58,7 @@ func (r Response) EncodeHeader() ([]byte, error) {
 	mes := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString([]byte(":status"))
-			valueE.EncodeByteString([]byte(r.Status))
+			valueE.EncodeByteString([]byte(strconv.Itoa(r.Status)))
 		}),
 	}
 	for name, value := range r.Header {
@@ -768,12 +769,17 @@ func loadResponse(req requestEntryWithOffset, bs []byte) (Response, error) {
 		return Response{}, fmt.Errorf("bundle.response: invalid request stream end")
 	}
 
+	nstatus, err := strconv.Atoi(status)
+	if err != nil {
+		panic(err)
+	}
+
 	// Step 12. "Let response be a new response ([FETCH]) whose:" [spec text]
 	res := Response{
 		// "... Url list is request’s url list, ..." [spec text]
 		// URL: req.URL,
 		// "... status is pseudos[':status'], ..." [spec text]
-		Status: status,
+		Status: nstatus,
 		// "... header list is headers, and ..." [spec text]
 		Header: headers,
 		// "... body is body." [spec text]

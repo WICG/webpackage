@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 
 	"github.com/mrichman/hargo"
 
@@ -100,7 +99,7 @@ func run() error {
 				Header: reqh,
 			},
 			Response: bundle.Response{
-				Status: strconv.Itoa(e.Response.Status),
+				Status: e.Response.Status,
 				Header: resh,
 				Body:   body,
 			},
