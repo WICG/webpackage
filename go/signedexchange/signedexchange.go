@@ -51,24 +51,6 @@ func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseH
 	}, nil
 }
 
-// RequestURI returns the exchange's request URI.
-// The caller should not modify the returned content.
-func (e *Exchange) RequestURI() *url.URL {
-	return e.requestUri
-}
-
-// RequestHeaders returns the exchange's request headers.
-// The caller should not modify the returned content.
-func (e *Exchange) RequestHeaders() http.Header {
-	return e.requestHeaders
-}
-
-// Payload returns the slice holding the payload.
-// The caller should not modify the returned content.
-func (e *Exchange) Payload() []byte {
-	return e.payload
-}
-
 func (e *Exchange) MiEncodePayload(recordSize int) error {
 	if e.responseHeaders.Get("MI") != "" {
 		return errors.New("Payload already MI encoded.")

@@ -87,7 +87,7 @@ func (e *Exchange) Dump(w io.Writer, dumpContentText bool) error {
 			return err
 		}
 	}
-	if _, err := fmt.Fprintf(w, "< :status: %d\n", e.Response.Status); err != nil {
+	if _, err := fmt.Fprintf(w, "< :status: %s\n", e.Response.Status); err != nil {
 		return err
 	}
 	for k, v := range e.Response.Header {
@@ -423,7 +423,7 @@ func decodeCborHeaders(dec *cbor.Decoder) (http.Header, map[string]string, error
 
 		// Step 4.1. "If name contains any upper-case or non-ASCII characters, return an error. This matches the requirement in Section 8.1.2 of [RFC7540]." [spec text]
 		if strings.ToLower(name) != name {
-			return nil, nil, fmt.Errorf("Failed to decode request headers map key: %q contains upper-case.")
+			return nil, nil, fmt.Errorf("Failed to decode request headers map key: %q contains upper-case.", name)
 		}
 
 		// Step 4.2. "If name starts with a ':':" [spec text]
@@ -504,7 +504,7 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []secti
 		// parse length.
 		length, err := idxdec.DecodeUint()
 		if err != nil {
-			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode encoded response length", i, err)
+			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode encoded response length: %v", i, err)
 		}
 
 		// Step 4.2. "If pseudos does not have keys named ':method' and ':url', or its size isn't 2, return nil, an error." [spec text]
@@ -546,7 +546,7 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []secti
 
 		// Step 4.8. "If currentOffset + length is greater than sectionOffsets["responses"].length, return nil, an error." [spec text]
 		if currentOffset+length > respso.Length {
-			return nil, fmt.Errorf("bundle.index[%d]: responses length out-of-range")
+			return nil, fmt.Errorf("bundle.index[%d]: responses length out-of-range", i)
 		}
 
 		// Step 4.6. "Let http-request be a new request ([FETCH]) whose:..." [spec text]
@@ -730,7 +730,7 @@ func loadResponse(req requestEntryWithOffset, bs []byte) (Response, error) {
 	dec := cbor.NewDecoder(r)
 	headerCborBytes, err := dec.DecodeByteString()
 	if err != nil {
-		return Response{}, fmt.Errorf("bundle: Failed to decode response header cbor bytestring", err)
+		return Response{}, fmt.Errorf("bundle: Failed to decode response header cbor bytestring: %v", err)
 	}
 
 	// Step 5. "Let headerCbor be the result of reading headerLength bytes from stream and parsing a CBOR item from them matching the headers CDDL rule. If either the read or parse returns an error, return that error." [spec text]
