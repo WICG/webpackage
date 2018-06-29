@@ -19,7 +19,7 @@ golang environment needs to be set up in prior to using the tool. We are testing
 We recommend using `go get` to install the command-line tool.
 
 ```
-go get -u github.com/WICG/webpackage/go/bundle/cmd/{gen,dump}-bundle
+go get -u github.com/WICG/webpackage/go/bundle/cmd/...
 ```
 
 ### Usage
@@ -30,7 +30,7 @@ One convenient way to generate HAR file is via Chrome Devtools. Navigate to "Net
 
 Once you have the har file, generate the bundled exchange file via:
 ```
-gen-bundle -i foo.har -o foo.webbundle
+gen-bundle -i foo.har -o foo.wbn
 ```
 
 `dump-bundle` dumps the content of a bundled exchange in a human readable form. To display content of a har file, invoke:
