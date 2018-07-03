@@ -481,13 +481,11 @@ to retrieve an updated OCSP from the original server.
    anyone uses the same key in a TLS certificate and an exchange-signing
    certificate.
    1. A string that consists of octet 32 (0x20) repeated 64 times.
-   1. A context string: the ASCII encoding of "HTTP Exchange 1".
+   1. A context string: the ASCII encoding of "HTTP Exchange 1 b1".
 
-      Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final
-      RFC MUST use this context string, but implementations of drafts MUST NOT
-      use it and MUST use another draft-specific string beginning with "HTTP
-      Exchange 1 ” instead. This ensures that signers can predict how their
-      signatures will be used.
+      Note: As this is a snapshot of a draft of
+      {{?I-D.yasskin-http-origin-signed-responses}}, it uses a distinct context
+      string.
    1. A single 0 byte which serves as a separator.
    1. The bytes of the canonical CBOR serialization ({{canonical-cbor}}) of a
       CBOR map mapping:
@@ -965,14 +963,13 @@ and header fields, and a response payload.
 
 This content type consists of the concatenation of the following items:
 
-1. The ASCII characters "sxg1" followed by a 0 byte, to serve as a file
+1. The ASCII characters "sxg1-b1" followed by a 0 byte, to serve as a file
    signature. This is redundant with the MIME type, and recipients that receive
    both MUST check that they match and stop parsing if they don't.
 
-   Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC
-   MUST use this file signature, but implementations of drafts MUST NOT use it
-   and MUST use another implementation-specific string beginning with "sxg1-" and
-   ending with a 0 byte instead.
+   Note: As this is a snapshot of a draft of
+   {{?I-D.yasskin-http-origin-signed-responses}}, it uses a distinct file
+   signature.
 1. 3 bytes storing a big-endian integer `sigLength`. If this is larger
    than 16kB, parsing MUST fail.
 1. 3 bytes storing a big-endian integer `headerLength`. If this is larger than
@@ -1058,52 +1055,14 @@ HTTP without TLS.
 
 # IANA considerations
 
-TODO: possibly register the validity-url format.
+This depends on the following IANA registrations in {{?I-D.yasskin-http-origin-signed-responses}}:
 
-## Signature Header Field Registration
+* The `Signature` header field
+* The `Accept-Signature` header field
+* The `Signed-Headers` header field
+* The application/cert-chain+cbor media type
 
-This section registers the `Signature` header field in the "Permanent Message
-Header Field Names" registry ({{!RFC3864}}).
-
-Header field name:  `Signature`
-
-Applicable protocol:  http
-
-Status:  standard
-
-Author/Change controller:  IETF
-
-Specification document(s):  {{signature-header}} of this document
-
-## Accept-Signature Header Field Registration
-
-This section registers the `Accept-Signature` header field in the "Permanent
-Message Header Field Names" registry ({{!RFC3864}}).
-
-Header field name:  `Accept-Signature`
-
-Applicable protocol:  http
-
-Status:  standard
-
-Author/Change controller:  IETF
-
-Specification document(s):  {{accept-signature}} of this document
-
-## Signed-Headers Header Field Registration
-
-This section registers the `Signed-Headers` header field in the "Permanent
-Message Header Field Names" registry ({{!RFC3864}}).
-
-Header field name:  `Signed-Headers`
-
-Applicable protocol:  http
-
-Status:  standard
-
-Author/Change controller:  IETF
-
-Specification document(s):  {{signed-headers}} of this document
+This document also modifies the registration for:
 
 ## Internet Media Type application/signed-exchange
 
@@ -1114,95 +1073,20 @@ Subtype name:  signed-exchange
 Required parameters:
 
 * v: A string denoting the version of the file format. ({{!RFC5234}} ABNF:
-  `version = DIGIT/%x61-7A`) The version defined in this specification is `1`.
+  `version = DIGIT/%x61-7A`) The version defined in this specification is `b1`.
   When used with the `Accept` header field (Section 5.3.1 of {{!RFC7231}}), this
   parameter can be a comma (,)-separated list of version strings. ({{!RFC5234}}
   ABNF: `version-list = version *( "," version )`) The server is then expected
   to reply with a resource using a particular version from that list.
 
-  Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
-  specification MUST NOT use simple integers to describe their versions, and
-  MUST instead define implementation-specific strings to identify which draft is
-  implemented.
+  Note: As this is a snapshot of a draft of
+  {{?I-D.yasskin-http-origin-signed-responses}}, it uses a distinct version
+  number.
 
-Optional parameters:  N/A
+Magic number(s):  73 78 67 31 2D 62 31 00
 
-Encoding considerations:  binary
-
-Security considerations:  see Section 6.6 of {{!I-D.yasskin-http-origin-signed-responses}}
-
-Interoperability considerations:  N/A
-
-Published specification:  This specification (see
-{{application-signed-exchange}}).
-
-Applications that use this media type:  N/A
-
-Fragment identifier considerations:  N/A
-
-Additional information:
-
-  Deprecated alias names for this type:  N/A
-
-  Magic number(s):  73 78 67 31 00
-
-  File extension(s): .sxg
-
-  Macintosh file type code(s):  N/A
-
-Person and email address to contact for further information: See Authors'
-  Addresses section.
-
-Intended usage:  COMMON
-
-Restrictions on usage:  N/A
-
-Author:  See Authors' Addresses section.
-
-Change controller:  IESG
-
-## Internet Media Type application/cert-chain+cbor
-
-Type name:  application
-
-Subtype name:  cert-chain+cbor
-
-Required parameters:  N/A
-
-Optional parameters:  N/A
-
-Encoding considerations:  binary
-
-Security considerations:  N/A
-
-Interoperability considerations:  N/A
-
-Published specification:  This specification (see {{cert-chain-format}}).
-
-Applications that use this media type:  N/A
-
-Fragment identifier considerations:  N/A
-
-Additional information:
-
-  Deprecated alias names for this type:  N/A
-
-  Magic number(s): 1*9(??) 67 F0 9F 93 9C E2 9B 93
-
-  File extension(s): N/A
-
-  Macintosh file type code(s):  N/A
-
-Person and email address to contact for further information: See Authors'
-  Addresses section.
-
-Intended usage:  COMMON
-
-Restrictions on usage:  N/A
-
-Author:  See Authors' Addresses section.
-
-Change controller:  IESG
+The other fields are the same as the registration in
+{{?I-D.yasskin-http-origin-signed-responses}}.
 
 --- back
 
@@ -1218,6 +1102,7 @@ Vs. {{I-D.yasskin-http-origin-signed-responses-04}}:
 * Removed non-normative sections.
 * The mi-sha256 encoding must have records <= 16kB.
 * The signature and HTTP headers must each be <=16kB long.
+* Versions in file signatures and context strings are "b1".
 
 draft-00
 
