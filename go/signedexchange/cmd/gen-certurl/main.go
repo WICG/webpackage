@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -16,10 +14,6 @@ var (
 	ocspFilepath = flag.String("ocsp", "", "OCSP filepath")
 	sctFilepath  = flag.String("sct", "", "SCT filepath")
 )
-
-func showUsage(w io.Writer) {
-	fmt.Fprintf(w, "Usage: cert-url [pem-file] [ocsp-file] [sct-file] > certurlFile\n")
-}
 
 func run(pemFilePath, ocspFilePath, sctFilePath string) error {
 	in, err := ioutil.ReadFile(pemFilePath)
@@ -53,6 +47,11 @@ func run(pemFilePath, ocspFilePath, sctFilePath string) error {
 
 func main() {
 	flag.Parse()
+	if *pemFilepath == "" || *ocspFilepath == "" || *sctFilepath == "" {
+		flag.Usage()
+		return
+	}
+
 	if err := run(*pemFilepath, *ocspFilepath, *sctFilepath); err != nil {
 		log.Fatal(err)
 	}
