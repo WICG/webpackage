@@ -218,7 +218,7 @@ readability.
 Signature:
  sig1;
   sig=*MEUCIQDXlI2gN3RNBlgFiuRNFpZXcDIaUpX6HIEwcZEc0cZYLAIga9DsVOMM+g5YpwEBdGW3sS+bvnmAJJiSMwhuBdqp5UY=*;
-  integrity="mi";
+  integrity="mi-draft2";
   validity-url="https://example.com/resource.validity.1511128380";
   cert-url="https://example.com/oldcerts";
   cert-sha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI=*;
@@ -314,8 +314,8 @@ Accept: */*
 
 HTTP/1.1 200
 Content-Type: text/html
-MI: mi-sha256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3
-Signed-Headers: "content-type", "mi"
+MI-Draft2: mi-sha256-draft2=dcRDgR2GM35DluAV13PzgnG6-pvQwPywfFvAu1UeFrs
+Signed-Headers: "content-type", "mi-draft2"
 
 <!doctype html>
 <html>
@@ -333,7 +333,7 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
     ':method': 'GET',
   },
   {
-    'mi': 'mi-sha256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3',
+    'mi-draft2': 'mi-sha256-draft2=dcRDgR2GM35DluAV13PzgnG6-pvQwPywfFvAu1UeFrs',
     ':status': '200',
     'content-type': 'text/html'
   }
@@ -447,15 +447,15 @@ to retrieve an updated OCSP from the original server.
    * `date` be the signature's "date" parameter, interpreted as a Unix time.
    * `expires` be the signature's "expires" parameter, interpreted as a Unix
      time.
-1. If `integrity` names a header field that is not present in `exchange`'s
-   response headers or which the client cannot use to check the integrity of
-   `payload` (for example, the header field is new and hasn't been implemented
-   yet), then return "invalid". If the selected header field provides integrity
-   guarantees weaker than SHA-256, return "invalid". If validating integrity
+1. If `integrity` names a header field other than `MI-Draft2` or this header
+   field is not present in `exchange`'s response headers, then return "invalid".
+   If validating integrity
    using the selected header field requires the client to process records larger
-   than TBD bytes, return "invalid". Clients MUST implement at least the `MI`
-   ({{!I-D.thomson-http-mice}}) header field with its `mi-sha256` content
-   encoding.
+   than TBD (for example, if the `mi-sha256-draft2` record length is greater
+   than TBD), return "invalid". Clients MUST be able to check the integrity of
+   `payload` using the `MI-Draft2` header field with its `mi-sha256-draft2`
+   content encoding, which are defined equivalently to the `MI` header field and
+   `mi-sha256` content encoding from {{!I-D.thomson-http-mice}}.
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. If `cert-url` is present:
       1. Let `certificate-chain` be the result of loading the certificate chain
@@ -514,7 +514,7 @@ to retrieve an updated OCSP from the original server.
 
 Note that the above algorithm can determine that an exchange's headers are
 potentially-valid before the exchange's payload is received. Similarly, if
-`integrity` identifies a header field like `MI` ({{?I-D.thomson-http-mice}})
+`integrity` identifies a header field like `MI-Draft2` ({{?I-D.thomson-http-mice}})
 that can incrementally validate the payload, early parts of the payload can be
 determined to be potentially-valid before later parts of the payload.
 Higher-level protocols MAY process parts of the exchange that have been
@@ -609,7 +609,7 @@ and `sig2`) to update those signatures. This URL might contain:
     'sig1; '
     'sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw==*; '
     'validity-url="https://example.com/resource.validity.1511157180"; '
-    'integrity="mi"; '
+    'integrity="mi-draft2"; '
     'cert-url="https://example.com/newcerts"; '
     'cert-sha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw=*; '
     'date=1511733180; expires=1512337980'
@@ -680,15 +680,16 @@ parameters on existing identifiers may be defined by future specifications.
 
 ### Integrity identifiers ### {#accept-signature-integrity}
 
-Identifiers starting with "mi/" indicate that the client supports the `MI`
-header field ({{!I-D.thomson-http-mice}}) with the parameter from the HTTP MI
+Identifiers starting with "mi-draft2/" indicate that the client supports the
+`MI-Draft2` header field (equivalent to `MI` in {{!I-D.thomson-http-mice}}) with
+the parameter from the HTTP MI
 Parameter Registry registry named in lower-case by the rest of the identifier.
-For example, "mi/mi-blake2" indicates support for Merkle integrity with the
-as-yet-unspecified mi-blake2 parameter, and "-digest/mi-sha256" indicates
-non-support for Merkle integrity with the mi-sha256 content encoding.
+For example, "mi-draft2/mi-blake2" indicates support for Merkle integrity with the
+as-yet-unspecified mi-blake2 parameter, and "-mi-draft2/mi-sha256-draft2" indicates
+non-support for Merkle integrity with the mi-sha256-draft2 content encoding.
 
 If the `Accept-Signature` header field is present, servers SHOULD assume support
-for "mi/mi-sha256" unless the header field states otherwise.
+for "mi-draft2/mi-sha256-draft2" unless the header field states otherwise.
 
 ### Key type identifiers ### {#accept-signature-key-types}
 
@@ -738,11 +739,11 @@ as=script href="...">` where the public key isn't known until the matching
 ### Examples ### {#accept-signature-examples}
 
 ~~~http
-Accept-Signature: mi/mi-sha256
+Accept-Signature: mi-draft2/mi-sha256
 ~~~
 
 states that the client will accept signatures with payload integrity assured by
-the `MI` header and `mi-sha256` content encoding and implies that the client
+the `MI-Draft2` header and `mi-sha256-draft2` content encoding and implies that the client
 will accept integrity assured by the `Digest: SHA-256` header and signatures
 from ECDSA keys on the secp256r1 curve.
 
@@ -751,8 +752,8 @@ Accept-Signature: -ecdsa/secp256r1, ecdsa/secp384r1
 ~~~
 
 states that the client will accept ECDSA keys on the secp384r1 curve but not the
-secp256r1 curve and payload integrity assured with the `MI: mi-sha256` header
-field.
+secp256r1 curve and payload integrity assured with the `MI-Draft2:
+mi-sha256-draft2` header field.
 
 # Cross-origin trust {#cross-origin-trust}
 
@@ -1011,7 +1012,7 @@ header field and payload elided with a ...:
 
 ~~~
 sxg1\0<3-byte length of the following header
-value>sig1; sig=*...; integrity="mi"; ...<3-byte length of the encoding of the
+value>sig1; sig=*...; integrity="mi-draft2"; ...<3-byte length of the encoding of the
 following array>[
   {
     ':method': 'GET',
@@ -1211,8 +1212,8 @@ draft-01
 
 Vs. {{I-D.yasskin-http-origin-signed-responses-04}}:
 
-* The mi-sha256 content-encoding is renamed to mi-sha256-draft2 in case
-  {{?I-D.thomson-http-mice}} changes.
+* The MI header and mi-sha256 content-encoding are renamed to MI-Draft2 and
+  mi-sha256-draft2 in case {{?I-D.thomson-http-mice}} changes.
 * Signed exchanges cannot be transmitted using HTTP/2 Push.
 * Removed non-normative sections.
 
