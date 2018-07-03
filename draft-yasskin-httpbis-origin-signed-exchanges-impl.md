@@ -451,8 +451,8 @@ to retrieve an updated OCSP from the original server.
    field is not present in `exchange`'s response headers, then return "invalid".
    If validating integrity
    using the selected header field requires the client to process records larger
-   than TBD (for example, if the `mi-sha256-draft2` record length is greater
-   than TBD), return "invalid". Clients MUST be able to check the integrity of
+   than 16kB (for example, if the `mi-sha256-draft2` record length is greater
+   than 16kB), return "invalid". Clients MUST be able to check the integrity of
    `payload` using the `MI-Draft2` header field with its `mi-sha256-draft2`
    content encoding, which are defined equivalently to the `MI` header field and
    `mi-sha256` content encoding from {{!I-D.thomson-http-mice}}.
@@ -974,9 +974,9 @@ This content type consists of the concatenation of the following items:
    and MUST use another implementation-specific string beginning with "sxg1-" and
    ending with a 0 byte instead.
 1. 3 bytes storing a big-endian integer `sigLength`. If this is larger
-   than TBD, parsing MUST fail.
+   than 16kB, parsing MUST fail.
 1. 3 bytes storing a big-endian integer `headerLength`. If this is larger than
-   TBD, parsing MUST fail.
+   16kB, parsing MUST fail.
 1. `sigLength` bytes holding the `Signature` header field's value
    ({{signature-header}}).
 1. `headerLength` bytes holding the signed headers, the canonical serialization
@@ -1216,6 +1216,8 @@ Vs. {{I-D.yasskin-http-origin-signed-responses-04}}:
   mi-sha256-draft2 in case {{?I-D.thomson-http-mice}} changes.
 * Signed exchanges cannot be transmitted using HTTP/2 Push.
 * Removed non-normative sections.
+* The mi-sha256 encoding must have records <= 16kB.
+* The signature and HTTP headers must each be <=16kB long.
 
 draft-00
 
