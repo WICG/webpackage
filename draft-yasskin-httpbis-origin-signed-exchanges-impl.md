@@ -844,8 +844,6 @@ covered by the certificate. When it is present, the client MUST follow the
 validation procedure in {{cross-origin-trust}}.
 
 ~~~asn.1
-   id-ce-canSignHttpExchanges OBJECT IDENTIFIER ::= { TBD }
-
    CanSignHttpExchanges ::= NULL
 ~~~
 
@@ -868,16 +866,15 @@ certificates with this extension in TLS connections (Section 4.4.2.2 of
 and avoids encouraging server operators to put exchange-signing keys on servers
 exposed directly to the internet.
 
-RFC EDITOR PLEASE DELETE THE REST OF THE PARAGRAPHS IN THIS SECTION
+This draft of the specification identifies the CanSignHttpExchanges extension
+with the id-ce-canSignHttpExchangesDraft OID:
 
 ~~~asn.1
    id-ce-google OBJECT IDENTIFIER ::= { 1 3 6 1 4 1 11129 }
-   id-ce-testCanSignHttpExchanges OBJECT IDENTIFIER ::= { id-ce-google 2 1 22 }
+   id-ce-canSignHttpExchangesDraft OBJECT IDENTIFIER ::= { id-ce-google 2 1 22 }
 ~~~
 
-Implementations of drafts of this specification MAY recognize the
-`id-ce-testCanSignHttpExchanges` OID as identifying the CanSignHttpExchanges
-extension. This OID might or might not be used as the final OID for the
+This OID might or might not be used as the final OID for the
 extension, so certificates including it might need to be reissued once the final
 RFC is published.
 
