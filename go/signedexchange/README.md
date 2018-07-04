@@ -1,19 +1,19 @@
-# go/bundle
-This directory contains a reference implementation of [Signed HTTP Exchanges](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html) spec.
+# go/signedexchange
+This directory contains a reference implementation of [Signed HTTP Exchanges](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html) format generator.
 
 ## Overview
 We currently provide two command-line tools: `gen-signedexchange` and `gen-certurl`.
 
-`gen-signedexchange` generates a signed exchange file. The `gen-signedexchange` command constructs HTTP request and response pair from given command line flags, attach a cryptographic signature of the pair, and serializes the result to output file.
+`gen-signedexchange` generates a signed exchange file. The `gen-signedexchange` command constructs an HTTP request and response pair from given command line flags, attach the cryptographic signature of the pair, and serializes the result to an output file.
 
-`gen-certurl` converts a X.509 certificate chain to `application/cert-chain+cbor` format, which is defined in the [Section 3.3 of the Signed HTTP Exchanges spec](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#rfc.section.3.3).
+`gen-certurl` converts an X.509 certificate chain, an OCSP response, and an SCT (if one isn't already included in the certificate or OCSP response) to `application/cert-chain+cbor` format, which is defined in the [Section 3.3 of the Signed HTTP Exchanges spec](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#rfc.section.3.3).
 
-You are also welcome to use the code as golang lib (e.g. `import "github.com/WICG/webpackage/go/signedexchange"`), but please be aware that the API is not yet stable and is subject to change any time.
+You are also welcome to use the code as a Go lib (e.g. `import "github.com/WICG/webpackage/go/signedexchange"`), but please be aware that the API is not yet stable and is subject to change any time.
 
 ## Getting Started
 
 ### Prerequisite
-golang environment needs to be set up in prior to using the tool. We are testing the tool on latest golang. Please refer to [Go Getting Started documentation](https://golang.org/doc/install) for the details.
+The Go environment needs to be set up in prior to using the tool. We are testing the tool on the latest version of Go. Please refer to the [Go Getting Started documentation](https://golang.org/doc/install) for the details.
 
 ### Installation
 We recommend using `go get` to install the command-line tool.
@@ -23,16 +23,16 @@ go get -u github.com/WICG/webpackage/go/signedexchange/cmd/...
 ```
 
 ### Creating our first signed exchange
-In this section, we guide you to create a signed exchange file, signed using self-signed certificate pair.
+In this section, we guide you to create a signed exchange file that is signed using a self-signed certificate pair.
 
-Here, we assume that you have an access to a HTTPS server capable of serving static content. [1] Please substitute `https://yourcdn.example.net/` URLs to your web server URL.
+Here, we assume that you have an access to an HTTPS server capable of serving static content. [1] Please substitute `https://yourcdn.example.net/` URLs to your web server URL.
 
-1. Prepare a file to be enclosed in the signed exchange. This serves as the content of the HTTP response in the signed exchange.
+1. Prepare a file to be enclosed in the signed exchange. This serves as the payload of the HTTP response in the signed exchange.
     ```
     echo "<h1>hi</h1>" > payload.html
     ```
 
-1. Prepare a certificate and private key pair to use for signing the exchange. As of July 2018, we need to use self-signed certificate for testing, since there are no CA that issues certificate with ["CanSignHttpExchanges" extension](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req). To generate a signed exchange compatible self-signed key pair with OpenSSL, invoke:
+1. Prepare a certificate and private key pair to use for signing the exchange. As of July 2018, we need to use self-signed certificate for testing, since there are no CA that issues certificate with ["CanSignHttpExchanges" extension](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req). To generate a signed-exchange-compatible self-signed key pair with OpenSSL, invoke:
     ```
     # Generate prime256v1 ecdsa private key.
     openssl ecparam -out priv.key -name prime256v1 -genkey
@@ -68,14 +68,14 @@ Here, we assume that you have an access to a HTTPS server capable of serving sta
 1. Host the signed exchange file `example.org.hello.sxg` on the HTTPS server. Configure the resource to be served with `Content-Type: application/signed-exchange;v=b1` HTTP header.
     - Note: If you are using [Firebase Hosting](https://firebase.google.com/docs/hosting/) as your HTTPS server, see an example config [here](https://github.com/WICG/webpackage/blob/master/examples/firebase.json).
 
-1. Navigate to the signed exchange URL using a web browser supporting signed exchange.
-    - As of July 2018, you can use Chrome [Dev](https://www.google.com/chrome/?extra=devchannel)/[Canary](https://www.google.com/chrome/browser/canary.html) versions with a command-line flag to enable signed exchange support.
+1. Navigate to the signed exchange URL using a web browser supporting signed exchanges.
+    - As of July 2018, you can use Chrome M69 [Dev](https://www.google.com/chrome/?extra=devchannel)/[Canary](https://www.google.com/chrome/browser/canary.html) versions with a command-line flag to enable signed exchange support.
       ```
       # Launch chrome dev set to ignore certificate errors of the self-signed certificate,
       # with an experimental feature of signed exchange support enabled.
       google-chrome-unstable \
         --user-data-dir=/tmp/udd \
-        --ignore-certificate-errors-spki-list=`openssl x509 -noout -pubkey -in cert.pem| openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64` \
+        --ignore-certificate-errors-spki-list=`openssl x509 -noout -pubkey -in cert.pem | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64` \
         --enable-features=SignedHTTPExchange \
         https://yourcdn.example.net/example.org.hello.sxg
       ```
