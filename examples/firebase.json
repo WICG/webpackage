@@ -13,10 +13,6 @@
           {
             "key": "Content-Type",
             "value": "application/cert-chain+cbor"
-          },
-          {
-            "key": "x-test-test",
-            "value": "hoge-fuga"
           }
         ]
       },
