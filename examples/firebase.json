@@ -1,0 +1,34 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**/cert.cbor",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/cert-chain+cbor"
+          },
+          {
+            "key": "x-test-test",
+            "value": "hoge-fuga"
+          }
+        ]
+      },
+      {
+        "source": "**/*.sxg",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/signed-exchange;v=b1"
+          }
+        ]
+      }
+    ]
+  }
+}
