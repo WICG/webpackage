@@ -149,20 +149,21 @@ this validity information for some period of time.
 
 ## The Signature Header ## {#signature-header}
 
-The `Signature` header field conveys a list of signatures for an exchange, each
-one accompanied by information about how to determine the authority of and
+The `Signature` header field conveys a single signature for an exchange,
+accompanied by information about how to determine the authority of and
 refresh that signature. Each signature directly signs the exchange's headers and
 identifies one of those headers that enforces the integrity of the exchange's
 payload.
 
 The `Signature` header is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a parameterised list
-(Section 3.3 of {{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
+(Section 3.3 of {{!I-D.ietf-httpbis-header-structure}}), and the list MUST
+contain exactly one element. Its ABNF is:
 
     Signature = sh-param-list
 
-Each parameterised identifier in the list MUST have parameters named "sig",
-"integrity", "validity-url", "date", and "expires". Each parameterised identifier
+The parameterised identifier in the list MUST have parameters named "sig",
+"integrity", "validity-url", "date", and "expires". The parameterised identifier
 MUST also have either "cert-url" and "cert-sha256" parameters or an "ed25519key"
 parameter. This specification gives no meaning to the identifier itself, which
 can be used as a human-readable identifier for the signature.
@@ -222,56 +223,23 @@ Signature:
   validity-url="https://example.com/resource.validity.1511128380";
   cert-url="https://example.com/oldcerts";
   cert-sha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI=*;
-  date=1511128380; expires=1511733180,
- sig2;
-  sig=*MEQCIGjZRqTRf9iKNkGFyzRMTFgwf/BrY2ZNIP/dykhUV0aYAiBTXg+8wujoT4n/W+cNgb7pGqQvIUGYZ8u8HZJ5YH26Qg=*;
-  integrity="mi";
-  validity-url="https://example.com/resource.validity.1511128380";
-  cert-url="https://example.com/newcerts";
-  cert-sha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw=*;
-  date=1511128380; expires=1511733180,
- srisig;
-  sig=*lGZVaJJM5f2oGczFlLmBdKTDL+QADza4BgeO494ggACYJOvrof6uh5OJCcwKrk7DK+LBch0jssDYPp5CLc1SDA=*
-  integrity="mi";
-  validity-url="https://example.com/resource.validity.1511128380";
-  ed25519key=*zsSevyFsxyZHiUluVBDd4eypdRLTqyWRVOJuuKUz+A8=*
-  date=1511128380; expires=1511733180,
- thirdpartysig;
-  sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+=*;
-  integrity="mi";
-  validity-url="https://thirdparty.example.com/resource.validity.1511161860";
-  cert-url="https://thirdparty.example.com/certs";
-  cert-sha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc=*;
-  date=1511133060; expires=1511478660,
+  date=1511128380; expires=1511733180
 ~~~
 
-There are 4 signatures: 2 from different secp256r1 certificates within
-`https://example.com/`, one using a raw ed25519 public key that's also
-controlled by `example.com`, and a fourth using a secp256r1 certificate owned by
-`thirdparty.example.com`.
+The signature uses a secp256r1 certificate within `https://example.com/`.
 
-All 4 signatures rely on the `MI` response header to guard the integrity of the
+It relies on the `MI-Draft2` response header to guard the integrity of the
 response payload.
 
-The signatures include a "validity-url" that includes the first time the resource
+The signature includes a "validity-url" that includes the first time the resource
 was seen. This allows multiple versions of a resource at the same URL to be
 updated with new signatures, which allows clients to avoid transferring extra
 data while the old versions don't have known security bugs.
 
-The certificates at `https://example.com/oldcerts` and
-`https://example.com/newcerts` have `subjectAltName`s of `example.com`, meaning
-that if they and their signatures validate, the exchange can be trusted as
-having an origin of `https://example.com/`. The publisher might be using two
-certificates because their readers have disjoint sets of roots in their trust
-stores.
-
-The publisher signed with all three certificates at the same time, so they share
-a validity range: 7 days starting at 2017-11-19 21:53 UTC.
-
-The publisher then requested an additional signature from
-`thirdparty.example.com`, which did some validation or processing and then
-signed the resource at 2017-11-19 23:11 UTC. `thirdparty.example.com` only
-grants 4-day signatures, so clients will need to re-validate more often.
+The certificate at `https://example.com/certs` has a `subjectAltName` of
+`example.com`, meaning
+that if it and its signature validate, the exchange can be trusted as
+having an origin of `https://example.com/`.
 
 ## CBOR representation of exchange headers ## {#cbor-representation}
 
@@ -581,25 +549,12 @@ Signature:
   ...
   validity-url="https://example.com/resource.validity.1511157180";
   cert-url="https://example.com/oldcerts";
-  date=1511128380; expires=1511733180,
- sig2;
-  sig=*MEQCIG...*;
-  ...
-  validity-url="https://example.com/resource.validity.1511157180";
-  cert-url="https://example.com/newcerts";
-  date=1511128380; expires=1511733180,
- thirdpartysig;
-  sig=*MEYCIQ...*;
-  ...
-  validity-url="https://thirdparty.example.com/resource.validity.1511161860";
-  cert-url="https://thirdparty.example.com/certs";
-  date=1511478660; expires=1511824260
+  date=1511128380; expires=1511733180
 ~~~
 
-At 2017-11-27 11:02 UTC, `sig1` and `sig2` have expired, but `thirdpartysig`
-doesn't exipire until 23:11 that night, so the client needs to fetch
-`https://example.com/resource.validity.1511157180` (the `validity-url` of `sig1`
-and `sig2`) to update those signatures. This URL might contain:
+At 2017-11-27 11:02 UTC, `sig1` has expired, so the client needs to fetch
+`https://example.com/resource.validity.1511157180` (the `validity-url` of
+`sig1`) to update that signature. This URL might contain:
 
 ~~~cbor-diag
 {
@@ -620,11 +575,9 @@ and `sig2`) to update those signatures. This URL might contain:
 
 This indicates that the client could fetch a newer version at
 `https://example.com/resource` (the original URL of the exchange), or that the
-validity period of the old version can be extended by replacing the first two of
-the original signatures (the ones with a validity-url of
-`https://example.com/resource.validity.1511157180`) with the single new
-signature provided. (This might happen at the end of a migration to a new root
-certificate.) The signatures of the updated signed exchange would be:
+validity period of the old version can be extended by replacing the original
+signature with the new signature provided. The signature of the updated signed
+exchange would be:
 
 ~~~http
 Signature:
@@ -633,17 +586,8 @@ Signature:
   ...
   validity-url="https://example.com/resource.validity.1511157180";
   cert-url="https://example.com/newcerts";
-  date=1511733180; expires=1512337980,
- thirdpartysig;
-  sig=*MEYCIQ...*;
-  ...
-  validity-url="https://thirdparty.example.com/resource.validity.1511161860";
-  cert-url="https://thirdparty.example.com/certs";
-  date=1511478660; expires=1511824260
+  date=1511733180; expires=1512337980
 ~~~
-
-`https://example.com/resource.validity.1511157180` could also expand the set of
-signatures if its `signatures` array contained more than 2 elements.
 
 ## The Accept-Signature header ## {#accept-signature}
 
@@ -1100,6 +1044,7 @@ Vs. {{I-D.yasskin-http-origin-signed-responses-04}}:
 * The mi-sha256 encoding must have records <= 16kB.
 * The signature and HTTP headers must each be <=16kB long.
 * Versions in file signatures and context strings are "b1".
+* Only 1 signature is supported.
 
 draft-00
 
