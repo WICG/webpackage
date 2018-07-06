@@ -375,19 +375,19 @@ cert-chain = [
 ]
 ~~~
 
-The first item in the CBOR array is treated as the end-entity certificate, and
-the client will attempt to build a path ({{?RFC5280}}) to it from a trusted root
-using the other certificates in the chain.
+The first map (second item) in the CBOR array is treated as the end-entity
+certificate, and the client will attempt to build a path ({{?RFC5280}}) to it
+from a trusted root using the other certificates in the chain.
 
 1. Each `cert` value MUST be a DER-encoded X.509v3 certificate ({{!RFC5280}}).
    Other key/value pairs in the same array item define properties of this
    certificate.
-1. The first certificate's `ocsp` value if any MUST be a complete, DER-encoded
-   OCSP response for that certificate (using the ASN.1 type `OCSPResponse`
-   defined in {{!RFC6960}}). Subsequent certificates MUST NOT have an `ocsp`
-   value.
-1. Each certificate's `sct` value MUST be a `SignedCertificateTimestampList` for
-   that certificate as defined by Section 3.3 of {{!RFC6962}}.
+1. The first certificate's `ocsp` value MUST be a complete, DER-encoded OCSP
+   response for that certificate (using the ASN.1 type `OCSPResponse` defined in
+   {{!RFC6960}}). Subsequent certificates MUST NOT have an `ocsp` value.
+1. Each certificate's `sct` value if any MUST be a
+   `SignedCertificateTimestampList` for that certificate as defined by Section
+   3.3 of {{!RFC6962}}.
 
 Loading a `cert-url` takes a `forceFetch` flag. The client MUST:
 
@@ -623,7 +623,7 @@ Signature:
 At 2017-11-27 11:02 UTC, `sig1` and `sig2` have expired, but `thirdpartysig`
 doesn't exipire until 23:11 that night, so the client needs to fetch
 `https://example.com/resource.validity.1511157180` (the `validity-url` of `sig1`
-and `sig2`) to update those signatures. This URL might contain:
+and `sig2`) if it wishes to update those signatures. This URL might contain:
 
 ~~~cbor-diag
 {
@@ -706,7 +706,7 @@ Identifiers starting with "mi/" indicate that the client supports the `MI`
 header field ({{!I-D.thomson-http-mice}}) with the parameter from the HTTP MI
 Parameter Registry registry named in lower-case by the rest of the identifier.
 For example, "mi/mi-blake2" indicates support for Merkle integrity with the
-as-yet-unspecified mi-blake2 parameter, and "-digest/mi-sha256" indicates
+as-yet-unspecified mi-blake2 parameter, and "-mi/mi-sha256" indicates
 non-support for Merkle integrity with the mi-sha256 content encoding.
 
 If the `Accept-Signature` header field is present, servers SHOULD assume support
@@ -1098,10 +1098,9 @@ This content type consists of the concatenation of the following items:
 ### Cross-origin trust in application/signed-exchange {#co-trust-app-signed-exchange}
 
 To determine whether to trust a cross-origin exchange stored in an
-`application/signed-exchange` resource, pass the `Signature` header field from
-the non-signed header section and an exchange consisting of the headers from the
-signed headers section and the payload body, to the algorithm in
-{{cross-origin-trust}}.
+`application/signed-exchange` resource, pass the `Signature` header field's
+value and an exchange consisting of the headers from the signed headers section
+and the payload body, to the algorithm in {{cross-origin-trust}}.
 
 ### Example ## {#example-application-signed-exchange}
 
@@ -1113,8 +1112,8 @@ header field and payload elided with a ...:
 
 ~~~
 sxg1\0<3-byte length of the following header
-value>sig1; sig=*...; integrity="mi"; ...<3-byte length of the encoding of the
-following array>[
+value><3-byte length of the encoding of the
+following array>sig1; sig=*...; integrity="mi"; ...[
   {
     ':method': 'GET',
     ':url': 'https://example.com/',
@@ -1897,5 +1896,5 @@ draft-02
 
 # Acknowledgements
 
-Thanks to Ilari Liusvaara, Justin Schuh, Mark Nottingham, Mike Bishop, Ryan
-Sleevi, and Yoav Weiss for comments that improved this draft.
+Thanks to Devin Mullins, Ilari Liusvaara, Justin Schuh, Mark Nottingham, Mike
+Bishop, Ryan Sleevi, and Yoav Weiss for comments that improved this draft.
