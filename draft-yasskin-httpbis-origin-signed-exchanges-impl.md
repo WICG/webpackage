@@ -163,9 +163,8 @@ contain exactly one element. Its ABNF is:
     Signature = sh-param-list
 
 The parameterised identifier in the list MUST have parameters named "sig",
-"integrity", "validity-url", "date", and "expires". The parameterised identifier
-MUST also have either "cert-url" and "cert-sha256" parameters or an "ed25519key"
-parameter. This specification gives no meaning to the identifier itself, which
+"integrity", "validity-url", "date", "expires", "cert-url", and "cert-sha256".
+This specification gives no meaning to the identifier itself, which
 can be used as a human-readable identifier for the signature.
 The present parameters MUST have the following
 values:
@@ -190,11 +189,6 @@ values:
 
 : Binary content (Section 3.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
   the SHA-256 hash of the first certificate found at "cert-url".
-
-"ed25519key"
-
-: Binary content (Section 3.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
-  an Ed25519 public key ({{!RFC8032}}).
 
 {:#signature-validityurl} "validity-url"
 
@@ -411,7 +405,6 @@ to retrieve an updated OCSP from the original server.
    * `validity-url` be the signature's "validity-url" parameter.
    * `cert-url` be the signature's "cert-url" parameter, if any.
    * `cert-sha256` be the signature's "cert-sha256" parameter, if any.
-   * `ed25519key` be the signature's "ed25519key" parameter, if any.
    * `date` be the signature's "date" parameter, interpreted as a Unix time.
    * `expires` be the signature's "expires" parameter, interpreted as a Unix
      time.
@@ -425,7 +418,7 @@ to retrieve an updated OCSP from the original server.
    content encoding, which are defined equivalently to the `MI` header field and
    `mi-sha256` content encoding from {{!I-D.thomson-http-mice}}.
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
-   1. If `cert-url` is present:
+   1. Assert: `cert-url` is present.
       1. Let `certificate-chain` be the result of loading the certificate chain
          at `cert-url` passing the `forceFetch` flag ({{cert-chain-format}}). If
          this returns "invalid", return "invalid".
@@ -435,12 +428,7 @@ to retrieve an updated OCSP from the original server.
       1. If `publicKey` is a key using the secp256r1 elliptic curve, set
          `signing-alg` to ecdsa_secp256r1_sha256 as defined in Section 4.2.3 of
          {{!I-D.ietf-tls-tls13}}.
-      1. Otherwise, either return "invalid" or set `signing-alg` to a non-legacy
-         signing algorithm defined by TLS 1.3 or later
-         ({{!I-D.ietf-tls-tls13}}). This choice MUST depend only on
-         `publicKey`'s type and not on any other context.
-   1. If `ed25519key` is present, set `publicKey` to `ed25519key` and
-      `signing-alg` to ed25519, as defined by {{!RFC8032}}
+      1. Otherwise, return "invalid".
 1. If `expires` is more than 7 days (604800 seconds) after `date`, return
    "invalid".
 1. If the current time is before `date` or after `expires`, return "invalid".
@@ -475,8 +463,8 @@ to retrieve an updated OCSP from the original server.
    {{?I-D.ietf-tls-tls13}}), in order to allow updating the stapled OCSP
    response without updating signatures at the same time.
 1. If `signature` is a valid signature of `message` by `publicKey` using
-   `signing-alg`, return "potentially-valid" with whichever is present of
-   `certificate-chain` or `ed25519key`. Otherwise, return "invalid".
+   `signing-alg`, return "potentially-valid" with `certificate-chain`.
+   Otherwise, return "invalid".
 
 Note that the above algorithm can determine that an exchange's headers are
 potentially-valid before the exchange's payload is received. Similarly, if
@@ -1044,6 +1032,7 @@ Vs. {{I-D.yasskin-http-origin-signed-responses-04}}:
 * The signature and HTTP headers must each be <=16kB long.
 * Versions in file signatures and context strings are "b1".
 * Only 1 signature is supported.
+* Removed support for ed25519 signatures.
 
 draft-00
 
