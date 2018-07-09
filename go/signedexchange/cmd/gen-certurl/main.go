@@ -47,7 +47,7 @@ func run(pemFilePath, ocspFilePath, sctFilePath string) error {
 
 func main() {
 	flag.Parse()
-	if *pemFilepath == "" || *ocspFilepath == "" || *sctFilepath == "" {
+	if *pemFilepath == "" || *ocspFilepath == "" {
 		flag.Usage()
 		return
 	}
