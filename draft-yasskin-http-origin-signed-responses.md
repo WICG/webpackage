@@ -897,15 +897,10 @@ able to make even one unauthorized signature.
 Certificates with this extension MUST be revoked if an unauthorized entity is
 able to make even one unauthorized signature.
 
-Conforming CAs MUST NOT mark this extension as critical. This allows new clients
-with old operating systems to handle the extension.
+Conforming CAs MUST NOT mark this extension as critical.
 
 Clients MUST NOT accept certificates with this extension in TLS connections
-(Section 4.4.2.2 of {{!I-D.ietf-tls-tls13}}).  This discourages server operators
-from using the same certificate to sign both TLS connections and signed
-exchanges, which in turn simplifies security analysis of this protocol and
-avoids encouraging server operators to put exchange-signing keys on servers
-exposed directly to the internet.
+(Section 4.4.2.2 of {{!I-D.ietf-tls-tls13}}).
 
 RFC EDITOR PLEASE DELETE THE REST OF THE PARAGRAPHS IN THIS SECTION
 
@@ -1244,12 +1239,7 @@ the algorithm in {{co-trust-app-signed-exchange}} and getting "valid" back.
 
 ## Key re-use with TLS ## {#seccons-key-re-use}
 
-This specification discourages servers from using the same key to terminate TLS
-connections as they use to sign exchanges, but it cannot prevent it. Even if
-commonly-used clients reject TLS connections signed by certificates with the
-CanSignHttpExchanges extension, as required by {{cross-origin-cert-req}}, a
-server operator can request two different certificates with the same private
-key.
+In general, key re-use across multiple protocols is a bad idea.
 
 Using an exchange-signing key in a TLS (or other directly-internet-facing)
 server increases the risk that an attacker can steal the private key, which will
@@ -1259,6 +1249,21 @@ theft is discovered.
 Using a TLS key in a CanSignHttpExchanges certificate makes it less likely that
 the server operator will discover key theft, due to the considerations in
 {{seccons-off-path}}.
+
+This specification uses the CanSignHttpExchanges X.509 extension
+({{cross-origin-cert-req}}) to discourage re-use of TLS keys to sign exchanges
+or vice-versa.
+
+We require that clients reject certificates with the CanSignHttpExchanges
+extension when making TLS connections to minimize the chance that servers will
+re-use keys like this. Ideally, we would make the extension critical so that
+even clients that don't understand it would reject such TLS connections, but
+this proved impossible because certificate-validating libraries ship on
+significantly different schedules from the clients that use them.
+
+Even once all clients reject these certificates in TLS connections, this will
+still just discourage and not prevent key re-use, since a server operator can
+unwisely request two different certificates with the same private key.
 
 # Privacy considerations
 
