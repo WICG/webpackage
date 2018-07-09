@@ -25,7 +25,7 @@ go get -u github.com/WICG/webpackage/go/signedexchange/cmd/...
 ### Creating our first signed exchange
 In this section, we guide you to create a signed exchange file that is signed using a self-signed certificate pair.
 
-Here, we assume that you have an access to an HTTPS server capable of serving static content. [1] Please substitute `https://yourcdn.example.net/` URLs to your web server URL.
+Here, we assume that you have an access to an HTTPS server capable of serving static content. [1] Please substitute `https://yourcdn.example.net/` URLs to your web server URL, and `example.org` to the domain for which you want to sign the exchange.
 
 1. Prepare a file to be enclosed in the signed exchange. This serves as the payload of the HTTP response in the signed exchange.
     ```
@@ -41,7 +41,7 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
       -subj '/CN=example.org/O=Test/C=US'
     # Self-sign the certificate with "CanSignHttpExchanges" extension.
     openssl x509 -req -days 360 -in cert.csr -signkey priv.key -out cert.pem \
-      -extfile <(echo "1.3.6.1.4.1.11129.2.1.22 = ASN1:NULL\nsubjectAltName=DNS:example.org")
+      -extfile <(echo -e "1.3.6.1.4.1.11129.2.1.22 = ASN1:NULL\nsubjectAltName=DNS:example.org")
     ```
 
 1. Convert the PEM certificate to `application/cert-chain+cbor` format using `gen-certurl` tool.
