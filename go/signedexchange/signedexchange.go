@@ -210,3 +210,43 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 
 	return nil
 }
+
+// draft-yasskin-http-origin-signed-responses.html#application-http-exchange
+func ReadExchange(r io.Reader) (*Exchange, error) {
+	// Step 1. "The ASCII characters “sxg1” followed by a 0 byte, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don’t." [spec text]
+	// "Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific string beginning with “sxg1-“ and ending with a 0 byte instead." [spec text]
+	header := make([]byte, len(HeaderMagicBytes))
+	if _, err := io.ReadFull(r, header); err != nil {
+		return nil, err
+	}
+	if !bytes.Equal(header, HeaderMagicBytes) {
+		return nil, fmt.Errorf("signedexchange: invalid header: %v", header)
+	}
+
+	// Step 2. "3 bytes storing a big-endian integer sigLength. If this is larger than TBD, parsing MUST fail." [spec text]
+	// Step 3. "3 bytes storing a big-endian integer headerLength. If this is larger than TBD, parsing MUST fail." [spec text]
+	// Step 4. "sigLength bytes holding the Signature header field’s value (Section 3.1)." [spec text]
+	// Step 5. "headerLength bytes holding the signed headers, the canonical serialization (Section 3.4) of the CBOR representation of the request and response headers of the exchange represented by the application/signed-exchange resource (Section 3.2), excluding the Signature header field." [spec text]
+	// "Note that this is exactly the bytes used when checking signature validity in Section 3.5." [spec text]
+	// Step 6. "The payload body (Section 3.3 of [RFC7230]) of the exchange represented by the application/signed-exchange resource." [spec text]
+	// "Note that the use of the payload body here means that a Transfer-Encoding header field inside the application/signed-exchange header block has no effect. A Transfer-Encoding header field on the outer HTTP response that transfers this resource still has its normal effect." [spec text]
+
+	return nil, nil
+}
+
+func (e *Exchange) PrettyPrint(w io.Writer) {
+	fmt.Fprintln(w, "request:")
+	fmt.Fprintf(w, "  uri: %s\n", e.RequestUri.String())
+	fmt.Fprintln(w, "  headers:")
+	for k, _ := range e.RequestHeaders {
+		fmt.Fprintf(w, "    %s: %s\n", k, e.ResponseHeaders.Get(k))
+	}
+	fmt.Fprintln(w, "response:")
+	fmt.Fprintf(w, "  status: %d\n", e.ResponseStatus)
+	fmt.Fprintln(w, "  headers:")
+	for k, _ := range e.ResponseHeaders {
+		fmt.Fprintf(w, "    %s: %s\n", k, e.ResponseHeaders.Get(k))
+	}
+	fmt.Fprintf(w, "payload [%d bytes]:\n", len(e.Payload))
+	w.Write(e.Payload)
+}
