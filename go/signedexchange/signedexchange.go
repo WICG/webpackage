@@ -16,16 +16,16 @@ import (
 
 type Exchange struct {
 	// Request
-	requestUri     *url.URL
-	requestHeaders http.Header
+	RequestUri     *url.URL
+	RequestHeaders http.Header
 
 	// Response
-	responseStatus       int
-	responseHeaders      http.Header
-	signatureHeaderValue string
+	ResponseStatus       int
+	ResponseHeaders      http.Header
+	SignatureHeaderValue string
 
 	// Payload
-	payload []byte
+	Payload []byte
 }
 
 var HeaderMagicBytes = []byte("sxg1-b1\x00")
@@ -46,27 +46,27 @@ func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseH
 	}
 
 	return &Exchange{
-		requestUri:      uri,
-		responseStatus:  status,
-		requestHeaders:  requestHeaders,
-		responseHeaders: responseHeaders,
-		payload:         payload,
+		RequestUri:      uri,
+		ResponseStatus:  status,
+		RequestHeaders:  requestHeaders,
+		ResponseHeaders: responseHeaders,
+		Payload:         payload,
 	}, nil
 }
 
 func (e *Exchange) MiEncodePayload(recordSize int) error {
-	if e.responseHeaders.Get("MI") != "" {
+	if e.ResponseHeaders.Get("MI") != "" {
 		return errors.New("Payload already MI encoded.")
 	}
 
 	var buf bytes.Buffer
-	mi, err := mice.Encode(&buf, e.payload, recordSize)
+	mi, err := mice.Encode(&buf, e.Payload, recordSize)
 	if err != nil {
 		return err
 	}
-	e.payload = buf.Bytes()
-	e.responseHeaders.Add("Content-Encoding", "mi-sha256")
-	e.responseHeaders.Add("MI", mi)
+	e.Payload = buf.Bytes()
+	e.ResponseHeaders.Add("Content-Encoding", "mi-sha256")
+	e.ResponseHeaders.Add("MI", mi)
 	return nil
 }
 
@@ -75,7 +75,7 @@ func (e *Exchange) AddSignatureHeader(s *Signer) error {
 	if err != nil {
 		return err
 	}
-	e.signatureHeaderValue = h
+	e.SignatureHeaderValue = h
 	return nil
 }
 
@@ -87,7 +87,7 @@ func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder) []*cbor.MapEntryEncode
 		}),
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString([]byte(":url"))
-			valueE.EncodeByteString([]byte(e.requestUri.String()))
+			valueE.EncodeByteString([]byte(e.RequestUri.String()))
 		}),
 	}
 }
@@ -117,7 +117,7 @@ func normalizeHeaderValues(values []string) string {
 
 func (e *Exchange) EncodeRequestWithHeaders(enc *cbor.Encoder) error {
 	mes := e.encodeRequestCommon(enc)
-	for name, value := range e.requestHeaders {
+	for name, value := range e.RequestHeaders {
 		mes = append(mes,
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeByteString([]byte(strings.ToLower(name)))
@@ -131,10 +131,10 @@ func (e *Exchange) encodeResponseHeaders(enc *cbor.Encoder) error {
 	mes := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString([]byte(":status"))
-			valueE.EncodeByteString([]byte(strconv.Itoa(e.responseStatus)))
+			valueE.EncodeByteString([]byte(strconv.Itoa(e.ResponseStatus)))
 		}),
 	}
-	for name, value := range e.responseHeaders {
+	for name, value := range e.ResponseHeaders {
 		mes = append(mes,
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeByteString([]byte(strings.ToLower(name)))
@@ -167,7 +167,7 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 	}
 
 	// Step 2. "3 bytes storing a big-endian integer sigLength. If this is larger than TBD, parsing MUST fail." [spec text]
-	encodedSigLength, err := Encode3BytesBigEndianUint(len(e.signatureHeaderValue))
+	encodedSigLength, err := Encode3BytesBigEndianUint(len(e.SignatureHeaderValue))
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 	}
 
 	// Step 4. "sigLength bytes holding the Signature header field's value (Section 3.1)." [spec text]
-	if _, err := w.Write([]byte(e.signatureHeaderValue)); err != nil {
+	if _, err := w.Write([]byte(e.SignatureHeaderValue)); err != nil {
 		return err
 	}
 
@@ -204,7 +204,7 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 	}
 
 	// Step 6. "The payload body (Section 3.3 of [RFC7230]) of the exchange represented by the application/signed-exchange resource." [spec text]
-	if _, err := w.Write(e.payload); err != nil {
+	if _, err := w.Write(e.Payload); err != nil {
 		return err
 	}
 
