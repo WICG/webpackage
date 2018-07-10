@@ -9,8 +9,7 @@ import (
 )
 
 var (
-	flagInput           = flag.String("i", "", "Signed-exchange input file")
-	flagDumpContentText = flag.Bool("contentText", true, "Dump response content if text")
+	flagInput = flag.String("i", "", "Signed-exchange input file")
 )
 
 func run() error {
