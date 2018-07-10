@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -16,7 +17,7 @@ import (
 
 type Exchange struct {
 	// Request
-	RequestUri     *url.URL
+	RequestURI     *url.URL
 	RequestHeaders http.Header
 
 	// Response
@@ -27,6 +28,14 @@ type Exchange struct {
 	// Payload
 	Payload []byte
 }
+
+var (
+	keyMethod = []byte(":method")
+	keyURL    = []byte(":url")
+	keyStatus = []byte(":status")
+
+	valueGet = []byte("GET")
+)
 
 var HeaderMagicBytes = []byte("sxg1-b1\x00")
 
@@ -46,7 +55,7 @@ func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseH
 	}
 
 	return &Exchange{
-		RequestUri:      uri,
+		RequestURI:      uri,
 		ResponseStatus:  status,
 		RequestHeaders:  requestHeaders,
 		ResponseHeaders: responseHeaders,
@@ -82,12 +91,12 @@ func (e *Exchange) AddSignatureHeader(s *Signer) error {
 func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder) []*cbor.MapEntryEncoder {
 	return []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-			keyE.EncodeByteString([]byte(":method"))
-			valueE.EncodeByteString([]byte("GET"))
+			keyE.EncodeByteString(keyMethod)
+			valueE.EncodeByteString(valueGet)
 		}),
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-			keyE.EncodeByteString([]byte(":url"))
-			valueE.EncodeByteString([]byte(e.RequestUri.String()))
+			keyE.EncodeByteString(keyURL)
+			valueE.EncodeByteString([]byte(e.RequestURI.String()))
 		}),
 	}
 }
@@ -127,10 +136,41 @@ func (e *Exchange) EncodeRequestWithHeaders(enc *cbor.Encoder) error {
 	return enc.EncodeMap(mes)
 }
 
+func (e *Exchange) decodeRequest(dec *cbor.Decoder) error {
+	n, err := dec.DecodeMapHeader()
+	if err != nil {
+		return fmt.Errorf("signedexchange: failed to decode response map header: %v", err)
+	}
+	for i := uint64(0); i < n; i++ {
+		key, err := dec.DecodeByteString()
+		if err != nil {
+			return err
+		}
+		value, err := dec.DecodeByteString()
+		if err != nil {
+			return err
+		}
+		if bytes.Equal(key, keyMethod) {
+			if !bytes.Equal(value, valueGet) {
+				return fmt.Errorf("singedexchange: method must be %q but %q", string(valueGet), value)
+			}
+		}
+		if bytes.Equal(key, keyURL) {
+			e.RequestURI, err = url.Parse(string(value))
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		e.RequestHeaders.Add(string(key), string(value))
+	}
+	return nil
+}
+
 func (e *Exchange) encodeResponseHeaders(enc *cbor.Encoder) error {
 	mes := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-			keyE.EncodeByteString([]byte(":status"))
+			keyE.EncodeByteString(keyStatus)
 			valueE.EncodeByteString([]byte(strconv.Itoa(e.ResponseStatus)))
 		}),
 	}
@@ -144,6 +184,32 @@ func (e *Exchange) encodeResponseHeaders(enc *cbor.Encoder) error {
 	return enc.EncodeMap(mes)
 }
 
+func (e *Exchange) decodeResponseHeaders(dec *cbor.Decoder) error {
+	n, err := dec.DecodeMapHeader()
+	if err != nil {
+		return fmt.Errorf("signedexchange: failed to decode response map header: %v", err)
+	}
+	for i := uint64(0); i < n; i++ {
+		key, err := dec.DecodeByteString()
+		if err != nil {
+			return err
+		}
+		value, err := dec.DecodeByteString()
+		if err != nil {
+			return err
+		}
+		if bytes.Equal(key, keyStatus) {
+			e.ResponseStatus, err = strconv.Atoi(string(value))
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		e.ResponseHeaders.Add(string(key), string(value))
+	}
+	return nil
+}
+
 // draft-yasskin-http-origin-signed-responses.html#rfc.section.3.4
 func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
 	if err := enc.EncodeArrayHeader(2); err != nil {
@@ -153,6 +219,23 @@ func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
 		return err
 	}
 	if err := e.encodeResponseHeaders(enc); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
+	n, err := dec.DecodeArrayHeader()
+	if err != nil {
+		return fmt.Errorf("signedexchange: failed to decode top-level array header: %v", err)
+	}
+	if n != 2 {
+		return fmt.Errorf("singedexchange: length of header array must be 2 but %d", n)
+	}
+	if err := e.decodeRequest(dec); err != nil {
+		return err
+	}
+	if err := e.decodeResponseHeaders(dec); err != nil {
 		return err
 	}
 	return nil
@@ -171,7 +254,6 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 	if err != nil {
 		return err
 	}
-
 	if _, err := w.Write(encodedSigLength[:]); err != nil {
 		return err
 	}
@@ -212,31 +294,69 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 }
 
 // draft-yasskin-http-origin-signed-responses.html#application-http-exchange
-func ReadExchange(r io.Reader) (*Exchange, error) {
+func ReadExchangeFile(r io.Reader) (*Exchange, error) {
 	// Step 1. "The ASCII characters “sxg1” followed by a 0 byte, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don’t." [spec text]
 	// "Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific string beginning with “sxg1-“ and ending with a 0 byte instead." [spec text]
-	header := make([]byte, len(HeaderMagicBytes))
-	if _, err := io.ReadFull(r, header); err != nil {
+	magic := make([]byte, len(HeaderMagicBytes))
+	if _, err := io.ReadFull(r, magic); err != nil {
 		return nil, err
 	}
-	if !bytes.Equal(header, HeaderMagicBytes) {
-		return nil, fmt.Errorf("signedexchange: invalid header: %v", header)
+	if !bytes.Equal(magic, HeaderMagicBytes) {
+		return nil, fmt.Errorf("singedexchange: wrong magic bytes: %v", magic)
 	}
 
 	// Step 2. "3 bytes storing a big-endian integer sigLength. If this is larger than TBD, parsing MUST fail." [spec text]
+	sigLengthBytes := make([]byte, 3)
+	if _, err := io.ReadFull(r, sigLengthBytes); err != nil {
+		return nil, err
+	}
+	sigLength := Decode3BytesBigEndianUint(sigLengthBytes)
+
 	// Step 3. "3 bytes storing a big-endian integer headerLength. If this is larger than TBD, parsing MUST fail." [spec text]
+	headerLengthBytes := make([]byte, 3)
+	if _, err := io.ReadFull(r, headerLengthBytes); err != nil {
+		return nil, err
+	}
+	headerLength := Decode3BytesBigEndianUint(headerLengthBytes)
+
+	e := &Exchange{
+		RequestHeaders:  http.Header{},
+		ResponseHeaders: http.Header{},
+	}
+
 	// Step 4. "sigLength bytes holding the Signature header field’s value (Section 3.1)." [spec text]
+	sig := make([]byte, sigLength)
+	if _, err := io.ReadFull(r, sig); err != nil {
+		return nil, err
+	}
+	e.SignatureHeaderValue = string(sig)
+
 	// Step 5. "headerLength bytes holding the signed headers, the canonical serialization (Section 3.4) of the CBOR representation of the request and response headers of the exchange represented by the application/signed-exchange resource (Section 3.2), excluding the Signature header field." [spec text]
 	// "Note that this is exactly the bytes used when checking signature validity in Section 3.5." [spec text]
+	encodedHeader := make([]byte, headerLength)
+	if _, err := io.ReadFull(r, encodedHeader); err != nil {
+		return nil, err
+	}
+
+	dec := cbor.NewDecoder(bytes.NewReader(encodedHeader))
+	if err := e.decodeExchangeHeaders(dec); err != nil {
+		return nil, err
+	}
+
 	// Step 6. "The payload body (Section 3.3 of [RFC7230]) of the exchange represented by the application/signed-exchange resource." [spec text]
 	// "Note that the use of the payload body here means that a Transfer-Encoding header field inside the application/signed-exchange header block has no effect. A Transfer-Encoding header field on the outer HTTP response that transfers this resource still has its normal effect." [spec text]
+	var err error
+	e.Payload, err = ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	return e, nil
 }
 
 func (e *Exchange) PrettyPrint(w io.Writer) {
 	fmt.Fprintln(w, "request:")
-	fmt.Fprintf(w, "  uri: %s\n", e.RequestUri.String())
+	fmt.Fprintf(w, "  uri: %s\n", e.RequestURI.String())
 	fmt.Fprintln(w, "  headers:")
 	for k, _ := range e.RequestHeaders {
 		fmt.Fprintf(w, "    %s: %s\n", k, e.ResponseHeaders.Get(k))

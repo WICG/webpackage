@@ -25,7 +25,7 @@ func TestEncode3BytesBigEndianUint(t *testing.T) {
 
 func TestDecode3BytesBigEndianUint(t *testing.T) {
 	expected := 0xabcdef
-	actual := signedexchange.Decode3BytesBigEndianUint([3]byte{0xab, 0xcd, 0xef})
+	actual := signedexchange.Decode3BytesBigEndianUint([]byte{0xab, 0xcd, 0xef})
 	if expected != actual {
 		t.Errorf("expected decoded value %v but got %v", expected, actual)
 	}
