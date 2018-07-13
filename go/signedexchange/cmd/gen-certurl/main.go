@@ -11,7 +11,7 @@ import (
 
 var (
 	pemFilepath  = flag.String("pem", "", "PEM filepath")
-	ocspFilepath = flag.String("ocsp", "", "OCSP filepath")
+	ocspFilepath = flag.String("ocsp", "", "DER-encoded OCSP response file. If omitted, fetched from network")
 	sctFilepath  = flag.String("sct", "", "SCT filepath")
 )
 
@@ -21,9 +21,17 @@ func run(pemFilePath, ocspFilePath, sctFilePath string) error {
 		return err
 	}
 
-	ocsp, err := ioutil.ReadFile(ocspFilePath)
-	if err != nil {
-		return err
+	var ocsp []byte
+	if *ocspFilepath == "" {
+		ocsp, err = certurl.FetchOCSPResponse(in)
+		if err != nil {
+			return err
+		}
+	} else {
+		ocsp, err = ioutil.ReadFile(ocspFilePath)
+		if err != nil {
+			return err
+		}
 	}
 
 	var sct []byte
@@ -47,7 +55,7 @@ func run(pemFilePath, ocspFilePath, sctFilePath string) error {
 
 func main() {
 	flag.Parse()
-	if *pemFilepath == "" || *ocspFilepath == "" {
+	if *pemFilepath == "" {
 		flag.Usage()
 		return
 	}
