@@ -10,7 +10,7 @@ import (
 	"github.com/WICG/webpackage/go/signedexchange"
 )
 
-func FetchOCSPResponse(certPem []byte) ([]byte, error) {
+func CreateOCSPRequest(certPem []byte) (*http.Request, error) {
 	certs, err := signedexchange.ParseCertificates(certPem)
 	if err != nil {
 		return nil, err
@@ -35,8 +35,16 @@ func FetchOCSPResponse(certPem []byte) ([]byte, error) {
 	}
 	request.Header.Add("Content-Type", "application/ocsp-request")
 	request.Header.Add("Accept", "application/ocsp-response")
-	client := &http.Client{}
+	return request, nil
+}
 
+func FetchOCSPResponse(certPem []byte) ([]byte, error) {
+	request, err := CreateOCSPRequest(certPem)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
