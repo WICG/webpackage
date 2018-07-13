@@ -2,19 +2,14 @@ package certurl
 
 import (
 	"bytes"
+	"crypto/x509"
 	"fmt"
 	"golang.org/x/crypto/ocsp"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/WICG/webpackage/go/signedexchange"
 )
 
-func CreateOCSPRequest(certPem []byte) (*http.Request, error) {
-	certs, err := signedexchange.ParseCertificates(certPem)
-	if err != nil {
-		return nil, err
-	}
+func CreateOCSPRequest(certs []*x509.Certificate) (*http.Request, error) {
 	if len(certs) < 2 {
 		return nil, fmt.Errorf("Could not fetch OCSP response: Issuer certificate not found")
 	}
@@ -38,8 +33,8 @@ func CreateOCSPRequest(certPem []byte) (*http.Request, error) {
 	return request, nil
 }
 
-func FetchOCSPResponse(certPem []byte) ([]byte, error) {
-	request, err := CreateOCSPRequest(certPem)
+func FetchOCSPResponse(certs []*x509.Certificate) ([]byte, error) {
+	request, err := CreateOCSPRequest(certs)
 	if err != nil {
 		return nil, err
 	}

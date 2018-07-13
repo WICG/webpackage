@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	. "github.com/WICG/webpackage/go/signedexchange/certurl"
+	"github.com/WICG/webpackage/go/signedexchange"
 	"github.com/WICG/webpackage/go/signedexchange/internal/testhelper"
 )
 
@@ -52,8 +53,13 @@ func TestParsePEM(t *testing.T) {
 		t.Errorf("Cannot read test-cert.pem: %v", err)
 		return
 	}
+	certs, err := signedexchange.ParseCertificates(in)
+	if err != nil {
+		t.Errorf("Cannot parse test-cert.pem: %v", err)
+		return
+	}
 
-	cert, err := CertificateMessageFromPEM(in, nil, nil)
+	cert, err := CreateCertChainCBOR(certs, nil, nil)
 	if err != nil {
 		t.Errorf("failed to parse PEM: %v", err)
 	}

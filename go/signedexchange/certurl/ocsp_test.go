@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	. "github.com/WICG/webpackage/go/signedexchange/certurl"
+	"github.com/WICG/webpackage/go/signedexchange"
 )
 
 func TestOCSP(t *testing.T) {
@@ -16,8 +17,13 @@ func TestOCSP(t *testing.T) {
 		t.Errorf("Cannot read test-cert.pem: %v", err)
 		return
 	}
+	certs, err := signedexchange.ParseCertificates(pem)
+	if err != nil {
+		t.Errorf("Cannot parse test-cert.pem: %v", err)
+		return
+	}
 
-	req, err := CreateOCSPRequest(pem)
+	req, err := CreateOCSPRequest(certs)
 	if err != nil {
 		t.Errorf("CreateOCSPRequest failed: %v", err)
 		return

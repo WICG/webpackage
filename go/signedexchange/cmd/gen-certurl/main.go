@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/WICG/webpackage/go/signedexchange"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
@@ -16,14 +17,18 @@ var (
 )
 
 func run(pemFilePath, ocspFilePath, sctFilePath string) error {
-	in, err := ioutil.ReadFile(pemFilePath)
+	pem, err := ioutil.ReadFile(pemFilePath)
+	if err != nil {
+		return err
+	}
+	certs, err := signedexchange.ParseCertificates(pem)
 	if err != nil {
 		return err
 	}
 
 	var ocsp []byte
 	if *ocspFilepath == "" {
-		ocsp, err = certurl.FetchOCSPResponse(in)
+		ocsp, err = certurl.FetchOCSPResponse(certs)
 		if err != nil {
 			return err
 		}
@@ -42,7 +47,7 @@ func run(pemFilePath, ocspFilePath, sctFilePath string) error {
 		}
 	}
 
-	out, err := certurl.CertificateMessageFromPEM(in, ocsp, sct)
+	out, err := certurl.CreateCertChainCBOR(certs, ocsp, sct)
 	if err != nil {
 		return err
 	}
