@@ -306,15 +306,15 @@ func ReadExchangeFile(r io.Reader) (*Exchange, error) {
 	}
 
 	// Step 2. "3 bytes storing a big-endian integer sigLength. If this is larger than TBD, parsing MUST fail." [spec text]
-	sigLengthBytes := make([]byte, 3)
-	if _, err := io.ReadFull(r, sigLengthBytes); err != nil {
+	sigLengthBytes := [3]byte{}
+	if _, err := io.ReadFull(r, sigLengthBytes[:]); err != nil {
 		return nil, err
 	}
 	sigLength := Decode3BytesBigEndianUint(sigLengthBytes)
 
 	// Step 3. "3 bytes storing a big-endian integer headerLength. If this is larger than TBD, parsing MUST fail." [spec text]
-	headerLengthBytes := make([]byte, 3)
-	if _, err := io.ReadFull(r, headerLengthBytes); err != nil {
+	headerLengthBytes := [3]byte{}
+	if _, err := io.ReadFull(r, headerLengthBytes[:]); err != nil {
 		return nil, err
 	}
 	headerLength := Decode3BytesBigEndianUint(headerLengthBytes)
@@ -358,13 +358,13 @@ func (e *Exchange) PrettyPrint(w io.Writer) {
 	fmt.Fprintln(w, "request:")
 	fmt.Fprintf(w, "  uri: %s\n", e.RequestURI.String())
 	fmt.Fprintln(w, "  headers:")
-	for k, _ := range e.RequestHeaders {
+	for k := range e.RequestHeaders {
 		fmt.Fprintf(w, "    %s: %s\n", k, e.ResponseHeaders.Get(k))
 	}
 	fmt.Fprintln(w, "response:")
 	fmt.Fprintf(w, "  status: %d\n", e.ResponseStatus)
 	fmt.Fprintln(w, "  headers:")
-	for k, _ := range e.ResponseHeaders {
+	for k := range e.ResponseHeaders {
 		fmt.Fprintf(w, "    %s: %s\n", k, e.ResponseHeaders.Get(k))
 	}
 	fmt.Fprintf(w, "payload [%d bytes]:\n", len(e.Payload))

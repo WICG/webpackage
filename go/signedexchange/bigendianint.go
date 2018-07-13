@@ -18,9 +18,6 @@ func Encode3BytesBigEndianUint(n int) ([3]byte, error) {
 	}, nil
 }
 
-func Decode3BytesBigEndianUint(b []byte) int {
-	if len(b) != 3 {
-		panic("len(b) must be 3")
-	}
+func Decode3BytesBigEndianUint(b [3]byte) int {
 	return int(b[0])<<16 | int(b[1])<<8 | int(b[2])
 }
