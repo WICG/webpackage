@@ -185,7 +185,7 @@ func TestSignedExchange(t *testing.T) {
 		t.Errorf("unexpected magic: %q", magic)
 	}
 
-	var encodedSigLength [3]byte
+	encodedSigLength := [3]byte{}
 	if _, err := io.ReadFull(&buf, encodedSigLength[:]); err != nil {
 		t.Fatal(err)
 	}
@@ -195,7 +195,7 @@ func TestSignedExchange(t *testing.T) {
 		t.Errorf("Unexpected sigLength: %d", sigLength)
 	}
 
-	var encodedHeaderLength [3]byte
+	encodedHeaderLength := [3]byte{}
 	if _, err := io.ReadFull(&buf, encodedHeaderLength[:]); err != nil {
 		t.Fatal(err)
 	}
