@@ -81,3 +81,11 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
       ```
 
 [1]: You can deploy your own HTTPS server or use a cloud hosting service. Note that the server must support configuring "Content-Type" HTTP headers, like [Firebase Hosting](https://firebase.google.com/docs/hosting/).
+
+### Dump a signed exchange file
+
+You can dump the content of your sxg file by dump-signedexchange. If you want to see the content of the signed exchange file `example.org.hello.sxg` you created above, run this command.
+
+```
+dump-signedexchange -i example.org.hello.sxg
+```
