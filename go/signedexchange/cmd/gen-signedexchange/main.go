@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto"
 	"encoding/pem"
 	"flag"
 	"fmt"
@@ -78,13 +79,23 @@ func run() error {
 		return fmt.Errorf("failed to read private key file %q. err: %v", *flagPrivateKey, err)
 	}
 
-	parsedPrivKey, _ := pem.Decode(privkeytext)
-	if parsedPrivKey == nil {
-		return fmt.Errorf("invalid private key")
+	var privkey crypto.PrivateKey
+	for {
+		var parsedPrivKey *pem.Block
+		parsedPrivKey, privkeytext = pem.Decode(privkeytext)
+		if parsedPrivKey == nil {
+			return fmt.Errorf("invalid private key")
+		}
+
+		var err error
+		privkey, err = signedexchange.ParsePrivateKey(parsedPrivKey.Bytes)
+		if err == nil || len(privkeytext) == 0 {
+			break
+		}
+		// Else try next PEM block.
 	}
-	privkey, err := signedexchange.ParsePrivateKey(parsedPrivKey.Bytes)
-	if err != nil {
-		return fmt.Errorf("failed to parse private key file %q. err: %v", *flagPrivateKey, err)
+	if privkey == nil {
+		return fmt.Errorf("failed to parse private key file %q.", *flagPrivateKey)
 	}
 
 	f, err := os.OpenFile(*flagOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
