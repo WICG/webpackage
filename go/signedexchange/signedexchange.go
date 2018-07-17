@@ -251,7 +251,7 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 	}
 
 	// Step 2. "3 bytes storing a big-endian integer sigLength. If this is larger than TBD, parsing MUST fail." [spec text]
-	encodedSigLength, err := bigendian.Encode3BytesBigEndianUint(len(e.SignatureHeaderValue))
+	encodedSigLength, err := bigendian.Encode3BytesUint(len(e.SignatureHeaderValue))
 	if err != nil {
 		return err
 	}
@@ -267,7 +267,7 @@ func WriteExchangeFile(w io.Writer, e *Exchange) error {
 	}
 
 	headerLength := headerBuf.Len()
-	encodedHeaderLength, err := bigendian.Encode3BytesBigEndianUint(headerLength)
+	encodedHeaderLength, err := bigendian.Encode3BytesUint(headerLength)
 	if err != nil {
 		return err
 	}
@@ -311,14 +311,14 @@ func ReadExchangeFile(r io.Reader) (*Exchange, error) {
 	if _, err := io.ReadFull(r, sigLengthBytes[:]); err != nil {
 		return nil, err
 	}
-	sigLength := bigendian.Decode3BytesBigEndianUint(sigLengthBytes)
+	sigLength := bigendian.Decode3BytesUint(sigLengthBytes)
 
 	// Step 3. "3 bytes storing a big-endian integer headerLength. If this is larger than TBD, parsing MUST fail." [spec text]
 	headerLengthBytes := [3]byte{}
 	if _, err := io.ReadFull(r, headerLengthBytes[:]); err != nil {
 		return nil, err
 	}
-	headerLength := bigendian.Decode3BytesBigEndianUint(headerLengthBytes)
+	headerLength := bigendian.Decode3BytesUint(headerLengthBytes)
 
 	e := &Exchange{
 		RequestHeaders:  http.Header{},
