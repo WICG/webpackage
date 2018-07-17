@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/WICG/webpackage/go/signedexchange"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
@@ -13,10 +14,10 @@ import (
 var (
 	pemFilepath  = flag.String("pem", "", "PEM filepath")
 	ocspFilepath = flag.String("ocsp", "", "DER-encoded OCSP response file. If omitted, fetched from network")
-	sctFilepath  = flag.String("sct", "", "SCT filepath")
+	sctDirpath   = flag.String("sctDir", "", "Directory containing .sct files")
 )
 
-func run(pemFilePath, ocspFilePath, sctFilePath string) error {
+func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 	pem, err := ioutil.ReadFile(pemFilePath)
 	if err != nil {
 		return err
@@ -39,15 +40,27 @@ func run(pemFilePath, ocspFilePath, sctFilePath string) error {
 		}
 	}
 
-	var sct []byte
-	if sctFilePath != "" {
-		sct, err = ioutil.ReadFile(sctFilePath)
+	var sctList []byte
+	if sctDirPath != "" {
+		files, err := filepath.Glob(filepath.Join(sctDirPath, "*.sct"))
+		if err != nil {
+			return err
+		}
+		scts := [][]byte{}
+		for _, file := range files {
+			sct, err := ioutil.ReadFile(file)
+			if err != nil {
+				return err
+			}
+			scts = append(scts, sct)
+		}
+		sctList, err = certurl.SerializeSCTList(scts)
 		if err != nil {
 			return err
 		}
 	}
 
-	out, err := certurl.CreateCertChainCBOR(certs, ocsp, sct)
+	out, err := certurl.CreateCertChainCBOR(certs, ocsp, sctList)
 	if err != nil {
 		return err
 	}
@@ -65,7 +78,7 @@ func main() {
 		return
 	}
 
-	if err := run(*pemFilepath, *ocspFilepath, *sctFilepath); err != nil {
+	if err := run(*pemFilepath, *ocspFilepath, *sctDirpath); err != nil {
 		log.Fatal(err)
 	}
 }
