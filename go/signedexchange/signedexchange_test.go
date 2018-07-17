@@ -12,6 +12,7 @@ import (
 	"time"
 
 	. "github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
 	"github.com/WICG/webpackage/go/signedexchange/internal/testhelper"
 )
 
@@ -189,7 +190,7 @@ func TestSignedExchange(t *testing.T) {
 	if _, err := io.ReadFull(&buf, encodedSigLength[:]); err != nil {
 		t.Fatal(err)
 	}
-	sigLength := Decode3BytesBigEndianUint(encodedSigLength)
+	sigLength := bigendian.Decode3BytesBigEndianUint(encodedSigLength)
 
 	if sigLength != len(expectedSignatureHeader) {
 		t.Errorf("Unexpected sigLength: %d", sigLength)
@@ -199,7 +200,7 @@ func TestSignedExchange(t *testing.T) {
 	if _, err := io.ReadFull(&buf, encodedHeaderLength[:]); err != nil {
 		t.Fatal(err)
 	}
-	headerLength := Decode3BytesBigEndianUint(encodedHeaderLength)
+	headerLength := bigendian.Decode3BytesBigEndianUint(encodedHeaderLength)
 
 	signatureHeaderBytes := make([]byte, sigLength)
 	if _, err := io.ReadFull(&buf, signatureHeaderBytes); err != nil {
