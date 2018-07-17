@@ -46,8 +46,8 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
 
 1. Convert the PEM certificate to `application/cert-chain+cbor` format using `gen-certurl` tool.
     ```
-    # Fill in dummy data for OCSP/SCT, since the certificate is self-signed.
-    gen-certurl -pem cert.pem -ocsp <(echo ocsp) -sct <(echo sct) > cert.cbor
+    # Fill in dummy data for OCSP, since the certificate is self-signed.
+    gen-certurl -pem cert.pem -ocsp <(echo ocsp) > cert.cbor
     ```
 
 1. Host the `application/cert-chain+cbor` created in Step 3 on the HTTPS server. Configure the resource to be served with `Content-Type: application/cert-chain+cbor` HTTP header. The steps below assume the `cert.cbor` is hosted at `https://yourcdn.example.net/cert.cbor`, so substitute the URL to the actual URL in below steps.
