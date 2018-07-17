@@ -81,14 +81,14 @@ func run() error {
 
 	var privkey crypto.PrivateKey
 	for {
-		var parsedPrivKey *pem.Block
-		parsedPrivKey, privkeytext = pem.Decode(privkeytext)
-		if parsedPrivKey == nil {
-			return fmt.Errorf("invalid private key")
+		var pemBlock *pem.Block
+		pemBlock, privkeytext = pem.Decode(privkeytext)
+		if pemBlock == nil {
+			return fmt.Errorf("invalid PEM block in private key file %q.", *flagPrivateKey)
 		}
 
 		var err error
-		privkey, err = signedexchange.ParsePrivateKey(parsedPrivKey.Bytes)
+		privkey, err = signedexchange.ParsePrivateKey(pemBlock.Bytes)
 		if err == nil || len(privkeytext) == 0 {
 			break
 		}
