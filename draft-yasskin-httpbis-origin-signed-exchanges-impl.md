@@ -901,7 +901,7 @@ This content type consists of the concatenation of the following items:
 1. 3 bytes storing a big-endian integer `sigLength`. If this is larger
    than 16kB, parsing MUST fail.
 1. 3 bytes storing a big-endian integer `headerLength`. If this is larger than
-   16kB, parsing MUST fail.
+   512kB, parsing MUST fail.
 1. `sigLength` bytes holding the `Signature` header field's value
    ({{signature-header}}).
 1. `headerLength` bytes holding the signed headers, the canonical serialization
