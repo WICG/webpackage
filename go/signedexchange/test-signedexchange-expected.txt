@@ -1,1 +1,1 @@
-[map[":method":"GET" ":url":"https://example.com/"] map[":status":"200" "content-encoding":"mi-sha256" "content-type":"text/html; charset=utf-8" "foo":"Bar,Baz" "mi":"mi-sha256=DRyBGPb7CAW2ukzb9sT1S1ialssthiv6QW7Ks-Trg4Y"]]
+[map[":method":"GET" ":url":"https://example.com/"] map[":status":"200" "content-encoding":"mi-sha256-draft2" "content-type":"text/html; charset=utf-8" "foo":"Bar,Baz" "mi-draft2":"mi-sha256-draft2=DRyBGPb7CAW2ukzb9sT1S1ialssthiv6QW7Ks-Trg4Y"]]
