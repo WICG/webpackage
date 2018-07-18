@@ -65,7 +65,7 @@ func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseH
 }
 
 func (e *Exchange) MiEncodePayload(recordSize int) error {
-	if e.ResponseHeaders.Get("MI") != "" {
+	if e.ResponseHeaders.Get("MI-Draft2") != "" {
 		return errors.New("Payload already MI encoded.")
 	}
 
@@ -75,8 +75,8 @@ func (e *Exchange) MiEncodePayload(recordSize int) error {
 		return err
 	}
 	e.Payload = buf.Bytes()
-	e.ResponseHeaders.Add("Content-Encoding", "mi-sha256")
-	e.ResponseHeaders.Add("MI", mi)
+	e.ResponseHeaders.Add("Content-Encoding", "mi-sha256-draft2")
+	e.ResponseHeaders.Add("MI-Draft2", mi)
 	return nil
 }
 

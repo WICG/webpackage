@@ -137,7 +137,7 @@ func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
 
 	label := "label"
 	sigb64 := base64.StdEncoding.EncodeToString(sig)
-	integrityStr := "mi"
+	integrityStr := "mi-draft2"
 	certUrl := s.CertUrl.String()
 	validityUrl := s.ValidityUrl.String()
 	certSha256b64 := base64.StdEncoding.EncodeToString(certSha256(s.Certs))
