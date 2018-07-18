@@ -23,11 +23,16 @@ func SerializeSCTList(scts [][]byte) ([]byte, error) {
 	}
 
 	var buf bytes.Buffer
-	buf.Grow(total_length + 2) // +2 for length
-	binary.Write(&buf, binary.BigEndian, uint16(total_length))
+	if err := binary.Write(&buf, binary.BigEndian, uint16(total_length)); err != nil {
+		return nil, err
+	}
 	for _, sct := range scts {
-		binary.Write(&buf, binary.BigEndian, uint16(len(sct)))
-		buf.Write(sct)
+		if err := binary.Write(&buf, binary.BigEndian, uint16(len(sct))); err != nil {
+			return nil, err
+		}
+		if _, err := buf.Write(sct); err != nil {
+			return nil, err
+		}
 	}
 	return buf.Bytes(), nil
 }
