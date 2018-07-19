@@ -7,7 +7,7 @@ import (
 	"crypto/sha256"
 	"testing"
 
-	"github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/signedexchange/internal/signingalgorithm"
 )
 
 func TestSignVerify_RSA_PSS_SHA256(t *testing.T) {
@@ -17,7 +17,7 @@ func TestSignVerify_RSA_PSS_SHA256(t *testing.T) {
 		return
 	}
 
-	alg, err := signedexchange.SigningAlgorithmForPrivateKey(pk, rand.Reader)
+	alg, err := signingalgorithm.SigningAlgorithmForPrivateKey(pk, rand.Reader)
 	if err != nil {
 		t.Errorf("Failed to pick signing algorithm for rsa private key: %v", err)
 		return
