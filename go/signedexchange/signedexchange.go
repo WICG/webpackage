@@ -368,6 +368,7 @@ func (e *Exchange) PrettyPrint(w io.Writer) {
 	for k := range e.ResponseHeaders {
 		fmt.Fprintf(w, "    %s: %s\n", k, e.ResponseHeaders.Get(k))
 	}
+	fmt.Fprintf(w, "signature: %s\n", e.SignatureHeaderValue)
 	fmt.Fprintf(w, "payload [%d bytes]:\n", len(e.Payload))
 	w.Write(e.Payload)
 }
