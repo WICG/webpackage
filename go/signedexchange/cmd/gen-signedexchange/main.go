@@ -155,7 +155,7 @@ func run() error {
 		return err
 	}
 
-	if err := signedexchange.WriteExchangeFile(f, e); err != nil {
+	if err := e.Write(f); err != nil {
 		return fmt.Errorf("failed to write exchange. err: %v", err)
 	}
 	return nil

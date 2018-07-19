@@ -231,7 +231,7 @@ func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
 }
 
 // draft-yasskin-http-origin-signed-responses.html#application-http-exchange
-func WriteExchangeFile(w io.Writer, e *Exchange) error {
+func (e *Exchange) Write(w io.Writer) error {
 	// Step 1. "The ASCII characters "sxg1" followed by a 0 byte, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don't." [spec text]
 	// "Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific string beginning with "sxg1-" and ending with a 0 byte instead." [spec text]
 	if _, err := w.Write(HeaderMagicBytes); err != nil {
