@@ -125,18 +125,6 @@ func normalizeHeaderValues(values []string) string {
 	return strings.Join(values, ",")
 }
 
-func (e *Exchange) EncodeRequestWithHeaders(enc *cbor.Encoder) error {
-	mes := e.encodeRequestCommon(enc)
-	for name, value := range e.RequestHeaders {
-		mes = append(mes,
-			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-				keyE.EncodeByteString([]byte(strings.ToLower(name)))
-				valueE.EncodeByteString([]byte(normalizeHeaderValues(value)))
-			}))
-	}
-	return enc.EncodeMap(mes)
-}
-
 func (e *Exchange) decodeRequest(dec *cbor.Decoder) error {
 	n, err := dec.DecodeMapHeader()
 	if err != nil {
