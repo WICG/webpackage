@@ -1,4 +1,4 @@
-package signedexchange
+package signingalgorithm
 
 import (
 	"crypto"

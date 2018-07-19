@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
+	"github.com/WICG/webpackage/go/signedexchange/internal/signingalgorithm"
 )
 
 // contextString is the "context string" in Step 7.2 of
@@ -109,7 +110,7 @@ func (s *Signer) sign(e *Exchange) ([]byte, error) {
 	if r == nil {
 		r = rand.Reader
 	}
-	alg, err := SigningAlgorithmForPrivateKey(s.PrivKey, r)
+	alg, err := signingalgorithm.SigningAlgorithmForPrivateKey(s.PrivKey, r)
 	if err != nil {
 		return nil, err
 	}
