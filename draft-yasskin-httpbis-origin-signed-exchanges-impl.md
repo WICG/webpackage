@@ -60,13 +60,12 @@ informative:
     seriesinfo:
       Internet-Draft: draft-yasskin-http-origin-signed-responses-04
     date: 2018-06-14
-  SRI: W3C.REC-SRI-20160623
 
 --- abstract
 
 This document describes checkpoints of
-{{?I-D.yasskin-http-origin-signed-responses}} to synchronize implementation
-between clients, intermediates, and publishers.
+draft-yasskin-http-origin-signed-responses to synchronize implementation between
+clients, intermediates, and publishers.
 
 --- note_Note_to_Readers
 
