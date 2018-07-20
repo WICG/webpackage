@@ -934,7 +934,7 @@ defined in Appendix G of {{?I-D.ietf-cbor-cddl}}, and most of the `Signature`
 header field and payload elided with a ...:
 
 ~~~
-sxg1\0<3-byte length of the following header
+sxg1-b1\0<3-byte length of the following header
 value><3-byte length of the encoding of the
 following array>sig1; sig=*...; integrity="mi-draft2"; ...[
   {
