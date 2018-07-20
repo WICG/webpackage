@@ -1027,7 +1027,8 @@ Vs. {{I-D.yasskin-http-origin-signed-responses-04}}:
 * Signed exchanges cannot be transmitted using HTTP/2 Push.
 * Removed non-normative sections.
 * The mi-sha256 encoding must have records <= 16kB.
-* The signature and HTTP headers must each be <=16kB long.
+* The signature must be <=16kB long.
+* The HTTP request and response headers together must be <=512kB.
 * Versions in file signatures and context strings are "b1".
 * Only 1 signature is supported.
 * Removed support for ed25519 signatures.
