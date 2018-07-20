@@ -12,7 +12,7 @@ import (
 
 const maxSerializedSCTLength = 0xffff
 
-// Serializes a list of SignedCertificateTimestamps into a
+// SerializeSCTList serializes a list of SignedCertificateTimestamps into a
 // SignedCertificateTimestampList (RFC6962 Section 3.3).
 func SerializeSCTList(scts [][]byte) ([]byte, error) {
 	total_length := 0
@@ -41,7 +41,8 @@ func SerializeSCTList(scts [][]byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Returns true if the certificate or the OCSP response have embedded SCT list.
+// HasEmbeddedSCT returns true if the certificate or the OCSP response have
+// embedded SCT list.
 func HasEmbeddedSCT(cert *x509.Certificate, ocsp_resp *ocsp.Response) bool {
 	// OIDs for embedded SCTs (Section 3.3 of RFC6962).
 	oidCertExtension := asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 11129, 2, 4, 2}
