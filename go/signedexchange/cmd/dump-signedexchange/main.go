@@ -23,7 +23,7 @@ func run() error {
 		defer in.Close()
 	}
 
-	e, err := signedexchange.ReadExchangeFile(in)
+	e, err := signedexchange.ReadExchange(in)
 	if err != nil {
 		return err
 	}

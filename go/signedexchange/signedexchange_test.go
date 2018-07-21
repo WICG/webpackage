@@ -174,7 +174,7 @@ func TestSignedExchange(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	if err := WriteExchangeFile(&buf, e); err != nil {
+	if err := e.Write(&buf); err != nil {
 		t.Fatal(err)
 	}
 
