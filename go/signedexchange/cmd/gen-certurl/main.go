@@ -29,19 +29,19 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 		return err
 	}
 
-	var ocsp_der []byte
+	var ocspDer []byte
 	if *ocspFilepath == "" {
-		ocsp_der, err = certurl.FetchOCSPResponse(certs)
+		ocspDer, err = certurl.FetchOCSPResponse(certs)
 		if err != nil {
 			return err
 		}
 	} else {
-		ocsp_der, err = ioutil.ReadFile(ocspFilePath)
+		ocspDer, err = ioutil.ReadFile(ocspFilePath)
 		if err != nil {
 			return err
 		}
 	}
-	parsed_ocsp, err := ocsp.ParseResponse(ocsp_der, nil)
+	parsedOcsp, err := ocsp.ParseResponse(ocspDer, nil)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Warning: ocsp is not a correct DER-encoded OCSP response.")
 	}
@@ -65,12 +65,12 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 			return err
 		}
 	} else {
-		if !certurl.HasEmbeddedSCT(certs[0], parsed_ocsp) {
+		if !certurl.HasEmbeddedSCT(certs[0], parsedOcsp) {
 			fmt.Fprintln(os.Stderr, "Warning: Neither cert nor OCSP have embedded SCT list. Use -sctDir flag to add SCT from files.")
 		}
 	}
 
-	out, err := certurl.CreateCertChainCBOR(certs, ocsp_der, sctList)
+	out, err := certurl.CreateCertChainCBOR(certs, ocspDer, sctList)
 	if err != nil {
 		return err
 	}
