@@ -82,6 +82,65 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
 
 [1]: You can deploy your own HTTPS server or use a cloud hosting service. Note that the server must support configuring "Content-Type" HTTP headers, like [Firebase Hosting](https://firebase.google.com/docs/hosting/).
 
+### Creating a signed exchange using a trusted certificate
+
+In this section, you will create a signed exchange using a certificate issued by a publicly trusted CA.
+
+As of July 2018, there are no CA that issues certificate with ["CanSignHttpExchanges" extension](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req). So, created signed exchange can be used only for testing.
+
+1. Get a certificate from a CA. You have to use prime256v1 ecdsa keys, as you did in the previous section. Please follow the CA's instructions.
+
+   Assume you got a server certificate `server.pem` and an intermediate certificate `intermediates.pem`. The tools need all certificates in a single file, so concatenate them.
+    ```
+    cat server.pem intermediates.pem > cert-chain.pem
+    ```
+
+1. Convert the PEM certificate to `application/cert-chain+cbor` format using `gen-certurl` tool.
+    ```
+    gen-certurl -pem cert-chain.pem > cert.cbor
+    ```
+    If you got the warning message `Warning: Neither cert nor OCSP have embedded SCT list. Use -sctDir flag to add SCT from files.`, you need to prepare SCT files.
+
+    Otherwise, you can skip the next step.
+
+1. To get SCTs, submit your certificate chain to [Certificate Transparency](http://www.certificate-transparency.org/) log servers.
+
+   1. Install a tool to submit certificates to log servers.
+      ```
+      go get github.com/grahamedgecombe/ct-submit
+      ```
+   2. Submit your cert chain to logs as appropriate, and write out SCTs:
+      ```
+      mkdir scts
+      ct-submit ct.googleapis.com/logs/argon2018 < cert-chain.pem > scts/argon2018.sct
+      ct-submit ct.cloudflare.com/logs/nimbus2018 < cert-chain.pem > scts/nimbus2018.sct
+      ```
+   3. Create a cert-chain with the obtained SCTs.
+      ```
+      gen-certurl -pem cert-chain.pem -sctDir scts > cert.cbor
+      ```
+
+1. Host `cert.cbor` on a HTTPS server. Please see the previous section for details.
+
+1. Generate the signed exchange using `gen-signedexchange` tool. `priv.key` is the private key used to create your certificate.
+    ```
+    gen-signedexchange \
+      -uri https://example.org/hello.html \
+      -content ./payload.html \
+      -certificate cert-chain.pem \
+      -privateKey priv.key \
+      -certUrl https://yourcdn.example.net/cert.cbor \
+      -validityUrl https://example.org/resource.validity.msg \
+      -o example.org.hello.sxg
+    ```
+
+1. Host `example.org.hello.sxg` on a HTTPS server. Please see the previous section for details.
+
+1. Navigate to the signed exchange URL using a web browser supporting signed exchanges.
+    - As of July 2018, you can use Chrome M69 [Dev](https://www.google.com/chrome/?extra=devchannel)/[Canary](https://www.google.com/chrome/browser/canary.html) versions with the following two flags enabled:
+      - chrome://flags/#enable-signed-http-exchange
+      - chrome://flags/#allow-sxg-certs-without-extension
+
 ### Dump a signed exchange file
 
 You can dump the content of your sxg file by dump-signedexchange. If you want to see the content of the signed exchange file `example.org.hello.sxg` you created above, run this command.
