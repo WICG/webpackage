@@ -2,13 +2,17 @@ package certurl
 
 import (
 	"bytes"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/binary"
 	"fmt"
+	"golang.org/x/crypto/ocsp"
 )
 
 const maxSerializedSCTLength = 0xffff
 
-// Serializes a list of SignedCertificateTimestamps into a
+// SerializeSCTList serializes a list of SignedCertificateTimestamps into a
 // SignedCertificateTimestampList (RFC6962 Section 3.3).
 func SerializeSCTList(scts [][]byte) ([]byte, error) {
 	total_length := 0
@@ -35,4 +39,24 @@ func SerializeSCTList(scts [][]byte) ([]byte, error) {
 		}
 	}
 	return buf.Bytes(), nil
+}
+
+// HasEmbeddedSCT returns true if the certificate or the OCSP response have
+// embedded SCT list.
+func HasEmbeddedSCT(cert *x509.Certificate, ocsp_resp *ocsp.Response) bool {
+	// OIDs for embedded SCTs (Section 3.3 of RFC6962).
+	oidCertExtension := asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 11129, 2, 4, 2}
+	oidOCSPExtension := asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 11129, 2, 4, 5}
+
+	return (cert != nil && hasExtensionWithOID(cert.Extensions, oidCertExtension)) ||
+		(ocsp_resp != nil && hasExtensionWithOID(ocsp_resp.Extensions, oidOCSPExtension))
+}
+
+func hasExtensionWithOID(extensions []pkix.Extension, oid asn1.ObjectIdentifier) bool {
+	for _, ext := range extensions {
+		if ext.Id.Equal(oid) {
+			return true
+		}
+	}
+	return false
 }

@@ -44,7 +44,7 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
       -extfile <(echo -e "1.3.6.1.4.1.11129.2.1.22 = ASN1:NULL\nsubjectAltName=DNS:example.org")
     ```
 
-1. Convert the PEM certificate to `application/cert-chain+cbor` format using `gen-certurl` tool.
+1. Convert the PEM certificate to `application/cert-chain+cbor` format using `gen-certurl` tool. This command will show warnings about OCSP and SCT, but you can ignore them.
     ```
     # Fill in dummy data for OCSP, since the certificate is self-signed.
     gen-certurl -pem cert.pem -ocsp <(echo ocsp) > cert.cbor

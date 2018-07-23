@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"golang.org/x/crypto/ocsp"
 	"io/ioutil"
 	"log"
 	"os"
@@ -27,17 +29,21 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 		return err
 	}
 
-	var ocsp []byte
+	var ocspDer []byte
 	if *ocspFilepath == "" {
-		ocsp, err = certurl.FetchOCSPResponse(certs)
+		ocspDer, err = certurl.FetchOCSPResponse(certs)
 		if err != nil {
 			return err
 		}
 	} else {
-		ocsp, err = ioutil.ReadFile(ocspFilePath)
+		ocspDer, err = ioutil.ReadFile(ocspFilePath)
 		if err != nil {
 			return err
 		}
+	}
+	parsedOcsp, err := ocsp.ParseResponse(ocspDer, nil)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Warning: ocsp is not a correct DER-encoded OCSP response.")
 	}
 
 	var sctList []byte
@@ -58,9 +64,13 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 		if err != nil {
 			return err
 		}
+	} else {
+		if !certurl.HasEmbeddedSCT(certs[0], parsedOcsp) {
+			fmt.Fprintln(os.Stderr, "Warning: Neither cert nor OCSP have embedded SCT list. Use -sctDir flag to add SCT from files.")
+		}
 	}
 
-	out, err := certurl.CreateCertChainCBOR(certs, ocsp, sctList)
+	out, err := certurl.CreateCertChainCBOR(certs, ocspDer, sctList)
 	if err != nil {
 		return err
 	}
