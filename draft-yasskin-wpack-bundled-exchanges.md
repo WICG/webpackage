@@ -383,7 +383,10 @@ map, and the `metadata` map to fill in, the parser MUST do the following:
 ### Parsing the manifest section {#manifest-section}
 
 The "manifest" section records a single URL identifying the manifest of the
-bundle. The bundle can contain multiple resources at this URL, and the client is
+bundle. The URL MUST refer to the one or more response(s) contained in the
+bundle itself.
+
+The bundle can contain multiple resources at this URL, and the client is
 expected to content-negotiate for the best one. For example, a client might
 select the one with an `accept` header of `application/manifest+json`
 ({{appmanifest}}) and an `accept-language` header of `es-419`.
@@ -744,6 +747,7 @@ draft-01
 
 * Order the index in the same order as the responses, and require responses to
   be sequential without gaps.
+* "manifest" needs to be embedded into the bundle.
 
 # Acknowledgements
 
