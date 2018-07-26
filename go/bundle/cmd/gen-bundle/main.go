@@ -19,7 +19,7 @@ import (
 
 var (
 	flagInput  = flag.String("i", "in.har", "HTTP Archive (HAR) input file")
-	flagOutput = flag.String("o", "out.webbundle", "Webbundle output file")
+	flagOutput = flag.String("o", "out.wbn", "Webbundle output file")
 )
 
 func ReadHar(r io.Reader) (*hargo.Har, error) {
