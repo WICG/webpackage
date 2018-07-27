@@ -20,7 +20,7 @@ func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w}
 }
 
-func (e *Encoder) encodeTypedUInt(t Type, n uint64) error {
+func (e *Encoder) encodeTypedUint(t Type, n uint64) error {
 	// Major type 0:  an unsigned integer.  The 5-bit additional information
 	//   is either the integer itself (for additional information values 0
 	//   through 23) or the length of additional data.  Additional
@@ -66,13 +66,13 @@ func (e *Encoder) encodeTypedUInt(t Type, n uint64) error {
 	return nil
 }
 
-func (e *Encoder) EncodeUInt(n uint64) error {
-	return e.encodeTypedUInt(TypePosInt, n)
+func (e *Encoder) EncodeUint(n uint64) error {
+	return e.encodeTypedUint(TypePosInt, n)
 }
 
 func (e *Encoder) EncodeInt(n int64) error {
 	if n >= 0 {
-		return e.encodeTypedUInt(TypePosInt, uint64(n))
+		return e.encodeTypedUint(TypePosInt, uint64(n))
 	}
 
 	// Major type 1:  a negative integer.  The encoding follows the rules
@@ -83,11 +83,11 @@ func (e *Encoder) EncodeInt(n int64) error {
 	//   decimal.
 	//
 	// https://tools.ietf.org/html/rfc7049#section-2.1
-	return e.encodeTypedUInt(TypeNegInt, uint64(-n)-1)
+	return e.encodeTypedUint(TypeNegInt, uint64(-n)-1)
 }
 
 func (e *Encoder) encodeBytes(t Type, bs []byte) error {
-	if err := e.encodeTypedUInt(t, uint64(len(bs))); err != nil {
+	if err := e.encodeTypedUint(t, uint64(len(bs))); err != nil {
 		return err
 	}
 	if _, err := e.w.Write(bs); err != nil {
@@ -147,11 +147,11 @@ func (e *Encoder) EncodeArrayHeader(n int) error {
 	//   items.
 	//
 	// https://tools.ietf.org/html/rfc7049#section-2.1
-	return e.encodeTypedUInt(TypeArray, uint64(n))
+	return e.encodeTypedUint(TypeArray, uint64(n))
 }
 
 func (e *Encoder) encodeMapHeader(n int) error {
-	return e.encodeTypedUInt(TypeMap, uint64(n))
+	return e.encodeTypedUint(TypeMap, uint64(n))
 }
 
 func (e *Encoder) EncodeBool(b bool) error {

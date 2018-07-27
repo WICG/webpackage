@@ -12,6 +12,7 @@ import (
 	"time"
 
 	. "github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
 	"github.com/WICG/webpackage/go/signedexchange/internal/testhelper"
 )
 
@@ -109,7 +110,7 @@ s5B6gZsV/ojttR+aaeRknfrhQwEIA/k2r2oZE9yp8djzyiiqGswgw8yO0WSJztbx
 GRqzPwjon7ESIVpKLrVuh5qlMhUkOFUeF9wvViWX4qnV5Fvg
 -----END RSA PRIVATE KEY-----
 `
-	expectedSignatureHeader = "label; sig=*WBpXmSAfHvg0ONKuqGy1sI0+U0j7kE7ZoclSxr1/VZwvHvwU5exZR2jD7HnCMkvSQBtoMseXkXwy/75xwDfksIH+vpGPyb51FNwONOO9HwCzlIN3IM1KIqgm/OQNKoNJs7CGZw9S+m+aj+n5cq6v30SU46jlgEn1qXzEhPLIE2x2eK2rBkk76ifqgjUuAwY46jOwq3ihjdGBakvbTrxjhGbhI3O1bn3Ueaucx5/dU+UKl+XqFq1r0kxIUF2KLXckPVYG4hVj2eHS9sGjG8C1vEDboxgcjB9lcmoryDCTCKfixQwSoZ+c84sb1x2rjjzuf8NskKReTsUExsiGsh9/Yg==*; validity-url=\"https://example.com/resource.validity\"; integrity=\"mi\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*ZC3lTYTDBJQVf1P2V7+fibTqbIsWNR/X7CWNVW+CEEA=*; date=1517418800; expires=1517422400"
+	expectedSignatureHeader = "label; sig=*jek3ixSX+eCsdAupr26+x9t1xhRq/qSSlYEBNvswPaGKl3kNBEoZP/416RIUhrZAHjHfvUafoikfaP4wc7NnuUMcTtXaU0iXrQ4vvHTXFoxejRzEGMxYTi70ZsK9r7cnqPb3Byd+6YSmlBCzX8lqvJ25Mio60n3sWqnv+WROJvMFsVVUTo6Z/RA4GiUZXFuskqRosQmGFu6YHxJa6PK1Y9/FTzFA79u2qXUWk0cLpaKBU7VpPdcVMxsQt4y5xOs9KgdEtIhLNi35//jyKxnk3s9TqCX0IQ2t0di34PsYn8YEZnOcv1OHGfJeaMKKYzOcSc2NwWTOb1VJ9pUpUFtB+A==*; validity-url=\"https://example.com/resource.validity\"; integrity=\"mi-draft2\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*ZC3lTYTDBJQVf1P2V7+fibTqbIsWNR/X7CWNVW+CEEA=*; date=1517418800; expires=1517422400"
 )
 
 type zeroReader struct{}
@@ -173,7 +174,7 @@ func TestSignedExchange(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	if err := WriteExchangeFile(&buf, e); err != nil {
+	if err := e.Write(&buf); err != nil {
 		t.Fatal(err)
 	}
 
@@ -185,21 +186,21 @@ func TestSignedExchange(t *testing.T) {
 		t.Errorf("unexpected magic: %q", magic)
 	}
 
-	var encodedSigLength [3]byte
+	encodedSigLength := [3]byte{}
 	if _, err := io.ReadFull(&buf, encodedSigLength[:]); err != nil {
 		t.Fatal(err)
 	}
-	sigLength := Decode3BytesBigEndianUint(encodedSigLength)
+	sigLength := bigendian.Decode3BytesUint(encodedSigLength)
 
 	if sigLength != len(expectedSignatureHeader) {
 		t.Errorf("Unexpected sigLength: %d", sigLength)
 	}
 
-	var encodedHeaderLength [3]byte
+	encodedHeaderLength := [3]byte{}
 	if _, err := io.ReadFull(&buf, encodedHeaderLength[:]); err != nil {
 		t.Fatal(err)
 	}
-	headerLength := Decode3BytesBigEndianUint(encodedHeaderLength)
+	headerLength := bigendian.Decode3BytesUint(encodedHeaderLength)
 
 	signatureHeaderBytes := make([]byte, sigLength)
 	if _, err := io.ReadFull(&buf, signatureHeaderBytes); err != nil {
@@ -240,7 +241,7 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	header.Add("Set-Cookie", "wow, such cookie")
 
 	if _, err := NewExchange(u, nil, 200, header, []byte(payload)); err == nil {
-		t.Fatal(err)
+		t.Errorf("stateful header unexpectedly allowed in an exchange")
 	}
 
 	// Header names are case-insensitive.
@@ -250,6 +251,43 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	header.Add("setProfile", "profile X")
 
 	if _, err := NewExchange(u, nil, 200, header, []byte(payload)); err == nil {
+		t.Errorf("stateful header unexpectedly allowed in an exchange")
+	}
+}
+
+func TestSignedExchangeNonHttps(t *testing.T) {
+	u, _ := url.Parse("http://example.com/")
+	if _, err := NewExchange(u, nil, 200, http.Header{}, []byte(payload)); err == nil {
+		t.Errorf("non-https resource URI unexpectedly allowed in an exchange")
+	}
+}
+
+func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
+	u, _ := url.Parse("https://example.com/")
+	e, err := NewExchange(u, nil, 200, http.Header{}, []byte(payload))
+	if err != nil {
 		t.Fatal(err)
+	}
+	if err := e.MiEncodePayload(16); err != nil {
+		t.Fatal(err)
+	}
+
+	now := time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
+	certs, _ := ParseCertificates([]byte(pemCerts))
+	certUrl, _ := url.Parse("http://example.com/cert.msg")
+	validityUrl, _ := url.Parse("https://example.com/resource.validity")
+	derPrivateKey, _ := pem.Decode([]byte(pemPrivateKey))
+	privKey, _ := ParsePrivateKey(derPrivateKey.Bytes)
+	s := &Signer{
+		Date:        now,
+		Expires:     now.Add(1 * time.Hour),
+		Certs:       certs,
+		CertUrl:     certUrl,
+		ValidityUrl: validityUrl,
+		PrivKey:     privKey,
+		Rand:        zeroReader{},
+	}
+	if err := e.AddSignatureHeader(s); err == nil {
+		t.Errorf("non-{https,data} cert-url unexpectedly allowed in an exchange")
 	}
 }

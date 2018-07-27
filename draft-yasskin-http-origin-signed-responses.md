@@ -23,12 +23,6 @@ normative:
     author:
       org: WHATWG
     date: Living Standard
-  HTML:
-    target: https://html.spec.whatwg.org/multipage
-    title: HTML
-    author:
-      org: WHATWG
-    date: Living Standard
   POSIX:
     target: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/
     title: The Open Group Base Specifications Issue 7
@@ -47,34 +41,6 @@ normative:
     date: Living Standard
 
 informative:
-  DROWN:
-    target: https://drownattack.com/
-    title: The DROWN Attack
-    author:
-      - name: Nimrod Aviram
-      - name: Sebastian Schinzel
-      - name: Juraj Somorovsky
-      - name: Nadia Heninger
-      - name: Maik Dankel
-      - name: Jens Steube
-      - name: Luke Valenta
-      - name: David Adrian
-      - name: J. Alex Halderman
-      - name: Viktor Dukhovni
-      - name: Emilia Käsper
-      - name: Shaanan Cohney
-      - name: Susanne Engels
-      - name: Christof Paar
-      - name: Yuval Shavitt
-    date: 2016
-  ROBOT:
-    target: https://robotattack.org/
-    title: The ROBOT Attack
-    author:
-      - name: Hanno Böck
-      - name: Juraj Somorovsky
-      - name: Craig Young
-    date: 2017
   SRI: W3C.REC-SRI-20160623
 
 --- abstract
@@ -124,7 +90,15 @@ will provide a way to group signed exchanges into bundles that can be
 transmitted and stored together, but single signed exchanges are useful enough
 to standardize on their own.
 
-# Terminology
+# Terminology {#terminology}
+
+Absolute URL
+: A string for which the [URL
+ parser](https://url.spec.whatwg.org/#concept-url-parser) ({{URL}}), when run
+ without a base URL, returns a URL rather than a failure, and for which that URL
+ has a null fragment. This is similar to the [absolute-URL
+ string](https://url.spec.whatwg.org/#absolute-url-string) concept defined by
+ ({{URL}}) but might not include exactly the same strings.
 
 Author
 : The entity that wrote the content in a particular resource. This specification
@@ -213,8 +187,7 @@ values:
 "cert-url"
 
 : A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
-  [absolute-URL string](https://url.spec.whatwg.org/#absolute-url-string)
-  ({{URL}}).
+  absolute URL ({{terminology}}) with a scheme of "https" or "data".
 
 "cert-sha256"
 
@@ -229,8 +202,7 @@ values:
 {:#signature-validityurl} "validity-url"
 
 : A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
-  [absolute-URL string](https://url.spec.whatwg.org/#absolute-url-string)
-  ({{URL}}).
+  absolute URL ({{terminology}}) with a scheme of "https".
 
 "date" and "expires"
 
@@ -334,8 +306,8 @@ The CBOR representation of an exchange `exchange`'s headers is the CBOR
    * The byte string ':method' to the byte string containing `exchange`'s
      request's method.
    * The byte string ':url' to the byte string containing `exchange`'s request's
-     effective request URI, which MUST be an [absolute-URL
-     string](https://url.spec.whatwg.org/#absolute-url-string) ({{URL}}).
+     effective request URI, which MUST be an absolute URL ({{terminology}}) with
+     a scheme of "https".
    * For each request header field in `exchange` except for the `Host` header
      field, the header field's lowercase name as a byte string to the header
      field's value as a byte string.
@@ -359,7 +331,7 @@ Accept: */*
 
 HTTP/1.1 200
 Content-Type: text/html
-MI: mi-sha256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3
+MI: mi-sha256=dcRDgR2GM35DluAV13PzgnG6-pvQwPywfFvAu1UeFrs
 Signed-Headers: "content-type", "mi"
 
 <!doctype html>
@@ -378,7 +350,7 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
     ':method': 'GET',
   },
   {
-    'mi': 'mi-sha256=20addcf7368837f616d549f035bf6784ea6d4bf4817a3736cd2fc7a763897fe3',
+    'mi': 'mi-sha256=dcRDgR2GM35DluAV13PzgnG6-pvQwPywfFvAu1UeFrs',
     ':status': '200',
     'content-type': 'text/html'
   }
@@ -403,19 +375,19 @@ cert-chain = [
 ]
 ~~~
 
-The first item in the CBOR array is treated as the end-entity certificate, and
-the client will attempt to build a path ({{?RFC5280}}) to it from a trusted root
-using the other certificates in the chain.
+The first map (second item) in the CBOR array is treated as the end-entity
+certificate, and the client will attempt to build a path ({{?RFC5280}}) to it
+from a trusted root using the other certificates in the chain.
 
 1. Each `cert` value MUST be a DER-encoded X.509v3 certificate ({{!RFC5280}}).
    Other key/value pairs in the same array item define properties of this
    certificate.
-1. The first certificate's `ocsp` value if any MUST be a complete, DER-encoded
-   OCSP response for that certificate (using the ASN.1 type `OCSPResponse`
-   defined in {{!RFC6960}}). Subsequent certificates MUST NOT have an `ocsp`
-   value.
-1. Each certificate's `sct` value MUST be a `SignedCertificateTimestampList` for
-   that certificate as defined by Section 3.3 of {{!RFC6962}}.
+1. The first certificate's `ocsp` value MUST be a complete, DER-encoded OCSP
+   response for that certificate (using the ASN.1 type `OCSPResponse` defined in
+   {{!RFC6960}}). Subsequent certificates MUST NOT have an `ocsp` value.
+1. Each certificate's `sct` value if any MUST be a
+   `SignedCertificateTimestampList` for that certificate as defined by Section
+   3.3 of {{!RFC6962}}.
 
 Loading a `cert-url` takes a `forceFetch` flag. The client MUST:
 
@@ -651,7 +623,7 @@ Signature:
 At 2017-11-27 11:02 UTC, `sig1` and `sig2` have expired, but `thirdpartysig`
 doesn't exipire until 23:11 that night, so the client needs to fetch
 `https://example.com/resource.validity.1511157180` (the `validity-url` of `sig1`
-and `sig2`) to update those signatures. This URL might contain:
+and `sig2`) if it wishes to update those signatures. This URL might contain:
 
 ~~~cbor-diag
 {
@@ -734,7 +706,7 @@ Identifiers starting with "mi/" indicate that the client supports the `MI`
 header field ({{!I-D.thomson-http-mice}}) with the parameter from the HTTP MI
 Parameter Registry registry named in lower-case by the rest of the identifier.
 For example, "mi/mi-blake2" indicates support for Merkle integrity with the
-as-yet-unspecified mi-blake2 parameter, and "-digest/mi-sha256" indicates
+as-yet-unspecified mi-blake2 parameter, and "-mi/mi-sha256" indicates
 non-support for Merkle integrity with the mi-sha256 content encoding.
 
 If the `Accept-Signature` header field is present, servers SHOULD assume support
@@ -925,21 +897,20 @@ able to make even one unauthorized signature.
 Certificates with this extension MUST be revoked if an unauthorized entity is
 able to make even one unauthorized signature.
 
-Conforming CAs MUST mark this extension as critical, and clients MUST NOT accept
-certificates with this extension in TLS connections (Section 4.4.2.2 of
-{{!I-D.ietf-tls-tls13}}).  This simplifies security analysis of this protocol
-and avoids encouraging server operators to put exchange-signing keys on servers
-exposed directly to the internet.
+Conforming CAs MUST NOT mark this extension as critical.
+
+Clients MUST NOT accept certificates with this extension in TLS connections
+(Section 4.4.2.2 of {{!I-D.ietf-tls-tls13}}).
 
 RFC EDITOR PLEASE DELETE THE REST OF THE PARAGRAPHS IN THIS SECTION
 
 ~~~asn.1
    id-ce-google OBJECT IDENTIFIER ::= { 1 3 6 1 4 1 11129 }
-   id-ce-testCanSignHttpExchanges OBJECT IDENTIFIER ::= { id-ce-google 2 1 22 }
+   id-ce-canSignHttpExchangesDraft OBJECT IDENTIFIER ::= { id-ce-google 2 1 22 }
 ~~~
 
 Implementations of drafts of this specification MAY recognize the
-`id-ce-testCanSignHttpExchanges` OID as identifying the CanSignHttpExchanges
+`id-ce-canSignHttpExchangesDraft` OID as identifying the CanSignHttpExchanges
 extension. This OID might or might not be used as the final OID for the
 extension, so certificates including it might need to be reissued once the final
 RFC is published.
@@ -1126,10 +1097,9 @@ This content type consists of the concatenation of the following items:
 ### Cross-origin trust in application/signed-exchange {#co-trust-app-signed-exchange}
 
 To determine whether to trust a cross-origin exchange stored in an
-`application/signed-exchange` resource, pass the `Signature` header field from
-the non-signed header section and an exchange consisting of the headers from the
-signed headers section and the payload body, to the algorithm in
-{{cross-origin-trust}}.
+`application/signed-exchange` resource, pass the `Signature` header field's
+value and an exchange consisting of the headers from the signed headers section
+and the payload body, to the algorithm in {{cross-origin-trust}}.
 
 ### Example ## {#example-application-signed-exchange}
 
@@ -1141,8 +1111,8 @@ header field and payload elided with a ...:
 
 ~~~
 sxg1\0<3-byte length of the following header
-value>sig1; sig=*...; integrity="mi"; ...<3-byte length of the encoding of the
-following array>[
+value><3-byte length of the encoding of the
+following array>sig1; sig=*...; integrity="mi"; ...[
   {
     ':method': 'GET',
     ':url': 'https://example.com/',
@@ -1265,6 +1235,34 @@ Clients MUST NOT trust an effective request URI claimed by an
 either ensuring the resource was transferred from a server that was
 authoritative (Section 9.1 of {{!RFC7230}}) for that URI's origin, or calling
 the algorithm in {{co-trust-app-signed-exchange}} and getting "valid" back.
+
+## Key re-use with TLS ## {#seccons-key-re-use}
+
+In general, key re-use across multiple protocols is a bad idea.
+
+Using an exchange-signing key in a TLS (or other directly-internet-facing)
+server increases the risk that an attacker can steal the private key, which will
+allow them to mint packages (similar to {{seccons-signing-oracles}}) until their
+theft is discovered.
+
+Using a TLS key in a CanSignHttpExchanges certificate makes it less likely that
+the server operator will discover key theft, due to the considerations in
+{{seccons-off-path}}.
+
+This specification uses the CanSignHttpExchanges X.509 extension
+({{cross-origin-cert-req}}) to discourage re-use of TLS keys to sign exchanges
+or vice-versa.
+
+We require that clients reject certificates with the CanSignHttpExchanges
+extension when making TLS connections to minimize the chance that servers will
+re-use keys like this. Ideally, we would make the extension critical so that
+even clients that don't understand it would reject such TLS connections, but
+this proved impossible because certificate-validating libraries ship on
+significantly different schedules from the clients that use them.
+
+Even once all clients reject these certificates in TLS connections, this will
+still just discourage and not prevent key re-use, since a server operator can
+unwisely request two different certificates with the same private key.
 
 # Privacy considerations
 
@@ -1871,6 +1869,10 @@ exchange argues for embedding a signature's lifetime into the signature.
 
 RFC EDITOR PLEASE DELETE THIS SECTION.
 
+draft-05
+
+* Define absolute URLs, and limit the schemes each instance can use.
+
 draft-04
 
 * Update to draft-ietf-httpbis-header-structure-06.
@@ -1921,5 +1923,5 @@ draft-02
 
 # Acknowledgements
 
-Thanks to Ilari Liusvaara, Justin Schuh, Mark Nottingham, Mike Bishop, Ryan
-Sleevi, and Yoav Weiss for comments that improved this draft.
+Thanks to Devin Mullins, Ilari Liusvaara, Justin Schuh, Mark Nottingham, Mike
+Bishop, Ryan Sleevi, and Yoav Weiss for comments that improved this draft.

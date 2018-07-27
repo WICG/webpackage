@@ -1,12 +1,12 @@
-package signedexchange
+package bigendian
 
 import (
 	"errors"
 )
 
-var ErrOutOfRange = errors.New("signedexchange: Given integer is out of encodable range.")
+var ErrOutOfRange = errors.New("bigendian: Given integer is out of encodable range.")
 
-func Encode3BytesBigEndianUint(n int) ([3]byte, error) {
+func Encode3BytesUint(n int) ([3]byte, error) {
 	if n < 0 || n > 0xffffff {
 		return [3]byte{}, ErrOutOfRange
 	}
@@ -18,6 +18,6 @@ func Encode3BytesBigEndianUint(n int) ([3]byte, error) {
 	}, nil
 }
 
-func Decode3BytesBigEndianUint(b [3]byte) int {
+func Decode3BytesUint(b [3]byte) int {
 	return int(b[0])<<16 | int(b[1])<<8 | int(b[2])
 }

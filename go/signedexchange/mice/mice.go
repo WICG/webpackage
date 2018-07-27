@@ -54,6 +54,6 @@ func Encode(w io.Writer, buf []byte, recordSize int) (string, error) {
 		}
 	}
 
-	mi := "mi-sha256=" + base64.RawURLEncoding.EncodeToString(proofs[0])
+	mi := "mi-sha256-draft2=" + base64.RawURLEncoding.EncodeToString(proofs[0])
 	return mi, nil
 }

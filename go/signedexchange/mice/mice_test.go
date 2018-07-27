@@ -21,7 +21,7 @@ func TestEmpty(t *testing.T) {
 		t.Errorf("buf.Bytes(): got %v, want %v", gotBytes, wantBytes)
 	}
 
-	wantMI := "mi-sha256=bjQLnP-zepicpUTmu3gKLHiQHT-zNzh2hRGjBhevoB0"
+	wantMI := "mi-sha256-draft2=bjQLnP-zepicpUTmu3gKLHiQHT-zNzh2hRGjBhevoB0"
 	if mi != wantMI {
 		t.Errorf("e.MI(): got %v, want %v", mi, wantMI)
 	}
@@ -42,7 +42,7 @@ func TestSingleRecord(t *testing.T) {
 		t.Errorf("buf.Bytes(): got %v, want %v", gotBytes, wantBytes)
 	}
 
-	wantMI := "mi-sha256=dcRDgR2GM35DluAV13PzgnG6-pvQwPywfFvAu1UeFrs"
+	wantMI := "mi-sha256-draft2=dcRDgR2GM35DluAV13PzgnG6-pvQwPywfFvAu1UeFrs"
 	if mi != wantMI {
 		t.Errorf("e.MI(); got %v, want %v", mi, wantMI)
 	}
@@ -113,7 +113,7 @@ func TestMultipleRecords(t *testing.T) {
 		}
 	}
 
-	wantMI := "mi-sha256=IVa9shfs0nyKEhHqtB3WVNANJ2Njm5KjQLjRtnbkYJ4"
+	wantMI := "mi-sha256-draft2=IVa9shfs0nyKEhHqtB3WVNANJ2Njm5KjQLjRtnbkYJ4"
 	if mi != wantMI {
 		t.Errorf("e.MI(); got %v, want %v", mi, wantMI)
 	}

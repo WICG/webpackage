@@ -19,7 +19,7 @@ import (
 
 var (
 	flagInput  = flag.String("i", "in.har", "HTTP Archive (HAR) input file")
-	flagOutput = flag.String("o", "out.webbundle", "Webbundle output file")
+	flagOutput = flag.String("o", "out.wbn", "Webbundle output file")
 )
 
 func ReadHar(r io.Reader) (*hargo.Har, error) {
@@ -52,7 +52,7 @@ func nvpToHeader(nvps []hargo.NVP, isStatefulHeader func(string) bool) (http.Hea
 	return h, nil
 }
 
-func contentToPayload(c *hargo.Content) ([]byte, error) {
+func contentToBody(c *hargo.Content) ([]byte, error) {
 	if c.Encoding == "base64" {
 		return base64.StdEncoding.DecodeString(c.Text)
 	}
@@ -71,7 +71,7 @@ func run() error {
 	}
 	defer fo.Close()
 
-	es := []*signedexchange.Exchange{}
+	es := []*bundle.Exchange{}
 
 	for _, e := range har.Log.Entries {
 		log.Printf("Processing entry: %q", e.Request.URL)
@@ -88,16 +88,23 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("Failed to parse response header for the request %q. err: %v", e.Request.URL, err)
 		}
-		payload, err := contentToPayload(&e.Response.Content)
+		body, err := contentToBody(&e.Response.Content)
 		if err != nil {
-			return fmt.Errorf("Failed to extract payload from response content for the request %q. err: %v", e.Request.URL, err)
+			return fmt.Errorf("Failed to extract body from response content for the request %q. err: %v", e.Request.URL, err)
 		}
 
-		se, err := signedexchange.NewExchange(parsedUrl, reqh, e.Response.Status, resh, payload)
-		if err != nil {
-			return err
+		e := &bundle.Exchange{
+			Request: bundle.Request{
+				URL:    parsedUrl,
+				Header: reqh,
+			},
+			Response: bundle.Response{
+				Status: e.Response.Status,
+				Header: resh,
+				Body:   body,
+			},
 		}
-		es = append(es, se)
+		es = append(es, e)
 	}
 
 	b := &bundle.Bundle{Exchanges: es}
