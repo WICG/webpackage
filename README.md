@@ -61,7 +61,7 @@ https://github.com/martinthomson/i-d-template/blob/master/doc/SETUP.md.
 
 ### Packaging tool.
 
-Install this with `go install github.com/WICG/webpackage/go/signed-exchange/cmd/gen-signedexchange`.
+Install this with `go install github.com/WICG/webpackage/go/signedexchange/cmd/gen-signedexchange`.
 
 This tool is not yet documented well, but you can refer to
 [README](https://cs.chromium.org/chromium/src/content/test/data/htxg/README)
