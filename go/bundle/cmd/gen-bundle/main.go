@@ -43,6 +43,10 @@ func ReadHarFromFile(path string) (*hargo.Har, error) {
 func nvpToHeader(nvps []hargo.NVP, isStatefulHeader func(string) bool) (http.Header, error) {
 	h := make(http.Header)
 	for _, nvp := range nvps {
+		// Drop HTTP/2 pseudo headers.
+		if len(nvp.Name) > 0 && nvp.Name[0] == ':' {
+			continue
+		}
 		if isStatefulHeader(nvp.Name) {
 			log.Printf("Dropping banned header: %q", nvp.Name)
 			continue
