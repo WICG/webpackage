@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/mrichman/hargo"
 
@@ -44,7 +45,7 @@ func nvpToHeader(nvps []hargo.NVP, isStatefulHeader func(string) bool) (http.Hea
 	h := make(http.Header)
 	for _, nvp := range nvps {
 		// Drop HTTP/2 pseudo headers.
-		if len(nvp.Name) > 0 && nvp.Name[0] == ':' {
+		if strings.HasPrefix(nvp.Name, ":") {
 			continue
 		}
 		if isStatefulHeader(nvp.Name) {
