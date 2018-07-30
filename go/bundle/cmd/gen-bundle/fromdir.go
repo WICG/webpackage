@@ -3,12 +3,12 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/WICG/webpackage/go/bundle"
 )
@@ -29,16 +29,15 @@ func fromDir(dir string, baseURL string, startURL string) error {
 	}
 	defer fo.Close()
 
-	b := &bundle.Bundle{}
-	if err := addEntriesFromDir(dir, parsedBaseURL, b); err != nil {
+	es, err := createExchangesFromDir(dir, parsedBaseURL)
+	if err != nil {
 		return err
 	}
+	b := &bundle.Bundle{Exchanges: es}
 	// Move the startURL entry to first.
 	for i, e := range b.Exchanges {
 		if e.Request.URL.String() == parsedStartURL.String() {
-			tmp := b.Exchanges[0]
-			b.Exchanges[0] = e
-			b.Exchanges[i] = tmp
+			b.Exchanges[0], b.Exchanges[i] = b.Exchanges[i], b.Exchanges[0]
 			break
 		}
 	}
@@ -49,39 +48,52 @@ func fromDir(dir string, baseURL string, startURL string) error {
 	return nil
 }
 
-func addEntriesFromDir(dir string, baseURL *url.URL, b *bundle.Bundle) error {
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("Error reading directory %s. err: %v", dir, err)
-	}
-	for _, f := range files {
-		name := f.Name()
-		pathName := filepath.Join(dir, name)
-		if f.IsDir() {
-			url, err := baseURL.Parse(name + "/")
-			if err != nil {
-				return fmt.Errorf("Failed to construct URL for %s. err: %v", name, err)
-			}
-			if err := addEntriesFromDir(pathName, url, b); err != nil {
-				return err
-			}
-		} else {
-			url, err := baseURL.Parse(name)
-			if err != nil {
-				return fmt.Errorf("Failed to construct URL for %s. err: %v", name, err)
-			}
-			if err := addEntryFromFile(pathName, url, b); err != nil {
-				return err
-			}
-			if name == "index.html" {
-				// Create an entry for the directory itself.
-				if err := addEntryFromFile(dir, baseURL, b); err != nil {
-					return err
+func createExchangesFromDir(baseDir string, baseURL *url.URL) ([]*bundle.Exchange, error) {
+	es := []*bundle.Exchange{}
+	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		url, err := convertPathToURL(path, baseDir, baseURL)
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			// For a directory, create an entry only if it contains index.html
+			// (otherwise http.ServeFile generates a directory list).
+			if _, err := os.Stat(filepath.Join(path, "index.html")); err != nil {
+				if os.IsNotExist(err) {
+					return nil
 				}
+				return fmt.Errorf("Stat(%s) failed. err: %v", path, err)
+			}
+			if !strings.HasSuffix(url, "/") {
+				url += "/"
 			}
 		}
+		e, err := createExchange(path, url)
+		if err != nil {
+			return err
+		}
+		es = append(es, e)
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Error walking the path %s. err: %v", baseDir, err)
 	}
-	return nil
+	return es, nil
+}
+
+func convertPathToURL(path string, baseDir string, baseURL *url.URL) (string, error) {
+	relPath, err := filepath.Rel(baseDir, path)
+	if err != nil {
+		return "", fmt.Errorf("Cannot make relative path for %s", path, err)
+	}
+	url, err := baseURL.Parse(filepath.ToSlash(relPath))
+	if err != nil {
+		return "", fmt.Errorf("Failed to construct URL for %s. err: %v", path, err)
+	}
+	return url.String(), nil
 }
 
 // Implements http.ResponseWriter
@@ -103,16 +115,20 @@ func (w *responseWriter) WriteHeader(statusCode int) {
 	w.status = statusCode
 }
 
-func addEntryFromFile(filePath string, url *url.URL, b *bundle.Bundle) error {
-	req, err := http.NewRequest("GET", url.String(), nil)
+// createExchange creates a bundle.Exchange whose request URL is url
+// and response body is the contents of the file. Internally, it uses
+// http.ServeFile to generate a realistic HTTP response for the file.
+func createExchange(file string, url string) (*bundle.Exchange, error) {
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return fmt.Errorf("http.newRequest failed: %v", err)
+		return nil, fmt.Errorf("http.newRequest failed: %v", err)
 	}
+	log.Printf("Creating exchange: %s -> %s", file, req.URL)
 
 	w := newResponseWriter()
-	http.ServeFile(w, req, filePath)
+	http.ServeFile(w, req, file)
 
-	e := &bundle.Exchange{
+	return &bundle.Exchange{
 		Request: bundle.Request{
 			URL:    req.URL,
 			Header: req.Header,
@@ -122,9 +138,5 @@ func addEntryFromFile(filePath string, url *url.URL, b *bundle.Bundle) error {
 			Header: w.header,
 			Body:   w.Bytes(),
 		},
-	}
-	b.Exchanges = append(b.Exchanges, e)
-
-	log.Printf("%s -> %s", filePath, e.Request.URL)
-	return nil
+	}, nil
 }
