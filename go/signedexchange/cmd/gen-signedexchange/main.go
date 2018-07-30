@@ -5,6 +5,7 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -35,10 +36,12 @@ var (
 	flagCertificateUrl = flag.String("certUrl", "https://example.com/cert.msg", "The URL where the certificate chain is hosted at.")
 	flagValidityUrl    = flag.String("validityUrl", "https://example.com/resource.validity.msg", "The URL where resource validity info is hosted at.")
 	flagPrivateKey     = flag.String("privateKey", "cert-key.pem", "Private key PEM file of the origin")
-	flagOutput         = flag.String("o", "out.sxg", "Signed exchange output file")
 	flagMIRecordSize   = flag.Int("miRecordSize", 4096, "The record size of Merkle Integrity Content Encoding")
 	flagDate           = flag.String("date", "", "The datetime for the signed exchange in RFC3339 format (2006-01-02T15:04:05Z07:00). Use now by default.")
 	flagExpire         = flag.Duration("expire", 1*time.Hour, "The expire time of the signed exchange")
+
+	flagDumpSignatureMessage = flag.String("dumpSignatureMessage", "", "Dump signature message bytes to file for debugging.")
+	flagOutput               = flag.String("o", "out.sxg", "Signed exchange output file")
 
 	flagRequestHeader  = headerArgs{}
 	flagResponseHeader = headerArgs{}
@@ -98,6 +101,16 @@ func run() error {
 		return fmt.Errorf("failed to parse private key file %q.", *flagPrivateKey)
 	}
 
+	var fMsg io.WriteCloser
+	if *flagDumpSignatureMessage != "" {
+		var err error
+		fMsg, err = os.OpenFile(*flagDumpSignatureMessage, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			return fmt.Errorf("failed to open signature message dump output file %q for writing. err: %v", *flagDumpSignatureMessage, err)
+		}
+		defer fMsg.Close()
+	}
+
 	f, err := os.OpenFile(*flagOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open output file %q for writing. err: %v", *flagOutput, err)
@@ -155,6 +168,11 @@ func run() error {
 		return err
 	}
 
+	if fMsg != nil {
+		if err := e.DumpSignedMessage(s, fMsg); err != nil {
+			return fmt.Errorf("failed to write signature message dump. err: %v", err)
+		}
+	}
 	if err := e.Write(f); err != nil {
 		return fmt.Errorf("failed to write exchange. err: %v", err)
 	}

@@ -343,6 +343,18 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 	return e, nil
 }
 
+func (e *Exchange) DumpSignedMessage(s *Signer, w io.Writer) error {
+	bs, err := s.serializeSignedMessage(e)
+	if err != nil {
+		return err
+	}
+
+	if _, err := w.Write(bs); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (e *Exchange) PrettyPrint(w io.Writer) {
 	fmt.Fprintln(w, "request:")
 	fmt.Fprintf(w, "  uri: %s\n", e.RequestURI.String())
