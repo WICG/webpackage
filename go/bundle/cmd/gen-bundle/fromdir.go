@@ -96,7 +96,7 @@ func convertPathToURL(path string, baseDir string, baseURL *url.URL) (string, er
 	return url.String(), nil
 }
 
-// Implements http.ResponseWriter
+// responseWriter implements http.ResponseWriter.
 type responseWriter struct {
 	bytes.Buffer
 	status int
