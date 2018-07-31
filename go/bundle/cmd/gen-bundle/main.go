@@ -20,8 +20,8 @@ import (
 var (
 	flagHar      = flag.String("har", "", "HTTP Archive (HAR) input file")
 	flagDir      = flag.String("dir", "", "Input directory")
-	flagBaseUrl  = flag.String("baseUrl", "", "Base URL")
-	flagStartUrl = flag.String("startUrl", "", "Entry point URL (relative from -baseUrl)")
+	flagBaseURL  = flag.String("baseURL", "", "Base URL")
+	flagStartURL = flag.String("startURL", "", "Entry point URL (relative from -baseURL)")
 	flagOutput   = flag.String("o", "out.wbn", "Webbundle output file")
 )
 
@@ -121,22 +121,22 @@ func fromHar(harPath string) error {
 func main() {
 	flag.Parse()
 	if *flagHar != "" {
-		if *flagBaseUrl == "" {
-			fmt.Fprintln(os.Stderr, "Warning: -baseUrl is ignored when input is HAR.")
+		if *flagBaseURL == "" {
+			fmt.Fprintln(os.Stderr, "Warning: -baseURL is ignored when input is HAR.")
 		}
-		if *flagStartUrl == "" {
-			fmt.Fprintln(os.Stderr, "Warning: -startUrl is ignored when input is HAR.")
+		if *flagStartURL == "" {
+			fmt.Fprintln(os.Stderr, "Warning: -startURL is ignored when input is HAR.")
 		}
 		if err := fromHar(*flagHar); err != nil {
 			log.Fatal(err)
 		}
 	} else if *flagDir != "" {
-		if *flagBaseUrl == "" {
-			fmt.Fprintln(os.Stderr, "Please specify -baseUrl.")
+		if *flagBaseURL == "" {
+			fmt.Fprintln(os.Stderr, "Please specify -baseURL.")
 			flag.Usage()
 			return
 		}
-		if err := fromDir(*flagDir, *flagBaseUrl, *flagStartUrl); err != nil {
+		if err := fromDir(*flagDir, *flagBaseURL, *flagStartURL); err != nil {
 			log.Fatal(err)
 		}
 	} else {
