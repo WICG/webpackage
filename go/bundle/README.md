@@ -4,7 +4,7 @@ This directory contains a reference implementation of [Bundled HTTP Exchanges](h
 ## Overview
 We currently provide two command-line tools: `gen-bundle` and `dump-bundle`.
 
-`gen-bundle` command is a bundle generator tool. `gen-bundle` consumes a set of http exchanges (currently in the form of [HAR format](https://w3c.github.io/web-performance/specs/HAR/Overview.html)), and emits a bundled exchange file.
+`gen-bundle` command is a bundle generator tool. `gen-bundle` consumes a set of http exchanges (currently in the form of [HAR format](https://w3c.github.io/web-performance/specs/HAR/Overview.html) or static files in a local directory), and emits a bundled exchange file.
 
 `dump-bundle` command is a bundle inspector tool. `dump-bundle` dumps the enclosed http exchanges of a given bundled exchange file in a human readable form.
 
@@ -30,8 +30,14 @@ One convenient way to generate HAR file is via Chrome Devtools. Navigate to "Net
 
 Once you have the har file, generate the bundled exchange file via:
 ```
-gen-bundle -i foo.har -o foo.wbn
+gen-bundle -har foo.har -o foo.wbn
 ```
+
+You can also create a bundle from a local directory. For example, if you have the necessary files for the site `https://www.example.com/` in `static/` directory, run:
+```
+gen-bundle -dir static -baseURL https://www.example.com/ -o foo.wbn
+```
+You can use `-startURL` command-line flag to specify the entry point of the bundle, as a relative URL from `-baseURL`. Currently, this just makes the exchange for `-startURL` the first entry in the bundled exchange file.
 
 `dump-bundle` dumps the content of a bundled exchange in a human readable form. To display content of a har file, invoke:
 ```
