@@ -37,7 +37,7 @@ You can also create a bundle from a local directory. For example, if you have th
 ```
 gen-bundle -dir static -baseURL https://www.example.com/ -o foo.wbn
 ```
-You can use `-startURL` command-line flag to specify the entry point of the bundle, as a relative URL from `-baseURL`.
+You can use `-startURL` command-line flag to specify the entry point of the bundle, as a relative URL from `-baseURL`. Currently, this just makes the exchange for `-startURL` the first entry in the bundled exchange file.
 
 `dump-bundle` dumps the content of a bundled exchange in a human readable form. To display content of a har file, invoke:
 ```
