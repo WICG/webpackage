@@ -111,10 +111,9 @@ func run() error {
 		defer fMsg.Close()
 	}
 
-	f, err = os.Create(*flagOutput)
+	f, err := os.Create(*flagOutput)
 	if err != nil {
 		return fmt.Errorf("failed to open output file %q for writing. err: %v", *flagOutput, err)
-		os.Exit(1)
 	}
 	defer f.Close()
 
@@ -169,7 +168,7 @@ func run() error {
 	}
 
 	if fMsg != nil {
-		if err := e.DumpSignedMessage(s, fMsg); err != nil {
+		if err := e.DumpSignedMessage(fMsg, s); err != nil {
 			return fmt.Errorf("failed to write signature message dump. err: %v", err)
 		}
 	}

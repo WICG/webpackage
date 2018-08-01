@@ -343,7 +343,7 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 	return e, nil
 }
 
-func (e *Exchange) DumpSignedMessage(s *Signer, w io.Writer) error {
+func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer) error {
 	bs, err := s.serializeSignedMessage(e)
 	if err != nil {
 		return err
