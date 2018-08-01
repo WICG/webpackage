@@ -104,14 +104,14 @@ func run() error {
 	var fMsg io.WriteCloser
 	if *flagDumpSignatureMessage != "" {
 		var err error
-		fMsg, err = os.OpenFile(*flagDumpSignatureMessage, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		fMsg, err = os.Create(*flagDumpSignatureMessage)
 		if err != nil {
 			return fmt.Errorf("failed to open signature message dump output file %q for writing. err: %v", *flagDumpSignatureMessage, err)
 		}
 		defer fMsg.Close()
 	}
 
-	f, err := os.OpenFile(*flagOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	f, err = os.Create(*flagOutput)
 	if err != nil {
 		return fmt.Errorf("failed to open output file %q for writing. err: %v", *flagOutput, err)
 		os.Exit(1)
