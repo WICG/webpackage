@@ -1,0 +1,7 @@
+{
+    "src_file": "loading.bs",
+    "type": "bikeshed",
+    "params": {
+        "force": 1
+    }
+}
