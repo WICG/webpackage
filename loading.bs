@@ -273,6 +273,20 @@ An exchange is a [=struct=] with the following items:
 
 </ul>
 
+<h3 dfn-type=dfn>Read buffer</h3>
+
+A read buffer is a [=struct=] with the following items:
+
+<ul dfn-for="read buffer">
+
+* <dfn>stream</dfn>: A {{ReadableStream}}.
+* <dfn>reader</dfn>: A {{ReadableStreamDefaultReader}} whose stream is [=read
+    buffer/stream=].
+* <dfn>bytes</dfn>: A [=byte sequence=] holding the bytes that have been read
+    from [=read buffer/stream=] but not returned to a calling algorithm yet.
+
+</ul>
+
 <h3 dfn-type=dfn>Augmented Certificate</h3>
 
 An augmented certificate is a [=tuple=] with the following items:
@@ -748,20 +762,6 @@ A [=request=] |browserRequest| <dfn>matches the stored request</dfn>
 Issue(whatwg/fetch#730): The algorithms in this section create and operate over
 ECMAScript objects like {{ReadableStream}} despite not having a Realm to attach
 them to.
-
-A <dfn>read buffer</dfn> is a [=struct=] with the following items:
-
-<ul dfn-for="read buffer">
-
-* <dfn>stream</dfn>: A {{ReadableStream}}.
-
-* <dfn>reader</dfn>: A {{ReadableStreamDefaultReader}} whose stream is [=read
-    buffer/stream=].
-
-* <dfn>bytes</dfn>: A [=byte sequence=] holding the bytes that have been read
-    from [=read buffer/stream=] but not returned to a calling algorithm yet.
-
-</ul>
 
 <h4 algorithm id="create-read-buffer">Create a read buffer</h4>
 
