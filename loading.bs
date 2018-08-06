@@ -412,6 +412,12 @@ following steps:
     either "`deprecated`" or "`modern`".
 
     Note: See <a spec="fetch">HTTP-network fetch</a> for details of this choice.
+1. If |parsedExchange|'s [=exchange/response=]'s [=response/status=] is a
+    [=redirect status=] or the [=signed exchange version=] of |parsedExchange|'s
+    [=exchange/response=] is not undefined, return a failure.
+
+    Note: This might simplify the UA's implementation, since it doesn't have to
+    handle nested signed exchanges.
 1. [=Read a body=] from |stream| into |parsedExchange|'s [=exchange/response=]
     using |parsedSignature| to check its integrity. If this is a failure, return
     the failure.
