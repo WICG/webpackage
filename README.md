@@ -27,16 +27,16 @@ The specifications come in a couple layers:
      snapshot](https://wicg.github.io/webpackage/draft-yasskin-httpbis-origin-signed-exchanges-impl.html)
      is in this repository.
 1. [Bundled HTTP exchanges](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html)
-   ([IETF draft](https://tools.ietf.org/html/draft-yasskin-wpack-bundled-exchanges):
+   ([IETF draft](https://tools.ietf.org/html/draft-yasskin-wpack-bundled-exchanges)):
    A collection of exchanges, each of which could be signed or unsigned, with
    some metadata describing how to interpret the bundle as a whole. This
    specification has an initial draft in a PR, but isn't finished yet. This work
    may proceed through either the IETF or the W3C/WHATWG.
-1. Loading: A description of how browsers load signed and bundled exchanges.
-   This will be initially specified in the WICG and then will merge into the
-   appropriate specs, e.g. [Fetch](https://fetch.spec.whatwg.org/), that live in
-   either the W3C or WHATWG. Currently we only have a [sketch](https://github.com/WICG/webpackage/blob/master/explainer.md#signed-exchange-loading-sketch)
-   for signed exchange cases.
+1. [Loading](https://wicg.github.io/webpackage/loading.html): A description of
+   how browsers load signed and bundled exchanges. This is initially specified
+   here, and will eventually merge into the appropriate specs, e.g.
+   [Fetch](https://fetch.spec.whatwg.org/), that live in either the W3C or
+   WHATWG. Currently this only covers signed exchanges.
 
 A previous draft of the format combined layers 1 and 2 into a single format for
 signed packages:
