@@ -117,6 +117,8 @@ spec:fetch; type:dfn; for:/; text:response
 spec:streams; type:interface; text:ReadableStream
 </pre>
 
+<section class="non-normative">
+
 # Introduction # {#intro}
 
 <em>This section is non-normative.</em>
@@ -142,18 +144,32 @@ contents is newer. If the stashed exchange matches and is newer, the UA returns
 the stashed response.
 
 A Service Worker for `https://distributor.example.org/` gets to handle the
-original request. A Service Worker for `https://publisher.example.org/` does not
-get to handle the redirect, like for the target of any other redirect.
+original request. A Service Worker for `https://publisher.example.org/` can then
+handle the redirect. If it needs to know that signed exchange content is
+available for the request it's handling, it has two options:
+
+1. If {{ServiceWorkerRegistration/navigationPreload}} is enabled, the signed
+    response will be available in the {{FetchEvent}}'s
+    {{FetchEvent/preloadResponse}}. Note that this will also cause a network
+    request for requests that aren't served from a signed exchange.
+1. {{Request/clone()}} the {{FetchEvent/request}} and set its {{Request/cache}}
+    to {{RequestCache/"only-if-cached"}}, to retrieve the matching response from
+    either the signed exchange or the HTTP cache. Note that
+    {{WindowOrWorkerGlobalScope/fetch()}}ing a *new* {{Request}} with the same
+    {{Request/url}} will *not* retrieve the response from the signed exchange.
 
 ## Other interesting details ## {#details}
 
 * Like with `<link rel="prefetch">` and `<link rel="preload">`, the UA will use
     the stashed response even if its HTTP cache headers have expired. This makes
-    sure that the contents of the signed exchange don't wind up in the HTTP
-    cache before our security reviewers have gotten comfortable with that idea.
-    The publisher can still control resource expiration by setting the Signature
-    header's [=exchange signature/expiration time=] to the cache expiration time
-    if that's sooner than they'd otherwise have the signature expire.
+    it easier to specify that the contents of the signed exchange don't wind up
+    in the HTTP cache before our security reviewers have gotten comfortable with
+    that idea. The publisher can still control resource expiration by setting
+    the Signature header's [=exchange signature/expiration time=] to the cache
+    expiration time if that's sooner than they'd otherwise have the signature
+    expire.
+
+</section>
 
 # Fetch monkeypatches # {#monkeypatches}
 
@@ -222,7 +238,7 @@ add the following steps:
         1. If |parsedExchange| is a failure, return a [=network error=].
         1. Set |actualResponse|'s [=status=] to `303`.
         1. [=header list/Set=] |actualResponse|'s `` `Location` `` header to
-            the [=UTF-8 encoding=] of the [=URL serializer|serialization=]
+            the [=ASCII encoding=] of the [=URL serializer|serialization=]
             of |parsedExchange|'s [=exchange/request=]'s [=request/url=].
         1. Set |request|'s [=request/stashed exchange=] to |parsedExchange|.
 
