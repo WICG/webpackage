@@ -105,8 +105,8 @@ func fromHar(harPath string) error {
 			log.Printf("Dropping the entry: non-GET request method (%s)", e.Request.Method)
 			continue
 		}
-		if http.StatusText(e.Response.Status) == "" {
-			log.Printf("Dropping the entry: unknown response status (%d)", e.Response.Status)
+		if e.Response.Status < 100 || e.Response.Status > 999 {
+			log.Printf("Dropping the entry: invalid response status (%d)", e.Response.Status)
 			continue
 		}
 
