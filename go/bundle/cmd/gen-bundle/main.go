@@ -101,6 +101,15 @@ func fromHar(harPath string) error {
 			return fmt.Errorf("Failed to extract body from response content for the request %q. err: %v", e.Request.URL, err)
 		}
 
+		if e.Request.Method != http.MethodGet {
+			log.Printf("Dropping the entry: non-GET request method (%s)", e.Request.Method)
+			continue
+		}
+		if e.Response.Status < 100 || e.Response.Status > 999 {
+			log.Printf("Dropping the entry: invalid response status (%d)", e.Response.Status)
+			continue
+		}
+
 		e := &bundle.Exchange{
 			Request: bundle.Request{
 				URL:    parsedUrl,
