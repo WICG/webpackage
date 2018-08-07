@@ -103,9 +103,10 @@ so that test implementations can interoperate.
 
 ### Bundled exchanges
 
-We're defining a new Zip-like archive format to serve the Web's needs. It
-currently only exists in a [Pull
-Request](https://github.com/WICG/webpackage/pull/98).
+We're defining a [new Zip-like archive
+format](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html)
+to serve the Web's needs. ([IETF
+draft](https://tools.ietf.org/html/draft-yasskin-wpack-bundled-exchanges))
 
 This format will map HTTP requests, not just filenames, to HTTP responses, not
 just file contents. It will probably incorporate compression to shrink headers,
@@ -125,9 +126,7 @@ the publishing URLs of their contained exchanges.
 <a id="loading"></a>
 ### Loading specification
 
-We'll need to specify how browsers load both signed exchanges and bundles of exchanges.
-
-For now, this explainer has [a sketch of how loading will work](#signed-exchange-loading-sketch).
+The [Web Package Loading specification](https://wicg.github.io/webpackage/loading.html) specifies how browsers load signed exchanges, and will eventually also describe how to load bundled exchanges.
 
 ## Use cases
 
@@ -307,7 +306,7 @@ those headers and then tries to find a valid signature over the headers that is
 trusted for the publishing URL's origin. If none of the signatures are valid and
 trusted, it either
 
-1. redirects to the publishing URL as if the outer response were a 302 redirect,
+1. redirects to the publishing URL as if the outer response were a 303 redirect,
    or
 2. fails with a network error.
 
@@ -341,24 +340,25 @@ simpler than expected.
 ### Navigations and subresources redirect
 
 At this point the client redirects to the signed exchange's publishing URL, with
-the inner request and response stream "attached". (TBD how this fits into
-[Fetch](https://fetch.spec.whatwg.org/)'s terminology.) For navigations, this
-request goes through the publishing URL's Service Worker, if any. For
-subresources, it goes through the embedder's Service Worker, if any, again.
-(TODO: Check that redirects actually work this way.)
+[the inner request and response stream associated with the outer
+request](https://wicg.github.io/webpackage/loading.html#mp-request-stashed-exchange).
+For navigations, this request goes through the publishing URL's Service Worker,
+if any. For subresources, like other redirects, it doesn't go through the
+Service Worker again.
 
 If there's no Service Worker handling this `fetch` event or the Service Worker's
-handler fetches a matching URL from the network, either by returning without
-calling `e.respondWith()` or by calling `fetch(...)`, this tries to return the
-response stream that was attached to the redirect. However, if either of the
-following conditions is met, the fetch bypasses the attached exchange and
-continues down to the lower caches and the network:
+handler fetches the original request or its clone from the network, either by
+returning without calling `e.respondWith()` or by calling `fetch(e.request)`,
+this tries to return the response stream that was attached to the redirect.
+However, if either of the following conditions is met, the fetch bypasses the
+attached exchange and continues down to the lower caches and the network:
 
-* The inner request headers aren't sufficiently similar (TBD) to the headers in
-  the Request the SW sent. This prevents a malicious intermediate from causing
-  the client to use the wrong content-negotiated resource. If we later put inner
-  responses in the HTTP cache (TBD), this also prevents the intermediate from
-  putting the wrong resource there.
+* The inner request headers aren't [sufficiently
+  similar](https://wicg.github.io/webpackage/loading.html#request-matching) to
+  the headers in the Request the SW sent. This prevents a malicious intermediate
+  from causing the client to use the wrong content-negotiated resource. If we
+  later put inner responses in the HTTP cache (TBD), this also prevents the
+  intermediate from putting the wrong resource there.
 * There's a response in a lower cache with a newer Date header than the inner
   response's Date header. This prevents some downgrade attacks.
    * Content-negotiated responses may need to allow separate
@@ -373,12 +373,16 @@ The Service Worker can also explicitly return something else by calling
 For now, there's no explicit notification to the Service Worker that this
 request is part of handling a signed exchange. Because the inner exchange is
 attached, as described above, the Service Worker can check whether it's
-immediately available by doing a fetch with the "only-if-cached" [cache
-mode](https://fetch.spec.whatwg.org/#concept-request-cache-mode). It might make
-sense to attach some metadata to that response describing the situation, but we
-don't currently propose that metadata. The Service Worker also currently gets no
-description of any differences between the signed inner request and the
-browser's request in `e.request`.
+immediately available by doing a fetch of the *same request* or its clone with
+[`.cache`](https://fetch.spec.whatwg.org/#dom-request-cache) set to
+`"only-if-cached"`, or it can turn on
+[`navigationPreload`](https://developers.google.com/web/updates/2017/02/navigation-preload)
+and check
+[`e.preloadResponse`](https://w3c.github.io/ServiceWorker/#dom-fetchevent-preloadresponse).
+It might make sense to attach some metadata to that response describing the
+situation, but we don't currently propose that metadata. The Service Worker also
+currently gets no description of any differences between the signed inner
+request and the browser's request in `e.request`.
 
 ### Matching prefetches with subresources
 
