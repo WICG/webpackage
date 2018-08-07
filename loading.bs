@@ -98,6 +98,7 @@ spec: draft-yasskin-wpack-bundled-exchanges; urlPrefix: https://wicg.github.io/w
         text: parsing a CBOR item; url: parse-known-length
 spec: draft-yasskin-http-origin-signed-responses; urlPrefix: https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#
     type: dfn
+        text: off-path attackers; url: seccons-off-path
         text: stateful request header; url: stateful-headers
         text: stateful response header; url: stateful-headers
 spec: draft-yasskin-httpbis-origin-signed-exchanges-impl-01; urlPrefix: https://tools.ietf.org/html/draft-yasskin-httpbis-origin-signed-exchanges-impl-01#
@@ -659,11 +660,12 @@ leaf|does not have a trusted leaf">has a trusted leaf</dfn> for an [=origin=]
         * An X.509 extension in |leaf|'s [=augmented certificate/certificate=].
 
     as input, using [[!RFC5280]] and any other conventions used in making TLS
-    ([[!RFC8446]]) connections. The UA MUST support Certificate Transparency
-    ([[RFC6962]]) for this check. The UA MUST check that it has evidence the
-    |leaf|'s [=augmented certificate/certificate=] was not revoked more than 7
-    days ago (for example using the |leaf|'s [=augmented certificate/OCSP
-    response=]). If no such path can be built, return `untrusted`.
+    ([[!RFC8446]]) connections. The UA SHOULD support Certificate Transparency
+    ([[RFC6962]]) for this check. (See [[#seccons-ct]].) The UA MUST check that
+    it has evidence the |leaf|'s [=augmented certificate/certificate=] was not
+    revoked 7 or more days ago (for example using the |leaf|'s [=augmented
+    certificate/OCSP response=]). If no such path can be built, return
+    `untrusted`.
 1. If |leaf|'s [=augmented certificate/certificate=] is not trusted for
     |origin|'s [=origin/host=], return `untrusted`.
 1. If |leaf|'s [=certificate/extensions=] don't map a [=CanSignHttpExchanges=]
@@ -973,3 +975,18 @@ The <dfn>CBOR byte string encoding</dfn> of a [=byte sequence=] |bytes| is:
 1. Return the concatenation of:
     1. The [=CBOR item header=] with major type 2 and argument |len|.
     1. |bytes|.
+
+# Security Considerations # {#seccons}
+
+The Security Considerations of [[draft-yasskin-http-origin-signed-responses]]
+apply.
+
+## Certificate Transparency ## {#seccons-ct}
+
+To identify [=off-path attackers=], [[#trusting-certificate]] encourages UAs to
+implement Certificate Transparency, which requires that, in order for a
+certificate to be trusted, it must be logged publicly. This means that an
+off-path attacker who has managed to get a mis-issued certificate has to at
+least announce that certificate in a place the legitimate domain owner has a
+chance to notice. Once they notice, they can revoke the certificate, which will
+stop the UA from trusting it no more than 7 days later.
