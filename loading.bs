@@ -597,6 +597,9 @@ following steps return `valid`:
     to use the time they created the signature, but if they immediately start
     serving that signature, and skewed clients don't try to correct for their
     skew, those clients will reject the signature.
+
+    Issue(WICG/webpackage#141): Our security reviewers aren't sure we should
+    allow UAs to take clock skew into account.
 1. If the UA's estimate of the current time is after |signature|'s [=exchange
     signature/expiration time=], return "untrusted".
 
