@@ -63,7 +63,4 @@ https://github.com/martinthomson/i-d-template/blob/master/doc/SETUP.md.
 
 Install this with `go install github.com/WICG/webpackage/go/signedexchange/cmd/gen-signedexchange`.
 
-This tool is not yet documented well, but you can refer to
-[README](https://cs.chromium.org/chromium/src/content/test/data/htxg/README)
-in Chromium's code repository to see how to generate necessary files for
-testing.
+See [go/signedexchange](go/signedexchange) for the usage of the tool.
