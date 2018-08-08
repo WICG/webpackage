@@ -515,8 +515,8 @@ to retrieve an updated OCSP from the original server.
          `validity-url`.
       1. The text string "date" to the integer value of `date`.
       1. The text string "expires" to the integer value of `expires`.
-      1. The text string "headers" to the CBOR representation
-         ({{cbor-representation}}) of `exchange`'s headers.
+   1. The bytes of the canonical CBOR representation ({{cbor-representation}})
+      of `exchange`'s headers.
 1. If `cert-url` is present and the SHA-256 hash of `main-certificate`'s
    `cert_data` is not equal to `cert-sha256` (whose presence was checked when the
    `Signature` header field was parsed), return "invalid".
@@ -1872,6 +1872,7 @@ RFC EDITOR PLEASE DELETE THIS SECTION.
 draft-05
 
 * Define absolute URLs, and limit the schemes each instance can use.
+* Move `headers` out of the cbor map when constructing signed message bytes.
 
 draft-04
 
