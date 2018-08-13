@@ -1397,7 +1397,9 @@ Required parameters:
   Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
   specification MUST NOT use simple integers to describe their versions, and
   MUST instead define implementation-specific strings to identify which draft is
-  implemented.
+  implemented. The newest version of
+  {{?I-D.yasskin-httpbis-origin-signed-exchanges-impl}} describes the meaning of
+  one such string.
 
 Optional parameters:  N/A
 
@@ -1888,6 +1890,8 @@ draft-05
 * Define absolute URLs, and limit the schemes each instance can use.
 * Fill in TBD size limits.
 * Update to mice-03 including the Digest header.
+* Refer to draft-yasskin-httpbis-origin-signed-exchanges-impl for draft version
+  numbers.
 
 draft-04
 
