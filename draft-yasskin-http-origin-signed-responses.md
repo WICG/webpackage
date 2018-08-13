@@ -302,26 +302,26 @@ the headers as this serialization. Instead, this section defines a CBOR
 representation that can be embedded into other CBOR, canonically serialized
 ({{canonical-cbor}}), and then signed.
 
-The CBOR representation of an exchange `exchange`'s headers is the CBOR
-({{!RFC7049}}) array with the following content:
+The CBOR representation of a set of request and response metadata and headers is
+the CBOR ({{!RFC7049}}) array with the following content:
 
 1. The map mapping:
-   * The byte string ':method' to the byte string containing `exchange`'s
-     request's method.
-   * The byte string ':url' to the byte string containing `exchange`'s request's
+   * The byte string ':method' to the byte string containing the request's
+     method.
+   * The byte string ':url' to the byte string containing the request's
      effective request URI, which MUST be an absolute URL ({{terminology}}) with
      a scheme of "https".
-   * For each request header field in `exchange` except for the `Host` header
-     field, the header field's lowercase name as a byte string to the header
-     field's value as a byte string.
+   * For each request header field except for the `Host` header field, the
+     header field's lowercase name as a byte string to the header field's value
+     as a byte string.
 
      Note: `Host` is excluded because it is already part of the effective
      request URI.
 1. The map mapping:
-   * the byte string ':status' to the byte string containing `exchange`'s
-     response's 3-digit status code, and
-   * for each response header field in `exchange`, the header field's lowercase
-     name as a byte string to the header field's value as a byte string.
+   * The byte string ':status' to the byte string containing the response's
+     3-digit status code, and
+   * For each response header field, the header field's lowercase name as a byte
+     string to the header field's value as a byte string.
 
 ### Example ### {#example-cbor-representation}
 
@@ -439,7 +439,15 @@ signatures. Otherwise, each member of this list represents a signature with
 parameters.
 
 The client MUST use the following algorithm to determine whether each signature
-with parameters is invalid or potentially-valid for an `exchange`.
+with parameters is invalid or potentially-valid for an exchange's
+
+* `headers`, a byte sequence holding the canonical serialization
+  ({{canonical-cbor}}) of the CBOR representation ({{cbor-representation}}) of
+  the exchange's request and response metadata and headers, and
+* `payload`, a stream of bytes constituting the exchange's payload body (Section
+  3.3 of {{!RFC7230}}). Note that the payload body is the message body with any
+  transfer encodings removed.
+
 Potentially-valid results include:
 
 * The signed headers of the exchange so that higher-level protocols can avoid
@@ -453,9 +461,6 @@ actually invalid due to an expired OCSP response MAY retry with `forceFetch` set
 to retrieve an updated OCSP from the original server.
 {:#force-fetch}
 
-1. Let `payload` be the payload body (Section 3.3 of {{!RFC7230}}) of
-   `exchange`. Note that the payload body is the message body with any transfer
-   encodings removed.
 1. Let:
    * `signature` be the signature (binary content in the parameterised
      identifier's "sig" parameter).
@@ -467,24 +472,6 @@ to retrieve an updated OCSP from the original server.
    * `date` be the signature's "date" parameter, interpreted as a Unix time.
    * `expires` be the signature's "expires" parameter, interpreted as a Unix
      time.
-1. If `integrity` names a header field that is not present in `exchange`'s
-   response headers or which the client cannot use to check the integrity of
-   `payload` (for example, the header field is new and hasn't been implemented
-   yet), then return "invalid". If the selected header field provides integrity
-   guarantees weaker than SHA-256, return "invalid". If validating integrity
-   using the selected header field requires the client to process records larger
-   than 16384 bytes, return "invalid". Clients MUST implement at least the
-   `Digest` header field with its `mi-sha256` digest algorithm (Section 3 of
-   {{!I-D.thomson-http-mice}}).
-
-   Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
-   RFC MUST recognize the draft spelling of the content encoding and digest
-   algorithm specified by {{!I-D.thomson-http-mice}} until that draft is
-   published as an RFC. For example, implementations of
-   draft-thomson-http-mice-03 would use `mi-sha256-03` and MUST NOT use
-   `mi-sha256` itself. This ensures that final implementations don't need to
-   handle compatibility with implementations of early drafts of that content
-   encoding.
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. If `cert-url` is present:
       1. Let `certificate-chain` be the result of loading the certificate chain
@@ -527,8 +514,7 @@ to retrieve an updated OCSP from the original server.
          `validity-url`.
       1. The text string "date" to the integer value of `date`.
       1. The text string "expires" to the integer value of `expires`.
-      1. The text string "headers" to the CBOR representation
-         ({{cbor-representation}}) of `exchange`'s headers.
+      1. The text string "headers" to `headers`.
 1. If `cert-url` is present and the SHA-256 hash of `main-certificate`'s
    `cert_data` is not equal to `cert-sha256` (whose presence was checked when the
    `Signature` header field was parsed), return "invalid".
@@ -537,9 +523,32 @@ to retrieve an updated OCSP from the original server.
    certificate chain in its Certificate Verify (Section 4.4.3 of
    {{?I-D.ietf-tls-tls13}}), in order to allow updating the stapled OCSP
    response without updating signatures at the same time.
-1. If `signature` is a valid signature of `message` by `publicKey` using
-   `signing-alg`, return "potentially-valid" with whichever is present of
-   `certificate-chain` or `ed25519key`. Otherwise, return "invalid".
+1. If `signature` is not a valid signature of `message` by `publicKey` using
+   `signing-alg`, return "invalid".
+1. If `integrity` names a header field and parameter that is not present in
+   `headers`' response headers or which the client cannot use to check the
+   integrity of `payload` (for example, the header field is new and hasn't been
+   implemented yet), then return "invalid". If the selected header field
+   provides integrity guarantees weaker than SHA-256, return "invalid". If
+   validating integrity using the selected header field requires the client to
+   process records larger than 16384 bytes, return "invalid". Clients MUST
+   implement at least the `Digest` header field with its `mi-sha256` digest
+   algorithm (Section 3 of {{!I-D.thomson-http-mice}}).
+
+   Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
+   RFC MUST recognize the draft spelling of the content encoding and digest
+   algorithm specified by {{!I-D.thomson-http-mice}} until that draft is
+   published as an RFC. For example, implementations of
+   draft-thomson-http-mice-03 would use `mi-sha256-03` and MUST NOT use
+   `mi-sha256` itself. This ensures that final implementations don't need to
+   handle compatibility with implementations of early drafts of that content
+   encoding.
+
+   If `payload` doesn't match the integrity information in the header described
+   by `integrity`, return "invalid".
+1. Return "potentially-valid" with whichever is present of `certificate-chain`
+   or `ed25519key`.
+
 
 Note that the above algorithm can determine that an exchange's headers are
 potentially-valid before the exchange's payload is received. Similarly, if
@@ -806,19 +815,27 @@ Do I have the right structure for the identifiers indicating feature support?
 # Cross-origin trust {#cross-origin-trust}
 
 To determine whether to trust a cross-origin exchange, the client takes a
-`Signature` header field ({{signature-header}}) and the `exchange`. The client
-MUST parse the `Signature` header into a list of signatures according to the
-instructions in {{signature-validity}}, and run the following algorithm for each
-signature, stopping at the first one that returns "valid". If any signature
-returns "valid", return "valid". Otherwise, return "invalid".
+`Signature` header field ({{signature-header}}) and the `exchange`'s
+
+* `headers`, a byte sequence holding the canonical serialization
+  ({{canonical-cbor}}) of the CBOR representation ({{cbor-representation}}) of
+  the exchange's request and response metadata and headers, and
+* `payload`, a stream of bytes constituting the exchange's payload body (Section
+  3.3 of {{!RFC7230}}).
+
+The client MUST parse the `Signature` header into a list of signatures according
+to the instructions in {{signature-validity}}, and run the following algorithm
+for each signature, stopping at the first one that returns "valid". If any
+signature returns "valid", return "valid". Otherwise, return "invalid".
 
 1. If the signature's ["validity-url" parameter](#signature-validityurl) is not
    [same-origin](https://html.spec.whatwg.org/multipage/origin.html#same-origin)
    with `exchange`'s effective request URI (Section 5.5 of {{!RFC7230}}), return
    "invalid".
 1. Use {{signature-validity}} to determine the signature's validity for
-   `exchange`, getting `certificate-chain` back. If this returned "invalid" or
-   didn't return a certificate chain, return "invalid".
+   `headers` and `payload`, getting `certificate-chain` back. If this returned
+   "invalid" or didn't return a certificate chain, return "invalid".
+1. Let `exchange` be the exchange metadata and headers parsed out of `headers`.
 1. If `exchange`'s request method is not safe (Section 4.2.1 of {{!RFC7231}}) or
    not cacheable (Section 4.2.3 of {{!RFC7231}}), return "invalid".
 1. If `exchange`'s headers contain a stateful header field, as defined in
@@ -941,35 +958,37 @@ Because different clients send different request header fields, and intermediate
 servers add response header fields, it can be impossible to have a signature for
 the exact request and response that the client sees. Therefore, when a client
 validates the `Signature` header field for an exchange represented as a normal
-HTTP request/response pair, it MUST pass only the subset of header fields
-defined by {{significant-headers}} to the validation procedure
-({{signature-validity}}).
+HTTP request/response pair, it MUST pass the serialized headers defined by
+{{serialized-headers}} to the validation procedure ({{signature-validity}})
+along with the `Signature` header field and the response's payload.
 
 If the client relies on signature validity for any aspect of its behavior, it
 MUST ignore any header fields that it didn't pass to the validation procedure.
 
-### Significant headers for a same-origin response {#significant-headers}
+### Serialized headers for a same-origin response {#serialized-headers}
 
-The significant headers of an exchange represented as a normal HTTP
+The serialized headers of an exchange represented as a normal HTTP
 request/response pair (Section 2.1 of {{?RFC7230}} or Section 8.1 of
-{{?RFC7540}}) are:
+{{?RFC7540}}) are the canonical serialization ({{canonical-cbor}}) of the CBOR
+representation ({{cbor-representation}}) of the following request and response
+metadata and headers:
 
 * The method (Section 4 of {{!RFC7231}}) and effective request URI (Section 5.5
   of {{!RFC7230}}) of the request.
 * The response status code (Section 6 of {{!RFC7231}}) and the response header
   fields whose names are listed in that exchange's `Signed-Headers` header field
-  ({{signed-headers}}), in the order they appear in that header field. If a
-  response header field name from `Signed-Headers` does not appear in the
-  exchange's response header fields, the exchange has no significant headers.
+  ({{signed-headers}}). If a response header field name from `Signed-Headers`
+  does not appear in the exchange's response header fields, the exchange has no
+  serialized headers.
 
 If the exchange's `Signed-Headers` header field is not present, doesn't parse as
 a Structured Header ({{!I-D.ietf-httpbis-header-structure}}) or doesn't follow
 the constraints on its value described in {{signed-headers}}, the exchange has
-no significant headers.
+no serialized headers.
 
-#### Open Questions {#oq-significant-headers}
+#### Open Questions {#oq-serialized-headers}
 
-Do the significant headers of an exchange need to include the `Signed-Headers`
+Do the serialized headers of an exchange need to include the `Signed-Headers`
 header field itself?
 
 ### The Signed-Headers Header {#signed-headers}
@@ -1054,14 +1073,22 @@ NOT treat a PUSH_PROMISE for which the server is not authoritative as a stream
 error (Section 5.4.2 of {{!RFC7540}}) of type PROTOCOL_ERROR, as described in
 Section 8.2 of {{?RFC7540}}.
 
-Instead, the client MUST validate such a PUSH_PROMISE and its response by taking
-the `Signature` header field from the response, and the exchange consisting of
-the PUSH_PROMISE and the response without that `Signature` header field, and
-passing them to the algorithm in {{cross-origin-trust}}. If this returns
-"invalid", the client MUST treat the response as a stream error (Section 5.4.2
-of {{!RFC7540}}) of type NO_TRUSTED_EXCHANGE_SIGNATURE. Otherwise, the client
-MUST treat the pushed response as if the server were authoritative for the
-PUSH_PROMISE's authority.
+Instead, the client MUST validate such a PUSH_PROMISE and its response by
+running the algorithm in {{cross-origin-trust}} over:
+
+* The `Signature` header field from the response.
+* The canonical serialization ({{canonical-cbor}}) of the CBOR representation
+  ({{cbor-representation}}) of the following request and response metadata and
+  headers:
+  * The method, effective request URI, and headers from the PUSH_PROMISE.
+  * The pushed response's status and its headers except for the `Signature`
+    header field.
+* The response's payload.
+
+If this returns "invalid", the client MUST treat the response as a stream error
+(Section 5.4.2 of {{!RFC7540}}) of type NO_TRUSTED_EXCHANGE_SIGNATURE.
+Otherwise, the client MUST treat the pushed response as if the server were
+authoritative for the PUSH_PROMISE's authority.
 
 #### Open Questions ### {#oq-cross-origin-push}
 
@@ -1093,13 +1120,10 @@ This content type consists of the concatenation of the following items:
    524288 (512*1024), parsing MUST fail.
 1. `sigLength` bytes holding the `Signature` header field's value
    ({{signature-header}}).
-1. `headerLength` bytes holding the signed headers, the canonical serialization
+1. `headerLength` bytes holding `signedHeaders`, the canonical serialization
    ({{canonical-cbor}}) of the CBOR representation of the request and response
    headers of the exchange represented by the `application/signed-exchange`
    resource ({{cbor-representation}}), excluding the `Signature` header field.
-
-   Note that this is exactly the bytes used when checking signature validity in
-   {{signature-validity}}.
 1. The payload body (Section 3.3 of {{!RFC7230}}) of the exchange represented by
    the `application/signed-exchange` resource.
 
@@ -1112,8 +1136,8 @@ This content type consists of the concatenation of the following items:
 
 To determine whether to trust a cross-origin exchange stored in an
 `application/signed-exchange` resource, pass the `Signature` header field's
-value and an exchange consisting of the headers from the signed headers section
-and the payload body, to the algorithm in {{cross-origin-trust}}.
+value, `signedHeaders`, and the payload body to the algorithm in
+{{cross-origin-trust}}.
 
 ### Example ## {#example-application-signed-exchange}
 
@@ -1664,7 +1688,7 @@ The previous {{?I-D.thomson-http-content-signature}} and
 ({{?I-D.cavage-http-signatures}} could also sign the response headers and the
 request method and path. However, the same path, response headers, and content
 may mean something very different when retrieved from a different server.
-{{significant-headers}} currently includes the whole request URL in the
+{{serialized-headers}} currently includes the whole request URL in the
 signature, but it's possible we need a more flexible scheme to allow some
 higher-level protocols to accept a less-signed URL.
 
