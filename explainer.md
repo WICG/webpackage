@@ -353,11 +353,11 @@ this tries to return the response stream that was attached to the redirect.
 However, if either of the following conditions is met, the fetch bypasses the
 attached exchange and continues down to the lower caches and the network:
 
-* The inner request headers aren't [sufficiently
-  similar](https://wicg.github.io/webpackage/loading.html#request-matching) to
-  the headers in the Request the SW sent. This prevents a malicious intermediate
-  from causing the client to use the wrong content-negotiated resource. If we
-  later put inner responses in the HTTP cache (TBD), this also prevents the
+* The inner request doesn't
+  [match](https://wicg.github.io/webpackage/loading.html#request-matching) the
+  `Request` the Service Worker sent. This prevents a malicious intermediate from
+  causing the client to use the wrong content-negotiated resource. If we later
+  put inner responses in the HTTP cache (TBD), this also prevents the
   intermediate from putting the wrong resource there.
 * There's a response in a lower cache with a newer Date header than the inner
   response's Date header. This prevents some downgrade attacks.
