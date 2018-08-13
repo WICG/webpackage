@@ -240,7 +240,7 @@ steps, taking the `stream` as input.
    bytestring header from `stream` ({{parse-bytestring}}). If this is an error,
    return that error.
 
-1. If `sectionLengthsLength` is TBD or greater, return an error.
+1. If `sectionLengthsLength` is 8192 (8*1024) or greater, return an error.
 
 1. Let `sectionLengthsBytes` be the result of reading `sectionLengthsLength`
    bytes from `stream`. If `sectionLengthsBytes` is an error, return that error.
@@ -494,7 +494,7 @@ as returned by {{semantics-load-metadata}}.
 1. Let `headerLength` be the result of getting the length of a CBOR bytestring
    header from `stream` ({{parse-bytestring}}). If `headerLength` is an error,
    return that error.
-1. If `headerLength` is TBD or greater, return an error.
+1. If `headerLength` is 524288 (512*1024) or greater, return an error.
 1. Let `headerCbor` be the result of reading `headerLength` bytes from `stream`
    and parsing a CBOR item from them matching the `headers` CDDL rule. If either
    the read or parse returns an error, return that error.

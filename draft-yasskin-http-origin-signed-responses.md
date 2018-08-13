@@ -470,7 +470,7 @@ to retrieve an updated OCSP from the original server.
    yet), then return "invalid". If the selected header field provides integrity
    guarantees weaker than SHA-256, return "invalid". If validating integrity
    using the selected header field requires the client to process records larger
-   than TBD bytes, return "invalid". Clients MUST implement at least the `MI`
+   than 16384 bytes, return "invalid". Clients MUST implement at least the `MI`
    ({{!I-D.thomson-http-mice}}) header field with its `mi-sha256` content
    encoding.
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
@@ -1073,10 +1073,10 @@ This content type consists of the concatenation of the following items:
    MUST use this file signature, but implementations of drafts MUST NOT use it
    and MUST use another implementation-specific string beginning with "sxg1-" and
    ending with a 0 byte instead.
-1. 3 bytes storing a big-endian integer `sigLength`. If this is larger
-   than TBD, parsing MUST fail.
+1. 3 bytes storing a big-endian integer `sigLength`. If this is larger than
+   16384 (16*1024), parsing MUST fail.
 1. 3 bytes storing a big-endian integer `headerLength`. If this is larger than
-   TBD, parsing MUST fail.
+   524288 (512*1024), parsing MUST fail.
 1. `sigLength` bytes holding the `Signature` header field's value
    ({{signature-header}}).
 1. `headerLength` bytes holding the signed headers, the canonical serialization
@@ -1777,11 +1777,11 @@ data up to a certain size, it can avoid the complexity of spooling large files
 to disk.
 
 To allow the network layer to verify signed exchanges using a bounded amount of
-memory, {{application-signed-exchange}} requires the signature and headers to be
-less than TBD bytes long, and {{signature-validity}} requires that the MI record
-size be less than TBD bytes. This allows the network layer to validate a bounded
-chunk at a time, and pass that chunk on to a renderer, and then forget about
-that chunk before processing the next one.
+memory, {{application-signed-exchange}} requires the signature to be less than
+16kB and the headers to be less than 512kB, and {{signature-validity}} requires
+that the MI record size be less than 16kB. This allows the network layer to
+validate a bounded chunk at a time, and pass that chunk on to a renderer, and
+then forget about that chunk before processing the next one.
 
 The `Digest` header field from {{!RFC3230}} requires the network layer to buffer
 the entire response body, so it's disallowed.
@@ -1872,6 +1872,7 @@ RFC EDITOR PLEASE DELETE THIS SECTION.
 draft-05
 
 * Define absolute URLs, and limit the schemes each instance can use.
+* Fill in TBD size limits.
 
 draft-04
 
