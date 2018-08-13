@@ -180,9 +180,12 @@ values:
 
 "integrity"
 
-: A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing
-  the lowercase name of the response header field that guards the response
-  payload's integrity.
+: A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing a
+  "/"-separated sequence of names starting with the lowercase name of the
+  response header field that guards the response payload's integrity. The
+  meaning of subsequent names depends on the response header field, but for the
+  "digest" header field, the single following name is the name of the digest
+  algorithm that guards the payload's integrity.
 
 "cert-url"
 
@@ -222,27 +225,27 @@ readability.
 Signature:
  sig1;
   sig=*MEUCIQDXlI2gN3RNBlgFiuRNFpZXcDIaUpX6HIEwcZEc0cZYLAIga9DsVOMM+g5YpwEBdGW3sS+bvnmAJJiSMwhuBdqp5UY=*;
-  integrity="mi";
+  integrity="digest/mi-sha256";
   validity-url="https://example.com/resource.validity.1511128380";
   cert-url="https://example.com/oldcerts";
   cert-sha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI=*;
   date=1511128380; expires=1511733180,
  sig2;
   sig=*MEQCIGjZRqTRf9iKNkGFyzRMTFgwf/BrY2ZNIP/dykhUV0aYAiBTXg+8wujoT4n/W+cNgb7pGqQvIUGYZ8u8HZJ5YH26Qg=*;
-  integrity="mi";
+  integrity="digest/mi-sha256";
   validity-url="https://example.com/resource.validity.1511128380";
   cert-url="https://example.com/newcerts";
   cert-sha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw=*;
   date=1511128380; expires=1511733180,
  srisig;
   sig=*lGZVaJJM5f2oGczFlLmBdKTDL+QADza4BgeO494ggACYJOvrof6uh5OJCcwKrk7DK+LBch0jssDYPp5CLc1SDA=*
-  integrity="mi";
+  integrity="digest/mi-sha256";
   validity-url="https://example.com/resource.validity.1511128380";
   ed25519key=*zsSevyFsxyZHiUluVBDd4eypdRLTqyWRVOJuuKUz+A8=*
   date=1511128380; expires=1511733180,
  thirdpartysig;
   sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+=*;
-  integrity="mi";
+  integrity="digest/mi-sha256";
   validity-url="https://thirdparty.example.com/resource.validity.1511161860";
   cert-url="https://thirdparty.example.com/certs";
   cert-sha256=*UeOwUPkvxlGRTyvHcsMUN0A2oNsZbU8EUvg8A9ZAnNc=*;
@@ -254,8 +257,8 @@ There are 4 signatures: 2 from different secp256r1 certificates within
 controlled by `example.com`, and a fourth using a secp256r1 certificate owned by
 `thirdparty.example.com`.
 
-All 4 signatures rely on the `MI` response header to guard the integrity of the
-response payload.
+All 4 signatures rely on the `Digest` response header with the mi-sha256 digest
+algorithm to guard the integrity of the response payload.
 
 The signatures include a "validity-url" that includes the first time the resource
 was seen. This allows multiple versions of a resource at the same URL to be
@@ -331,8 +334,8 @@ Accept: */*
 
 HTTP/1.1 200
 Content-Type: text/html
-MI: mi-sha256=dcRDgR2GM35DluAV13PzgnG6-pvQwPywfFvAu1UeFrs
-Signed-Headers: "content-type", "mi"
+Digest: mi-sha256=dcRDgR2GM35DluAV13PzgnG6+pvQwPywfFvAu1UeFrs=
+Signed-Headers: "content-type", "digest"
 
 <!doctype html>
 <html>
@@ -350,7 +353,7 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
     ':method': 'GET',
   },
   {
-    'mi': 'mi-sha256=dcRDgR2GM35DluAV13PzgnG6-pvQwPywfFvAu1UeFrs',
+    'digest': 'mi-sha256=dcRDgR2GM35DluAV13PzgnG6+pvQwPywfFvAu1UeFrs=',
     ':status': '200',
     'content-type': 'text/html'
   }
@@ -470,8 +473,17 @@ to retrieve an updated OCSP from the original server.
    yet), then return "invalid". If the selected header field provides integrity
    guarantees weaker than SHA-256, return "invalid". If validating integrity
    using the selected header field requires the client to process records larger
-   than 16384 bytes, return "invalid". Clients MUST implement at least the `MI`
-   ({{!I-D.thomson-http-mice}}) header field with its `mi-sha256` content
+   than 16384 bytes, return "invalid". Clients MUST implement at least the
+   `Digest` header field with its `mi-sha256` digest algorithm (Section 3 of
+   {{!I-D.thomson-http-mice}}).
+
+   Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
+   RFC MUST recognize the draft spelling of the content encoding and digest
+   algorithm specified by {{!I-D.thomson-http-mice}} until that draft is
+   published as an RFC. For example, implementations of
+   draft-thomson-http-mice-03 would use `mi-sha256-03` and MUST NOT use
+   `mi-sha256` itself. This ensures that final implementations don't need to
+   handle compatibility with implementations of early drafts of that content
    encoding.
 1. Set `publicKey` and `signing-alg` depending on which key fields are present:
    1. If `cert-url` is present:
@@ -531,7 +543,8 @@ to retrieve an updated OCSP from the original server.
 
 Note that the above algorithm can determine that an exchange's headers are
 potentially-valid before the exchange's payload is received. Similarly, if
-`integrity` identifies a header field like `MI` ({{?I-D.thomson-http-mice}})
+`integrity` identifies a header field and parameter like `Digest:mi-sha256`
+({{?I-D.thomson-http-mice}})
 that can incrementally validate the payload, early parts of the payload can be
 determined to be potentially-valid before later parts of the payload.
 Higher-level protocols MAY process parts of the exchange that have been
@@ -631,7 +644,7 @@ and `sig2`) if it wishes to update those signatures. This URL might contain:
     'sig1; '
     'sig=*MEQCIC/I9Q+7BZFP6cSDsWx43pBAL0ujTbON/+7RwKVk+ba5AiB3FSFLZqpzmDJ0NumNwN04pqgJZE99fcK86UjkPbj4jw==*; '
     'validity-url="https://example.com/resource.validity.1511157180"; '
-    'integrity="mi"; '
+    'integrity="digest/mi-sha256"; '
     'cert-url="https://example.com/newcerts"; '
     'cert-sha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw=*; '
     'date=1511733180; expires=1512337980'
@@ -702,15 +715,17 @@ parameters on existing identifiers may be defined by future specifications.
 
 ### Integrity identifiers ### {#accept-signature-integrity}
 
-Identifiers starting with "mi/" indicate that the client supports the `MI`
-header field ({{!I-D.thomson-http-mice}}) with the parameter from the HTTP MI
-Parameter Registry registry named in lower-case by the rest of the identifier.
-For example, "mi/mi-blake2" indicates support for Merkle integrity with the
-as-yet-unspecified mi-blake2 parameter, and "-mi/mi-sha256" indicates
+Identifiers starting with "digest/" indicate that the client supports the
+`Digest` header field ({{!RFC3230) with the parameter from the [HTTP Digest
+Algorithm Values
+Registry](https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml)
+registry named in lower-case by the rest of the identifier. For example,
+"digest/mi-blake2" indicates support for Merkle integrity with the
+as-yet-unspecified mi-blake2 parameter, and "-digest/mi-sha256" indicates
 non-support for Merkle integrity with the mi-sha256 content encoding.
 
 If the `Accept-Signature` header field is present, servers SHOULD assume support
-for "mi/mi-sha256" unless the header field states otherwise.
+for "digest/mi-sha256" unless the header field states otherwise.
 
 ### Key type identifiers ### {#accept-signature-key-types}
 
@@ -760,21 +775,20 @@ as=script href="...">` where the public key isn't known until the matching
 ### Examples ### {#accept-signature-examples}
 
 ~~~http
-Accept-Signature: mi/mi-sha256
+Accept-Signature: digest/mi-sha256
 ~~~
 
 states that the client will accept signatures with payload integrity assured by
-the `MI` header and `mi-sha256` content encoding and implies that the client
-will accept integrity assured by the `Digest: SHA-256` header and signatures
-from ECDSA keys on the secp256r1 curve.
+the `Digest` header and `mi-sha256` digest algorithm and implies that the client
+will accept signatures from ECDSA keys on the secp256r1 curve.
 
 ~~~http
 Accept-Signature: -ecdsa/secp256r1, ecdsa/secp384r1
 ~~~
 
 states that the client will accept ECDSA keys on the secp384r1 curve but not the
-secp256r1 curve and payload integrity assured with the `MI: mi-sha256` header
-field.
+secp256r1 curve and payload integrity assured with the `Digest: mi-sha256`
+header field.
 
 ### Open Questions ### {#oq-accept-signature}
 
@@ -1112,7 +1126,7 @@ header field and payload elided with a ...:
 ~~~
 sxg1\0<3-byte length of the following header
 value><3-byte length of the encoding of the
-following array>sig1; sig=*...; integrity="mi"; ...[
+following array>sig1; sig=*...; integrity="digest/mi-sha256"; ...[
   {
     ':method': 'GET',
     ':url': 'https://example.com/',
@@ -1873,6 +1887,7 @@ draft-05
 
 * Define absolute URLs, and limit the schemes each instance can use.
 * Fill in TBD size limits.
+* Update to mice-03 including the Digest header.
 
 draft-04
 
