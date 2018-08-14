@@ -308,15 +308,12 @@ the CBOR ({{!RFC7049}}) array with the following content:
 1. The map mapping:
    * The byte string ':method' to the byte string containing the request's
      method.
-   * The byte string ':url' to the byte string containing the request's
-     effective request URI, which MUST be an absolute URL ({{terminology}}) with
-     a scheme of "https".
    * For each request header field except for the `Host` header field, the
      header field's lowercase name as a byte string to the header field's value
      as a byte string.
 
-     Note: `Host` is excluded because it is already part of the effective
-     request URI.
+     Note: `Host` is excluded because it is part of the effective request URI,
+     which is represented outside of this map.
 1. The map mapping:
    * The byte string ':status' to the byte string containing the response's
      3-digit status code, and
@@ -441,6 +438,8 @@ parameters.
 The client MUST use the following algorithm to determine whether each signature
 with parameters is invalid or potentially-valid for an exchange's
 
+* `requestUrl`, a byte sequence that can be parsed into the exchange's effective
+  request URI (Section 5.5 of {{!RFC7230}}),
 * `headers`, a byte sequence holding the canonical serialization
   ({{canonical-cbor}}) of the CBOR representation ({{cbor-representation}}) of
   the exchange's request and response metadata and headers, and
@@ -511,6 +510,8 @@ to retrieve an updated OCSP from the original server.
       followed by the bytes of `validity-url`.
    1. The 8-byte big-endian encoding of `date`.
    1. The 8-byte big-endian encoding of `expires`.
+   1. The 8-byte big-endian encoding of the length in bytes of `requestUrl`,
+      followed by the bytes of `requestUrl`.
    1. The 8-byte big-endian encoding of the length in bytes of `headers`,
       followed by the bytes of `headers`.
 1. If `cert-url` is present and the SHA-256 hash of `main-certificate`'s
@@ -815,6 +816,8 @@ Do I have the right structure for the identifiers indicating feature support?
 To determine whether to trust a cross-origin exchange, the client takes a
 `Signature` header field ({{signature-header}}) and the `exchange`'s
 
+* `requestUrl`, a byte sequence that can be parsed into the exchange's effective
+  request URI (Section 5.5 of {{!RFC7230}}),
 * `headers`, a byte sequence holding the canonical serialization
   ({{canonical-cbor}}) of the CBOR representation ({{cbor-representation}}) of
   the exchange's request and response metadata and headers, and
@@ -828,17 +831,17 @@ signature returns "valid", return "valid". Otherwise, return "invalid".
 
 1. If the signature's ["validity-url" parameter](#signature-validityurl) is not
    [same-origin](https://html.spec.whatwg.org/multipage/origin.html#same-origin)
-   with `exchange`'s effective request URI (Section 5.5 of {{!RFC7230}}), return
-   "invalid".
+   with `requestUrl`, return "invalid".
 1. Use {{signature-validity}} to determine the signature's validity for
-   `headers` and `payload`, getting `certificate-chain` back. If this returned
-   "invalid" or didn't return a certificate chain, return "invalid".
+   `requestUrl`, `headers`, and `payload`, getting `certificate-chain` back. If
+   this returned "invalid" or didn't return a certificate chain, return
+   "invalid".
 1. Let `exchange` be the exchange metadata and headers parsed out of `headers`.
 1. If `exchange`'s request method is not safe (Section 4.2.1 of {{!RFC7231}}) or
    not cacheable (Section 4.2.3 of {{!RFC7231}}), return "invalid".
 1. If `exchange`'s headers contain a stateful header field, as defined in
    {{stateful-headers}}, return "invalid".
-1. Let `authority` be the host component of `exchange`'s effective request URI.
+1. Let `authority` be the host component of `requestUrl`.
 1. Validate the `certificate-chain` using the following substeps. If any of them
    fail, re-run {{signature-validity}} once over the signature with the
    `forceFetch` flag set, and restart from step 2. If a substep fails again,
@@ -955,10 +958,14 @@ The signature for a signed exchange can be included in a normal HTTP response.
 Because different clients send different request header fields, and intermediate
 servers add response header fields, it can be impossible to have a signature for
 the exact request and response that the client sees. Therefore, when a client
-validates the `Signature` header field for an exchange represented as a normal
-HTTP request/response pair, it MUST pass the serialized headers defined by
-{{serialized-headers}} to the validation procedure ({{signature-validity}})
-along with the `Signature` header field and the response's payload.
+calls the validation procedure in {{signature-validity}}) to validate the
+`Signature` header field for an exchange represented as a normal HTTP
+request/response pair, it MUST pass:
+
+* The `Signature` header field,
+* The effective request URI (Section 5.5 of {{!RFC7230}}) of the request,
+* The serialized headers defined by {{serialized-headers}}, and
+* The response's payload.
 
 If the client relies on signature validity for any aspect of its behavior, it
 MUST ignore any header fields that it didn't pass to the validation procedure.
@@ -971,8 +978,7 @@ request/response pair (Section 2.1 of {{?RFC7230}} or Section 8.1 of
 representation ({{cbor-representation}}) of the following request and response
 metadata and headers:
 
-* The method (Section 4 of {{!RFC7231}}) and effective request URI (Section 5.5
-  of {{!RFC7230}}) of the request.
+* The method (Section 4 of {{!RFC7231}}) of the request.
 * The response status code (Section 6 of {{!RFC7231}}) and the response header
   fields whose names are listed in that exchange's `Signed-Headers` header field
   ({{signed-headers}}). If a response header field name from `Signed-Headers`
@@ -1075,10 +1081,11 @@ Instead, the client MUST validate such a PUSH_PROMISE and its response by
 running the algorithm in {{cross-origin-trust}} over:
 
 * The `Signature` header field from the response.
+* The effective request URI from the PUSH_PROMISE.
 * The canonical serialization ({{canonical-cbor}}) of the CBOR representation
   ({{cbor-representation}}) of the following request and response metadata and
   headers:
-  * The method, effective request URI, and headers from the PUSH_PROMISE.
+  * The method and headers from the PUSH_PROMISE.
   * The pushed response's status and its headers except for the `Signature`
     header field.
 * The response's payload.
@@ -1104,14 +1111,24 @@ and header fields, and a response payload.
 
 This content type consists of the concatenation of the following items:
 
-1. The ASCII characters "sxg1" followed by a 0 byte, to serve as a file
-   signature. This is redundant with the MIME type, and recipients that receive
-   both MUST check that they match and stop parsing if they don't.
+1. 8 bytes consisting of the ASCII characters "sxg1" followed by 4 0x00 bytes,
+   to serve as a file signature. This is redundant with the MIME type, and
+   recipients that receive both MUST check that they match and stop parsing if
+   they don't.
 
    Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC
    MUST use this file signature, but implementations of drafts MUST NOT use it
-   and MUST use another implementation-specific string beginning with "sxg1-" and
-   ending with a 0 byte instead.
+   and MUST use another implementation-specific 8-byte string beginning with
+   "sxg1-".
+1. 2 bytes storing a big-endian integer `fallbackUrlLength`.
+1. `fallbackUrlLength` bytes holding a `fallbackUrl`, which MUST be an absolute
+   URL with a scheme of "https".
+
+   Note: The byte location of the fallback URL is intended to remain invariant
+   across versions of the `application/signed-exchange` format so that parsers
+   encountering unknown versions can always find a URL to redirect to.
+
+   Issue: Should this fallback information also include the method?
 1. 3 bytes storing a big-endian integer `sigLength`. If this is larger than
    16384 (16*1024), parsing MUST fail.
 1. 3 bytes storing a big-endian integer `headerLength`. If this is larger than
@@ -1134,8 +1151,8 @@ This content type consists of the concatenation of the following items:
 
 To determine whether to trust a cross-origin exchange stored in an
 `application/signed-exchange` resource, pass the `Signature` header field's
-value, `signedHeaders`, and the payload body to the algorithm in
-{{cross-origin-trust}}.
+value, `fallbackUrl` as the effective request URI, `signedHeaders`, and the
+payload body to the algorithm in {{cross-origin-trust}}.
 
 ### Example ## {#example-application-signed-exchange}
 
