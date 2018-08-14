@@ -505,16 +505,14 @@ to retrieve an updated OCSP from the original server.
       Exchange 1 ” instead. This ensures that signers can predict how their
       signatures will be used.
    1. A single 0 byte which serves as a separator.
-   1. The bytes of the canonical CBOR serialization ({{canonical-cbor}}) of a
-      CBOR map mapping:
-      1. If `cert-sha256` is set:
-         1. The text string "cert-sha256" to the byte string value of
-            `cert-sha256`.
-      1. The text string "validity-url" to the byte string value of
-         `validity-url`.
-      1. The text string "date" to the integer value of `date`.
-      1. The text string "expires" to the integer value of `expires`.
-      1. The text string "headers" to `headers`.
+   1. If `cert-sha256` is set, a byte holding the value 32 followed by the 32
+      bytes of the value of `cert-sha256`. Otherwise a 0 byte.
+   1. The 8-byte big-endian encoding of the length in bytes of `validity-url`,
+      followed by the bytes of `validity-url`.
+   1. The 8-byte big-endian encoding of `date`.
+   1. The 8-byte big-endian encoding of `expires`.
+   1. The 8-byte big-endian encoding of the length in bytes of `headers`,
+      followed by the bytes of `headers`.
 1. If `cert-url` is present and the SHA-256 hash of `main-certificate`'s
    `cert_data` is not equal to `cert-sha256` (whose presence was checked when the
    `Signature` header field was parsed), return "invalid".
