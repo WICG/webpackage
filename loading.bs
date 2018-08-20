@@ -244,7 +244,13 @@ add the following steps:
         1. Set |request|'s [=request/stashed exchange=] to |parsedExchange|.
 
     : Anything else
-    :: Set |actualResponse| to a [=network error=].
+    ::
+        1. Let |fallbackUrlBytes| be the result of [=extracting the fallback
+            URL=] from |actualResponse|.
+        1. If |fallbackUrlBytes| is a failure, return a [=network error=].
+        1. Set |actualResponse|'s [=status=] to `303`.
+        1. [=header list/Set=] |actualResponse|'s `` `Location` `` header to
+            |fallbackUrlBytes|.
 
     </dl>
 
@@ -384,6 +390,34 @@ result of the following steps:
     return undefined.
 1. Let |params| be |mimeType|'s [=MIME type/parameters=]
 1. If |params|["v"] exists, return it. Otherwise, return undefined.
+
+<h3 algorithm id="parsing-fallback">Extracting the fallback URL</h3>
+
+This section defines how to load a the fallback URL from its invariant location
+in an unrecognized signed exchange version.
+
+<dfn>Extracting the fallback URL</dfn> from a [=response=] |response| returns
+the result of the following steps:
+
+1. Assert: This algorithm is running [=in parallel=].
+1. Assert: The [=signed exchange version=] of |response| is not undefined.
+1. Let |bodyStream| be |response|'s [=response/body=]'s [=body/stream=].
+1. If |bodyStream| is null, return failure.
+1. Let |stream| be a [=new read buffer=] for |bodyStream|.
+1. Let |magic| be the result of [=read buffer/reading=] 8 bytes from |stream|.
+1. If |magic| is a failure, return it.
+1. Let |encodedFallbackUrlLength| be the result of [=read buffer/reading=] 2
+    bytes from |stream|.
+1. If |encodedFallbackUrlLength| is a failure, return it.
+1. Let |fallbackUrlLength| be the result of decoding |encodedFallbackUrlLength|
+    as a big-endian integer.
+1. Let |fallbackUrlBytes| be the result of [=read buffer/reading=]
+    |fallbackUrlLength| bytes from |stream|.
+1. If |fallbackUrlBytes| is a failure, return it.
+1. If the result of running the [=URL parser=] on |fallbackUrl| is a failure, if
+    it has a non-null [=url/fragment=], or if its [=url/scheme=] is something
+    other than `"https"`, return a failure.
+1. Return |fallbackUrlBytes|.
 
 <h3 algorithm id="parsing-b1">Parsing `b1` signed exchanges</h3>
 
