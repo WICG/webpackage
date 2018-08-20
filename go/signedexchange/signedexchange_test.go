@@ -14,6 +14,7 @@ import (
 	. "github.com/WICG/webpackage/go/signedexchange"
 	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
 	"github.com/WICG/webpackage/go/signedexchange/internal/testhelper"
+	"github.com/WICG/webpackage/go/signedexchange/version"
 )
 
 const (
@@ -174,7 +175,8 @@ func TestSignedExchange(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	if err := e.Write(&buf); err != nil {
+	ver := version.Version1b1
+	if err := e.Write(&buf, ver); err != nil {
 		t.Fatal(err)
 	}
 
@@ -182,7 +184,7 @@ func TestSignedExchange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(magic, HeaderMagicBytes) {
+	if !bytes.Equal(magic, HeaderMagicBytes(ver)) {
 		t.Errorf("unexpected magic: %q", magic)
 	}
 
