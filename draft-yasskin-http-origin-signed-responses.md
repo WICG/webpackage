@@ -345,7 +345,6 @@ extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
 ~~~cbor-diag
 [
   {
-    ':url': 'https://example.com/',
     'accept': '*/*',
     ':method': 'GET',
   },
@@ -1163,12 +1162,12 @@ defined in Appendix G of {{?I-D.ietf-cbor-cddl}}, and most of the `Signature`
 header field and payload elided with a ...:
 
 ~~~
-sxg1\0<3-byte length of the following header
+sxg1\0\0\0\0<2-byte length of the following url string>
+https://example.com/<3-byte length of the following header
 value><3-byte length of the encoding of the
 following array>sig1; sig=*...; integrity="digest/mi-sha256"; ...[
   {
     ':method': 'GET',
-    ':url': 'https://example.com/',
     'accept', '*/*'
   },
   {
