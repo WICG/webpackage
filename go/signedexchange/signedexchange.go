@@ -92,8 +92,8 @@ func (e *Exchange) MiEncodePayload(recordSize int) error {
 	return nil
 }
 
-func (e *Exchange) AddSignatureHeader(s *Signer) error {
-	h, err := s.signatureHeaderValue(e)
+func (e *Exchange) AddSignatureHeader(s *Signer, ver version.Version) error {
+	h, err := s.signatureHeaderValue(e, ver)
 	if err != nil {
 		return err
 	}
@@ -261,7 +261,7 @@ func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 		}
 
 		// Step 2. "3 bytes storing a big-endian integer sigLength. If this is larger than TBD, parsing MUST fail." [spec text]
-		encodedSigLength, err := bigendian.EncodeBytesUint(len(e.SignatureHeaderValue), 3)
+		encodedSigLength, err := bigendian.EncodeBytesUint(int64(len(e.SignatureHeaderValue)), 3)
 		if err != nil {
 			return err
 		}
@@ -270,7 +270,7 @@ func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 		}
 
 		// Step 3. "3 bytes storing a big-endian integer headerLength. If this is larger than TBD, parsing MUST fail." [spec text]
-		encodedHeaderLength, err := bigendian.EncodeBytesUint(headerLength, 3)
+		encodedHeaderLength, err := bigendian.EncodeBytesUint(int64(headerLength), 3)
 		if err != nil {
 			return err
 		}
@@ -296,15 +296,15 @@ func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 	case version.Version1b2:
 		// draft-yasskin-http-origin-signed-responses.html#rfc.section.5.3
 
-		// Step 1. "8 bytes consisting of the ASCII characters “sxg1” followed by 4 0x00 bytes, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don’t.
+		// "1. 8 bytes consisting of the ASCII characters “sxg1” followed by 4 0x00 bytes, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don’t.
 		// Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific 8-byte string beginning with “sxg1-“." [spec text]
 		if _, err := w.Write(HeaderMagicBytes(ver)); err != nil {
 			return err
 		}
 
-		// Step 2. "2 bytes storing a big-endian integer fallbackUrlLength." [spec text]
+		// "2. 2 bytes storing a big-endian integer fallbackUrlLength." [spec text]
 		url := e.RequestURI.String()
-		urlLength, err := bigendian.EncodeBytesUint(len(url), 2)
+		urlLength, err := bigendian.EncodeBytesUint(int64(len(url)), 2)
 		if err != nil {
 			return err
 		}
@@ -312,18 +312,18 @@ func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 			return err
 		}
 
-		// Step 3. "fallbackUrlLength bytes holding a fallbackUrl, which MUST be an absolute URL with a scheme of “https”.
+		// "3. fallbackUrlLength bytes holding a fallbackUrl, which MUST be an absolute URL with a scheme of “https”.
 		// Note: The byte location of the fallback URL is intended to remain invariant across versions of the application/signed-exchange format so that parsers encountering unknown versions can always find a URL to redirect to." [spec text]
 		if _, err := w.Write([]byte(url)); err != nil {
 			return err
 		}
 
-		// Step 4. "3 bytes storing a big-endian integer sigLength. If this is larger than 16384 (16*1024), parsing MUST fail." [spec text]
+		// "4. 3 bytes storing a big-endian integer sigLength. If this is larger than 16384 (16*1024), parsing MUST fail." [spec text]
 		if len(e.SignatureHeaderValue) > 16*1024 {
 			return fmt.Errorf("signedexchange: sigLength must <= %d but %d", 16*1024, len(e.SignatureHeaderValue))
 		}
 
-		encodedSigLength, err := bigendian.EncodeBytesUint(len(e.SignatureHeaderValue), 3)
+		encodedSigLength, err := bigendian.EncodeBytesUint(int64(len(e.SignatureHeaderValue)), 3)
 		if err != nil {
 			return err
 		}
@@ -331,11 +331,11 @@ func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 			return err
 		}
 
-		// Step 5. "3 bytes storing a big-endian integer headerLength. If this is larger than 524288 (512*1024), parsing MUST fail." [spec text]
+		// "5. 3 bytes storing a big-endian integer headerLength. If this is larger than 524288 (512*1024), parsing MUST fail." [spec text]
 		if headerLength > 512*1024 {
 			return fmt.Errorf("signedexchange: headerLength must <= %d but %d", 512*1024, headerLength)
 		}
-		encodedHeaderLength, err := bigendian.EncodeBytesUint(headerLength, 3)
+		encodedHeaderLength, err := bigendian.EncodeBytesUint(int64(headerLength), 3)
 		if err != nil {
 			return err
 		}
@@ -343,21 +343,24 @@ func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 			return err
 		}
 
-		// Step 6. "sigLength bytes holding the Signature header field’s value (Section 3.1)." [spec text]
+		// "6. sigLength bytes holding the Signature header field’s value (Section 3.1)." [spec text]
 		if _, err := w.Write([]byte(e.SignatureHeaderValue)); err != nil {
 			return err
 		}
 
-		// Step 7. "headerLength bytes holding signedHeaders, the canonical serialization (Section 3.4) of the CBOR representation of the request and response headers of the exchange represented by the application/signed-exchange resource (Section 3.2), excluding the Signature header field." [spec text]
+		// "7. headerLength bytes holding signedHeaders, the canonical serialization (Section 3.4) of the CBOR representation of the request and response headers of the exchange represented by the application/signed-exchange resource (Section 3.2), excluding the Signature header field." [spec text]
 		if _, err := io.Copy(w, headerBuf); err != nil {
 			return err
 		}
 
-		// Step 8. The payload body (Section 3.3 of [RFC7230]) of the exchange represented by the application/signed-exchange resource.
+		// "8. The payload body (Section 3.3 of [RFC7230]) of the exchange represented by the application/signed-exchange resource.
 		// Note that the use of the payload body here means that a Transfer-Encoding header field inside the application/signed-exchange header block has no effect. A Transfer-Encoding header field on the outer HTTP response that transfers this resource still has its normal effect." [spec text]
 		if _, err := w.Write(e.Payload); err != nil {
 			return err
 		}
+
+	default:
+		panic("not reached")
 	}
 
 	return nil
@@ -430,8 +433,8 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 	return e, nil
 }
 
-func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer) error {
-	bs, err := s.serializeSignedMessage(e)
+func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer, ver version.Version) error {
+	bs, err := s.serializeSignedMessage(e, ver)
 	if err != nil {
 		return err
 	}

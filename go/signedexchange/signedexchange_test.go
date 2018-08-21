@@ -170,12 +170,12 @@ func TestSignedExchange(t *testing.T) {
 		PrivKey:     privKey,
 		Rand:        zeroReader{},
 	}
-	if err := e.AddSignatureHeader(s); err != nil {
+	ver := version.Version1b1
+	if err := e.AddSignatureHeader(s, ver); err != nil {
 		t.Fatal(err)
 	}
 
 	var buf bytes.Buffer
-	ver := version.Version1b1
 	if err := e.Write(&buf, ver); err != nil {
 		t.Fatal(err)
 	}
@@ -289,7 +289,7 @@ func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 		PrivKey:     privKey,
 		Rand:        zeroReader{},
 	}
-	if err := e.AddSignatureHeader(s); err == nil {
+	if err := e.AddSignatureHeader(s, version.Version1b1); err == nil {
 		t.Errorf("non-{https,data} cert-url unexpectedly allowed in an exchange")
 	}
 }

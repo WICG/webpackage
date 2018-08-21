@@ -169,12 +169,12 @@ func run() error {
 		ValidityUrl: validityUrl,
 		PrivKey:     privkey,
 	}
-	if err := e.AddSignatureHeader(s); err != nil {
+	if err := e.AddSignatureHeader(s, ver); err != nil {
 		return err
 	}
 
 	if fMsg != nil {
-		if err := e.DumpSignedMessage(fMsg, s); err != nil {
+		if err := e.DumpSignedMessage(fMsg, s, ver); err != nil {
 			return fmt.Errorf("failed to write signature message dump. err: %v", err)
 		}
 	}

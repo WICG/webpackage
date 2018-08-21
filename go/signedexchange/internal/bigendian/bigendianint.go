@@ -6,8 +6,11 @@ import (
 
 var ErrOutOfRange = errors.New("bigendian: Given integer is out of encodable range.")
 
-func EncodeBytesUint(n int, size int) ([]byte, error) {
-	if n < 0 || n > int(int64(1)<<uint(size*8)) {
+func EncodeBytesUint(n int64, size int) ([]byte, error) {
+	if n < 0 {
+		return nil, ErrOutOfRange
+	}
+	if size < 7 && n > int64(1)<<uint(size*8) {
 		return nil, ErrOutOfRange
 	}
 
