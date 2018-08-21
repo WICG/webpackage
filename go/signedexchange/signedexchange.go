@@ -382,7 +382,6 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 	} else {
 		return nil, fmt.Errorf("singedexchange: wrong magic bytes: %v", magic)
 	}
-	_ = ver // TODO: impl
 
 	// Step 2. "3 bytes storing a big-endian integer sigLength. If this is larger than TBD, parsing MUST fail." [spec text]
 	sigLengthBytes := [3]byte{}
