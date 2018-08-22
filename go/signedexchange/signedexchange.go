@@ -24,7 +24,7 @@ func HeaderMagicBytes(v version.Version) []byte {
 	case version.Version1b1:
 		return []byte("sxg1-b1\x00")
 	case version.Version1b2:
-		return []byte("sxg1\x00\x00\x00\x00")
+		return []byte("sxg1-b2\x00")
 	default:
 		panic("not reached")
 	}
@@ -101,22 +101,25 @@ func (e *Exchange) AddSignatureHeader(s *Signer, ver version.Version) error {
 	return nil
 }
 
-func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder) []*cbor.MapEntryEncoder {
-	return []*cbor.MapEntryEncoder{
+func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder, ver version.Version) []*cbor.MapEntryEncoder {
+	encoders := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString(keyMethod)
 			valueE.EncodeByteString(valueGet)
 		}),
-		// TODO: Don't encode URL when the version is not 1b1
-		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-			keyE.EncodeByteString(keyURL)
-			valueE.EncodeByteString([]byte(e.RequestURI.String()))
-		}),
 	}
+	if ver == version.Version1b1 {
+		encoders = append(encoders,
+			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				keyE.EncodeByteString(keyURL)
+				valueE.EncodeByteString([]byte(e.RequestURI.String()))
+			}))
+	}
+	return encoders
 }
 
-func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
-	mes := e.encodeRequestCommon(enc)
+func (e *Exchange) encodeRequest(enc *cbor.Encoder, ver version.Version) error {
+	mes := e.encodeRequestCommon(enc, ver)
 	return enc.EncodeMap(mes)
 }
 
@@ -213,11 +216,11 @@ func (e *Exchange) decodeResponseHeaders(dec *cbor.Decoder) error {
 }
 
 // draft-yasskin-http-origin-signed-responses.html#rfc.section.3.4
-func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
+func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder, ver version.Version) error {
 	if err := enc.EncodeArrayHeader(2); err != nil {
 		return fmt.Errorf("signedexchange: failed to encode top-level array header: %v", err)
 	}
-	if err := e.encodeRequest(enc); err != nil {
+	if err := e.encodeRequest(enc, ver); err != nil {
 		return err
 	}
 	if err := e.encodeResponseHeaders(enc); err != nil {
@@ -245,7 +248,7 @@ func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
 
 func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 	headerBuf := &bytes.Buffer{}
-	if err := e.encodeExchangeHeaders(cbor.NewEncoder(headerBuf)); err != nil {
+	if err := e.encodeExchangeHeaders(cbor.NewEncoder(headerBuf), ver); err != nil {
 		return err
 	}
 	headerLength := headerBuf.Len()
@@ -318,9 +321,13 @@ func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 			return err
 		}
 
+		const (
+			maxSignatureHeaderValueLen = 16 * 1024
+			maxHeaderLen               = 512 * 1024
+		)
 		// "4. 3 bytes storing a big-endian integer sigLength. If this is larger than 16384 (16*1024), parsing MUST fail." [spec text]
-		if len(e.SignatureHeaderValue) > 16*1024 {
-			return fmt.Errorf("signedexchange: sigLength must <= %d but %d", 16*1024, len(e.SignatureHeaderValue))
+		if len(e.SignatureHeaderValue) > maxSignatureHeaderValueLen {
+			return fmt.Errorf("signedexchange: sigLength must <= %d but %d", maxSignatureHeaderValueLen, len(e.SignatureHeaderValue))
 		}
 
 		encodedSigLength, err := bigendian.EncodeBytesUint(int64(len(e.SignatureHeaderValue)), 3)
@@ -332,8 +339,8 @@ func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 		}
 
 		// "5. 3 bytes storing a big-endian integer headerLength. If this is larger than 524288 (512*1024), parsing MUST fail." [spec text]
-		if headerLength > 512*1024 {
-			return fmt.Errorf("signedexchange: headerLength must <= %d but %d", 512*1024, headerLength)
+		if headerLength > maxHeaderLen {
+			return fmt.Errorf("signedexchange: headerLength must <= %d but %d", maxHeaderLen, headerLength)
 		}
 		encodedHeaderLength, err := bigendian.EncodeBytesUint(int64(headerLength), 3)
 		if err != nil {
@@ -382,6 +389,7 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 	} else {
 		return nil, fmt.Errorf("singedexchange: wrong magic bytes: %v", magic)
 	}
+	_ = ver // TODO: Implement decoder with the version
 
 	// Step 2. "3 bytes storing a big-endian integer sigLength. If this is larger than TBD, parsing MUST fail." [spec text]
 	sigLengthBytes := [3]byte{}

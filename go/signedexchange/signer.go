@@ -107,7 +107,7 @@ func (s *Signer) serializeSignedMessage(e *Exchange, ver version.Version) ([]byt
 			// 3.4) of exchange's headers."
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeTextString("headers")
-				e.encodeExchangeHeaders(valueE)
+				e.encodeExchangeHeaders(valueE, ver)
 			}),
 		)
 
@@ -163,7 +163,7 @@ func (s *Signer) serializeSignedMessage(e *Exchange, ver version.Version) ([]byt
 
 		// "9. The 8-byte big-endian encoding of the length in bytes of headers, followed by the bytes of headers." [spec text]
 		headerBuf := &bytes.Buffer{}
-		if err := e.encodeExchangeHeaders(cbor.NewEncoder(headerBuf)); err != nil {
+		if err := e.encodeExchangeHeaders(cbor.NewEncoder(headerBuf), ver); err != nil {
 			return nil, err
 		}
 		headerLenBytes, _ := bigendian.EncodeBytesUint(int64(headerBuf.Len()), 8)

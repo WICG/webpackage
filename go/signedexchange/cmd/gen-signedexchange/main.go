@@ -31,7 +31,7 @@ func (h *headerArgs) Set(value string) error {
 
 var (
 	flagUri            = flag.String("uri", "https://example.com/index.html", "The URI of the resource represented in the exchange")
-	flagVersion        = flag.String("version", "1b2", "The signedexchange version")
+	flagVersion        = flag.String("version", "1b1", "The signedexchange version")
 	flagResponseStatus = flag.Int("status", 200, "The status of the response represented in the exchange")
 	flagContent        = flag.String("content", "index.html", "Source file to be used as the exchange payload")
 	flagCertificate    = flag.String("certificate", "cert.pem", "Certificate chain PEM file of the origin")
