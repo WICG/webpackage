@@ -14,7 +14,21 @@ import (
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
 	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
 	"github.com/WICG/webpackage/go/signedexchange/mice"
+	"github.com/WICG/webpackage/go/signedexchange/version"
 )
+
+const HeaderMagicBytesLen = 8
+
+func HeaderMagicBytes(v version.Version) []byte {
+	switch v {
+	case version.Version1b1:
+		return []byte("sxg1-b1\x00")
+	case version.Version1b2:
+		return []byte("sxg1-b2\x00")
+	default:
+		panic("not reached")
+	}
+}
 
 type Exchange struct {
 	// Request
@@ -37,8 +51,6 @@ var (
 
 	valueGet = []byte("GET")
 )
-
-var HeaderMagicBytes = []byte("sxg1-b1\x00")
 
 func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte) (*Exchange, error) {
 	if uri.Scheme != "https" {
@@ -64,24 +76,43 @@ func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseH
 	}, nil
 }
 
-func (e *Exchange) MiEncodePayload(recordSize int) error {
-	if e.ResponseHeaders.Get("MI-Draft2") != "" {
-		return errors.New("Payload already MI encoded.")
+func (e *Exchange) MiEncodePayload(recordSize int, ver version.Version) error {
+	switch ver {
+	case version.Version1b1:
+		if e.ResponseHeaders.Get("MI-Draft2") != "" {
+			return errors.New("signedexchange: payload already MI encoded")
+		}
+		var buf bytes.Buffer
+		mi, err := mice.Encode(&buf, e.Payload, recordSize, ver)
+		if err != nil {
+			return err
+		}
+		e.Payload = buf.Bytes()
+		e.ResponseHeaders.Add("Content-Encoding", "mi-sha256-draft2")
+		e.ResponseHeaders.Add("MI-Draft2", mi)
+
+	case version.Version1b2:
+		if e.ResponseHeaders.Get("Digest") != "" {
+			return errors.New("signedexchange: response already has a Digest header")
+		}
+		var buf bytes.Buffer
+		digest, err := mice.Encode(&buf, e.Payload, recordSize, ver)
+		if err != nil {
+			return err
+		}
+		e.Payload = buf.Bytes()
+		e.ResponseHeaders.Add("Content-Encoding", "mi-sha256-03")
+		e.ResponseHeaders.Add("Digest", digest)
+
+	default:
+		panic("not reached")
 	}
 
-	var buf bytes.Buffer
-	mi, err := mice.Encode(&buf, e.Payload, recordSize)
-	if err != nil {
-		return err
-	}
-	e.Payload = buf.Bytes()
-	e.ResponseHeaders.Add("Content-Encoding", "mi-sha256-draft2")
-	e.ResponseHeaders.Add("MI-Draft2", mi)
 	return nil
 }
 
-func (e *Exchange) AddSignatureHeader(s *Signer) error {
-	h, err := s.signatureHeaderValue(e)
+func (e *Exchange) AddSignatureHeader(s *Signer, ver version.Version) error {
+	h, err := s.signatureHeaderValue(e, ver)
 	if err != nil {
 		return err
 	}
@@ -89,21 +120,25 @@ func (e *Exchange) AddSignatureHeader(s *Signer) error {
 	return nil
 }
 
-func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder) []*cbor.MapEntryEncoder {
-	return []*cbor.MapEntryEncoder{
+func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder, ver version.Version) []*cbor.MapEntryEncoder {
+	encoders := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString(keyMethod)
 			valueE.EncodeByteString(valueGet)
 		}),
-		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-			keyE.EncodeByteString(keyURL)
-			valueE.EncodeByteString([]byte(e.RequestURI.String()))
-		}),
 	}
+	if ver == version.Version1b1 {
+		encoders = append(encoders,
+			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				keyE.EncodeByteString(keyURL)
+				valueE.EncodeByteString([]byte(e.RequestURI.String()))
+			}))
+	}
+	return encoders
 }
 
-func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
-	mes := e.encodeRequestCommon(enc)
+func (e *Exchange) encodeRequest(enc *cbor.Encoder, ver version.Version) error {
+	mes := e.encodeRequestCommon(enc, ver)
 	return enc.EncodeMap(mes)
 }
 
@@ -200,11 +235,11 @@ func (e *Exchange) decodeResponseHeaders(dec *cbor.Decoder) error {
 }
 
 // draft-yasskin-http-origin-signed-responses.html#rfc.section.3.4
-func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
+func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder, ver version.Version) error {
 	if err := enc.EncodeArrayHeader(2); err != nil {
 		return fmt.Errorf("signedexchange: failed to encode top-level array header: %v", err)
 	}
-	if err := e.encodeRequest(enc); err != nil {
+	if err := e.encodeRequest(enc, ver); err != nil {
 		return err
 	}
 	if err := e.encodeResponseHeaders(enc); err != nil {
@@ -230,53 +265,128 @@ func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
 	return nil
 }
 
-// draft-yasskin-http-origin-signed-responses.html#application-http-exchange
-func (e *Exchange) Write(w io.Writer) error {
-	// Step 1. "The ASCII characters "sxg1" followed by a 0 byte, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don't." [spec text]
-	// "Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific string beginning with "sxg1-" and ending with a 0 byte instead." [spec text]
-	if _, err := w.Write(HeaderMagicBytes); err != nil {
-		return err
-	}
-
-	// Step 2. "3 bytes storing a big-endian integer sigLength. If this is larger than TBD, parsing MUST fail." [spec text]
-	encodedSigLength, err := bigendian.Encode3BytesUint(len(e.SignatureHeaderValue))
-	if err != nil {
-		return err
-	}
-	if _, err := w.Write(encodedSigLength[:]); err != nil {
-		return err
-	}
-
-	// Step 3. "3 bytes storing a big-endian integer headerLength. If this is larger than TBD, parsing MUST fail." [spec text]
+func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 	headerBuf := &bytes.Buffer{}
-	enc := cbor.NewEncoder(headerBuf)
-	if err := e.encodeExchangeHeaders(enc); err != nil {
+	if err := e.encodeExchangeHeaders(cbor.NewEncoder(headerBuf), ver); err != nil {
 		return err
 	}
-
 	headerLength := headerBuf.Len()
-	encodedHeaderLength, err := bigendian.Encode3BytesUint(headerLength)
-	if err != nil {
-		return err
-	}
 
-	if _, err := w.Write(encodedHeaderLength[:]); err != nil {
-		return err
-	}
+	switch ver {
+	case version.Version1b1:
+		// draft-yasskin-http-origin-signed-responses.html#application-http-exchange
 
-	// Step 4. "sigLength bytes holding the Signature header field's value (Section 3.1)." [spec text]
-	if _, err := w.Write([]byte(e.SignatureHeaderValue)); err != nil {
-		return err
-	}
+		// Step 1. "The ASCII characters "sxg1" followed by a 0 byte, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don't." [spec text]
+		// "Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific string beginning with "sxg1-" and ending with a 0 byte instead." [spec text]
+		if _, err := w.Write(HeaderMagicBytes(ver)); err != nil {
+			return err
+		}
 
-	// Step 5. "headerLength bytes holding the signed headers, the canonical serialization (Section 3.4) of the CBOR representation of the request and response headers of the exchange represented by the application/signed-exchange resource (Section 3.2), excluding the Signature header field." [spec text]
-	if _, err := io.Copy(w, headerBuf); err != nil {
-		return err
-	}
+		// Step 2. "3 bytes storing a big-endian integer sigLength. If this is larger than TBD, parsing MUST fail." [spec text]
+		encodedSigLength, err := bigendian.EncodeBytesUint(int64(len(e.SignatureHeaderValue)), 3)
+		if err != nil {
+			return err
+		}
+		if _, err := w.Write(encodedSigLength); err != nil {
+			return err
+		}
 
-	// Step 6. "The payload body (Section 3.3 of [RFC7230]) of the exchange represented by the application/signed-exchange resource." [spec text]
-	if _, err := w.Write(e.Payload); err != nil {
-		return err
+		// Step 3. "3 bytes storing a big-endian integer headerLength. If this is larger than TBD, parsing MUST fail." [spec text]
+		encodedHeaderLength, err := bigendian.EncodeBytesUint(int64(headerLength), 3)
+		if err != nil {
+			return err
+		}
+		if _, err := w.Write(encodedHeaderLength); err != nil {
+			return err
+		}
+
+		// Step 4. "sigLength bytes holding the Signature header field's value (Section 3.1)." [spec text]
+		if _, err := w.Write([]byte(e.SignatureHeaderValue)); err != nil {
+			return err
+		}
+
+		// Step 5. "headerLength bytes holding the signed headers, the canonical serialization (Section 3.4) of the CBOR representation of the request and response headers of the exchange represented by the application/signed-exchange resource (Section 3.2), excluding the Signature header field." [spec text]
+		if _, err := io.Copy(w, headerBuf); err != nil {
+			return err
+		}
+
+		// Step 6. "The payload body (Section 3.3 of [RFC7230]) of the exchange represented by the application/signed-exchange resource." [spec text]
+		if _, err := w.Write(e.Payload); err != nil {
+			return err
+		}
+
+	case version.Version1b2:
+		// draft-yasskin-http-origin-signed-responses.html#rfc.section.5.3
+
+		// "1. 8 bytes consisting of the ASCII characters “sxg1” followed by 4 0x00 bytes, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don’t.
+		// Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific 8-byte string beginning with “sxg1-“." [spec text]
+		if _, err := w.Write(HeaderMagicBytes(ver)); err != nil {
+			return err
+		}
+
+		// "2. 2 bytes storing a big-endian integer fallbackUrlLength." [spec text]
+		url := e.RequestURI.String()
+		urlLength, err := bigendian.EncodeBytesUint(int64(len(url)), 2)
+		if err != nil {
+			return err
+		}
+		if _, err := w.Write(urlLength); err != nil {
+			return err
+		}
+
+		// "3. fallbackUrlLength bytes holding a fallbackUrl, which MUST be an absolute URL with a scheme of “https”.
+		// Note: The byte location of the fallback URL is intended to remain invariant across versions of the application/signed-exchange format so that parsers encountering unknown versions can always find a URL to redirect to." [spec text]
+		if _, err := w.Write([]byte(url)); err != nil {
+			return err
+		}
+
+		const (
+			maxSignatureHeaderValueLen = 16 * 1024
+			maxHeaderLen               = 512 * 1024
+		)
+		// "4. 3 bytes storing a big-endian integer sigLength. If this is larger than 16384 (16*1024), parsing MUST fail." [spec text]
+		if len(e.SignatureHeaderValue) > maxSignatureHeaderValueLen {
+			return fmt.Errorf("signedexchange: sigLength must <= %d but %d", maxSignatureHeaderValueLen, len(e.SignatureHeaderValue))
+		}
+
+		encodedSigLength, err := bigendian.EncodeBytesUint(int64(len(e.SignatureHeaderValue)), 3)
+		if err != nil {
+			return err
+		}
+		if _, err := w.Write(encodedSigLength); err != nil {
+			return err
+		}
+
+		// "5. 3 bytes storing a big-endian integer headerLength. If this is larger than 524288 (512*1024), parsing MUST fail." [spec text]
+		if headerLength > maxHeaderLen {
+			return fmt.Errorf("signedexchange: headerLength must <= %d but %d", maxHeaderLen, headerLength)
+		}
+		encodedHeaderLength, err := bigendian.EncodeBytesUint(int64(headerLength), 3)
+		if err != nil {
+			return err
+		}
+		if _, err := w.Write(encodedHeaderLength); err != nil {
+			return err
+		}
+
+		// "6. sigLength bytes holding the Signature header field’s value (Section 3.1)." [spec text]
+		if _, err := w.Write([]byte(e.SignatureHeaderValue)); err != nil {
+			return err
+		}
+
+		// "7. headerLength bytes holding signedHeaders, the canonical serialization (Section 3.4) of the CBOR representation of the request and response headers of the exchange represented by the application/signed-exchange resource (Section 3.2), excluding the Signature header field." [spec text]
+		if _, err := io.Copy(w, headerBuf); err != nil {
+			return err
+		}
+
+		// "8. The payload body (Section 3.3 of [RFC7230]) of the exchange represented by the application/signed-exchange resource.
+		// Note that the use of the payload body here means that a Transfer-Encoding header field inside the application/signed-exchange header block has no effect. A Transfer-Encoding header field on the outer HTTP response that transfers this resource still has its normal effect." [spec text]
+		if _, err := w.Write(e.Payload); err != nil {
+			return err
+		}
+
+	default:
+		panic("not reached")
 	}
 
 	return nil
@@ -286,13 +396,19 @@ func (e *Exchange) Write(w io.Writer) error {
 func ReadExchange(r io.Reader) (*Exchange, error) {
 	// Step 1. "The ASCII characters “sxg1” followed by a 0 byte, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don’t." [spec text]
 	// "Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific string beginning with “sxg1-“ and ending with a 0 byte instead." [spec text]
-	magic := make([]byte, len(HeaderMagicBytes))
+	magic := make([]byte, HeaderMagicBytesLen)
 	if _, err := io.ReadFull(r, magic); err != nil {
 		return nil, err
 	}
-	if !bytes.Equal(magic, HeaderMagicBytes) {
+	var ver version.Version
+	if bytes.Equal(magic, HeaderMagicBytes(version.Version1b1)) {
+		ver = version.Version1b1
+	} else if bytes.Equal(magic, HeaderMagicBytes(version.Version1b2)) {
+		ver = version.Version1b2
+	} else {
 		return nil, fmt.Errorf("singedexchange: wrong magic bytes: %v", magic)
 	}
+	_ = ver // TODO: Implement decoder with the version
 
 	// Step 2. "3 bytes storing a big-endian integer sigLength. If this is larger than TBD, parsing MUST fail." [spec text]
 	sigLengthBytes := [3]byte{}
@@ -343,8 +459,8 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 	return e, nil
 }
 
-func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer) error {
-	bs, err := s.serializeSignedMessage(e)
+func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer, ver version.Version) error {
+	bs, err := s.serializeSignedMessage(e, ver)
 	if err != nil {
 		return err
 	}

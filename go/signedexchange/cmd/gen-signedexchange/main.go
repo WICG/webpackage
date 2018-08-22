@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/signedexchange/version"
 )
 
 type headerArgs []string
@@ -30,6 +31,7 @@ func (h *headerArgs) Set(value string) error {
 
 var (
 	flagUri            = flag.String("uri", "https://example.com/index.html", "The URI of the resource represented in the exchange")
+	flagVersion        = flag.String("version", "1b1", "The signedexchange version")
 	flagResponseStatus = flag.Int("status", 200, "The status of the response represented in the exchange")
 	flagContent        = flag.String("content", "index.html", "Source file to be used as the exchange payload")
 	flagCertificate    = flag.String("certificate", "cert.pem", "Certificate chain PEM file of the origin")
@@ -80,6 +82,10 @@ func run() error {
 	privkeytext, err := ioutil.ReadFile(*flagPrivateKey)
 	if err != nil {
 		return fmt.Errorf("failed to read private key file %q. err: %v", *flagPrivateKey, err)
+	}
+	ver, ok := version.Parse(*flagVersion)
+	if !ok {
+		return fmt.Errorf("failed to parse version %q", *flagVersion)
 	}
 
 	var privkey crypto.PrivateKey
@@ -140,7 +146,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if err := e.MiEncodePayload(*flagMIRecordSize); err != nil {
+	if err := e.MiEncodePayload(*flagMIRecordSize, ver); err != nil {
 		return err
 	}
 
@@ -163,16 +169,16 @@ func run() error {
 		ValidityUrl: validityUrl,
 		PrivKey:     privkey,
 	}
-	if err := e.AddSignatureHeader(s); err != nil {
+	if err := e.AddSignatureHeader(s, ver); err != nil {
 		return err
 	}
 
 	if fMsg != nil {
-		if err := e.DumpSignedMessage(fMsg, s); err != nil {
+		if err := e.DumpSignedMessage(fMsg, s, ver); err != nil {
 			return fmt.Errorf("failed to write signature message dump. err: %v", err)
 		}
 	}
-	if err := e.Write(f); err != nil {
+	if err := e.Write(f, ver); err != nil {
 		return fmt.Errorf("failed to write exchange. err: %v", err)
 	}
 	return nil

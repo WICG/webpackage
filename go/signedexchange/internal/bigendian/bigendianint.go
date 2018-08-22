@@ -6,16 +6,19 @@ import (
 
 var ErrOutOfRange = errors.New("bigendian: Given integer is out of encodable range.")
 
-func Encode3BytesUint(n int) ([3]byte, error) {
-	if n < 0 || n > 0xffffff {
-		return [3]byte{}, ErrOutOfRange
+func EncodeBytesUint(n int64, size int) ([]byte, error) {
+	if n < 0 {
+		return nil, ErrOutOfRange
+	}
+	if size < 7 && n > int64(1)<<uint(size*8) {
+		return nil, ErrOutOfRange
 	}
 
-	return [3]byte{
-		byte((n >> 16) & 0xff),
-		byte((n >> 8) & 0xff),
-		byte(n & 0xff),
-	}, nil
+	bs := make([]byte, size)
+	for i := range bs {
+		bs[i] = byte(n >> uint((size-i-1)*8) & 0xff)
+	}
+	return bs, nil
 }
 
 func Decode3BytesUint(b [3]byte) int {

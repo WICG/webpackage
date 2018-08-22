@@ -14,6 +14,7 @@ import (
 	. "github.com/WICG/webpackage/go/signedexchange"
 	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
 	"github.com/WICG/webpackage/go/signedexchange/internal/testhelper"
+	"github.com/WICG/webpackage/go/signedexchange/version"
 )
 
 const (
@@ -139,11 +140,12 @@ func TestSignedExchange(t *testing.T) {
 	header.Add("Foo", "Bar")
 	header.Add("Foo", "Baz")
 
+	const ver = version.Version1b1
 	e, err := NewExchange(u, nil, 200, header, []byte(payload))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := e.MiEncodePayload(16); err != nil {
+	if err := e.MiEncodePayload(16, ver); err != nil {
 		t.Fatal(err)
 	}
 
@@ -169,12 +171,12 @@ func TestSignedExchange(t *testing.T) {
 		PrivKey:     privKey,
 		Rand:        zeroReader{},
 	}
-	if err := e.AddSignatureHeader(s); err != nil {
+	if err := e.AddSignatureHeader(s, ver); err != nil {
 		t.Fatal(err)
 	}
 
 	var buf bytes.Buffer
-	if err := e.Write(&buf); err != nil {
+	if err := e.Write(&buf, ver); err != nil {
 		t.Fatal(err)
 	}
 
@@ -182,7 +184,7 @@ func TestSignedExchange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(magic, HeaderMagicBytes) {
+	if !bytes.Equal(magic, HeaderMagicBytes(ver)) {
 		t.Errorf("unexpected magic: %q", magic)
 	}
 
@@ -268,7 +270,8 @@ func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := e.MiEncodePayload(16); err != nil {
+	const ver = version.Version1b1
+	if err := e.MiEncodePayload(16, ver); err != nil {
 		t.Fatal(err)
 	}
 
@@ -287,7 +290,7 @@ func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 		PrivKey:     privKey,
 		Rand:        zeroReader{},
 	}
-	if err := e.AddSignatureHeader(s); err == nil {
+	if err := e.AddSignatureHeader(s, ver); err == nil {
 		t.Errorf("non-{https,data} cert-url unexpectedly allowed in an exchange")
 	}
 }
