@@ -5,18 +5,42 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"io"
+
+	"github.com/WICG/webpackage/go/signedexchange/version"
 )
 
 // Encode encodes the given content buf to MICE (Merkle Integrity Content Encoding)
 // format.
 //
-// Encode returns MI header field parameter string and error if one exists.
+// Encode returns MI header field parameter string and error if one exists for version 1b1, and
+// returns Digest header value parameter string and error if one exists for version 1b2.
 //
-// Spec: https://tools.ietf.org/html/draft-thomson-http-mice-02
-func Encode(w io.Writer, buf []byte, recordSize int) (string, error) {
+// Spec: https://tools.ietf.org/html/draft-thomson-http-mice-02 for version 1b1, and
+// https://tools.ietf.org/html/draft-thomson-http-mice-03 for version 1b2
+func Encode(w io.Writer, buf []byte, recordSize int, ver version.Version) (string, error) {
+
 	numRecords := (len(buf) + recordSize - 1) / recordSize
-	if len(buf) == 0 {
-		numRecords = 1
+
+	switch ver {
+	case version.Version1b1:
+		if len(buf) == 0 {
+			numRecords = 1
+		}
+
+	case version.Version1b2:
+		if len(buf) == 0 {
+			// As a special case, the encoding of an empty payload is itself an
+			// empty message (i.e. it omits the initial record size), and its
+			// integrity proof is SHA-256("\0"). [spec text]
+			h := sha256.New()
+			h.Write([]byte{0})
+			proof := h.Sum(nil)
+			mi := "mi-sha256-03=" + base64.StdEncoding.EncodeToString(proof)
+			return mi, nil
+		}
+
+	default:
+		panic("not reached")
 	}
 
 	// Calculate proofs. This loop iterates from the tail of the content and creates
@@ -54,6 +78,14 @@ func Encode(w io.Writer, buf []byte, recordSize int) (string, error) {
 		}
 	}
 
-	mi := "mi-sha256-draft2=" + base64.RawURLEncoding.EncodeToString(proofs[0])
+	mi := ""
+	switch ver {
+	case version.Version1b1:
+		mi = "mi-sha256-draft2=" + base64.RawURLEncoding.EncodeToString(proofs[0])
+	case version.Version1b2:
+		mi = "mi-sha256-03=" + base64.StdEncoding.EncodeToString(proofs[0])
+	default:
+		panic("not reached")
+	}
 	return mi, nil
 }

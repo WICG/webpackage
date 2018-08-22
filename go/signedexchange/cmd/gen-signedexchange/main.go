@@ -146,7 +146,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if err := e.MiEncodePayload(*flagMIRecordSize); err != nil {
+	if err := e.MiEncodePayload(*flagMIRecordSize, ver); err != nil {
 		return err
 	}
 

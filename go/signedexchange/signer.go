@@ -209,7 +209,15 @@ func (s *Signer) signatureHeaderValue(e *Exchange, ver version.Version) (string,
 
 	label := "label"
 	sigb64 := base64.StdEncoding.EncodeToString(sig)
-	integrityStr := "mi-draft2"
+	integrityStr := ""
+	switch ver {
+	case version.Version1b1:
+		integrityStr = "mi-draft2"
+	case version.Version1b2:
+		integrityStr = "digest/mi-sha256-03"
+	default:
+		panic("not reached")
+	}
 	certUrl := s.CertUrl.String()
 	validityUrl := s.ValidityUrl.String()
 	certSha256b64 := base64.StdEncoding.EncodeToString(certSha256(s.Certs))
