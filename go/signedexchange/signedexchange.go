@@ -248,6 +248,11 @@ func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder, ver version.Version)
 	return nil
 }
 
+func (e *Exchange) DumpExchangeHeaders(w io.Writer, ver version.Version) error {
+	enc := cbor.NewEncoder(w)
+	return e.encodeExchangeHeaders(enc, ver)
+}
+
 func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
 	n, err := dec.DecodeArrayHeader()
 	if err != nil {
@@ -267,7 +272,7 @@ func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
 
 func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 	headerBuf := &bytes.Buffer{}
-	if err := e.encodeExchangeHeaders(cbor.NewEncoder(headerBuf), ver); err != nil {
+	if err := e.DumpExchangeHeaders(headerBuf, ver); err != nil {
 		return err
 	}
 	headerLength := headerBuf.Len()
