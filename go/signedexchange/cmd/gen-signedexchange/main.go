@@ -42,7 +42,8 @@ var (
 	flagDate           = flag.String("date", "", "The datetime for the signed exchange in RFC3339 format (2006-01-02T15:04:05Z07:00). Use now by default.")
 	flagExpire         = flag.Duration("expire", 1*time.Hour, "The expire time of the signed exchange")
 
-	flagDumpSignatureMessage = flag.String("dumpSignatureMessage", "", "Dump signature message bytes to file for debugging.")
+	flagDumpSignatureMessage = flag.String("dumpSignatureMessage", "", "Dump signature message bytes to a file for debugging.")
+	flagDumpHeadersCbor      = flag.String("dumpHeadersCbor", "", "Dump metadata and headers encoded as a canonical CBOR to a file for debugging.")
 	flagOutput               = flag.String("o", "out.sxg", "Signed exchange output file")
 
 	flagRequestHeader  = headerArgs{}
@@ -116,6 +117,15 @@ func run() error {
 		}
 		defer fMsg.Close()
 	}
+	var fHdr io.WriteCloser
+	if *flagDumpHeadersCbor != "" {
+		var err error
+		fHdr, err = os.Create(*flagDumpHeadersCbor)
+		if err != nil {
+			return fmt.Errorf("failed to open signedheaders dump output file %q for writing. err: %v", *flagDumpHeadersCbor, err)
+		}
+		defer fHdr.Close()
+	}
 
 	f, err := os.Create(*flagOutput)
 	if err != nil {
@@ -176,6 +186,11 @@ func run() error {
 	if fMsg != nil {
 		if err := e.DumpSignedMessage(fMsg, s, ver); err != nil {
 			return fmt.Errorf("failed to write signature message dump. err: %v", err)
+		}
+	}
+	if fHdr != nil {
+		if err := e.DumpExchangeHeaders(fHdr, ver); err != nil {
+			return fmt.Errorf("failed to write headers cbor dump. err: %v", err)
 		}
 	}
 	if err := e.Write(f, ver); err != nil {
