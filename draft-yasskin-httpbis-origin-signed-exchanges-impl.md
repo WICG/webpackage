@@ -914,8 +914,6 @@ This content type consists of the concatenation of the following items:
    Note: As this is a snapshot of a draft of
    {{?I-D.yasskin-http-origin-signed-responses}}, it uses a distinct file
    signature.
-1. 3 bytes storing a big-endian integer `sigLength`. If this is larger
-   than 16kB, parsing MUST fail.
 1. 2 bytes storing a big-endian integer `fallbackUrlLength`.
 1. `fallbackUrlLength` bytes holding a `fallbackUrl`, which MUST be an absolute
    URL with a scheme of "https".
