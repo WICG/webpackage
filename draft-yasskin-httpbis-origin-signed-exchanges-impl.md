@@ -1050,7 +1050,16 @@ Vs. draft-01:
 
 * Define absolute URLs, and limit the schemes each instance can use.
 * Update to mice-03 including the Digest header.
-* FIXME FIXME FIXME
+* Define the "integrity" field of the Signature header to include the digest
+  algorithm.
+* Put a fallback URL at the beginning of signed exchanges, and remove ':url' key
+  from the CBOR representation of the exchange's request and response metadata
+  and headers.
+* The new signed message format which embeds the exact bytes of the CBOR
+  representation of the exchange's request and response metadata and headers.
+* When validating the signature validity, move the `payload` integrity check
+  steps to after verifying `header`.
+* Versions in file signatures and context strings are "b2".
 
 draft-01
 
