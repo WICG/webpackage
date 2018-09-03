@@ -1052,7 +1052,7 @@ Vs. draft-01:
 * Update to mice-03 including the Digest header.
 * Define the "integrity" field of the Signature header to include the digest
   algorithm.
-* Put a fallback URL at the beginning of application/signed-exchange format,
+* Put a fallback URL at the beginning of `application/signed-exchange` format,
   and remove ':url' key from the CBOR representation of the exchange's request
   and response metadata and headers.
 * The new signed message format which embeds the exact bytes of the CBOR
