@@ -2,6 +2,7 @@ package signedexchange
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -160,7 +161,7 @@ func normalizeHeaderValues(values []string) string {
 	return strings.Join(values, ",")
 }
 
-func (e *Exchange) decodeRequest(dec *cbor.Decoder) error {
+func (e *Exchange) decodeRequest(dec *cbor.Decoder, ver version.Version) error {
 	n, err := dec.DecodeMapHeader()
 	if err != nil {
 		return fmt.Errorf("signedexchange: failed to decode response map header: %v", err)
@@ -180,11 +181,14 @@ func (e *Exchange) decodeRequest(dec *cbor.Decoder) error {
 			}
 		}
 		if bytes.Equal(key, keyURL) {
-			e.RequestURI, err = url.Parse(string(value))
-			if err != nil {
-				return err
+			if ver == version.Version1b1 {
+				e.RequestURI, err = url.Parse(string(value))
+				if err != nil {
+					return err
+				}
+				continue
 			}
-			continue
+			return fmt.Errorf("signedexchange: found a deprecated request key %q", keyURL)
 		}
 		e.RequestHeaders.Add(string(key), string(value))
 	}
@@ -253,7 +257,7 @@ func (e *Exchange) DumpExchangeHeaders(w io.Writer, ver version.Version) error {
 	return e.encodeExchangeHeaders(enc, ver)
 }
 
-func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
+func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder, ver version.Version) error {
 	n, err := dec.DecodeArrayHeader()
 	if err != nil {
 		return fmt.Errorf("signedexchange: failed to decode top-level array header: %v", err)
@@ -261,7 +265,7 @@ func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
 	if n != 2 {
 		return fmt.Errorf("singedexchange: length of header array must be 2 but %d", n)
 	}
-	if err := e.decodeRequest(dec); err != nil {
+	if err := e.decodeRequest(dec, ver); err != nil {
 		return err
 	}
 	if err := e.decodeResponseHeaders(dec); err != nil {
@@ -399,8 +403,8 @@ func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 
 // draft-yasskin-http-origin-signed-responses.html#application-http-exchange
 func ReadExchange(r io.Reader) (*Exchange, error) {
-	// Step 1. "The ASCII characters “sxg1” followed by a 0 byte, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don’t." [spec text]
-	// "Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific string beginning with “sxg1-“ and ending with a 0 byte instead." [spec text]
+	// Step 1. "8 bytes consisting of the ASCII characters “sxg1” followed by 4 0x00 bytes, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don’t." [spec text]
+	// "Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific 8-byte string beginning with “sxg1-“." [spec text]
 	magic := make([]byte, HeaderMagicBytesLen)
 	if _, err := io.ReadFull(r, magic); err != nil {
 		return nil, err
@@ -415,45 +419,63 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 	}
 	_ = ver // TODO: Implement decoder with the version
 
-	// Step 2. "3 bytes storing a big-endian integer sigLength. If this is larger than TBD, parsing MUST fail." [spec text]
+	e := &Exchange{
+		RequestHeaders:  http.Header{},
+		ResponseHeaders: http.Header{},
+	}
+
+	if ver != version.Version1b1 {
+		var fallbackUrlLength uint16
+		// Step 2. "2 bytes storing a big-endian integer fallbackUrlLength." [spec text]
+		if err := binary.Read(r, binary.BigEndian, &fallbackUrlLength); err != nil {
+			return nil, err
+		}
+		// Step 3. "fallbackUrlLength bytes holding a fallbackUrl, which MUST be an absolute URL with a scheme of “https”." [spec text]
+		// "Note: The byte location of the fallback URL is intended to remain invariant across versions of the application/signed-exchange format so that parsers encountering unknown versions can always find a URL to redirect to." [spec text]
+		fallbackUrl := make([]byte, fallbackUrlLength)
+		if _, err := io.ReadFull(r, fallbackUrl); err != nil {
+			return nil, err
+		}
+		var err error
+		e.RequestURI, err = url.Parse(string(fallbackUrl))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Step 4. "3 bytes storing a big-endian integer sigLength. If this is larger than 16384 (16*1024), parsing MUST fail." [spec text]
 	sigLengthBytes := [3]byte{}
 	if _, err := io.ReadFull(r, sigLengthBytes[:]); err != nil {
 		return nil, err
 	}
 	sigLength := bigendian.Decode3BytesUint(sigLengthBytes)
 
-	// Step 3. "3 bytes storing a big-endian integer headerLength. If this is larger than TBD, parsing MUST fail." [spec text]
+	// Step 5. "3 bytes storing a big-endian integer headerLength. If this is larger than 524288 (512*1024), parsing MUST fail." [spec text]
 	headerLengthBytes := [3]byte{}
 	if _, err := io.ReadFull(r, headerLengthBytes[:]); err != nil {
 		return nil, err
 	}
 	headerLength := bigendian.Decode3BytesUint(headerLengthBytes)
 
-	e := &Exchange{
-		RequestHeaders:  http.Header{},
-		ResponseHeaders: http.Header{},
-	}
-
-	// Step 4. "sigLength bytes holding the Signature header field’s value (Section 3.1)." [spec text]
+	// Step 6. "sigLength bytes holding the Signature header field’s value (Section 3.1)." [spec text]
 	sig := make([]byte, sigLength)
 	if _, err := io.ReadFull(r, sig); err != nil {
 		return nil, err
 	}
 	e.SignatureHeaderValue = string(sig)
 
-	// Step 5. "headerLength bytes holding the signed headers, the canonical serialization (Section 3.4) of the CBOR representation of the request and response headers of the exchange represented by the application/signed-exchange resource (Section 3.2), excluding the Signature header field." [spec text]
-	// "Note that this is exactly the bytes used when checking signature validity in Section 3.5." [spec text]
+	// Step 7. "headerLength bytes holding signedHeaders, the canonical serialization (Section 3.4) of the CBOR representation of the request and response headers of the exchange represented by the application/signed-exchange resource (Section 3.2), excluding the Signature header field." [spec text]
 	encodedHeader := make([]byte, headerLength)
 	if _, err := io.ReadFull(r, encodedHeader); err != nil {
 		return nil, err
 	}
 
 	dec := cbor.NewDecoder(bytes.NewReader(encodedHeader))
-	if err := e.decodeExchangeHeaders(dec); err != nil {
+	if err := e.decodeExchangeHeaders(dec, ver); err != nil {
 		return nil, err
 	}
 
-	// Step 6. "The payload body (Section 3.3 of [RFC7230]) of the exchange represented by the application/signed-exchange resource." [spec text]
+	// Step 8. "The payload body (Section 3.3 of [RFC7230]) of the exchange represented by the application/signed-exchange resource." [spec text]
 	// "Note that the use of the payload body here means that a Transfer-Encoding header field inside the application/signed-exchange header block has no effect. A Transfer-Encoding header field on the outer HTTP response that transfers this resource still has its normal effect." [spec text]
 	var err error
 	e.Payload, err = ioutil.ReadAll(r)
