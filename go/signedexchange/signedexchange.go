@@ -187,9 +187,8 @@ func (e *Exchange) decodeRequest(dec *cbor.Decoder, ver version.Version) error {
 					return err
 				}
 				continue
-			} else {
-				return fmt.Errorf("signedexchange: found a deprecated request key %q", keyURL)
 			}
+			return fmt.Errorf("signedexchange: found a deprecated request key %q", keyURL)
 		}
 		e.RequestHeaders.Add(string(key), string(value))
 	}
