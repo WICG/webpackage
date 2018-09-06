@@ -32,7 +32,7 @@ func TestParsePEM(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 	if err := certChain.Write(buf); err != nil {
-		t.Errorf("failed to parse PEM: %v", err)
+		t.Fatal(err)
 	}
 	got, err := testhelper.CborBinaryToReadableString(buf.Bytes())
 	if err != nil {

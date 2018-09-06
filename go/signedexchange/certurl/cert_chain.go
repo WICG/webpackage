@@ -2,6 +2,7 @@ package certurl
 
 import (
 	"crypto/x509"
+	"fmt"
 	"io"
 
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
@@ -15,6 +16,8 @@ type CertChainItem struct {
 
 type CertChain []CertChainItem
 
+const magicString = "\U0001F4DC\u26D3";  // "📜⛓"
+
 // Write generates a certificate chain of application/cert-chain+cbor format and writes to w.
 // See https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cert-chain-format for the spec.
 func (certChain CertChain) Write(w io.Writer) error {
@@ -23,22 +26,29 @@ func (certChain CertChain) Write(w io.Writer) error {
 	if err := enc.EncodeArrayHeader(len(certChain) + 1); err != nil {
 		return err
 	}
-	if err := enc.EncodeTextString("\U0001F4DC\u26D3"); err != nil {
+	if err := enc.EncodeTextString(magicString); err != nil {
 		return err
 	}
-	for _, item := range certChain {
+	for i, item := range certChain {
 		mes := []*cbor.MapEntryEncoder{
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeTextString("cert")
 				valueE.EncodeByteString(item.Cert.Raw)
 			}),
 		}
-		if item.OCSPResponse != nil {
+		if i == 0 {
+			if item.OCSPResponse == nil {
+				return fmt.Errorf("The first certificate must have an OCSP response.")
+			}
 			mes = append(mes,
 				cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 					keyE.EncodeTextString("ocsp")
 					valueE.EncodeByteString(item.OCSPResponse)
 				}))
+		} else {
+			if item.OCSPResponse != nil {
+				return fmt.Errorf("Certificate at position %d must not have an OCSP response.", i)
+			}
 		}
 		if item.SCTList != nil {
 			mes = append(mes,
