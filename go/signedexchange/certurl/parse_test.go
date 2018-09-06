@@ -1,6 +1,7 @@
 package certurl_test
 
 import (
+	"bytes"
 	"io/ioutil"
 	"testing"
 
@@ -22,12 +23,18 @@ func TestParsePEM(t *testing.T) {
 		t.Errorf("Cannot parse test-cert.pem: %v", err)
 		return
 	}
+	certChain := CertChain{}
+	for _, cert := range certs {
+		certChain = append(certChain, CertChainItem{Cert: cert})
+	}
+	certChain[0].OCSPResponse = []byte("OCSP")
+	certChain[0].SCTList = []byte("SCT")
 
-	cert, err := CreateCertChainCBOR(certs, []byte("OCSP"), []byte("SCT"))
-	if err != nil {
+	buf := &bytes.Buffer{}
+	if err := certChain.Write(buf); err != nil {
 		t.Errorf("failed to parse PEM: %v", err)
 	}
-	got, err := testhelper.CborBinaryToReadableString(cert)
+	got, err := testhelper.CborBinaryToReadableString(buf.Bytes())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,51 +1,56 @@
 package certurl
 
 import (
-	"bytes"
 	"crypto/x509"
+	"io"
 
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
 )
 
-// CreateCertChainCBOR generates a certificate chain of application/cert-chain+cbor format.
-// See https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cert-chain-format for the spec.
-func CreateCertChainCBOR(certs []*x509.Certificate, ocspFileContent, sctFileContent []byte) ([]byte, error) {
-	buf := &bytes.Buffer{}
-	enc := cbor.NewEncoder(buf)
+type CertChainItem struct {
+	Cert         *x509.Certificate // A parsed X.509 certificate.
+	OCSPResponse []byte            // DER-encoded OCSP response for Cert.
+	SCTList      []byte            // SignedCertificateTimestampList (Section 3.3 of RFC6962) for Cert.
+}
 
-	if err := enc.EncodeArrayHeader(len(certs) + 1); err != nil {
-		return nil, err
+type CertChain []CertChainItem
+
+// Write generates a certificate chain of application/cert-chain+cbor format and writes to w.
+// See https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cert-chain-format for the spec.
+func (certChain CertChain) Write(w io.Writer) error {
+	enc := cbor.NewEncoder(w)
+
+	if err := enc.EncodeArrayHeader(len(certChain) + 1); err != nil {
+		return err
 	}
 	if err := enc.EncodeTextString("\U0001F4DC\u26D3"); err != nil {
-		return nil, err
+		return err
 	}
-	for i, entry := range certs {
+	for _, item := range certChain {
 		mes := []*cbor.MapEntryEncoder{
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeTextString("cert")
-				valueE.EncodeByteString(entry.Raw)
+				valueE.EncodeByteString(item.Cert.Raw)
 			}),
 		}
-		if i == 0 {
-			if ocspFileContent != nil {
-				mes = append(mes,
-					cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-						keyE.EncodeTextString("ocsp")
-						valueE.EncodeByteString(ocspFileContent)
-					}))
-			}
-			if sctFileContent != nil {
-				mes = append(mes,
-					cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-						keyE.EncodeTextString("sct")
-						valueE.EncodeByteString(sctFileContent)
-					}))
-			}
+		if item.OCSPResponse != nil {
+			mes = append(mes,
+				cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+					keyE.EncodeTextString("ocsp")
+					valueE.EncodeByteString(item.OCSPResponse)
+				}))
+		}
+		if item.SCTList != nil {
+			mes = append(mes,
+				cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+					keyE.EncodeTextString("sct")
+					valueE.EncodeByteString(item.SCTList)
+				}))
 		}
 		if err := enc.EncodeMap(mes); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return buf.Bytes(), nil
+	return nil
 }
