@@ -35,7 +35,7 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 		return fmt.Errorf("input file %q has no certificates.", pemFilePath)
 	}
 	for _, cert := range certs {
-		certChain = append(certChain, certurl.CertChainItem{Cert: cert})
+		certChain = append(certChain, &certurl.CertChainItem{Cert: cert})
 	}
 
 	var ocspDer []byte
