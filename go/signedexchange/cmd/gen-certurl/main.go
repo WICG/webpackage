@@ -32,7 +32,7 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 		return err
 	}
 	if len(certs) == 0 {
-		return fmt.Errorf("Input file \"%s\" has no certificates.", pemFilePath)
+		return fmt.Errorf("input file %q has no certificates.", pemFilePath)
 	}
 	for _, cert := range certs {
 		certChain = append(certChain, certurl.CertChainItem{Cert: cert})
@@ -84,7 +84,7 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 		return err
 	}
 
-	if _, err := os.Stdout.Write(buf.Bytes()); err != nil {
+	if _, err := buf.WriteTo(os.Stdout); err != nil {
 		return err
 	}
 	return nil
