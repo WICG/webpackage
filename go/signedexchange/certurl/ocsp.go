@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"golang.org/x/crypto/ocsp"
+	"io"
 	"io/ioutil"
 	"net/http"
 )
@@ -51,4 +52,27 @@ func FetchOCSPResponse(certs []*x509.Certificate) ([]byte, error) {
 	}
 
 	return output, nil
+}
+
+func (chain CertChain) prettyPrintOCSP(w io.Writer, OCSPResponse []byte) {
+	var issuer *x509.Certificate
+	if len(chain) >= 2 {
+		issuer = chain[1].Cert
+	}
+	o, err := ocsp.ParseResponseForCert(OCSPResponse, chain[0].Cert, issuer)
+	if err != nil {
+		fmt.Fprintln(w, "Error: Invalid OCSP response:", err)
+		return
+	}
+	ocspStatusToString := map[int]string{
+		ocsp.Good:    "good",
+		ocsp.Revoked: "revoked",
+		ocsp.Unknown: "unknown",
+	}
+	fmt.Fprintf(w, "  Status: %d (%s)\n", o.Status, ocspStatusToString[o.Status])
+	fmt.Fprintln(w, "  ProducedAt:", o.ProducedAt)
+	fmt.Fprintln(w, "  ThisUpdate:", o.ThisUpdate)
+	fmt.Fprintln(w, "  NextUpdate:", o.NextUpdate)
+
+	prettyPrintSCTFromOCSP(w, o)
 }
