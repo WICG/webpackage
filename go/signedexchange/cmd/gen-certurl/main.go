@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"golang.org/x/crypto/ocsp"
@@ -20,6 +21,8 @@ var (
 )
 
 func run(pemFilePath, ocspFilePath, sctDirPath string) error {
+	certChain := certurl.CertChain{}
+
 	pem, err := ioutil.ReadFile(pemFilePath)
 	if err != nil {
 		return err
@@ -27,6 +30,12 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 	certs, err := signedexchange.ParseCertificates(pem)
 	if err != nil {
 		return err
+	}
+	if len(certs) == 0 {
+		return fmt.Errorf("input file %q has no certificates.", pemFilePath)
+	}
+	for _, cert := range certs {
+		certChain = append(certChain, certurl.CertChainItem{Cert: cert})
 	}
 
 	var ocspDer []byte
@@ -45,8 +54,8 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Warning: ocsp is not a correct DER-encoded OCSP response.")
 	}
+	certChain[0].OCSPResponse = ocspDer
 
-	var sctList []byte
 	if sctDirPath != "" {
 		files, err := filepath.Glob(filepath.Join(sctDirPath, "*.sct"))
 		if err != nil {
@@ -60,7 +69,7 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 			}
 			scts = append(scts, sct)
 		}
-		sctList, err = certurl.SerializeSCTList(scts)
+		certChain[0].SCTList, err = certurl.SerializeSCTList(scts)
 		if err != nil {
 			return err
 		}
@@ -70,12 +79,12 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 		}
 	}
 
-	out, err := certurl.CreateCertChainCBOR(certs, ocspDer, sctList)
-	if err != nil {
+	buf := &bytes.Buffer{}
+	if err := certChain.Write(buf); err != nil {
 		return err
 	}
 
-	if _, err := os.Stdout.Write(out); err != nil {
+	if _, err := buf.WriteTo(os.Stdout); err != nil {
 		return err
 	}
 	return nil
