@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -9,7 +10,8 @@ import (
 )
 
 var (
-	flagInput = flag.String("i", "", "Signed-exchange input file")
+	flagInput     = flag.String("i", "", "Signed-exchange input file")
+	flagSignature = flag.Bool("signature", false, "Print only signature value")
 )
 
 func run() error {
@@ -27,7 +29,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	e.PrettyPrint(os.Stdout)
+
+	if *flagSignature {
+		fmt.Println(e.SignatureHeaderValue)
+	} else {
+		e.PrettyPrint(os.Stdout)
+	}
 
 	return nil
 }
