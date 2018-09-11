@@ -1,7 +1,9 @@
 package certurl
 
 import (
+	"bytes"
 	"crypto/x509"
+	"encoding/asn1"
 	"fmt"
 	"io"
 
@@ -16,7 +18,7 @@ type CertChainItem struct {
 
 type CertChain []*CertChainItem
 
-const magicString = "\U0001F4DC\u26D3";  // "📜⛓"
+const magicString = "\U0001F4DC\u26D3" // "📜⛓"
 
 // Write generates a certificate chain of application/cert-chain+cbor format and writes to w.
 // See https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cert-chain-format for the spec.
@@ -123,4 +125,38 @@ func ReadCertChain(r io.Reader) (CertChain, error) {
 		certChain = append(certChain, item)
 	}
 	return certChain, nil
+}
+
+func (chain CertChain) PrettyPrint(w io.Writer) {
+	for i, item := range chain {
+		fmt.Fprintf(w, "Certificate #%d:\n", i)
+		fmt.Fprintln(w, "  Subject:", item.Cert.Subject.CommonName)
+		fmt.Fprintln(w, "  Valid from:", item.Cert.NotBefore)
+		fmt.Fprintln(w, "  Valid until:", item.Cert.NotAfter)
+		fmt.Fprintln(w, "  Issuer:", item.Cert.Issuer.CommonName)
+		prettyPrintSCTFromCert(w, item.Cert)
+
+		if i == 0 {
+			// Check that the main certificate has canSignHttpExchangesDraft extension.
+			// https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req
+			oidCanSignHttpExchangesDraft := asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 11129, 2, 1, 22}
+			ext := findExtensionWithOID(item.Cert.Extensions, oidCanSignHttpExchangesDraft)
+			if ext == nil {
+				fmt.Fprintln(w, "Error: The main certificate does not have canSignHttpExchangesDraft extension")
+			} else if !bytes.Equal(ext.Value, asn1.NullBytes) {
+				fmt.Fprintln(w, "Error: Value of canSignHttpExchangesDraft extension must be ASN1:NULL. got:", ext.Value)
+			} else {
+				fmt.Fprintln(w, "  Has canSignHttpExchangesDraft extension")
+			}
+		}
+
+		if item.OCSPResponse != nil {
+			fmt.Fprintln(w, "OCSP response:")
+			chain.prettyPrintOCSP(w, item.OCSPResponse)
+		}
+		if item.SCTList != nil {
+			fmt.Fprintln(w, "SCT:")
+			prettyPrintSCT(w, item.SCTList)
+		}
+	}
 }
