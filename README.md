@@ -10,10 +10,10 @@ website. A full list of use cases and resulting requirements is available in
 [draft-yasskin-webpackage-use-cases](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html)
 ([IETF
 draft](https://tools.ietf.org/html/draft-yasskin-webpackage-use-cases)).
-The [explainer](explainer.md) walks through how to use these specs for to
+The [explainer](explainer.md) walks through how to use these specs to
 achieve the use cases.
 
-The specifications come in a couple layers:
+The specifications come in several layers:
 
 1. [Signed HTTP exchanges](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html)
    ([IETF draft](https://tools.ietf.org/html/draft-yasskin-http-origin-signed-responses)):
