@@ -21,7 +21,7 @@
         "headers": [
           {
             "key": "Content-Type",
-            "value": "application/signed-exchange;v=b1"
+            "value": "application/signed-exchange;v=b2"
           }
         ]
       }
