@@ -44,7 +44,7 @@ var (
 
 	flagDumpSignatureMessage = flag.String("dumpSignatureMessage", "", "Dump signature message bytes to a file for debugging.")
 	flagDumpHeadersCbor      = flag.String("dumpHeadersCbor", "", "Dump metadata and headers encoded as a canonical CBOR to a file for debugging.")
-	flagOutput               = flag.String("o", "out.sxg", "Signed exchange output file")
+	flagOutput               = flag.String("o", "out.sxg", "Signed exchange output file. If value is '-', sxg is written to stdout.")
 
 	flagRequestHeader  = headerArgs{}
 	flagResponseHeader = headerArgs{}
@@ -127,11 +127,14 @@ func run() error {
 		defer fHdr.Close()
 	}
 
-	f, err := os.Create(*flagOutput)
-	if err != nil {
-		return fmt.Errorf("failed to open output file %q for writing. err: %v", *flagOutput, err)
+	f := os.Stdout
+	if *flagOutput != "-" {
+		f, err := os.Create(*flagOutput)
+		if err != nil {
+			return fmt.Errorf("failed to open output file %q for writing. err: %v", *flagOutput, err)
+		}
+		defer f.Close()
 	}
-	defer f.Close()
 
 	parsedUrl, err := url.Parse(*flagUri)
 	if err != nil {
