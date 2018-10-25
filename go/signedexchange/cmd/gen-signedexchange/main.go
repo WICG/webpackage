@@ -44,7 +44,7 @@ var (
 
 	flagDumpSignatureMessage = flag.String("dumpSignatureMessage", "", "Dump signature message bytes to a file for debugging.")
 	flagDumpHeadersCbor      = flag.String("dumpHeadersCbor", "", "Dump metadata and headers encoded as a canonical CBOR to a file for debugging.")
-	flagOutput               = flag.String("o", "", "Signed exchange output file. If omitted, sxg is written to stdout.")
+	flagOutput               = flag.String("o", "out.sxg", "Signed exchange output file. If value is '-', sxg is written to stdout.")
 
 	flagRequestHeader  = headerArgs{}
 	flagResponseHeader = headerArgs{}
@@ -128,7 +128,7 @@ func run() error {
 	}
 
 	f := os.Stdout
-	if *flagOutput != "" {
+	if *flagOutput != "-" {
 		var err error
 		f, err = os.Create(*flagOutput)
 		if err != nil {
