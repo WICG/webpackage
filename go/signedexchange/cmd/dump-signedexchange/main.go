@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"time"
 
 	"github.com/WICG/webpackage/go/signedexchange"
 )
@@ -12,6 +14,8 @@ import (
 var (
 	flagInput     = flag.String("i", "", "Signed-exchange input file")
 	flagSignature = flag.Bool("signature", false, "Print only signature value")
+	flagVerify    = flag.Bool("verify", false, "Perform signature verification")
+	flagCert      = flag.String("cert", "", "Certificate CBOR file. If specified, used instead of fetching from signature's cert-url")
 )
 
 func run() error {
@@ -32,11 +36,43 @@ func run() error {
 
 	if *flagSignature {
 		fmt.Println(e.SignatureHeaderValue)
-	} else {
-		e.PrettyPrint(os.Stdout)
+		return nil
 	}
 
+	e.PrettyPrintHeaders(os.Stdout)
+
+	if *flagVerify {
+		verify(e)
+	}
+
+	e.PrettyPrintPayload(os.Stdout)
+
 	return nil
+}
+
+func verify(e *signedexchange.Exchange) {
+	certFetcher := signedexchange.DefaultCertFetcher
+	if *flagCert != "" {
+		f, err := os.Open(*flagCert)
+		if err != nil {
+			fmt.Printf("Could not open %s: %v\n", *flagCert, err)
+			return
+		}
+		defer f.Close()
+		certBytes, err := ioutil.ReadAll(f)
+		if err != nil {
+			fmt.Printf("Could not read %s: %v\n", *flagCert, err)
+			return
+		}
+		certFetcher = func(_ string) ([]byte, error) {
+			return certBytes, nil
+		}
+	}
+
+	verificationTime := time.Now()
+	if e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "", 0)) {
+		fmt.Println("The exchange has valid signature.")
+	}
 }
 
 func main() {

@@ -5,13 +5,16 @@ import (
 	"encoding/pem"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	. "github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/signedexchange/certurl"
 	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
 	"github.com/WICG/webpackage/go/signedexchange/internal/testhelper"
 	"github.com/WICG/webpackage/go/signedexchange/version"
@@ -220,5 +223,62 @@ func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 	}
 	if err := e.AddSignatureHeader(s); err == nil {
 		t.Errorf("non-{https,data} cert-url unexpectedly allowed in an exchange")
+	}
+}
+
+func TestVerify(t *testing.T) {
+	u, _ := url.Parse("https://example.com/")
+	header := http.Header{}
+	header.Add("Content-Type", "text/html; charset=utf-8")
+
+	const ver = version.Version1b2
+	e, err := NewExchange(ver, u, nil, 200, header, []byte(payload))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.MiEncodePayload(16); err != nil {
+		t.Fatal(err)
+	}
+
+	now := time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
+	certs, err := ParseCertificates([]byte(pemCerts))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	derPrivateKey, _ := pem.Decode([]byte(pemPrivateKey))
+	privKey, err := ParsePrivateKey(derPrivateKey.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	certUrl, _ := url.Parse("https://example.com/cert.msg")
+	validityUrl, _ := url.Parse("https://example.com/resource.validity")
+	s := &Signer{
+		Date:        now,
+		Expires:     now.Add(1 * time.Hour),
+		Certs:       certs,
+		CertUrl:     certUrl,
+		ValidityUrl: validityUrl,
+		PrivKey:     privKey,
+		Rand:        zeroReader{},
+	}
+	if err := e.AddSignatureHeader(s); err != nil {
+		t.Fatal(err)
+	}
+
+	certChain := certurl.CertChain{}
+	for _, cert := range certs {
+		certChain = append(certChain, &certurl.CertChainItem{Cert: cert})
+	}
+	certChain[0].OCSPResponse = []byte("dummy")
+	var certCBOR bytes.Buffer
+	if err := certChain.Write(&certCBOR); err != nil {
+		t.Fatal(err)
+	}
+	certFetcher := func(_ string) ([]byte, error) {return certCBOR.Bytes(), nil}
+
+	verificationTime := now
+	if !e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "ERROR: ", 0)) {
+		t.Errorf("Verification failed")
 	}
 }
