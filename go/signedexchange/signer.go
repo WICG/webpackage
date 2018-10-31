@@ -51,8 +51,8 @@ func certSha256(certs []*x509.Certificate) []byte {
 	return sum[:]
 }
 
-func (s *Signer) serializeSignedMessage(e *Exchange, ver version.Version) ([]byte, error) {
-	switch ver {
+func (s *Signer) serializeSignedMessage(e *Exchange) ([]byte, error) {
+	switch e.Version {
 	case version.Version1b1:
 		// "Let message be the concatenation of the following byte strings.
 		// This matches the [I-D.ietf-tls-tls13] format to avoid cross-protocol
@@ -65,7 +65,7 @@ func (s *Signer) serializeSignedMessage(e *Exchange, ver version.Version) ([]byt
 		}
 
 		// "2. A context string: the ASCII encoding of "HTTP Exchange"." [spec text]
-		buf.WriteString(contextString(ver))
+		buf.WriteString(contextString(e.Version))
 
 		// "3. A single 0 byte which serves as a separator." [spec text]
 		buf.WriteByte(0)
@@ -129,7 +129,7 @@ func (s *Signer) serializeSignedMessage(e *Exchange, ver version.Version) ([]byt
 		}
 
 		// "2. A context string: the ASCII encoding of “HTTP Exchange 1”." [spec text]
-		buf.WriteString(contextString(ver))
+		buf.WriteString(contextString(e.Version))
 
 		// "3. A single 0 byte which serves as a separator." [spec text]
 		buf.WriteByte(0)
@@ -176,7 +176,7 @@ func (s *Signer) serializeSignedMessage(e *Exchange, ver version.Version) ([]byt
 	}
 }
 
-func (s *Signer) sign(e *Exchange, ver version.Version) ([]byte, error) {
+func (s *Signer) sign(e *Exchange) ([]byte, error) {
 	r := s.Rand
 	if r == nil {
 		r = rand.Reader
@@ -186,7 +186,7 @@ func (s *Signer) sign(e *Exchange, ver version.Version) ([]byte, error) {
 		return nil, err
 	}
 
-	msg, err := s.serializeSignedMessage(e, ver)
+	msg, err := s.serializeSignedMessage(e)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func (s *Signer) sign(e *Exchange, ver version.Version) ([]byte, error) {
 	return alg.Sign(msg)
 }
 
-func (s *Signer) signatureHeaderValue(e *Exchange, ver version.Version) (string, error) {
+func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
 	switch s.CertUrl.Scheme {
 	case "https", "data":
 		break
@@ -202,7 +202,7 @@ func (s *Signer) signatureHeaderValue(e *Exchange, ver version.Version) (string,
 		return "", fmt.Errorf("signedexchange: cert-url with disallowed scheme %q. cert-url must have a scheme of \"https\" or \"data\".", s.CertUrl.Scheme)
 	}
 
-	sig, err := s.sign(e, ver)
+	sig, err := s.sign(e)
 	if err != nil {
 		return "", err
 	}
@@ -210,7 +210,7 @@ func (s *Signer) signatureHeaderValue(e *Exchange, ver version.Version) (string,
 	label := "label"
 	sigb64 := base64.StdEncoding.EncodeToString(sig)
 	integrityStr := ""
-	switch ver {
+	switch e.Version {
 	case version.Version1b1:
 		integrityStr = "mi-draft2"
 	case version.Version1b2:

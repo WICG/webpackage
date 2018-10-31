@@ -116,7 +116,7 @@ func (e *Exchange) MiEncodePayload(recordSize int) error {
 }
 
 func (e *Exchange) AddSignatureHeader(s *Signer) error {
-	h, err := s.signatureHeaderValue(e, e.Version)
+	h, err := s.signatureHeaderValue(e)
 	if err != nil {
 		return err
 	}
@@ -490,7 +490,7 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 }
 
 func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer) error {
-	bs, err := s.serializeSignedMessage(e, e.Version)
+	bs, err := s.serializeSignedMessage(e)
 	if err != nil {
 		return err
 	}
