@@ -156,11 +156,11 @@ func run() error {
 	if resHeader.Get("content-type") == "" {
 		resHeader.Add("content-type", "text/html; charset=utf-8")
 	}
-	e, err := signedexchange.NewExchange(parsedUrl, reqHeader, *flagResponseStatus, resHeader, payload)
+	e, err := signedexchange.NewExchange(ver, parsedUrl, reqHeader, *flagResponseStatus, resHeader, payload)
 	if err != nil {
 		return err
 	}
-	if err := e.MiEncodePayload(*flagMIRecordSize, ver); err != nil {
+	if err := e.MiEncodePayload(*flagMIRecordSize); err != nil {
 		return err
 	}
 
@@ -183,21 +183,21 @@ func run() error {
 		ValidityUrl: validityUrl,
 		PrivKey:     privkey,
 	}
-	if err := e.AddSignatureHeader(s, ver); err != nil {
+	if err := e.AddSignatureHeader(s); err != nil {
 		return err
 	}
 
 	if fMsg != nil {
-		if err := e.DumpSignedMessage(fMsg, s, ver); err != nil {
+		if err := e.DumpSignedMessage(fMsg, s); err != nil {
 			return fmt.Errorf("failed to write signature message dump. err: %v", err)
 		}
 	}
 	if fHdr != nil {
-		if err := e.DumpExchangeHeaders(fHdr, ver); err != nil {
+		if err := e.DumpExchangeHeaders(fHdr); err != nil {
 			return fmt.Errorf("failed to write headers cbor dump. err: %v", err)
 		}
 	}
-	if err := e.Write(f, ver); err != nil {
+	if err := e.Write(f); err != nil {
 		return fmt.Errorf("failed to write exchange. err: %v", err)
 	}
 	return nil

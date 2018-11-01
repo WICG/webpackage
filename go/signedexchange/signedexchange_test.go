@@ -141,11 +141,11 @@ func TestSignedExchange(t *testing.T) {
 	header.Add("Foo", "Baz")
 
 	const ver = version.Version1b1
-	e, err := NewExchange(u, nil, 200, header, []byte(payload))
+	e, err := NewExchange(ver, u, nil, 200, header, []byte(payload))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := e.MiEncodePayload(16, ver); err != nil {
+	if err := e.MiEncodePayload(16); err != nil {
 		t.Fatal(err)
 	}
 
@@ -171,12 +171,12 @@ func TestSignedExchange(t *testing.T) {
 		PrivKey:     privKey,
 		Rand:        zeroReader{},
 	}
-	if err := e.AddSignatureHeader(s, ver); err != nil {
+	if err := e.AddSignatureHeader(s); err != nil {
 		t.Fatal(err)
 	}
 
 	var buf bytes.Buffer
-	if err := e.Write(&buf, ver); err != nil {
+	if err := e.Write(&buf); err != nil {
 		t.Fatal(err)
 	}
 
@@ -242,7 +242,8 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	// Set-Cookie is a stateful header and not available.
 	header.Add("Set-Cookie", "wow, such cookie")
 
-	if _, err := NewExchange(u, nil, 200, header, []byte(payload)); err == nil {
+	const ver = version.Version1b1
+	if _, err := NewExchange(ver, u, nil, 200, header, []byte(payload)); err == nil {
 		t.Errorf("stateful header unexpectedly allowed in an exchange")
 	}
 
@@ -252,26 +253,27 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	header.Add("cOnTent-TyPe", "text/html; charset=utf-8")
 	header.Add("setProfile", "profile X")
 
-	if _, err := NewExchange(u, nil, 200, header, []byte(payload)); err == nil {
+	if _, err := NewExchange(ver, u, nil, 200, header, []byte(payload)); err == nil {
 		t.Errorf("stateful header unexpectedly allowed in an exchange")
 	}
 }
 
 func TestSignedExchangeNonHttps(t *testing.T) {
 	u, _ := url.Parse("http://example.com/")
-	if _, err := NewExchange(u, nil, 200, http.Header{}, []byte(payload)); err == nil {
+	const ver = version.Version1b1
+	if _, err := NewExchange(ver, u, nil, 200, http.Header{}, []byte(payload)); err == nil {
 		t.Errorf("non-https resource URI unexpectedly allowed in an exchange")
 	}
 }
 
 func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 	u, _ := url.Parse("https://example.com/")
-	e, err := NewExchange(u, nil, 200, http.Header{}, []byte(payload))
+	const ver = version.Version1b1
+	e, err := NewExchange(ver, u, nil, 200, http.Header{}, []byte(payload))
 	if err != nil {
 		t.Fatal(err)
 	}
-	const ver = version.Version1b1
-	if err := e.MiEncodePayload(16, ver); err != nil {
+	if err := e.MiEncodePayload(16); err != nil {
 		t.Fatal(err)
 	}
 
@@ -290,7 +292,7 @@ func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 		PrivKey:     privKey,
 		Rand:        zeroReader{},
 	}
-	if err := e.AddSignatureHeader(s, ver); err == nil {
+	if err := e.AddSignatureHeader(s); err == nil {
 		t.Errorf("non-{https,data} cert-url unexpectedly allowed in an exchange")
 	}
 }

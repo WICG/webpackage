@@ -32,6 +32,8 @@ func HeaderMagicBytes(v version.Version) []byte {
 }
 
 type Exchange struct {
+	Version version.Version
+
 	// Request
 	RequestURI     *url.URL
 	RequestHeaders http.Header
@@ -53,7 +55,7 @@ var (
 	valueGet = []byte("GET")
 )
 
-func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte) (*Exchange, error) {
+func NewExchange(ver version.Version, uri *url.URL, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte) (*Exchange, error) {
 	if uri.Scheme != "https" {
 		return nil, fmt.Errorf("signedexchange: The request with non-https scheme %q URI can't be captured inside signed exchange.", uri.Scheme)
 	}
@@ -69,6 +71,7 @@ func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseH
 	}
 
 	return &Exchange{
+		Version:         ver,
 		RequestURI:      uri,
 		ResponseStatus:  status,
 		RequestHeaders:  requestHeaders,
@@ -77,14 +80,14 @@ func NewExchange(uri *url.URL, requestHeaders http.Header, status int, responseH
 	}, nil
 }
 
-func (e *Exchange) MiEncodePayload(recordSize int, ver version.Version) error {
-	switch ver {
+func (e *Exchange) MiEncodePayload(recordSize int) error {
+	switch e.Version {
 	case version.Version1b1:
 		if e.ResponseHeaders.Get("MI-Draft2") != "" {
 			return errors.New("signedexchange: payload already MI encoded")
 		}
 		var buf bytes.Buffer
-		mi, err := mice.Encode(&buf, e.Payload, recordSize, ver)
+		mi, err := mice.Encode(&buf, e.Payload, recordSize, e.Version)
 		if err != nil {
 			return err
 		}
@@ -97,7 +100,7 @@ func (e *Exchange) MiEncodePayload(recordSize int, ver version.Version) error {
 			return errors.New("signedexchange: response already has a Digest header")
 		}
 		var buf bytes.Buffer
-		digest, err := mice.Encode(&buf, e.Payload, recordSize, ver)
+		digest, err := mice.Encode(&buf, e.Payload, recordSize, e.Version)
 		if err != nil {
 			return err
 		}
@@ -112,8 +115,8 @@ func (e *Exchange) MiEncodePayload(recordSize int, ver version.Version) error {
 	return nil
 }
 
-func (e *Exchange) AddSignatureHeader(s *Signer, ver version.Version) error {
-	h, err := s.signatureHeaderValue(e, ver)
+func (e *Exchange) AddSignatureHeader(s *Signer) error {
+	h, err := s.signatureHeaderValue(e)
 	if err != nil {
 		return err
 	}
@@ -121,14 +124,14 @@ func (e *Exchange) AddSignatureHeader(s *Signer, ver version.Version) error {
 	return nil
 }
 
-func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder, ver version.Version) []*cbor.MapEntryEncoder {
+func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder) []*cbor.MapEntryEncoder {
 	encoders := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString(keyMethod)
 			valueE.EncodeByteString(valueGet)
 		}),
 	}
-	if ver == version.Version1b1 {
+	if e.Version == version.Version1b1 {
 		encoders = append(encoders,
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeByteString(keyURL)
@@ -138,8 +141,8 @@ func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder, ver version.Version) [
 	return encoders
 }
 
-func (e *Exchange) encodeRequest(enc *cbor.Encoder, ver version.Version) error {
-	mes := e.encodeRequestCommon(enc, ver)
+func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
+	mes := e.encodeRequestCommon(enc)
 	return enc.EncodeMap(mes)
 }
 
@@ -161,7 +164,7 @@ func normalizeHeaderValues(values []string) string {
 	return strings.Join(values, ",")
 }
 
-func (e *Exchange) decodeRequest(dec *cbor.Decoder, ver version.Version) error {
+func (e *Exchange) decodeRequest(dec *cbor.Decoder) error {
 	n, err := dec.DecodeMapHeader()
 	if err != nil {
 		return fmt.Errorf("signedexchange: failed to decode response map header: %v", err)
@@ -181,7 +184,7 @@ func (e *Exchange) decodeRequest(dec *cbor.Decoder, ver version.Version) error {
 			}
 		}
 		if bytes.Equal(key, keyURL) {
-			if ver == version.Version1b1 {
+			if e.Version == version.Version1b1 {
 				e.RequestURI, err = url.Parse(string(value))
 				if err != nil {
 					return err
@@ -239,11 +242,11 @@ func (e *Exchange) decodeResponseHeaders(dec *cbor.Decoder) error {
 }
 
 // draft-yasskin-http-origin-signed-responses.html#rfc.section.3.4
-func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder, ver version.Version) error {
+func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
 	if err := enc.EncodeArrayHeader(2); err != nil {
 		return fmt.Errorf("signedexchange: failed to encode top-level array header: %v", err)
 	}
-	if err := e.encodeRequest(enc, ver); err != nil {
+	if err := e.encodeRequest(enc); err != nil {
 		return err
 	}
 	if err := e.encodeResponseHeaders(enc); err != nil {
@@ -252,12 +255,12 @@ func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder, ver version.Version)
 	return nil
 }
 
-func (e *Exchange) DumpExchangeHeaders(w io.Writer, ver version.Version) error {
+func (e *Exchange) DumpExchangeHeaders(w io.Writer) error {
 	enc := cbor.NewEncoder(w)
-	return e.encodeExchangeHeaders(enc, ver)
+	return e.encodeExchangeHeaders(enc)
 }
 
-func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder, ver version.Version) error {
+func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
 	n, err := dec.DecodeArrayHeader()
 	if err != nil {
 		return fmt.Errorf("signedexchange: failed to decode top-level array header: %v", err)
@@ -265,7 +268,7 @@ func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder, ver version.Version)
 	if n != 2 {
 		return fmt.Errorf("singedexchange: length of header array must be 2 but %d", n)
 	}
-	if err := e.decodeRequest(dec, ver); err != nil {
+	if err := e.decodeRequest(dec); err != nil {
 		return err
 	}
 	if err := e.decodeResponseHeaders(dec); err != nil {
@@ -274,20 +277,20 @@ func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder, ver version.Version)
 	return nil
 }
 
-func (e *Exchange) Write(w io.Writer, ver version.Version) error {
+func (e *Exchange) Write(w io.Writer) error {
 	headerBuf := &bytes.Buffer{}
-	if err := e.DumpExchangeHeaders(headerBuf, ver); err != nil {
+	if err := e.DumpExchangeHeaders(headerBuf); err != nil {
 		return err
 	}
 	headerLength := headerBuf.Len()
 
-	switch ver {
+	switch e.Version {
 	case version.Version1b1:
 		// draft-yasskin-http-origin-signed-responses.html#application-http-exchange
 
 		// Step 1. "The ASCII characters "sxg1" followed by a 0 byte, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don't." [spec text]
 		// "Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific string beginning with "sxg1-" and ending with a 0 byte instead." [spec text]
-		if _, err := w.Write(HeaderMagicBytes(ver)); err != nil {
+		if _, err := w.Write(HeaderMagicBytes(e.Version)); err != nil {
 			return err
 		}
 
@@ -329,7 +332,7 @@ func (e *Exchange) Write(w io.Writer, ver version.Version) error {
 
 		// "1. 8 bytes consisting of the ASCII characters “sxg1” followed by 4 0x00 bytes, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don’t.
 		// Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific 8-byte string beginning with “sxg1-“." [spec text]
-		if _, err := w.Write(HeaderMagicBytes(ver)); err != nil {
+		if _, err := w.Write(HeaderMagicBytes(e.Version)); err != nil {
 			return err
 		}
 
@@ -417,9 +420,9 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 	} else {
 		return nil, fmt.Errorf("singedexchange: wrong magic bytes: %v", magic)
 	}
-	_ = ver // TODO: Implement decoder with the version
 
 	e := &Exchange{
+		Version:         ver,
 		RequestHeaders:  http.Header{},
 		ResponseHeaders: http.Header{},
 	}
@@ -471,7 +474,7 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 	}
 
 	dec := cbor.NewDecoder(bytes.NewReader(encodedHeader))
-	if err := e.decodeExchangeHeaders(dec, ver); err != nil {
+	if err := e.decodeExchangeHeaders(dec); err != nil {
 		return nil, err
 	}
 
@@ -486,8 +489,8 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 	return e, nil
 }
 
-func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer, ver version.Version) error {
-	bs, err := s.serializeSignedMessage(e, ver)
+func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer) error {
+	bs, err := s.serializeSignedMessage(e)
 	if err != nil {
 		return err
 	}
@@ -499,6 +502,7 @@ func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer, ver version.Version
 }
 
 func (e *Exchange) PrettyPrint(w io.Writer) {
+	fmt.Fprintf(w, "format version: %s\n", e.Version)
 	fmt.Fprintln(w, "request:")
 	fmt.Fprintf(w, "  uri: %s\n", e.RequestURI.String())
 	fmt.Fprintln(w, "  headers:")
