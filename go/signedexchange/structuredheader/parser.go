@@ -81,11 +81,11 @@ func ParseParameterisedList(input string) (ParameterisedList, error) {
 			return items, nil
 		}
 		if !p.consumeChar(',') {
-			return nil, fmt.Errorf("COMMA expacted, got '%c'", input[0])
+			return nil, fmt.Errorf("',' expacted, got '%c'", input[0])
 		}
 		p.discardLeadingOWS()
 	}
-	return nil, errors.New("Unexpected end of input; Parameterised Identifier expected")
+	return nil, errors.New("unexpected end of input; Parameterised Identifier expected")
 }
 
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-param-id
@@ -164,7 +164,7 @@ func (p *parser) parseNumber() (int64, error) {
 	s := p.getString(i)
 	n, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("Couldn't parse %q as number: %v", s, err)
+		return 0, fmt.Errorf("couldn't parse %q as number: %v", s, err)
 	}
 	return n, nil
 }
@@ -175,7 +175,7 @@ func (p *parser) parseString() (string, error) {
 		return "", errors.New("String expected, got EOS")
 	}
 	if !p.consumeChar('"') {
-		return "", fmt.Errorf("DQUOTE expected, got '%c'", p.input[0])
+		return "", fmt.Errorf("'\"' expected, got '%c'", p.input[0])
 	}
 
 	var b strings.Builder
@@ -187,18 +187,18 @@ func (p *parser) parseString() (string, error) {
 			}
 			c = p.getChar()
 			if c != '"' && c != '\\' {
-				return "", fmt.Errorf("Invalid escape \\%c", c)
+				return "", fmt.Errorf("invalid escape \\%c", c)
 			}
 			b.WriteByte(c)
 		} else if c == '"' {
 			return b.String(), nil
 		} else if c < ' ' || c > '~' {
-			return "", fmt.Errorf("Invalid character \\x%02x", c)
+			return "", fmt.Errorf("invalid character \\x%02x", c)
 		} else {
 			b.WriteByte(c)
 		}
 	}
-	return "", errors.New("Missing closing DQUOTE")
+	return "", errors.New("missing closing '\"'")
 }
 
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-identifier
@@ -227,7 +227,7 @@ func (p *parser) parseByteSequence() ([]byte, error) {
 	}
 	len := strings.IndexByte(p.input, '*')
 	if len < 0 {
-		return nil, errors.New("Missing closing '*'")
+		return nil, errors.New("missing closing '*'")
 	}
 	s := p.getString(len)
 	enc := base64.StdEncoding
@@ -237,7 +237,7 @@ func (p *parser) parseByteSequence() ([]byte, error) {
 	}
 	data, err := enc.DecodeString(s)
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't decode base64 %q: %v", s, err)
+		return nil, fmt.Errorf("couldn't decode base64 %q: %v", s, err)
 	}
 	if !p.consumeChar('*') {
 		panic("cannot happen")
