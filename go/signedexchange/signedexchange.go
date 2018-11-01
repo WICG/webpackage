@@ -3,7 +3,6 @@ package signedexchange
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -81,37 +80,27 @@ func NewExchange(ver version.Version, uri *url.URL, requestHeaders http.Header, 
 }
 
 func (e *Exchange) MiEncodePayload(recordSize int) error {
+	var enc mice.Encoding
 	switch e.Version {
 	case version.Version1b1:
-		if e.ResponseHeaders.Get("MI-Draft2") != "" {
-			return errors.New("signedexchange: payload already MI encoded")
-		}
-		var buf bytes.Buffer
-		mi, err := mice.Encode(&buf, e.Payload, recordSize, e.Version)
-		if err != nil {
-			return err
-		}
-		e.Payload = buf.Bytes()
-		e.ResponseHeaders.Add("Content-Encoding", "mi-sha256-draft2")
-		e.ResponseHeaders.Add("MI-Draft2", mi)
-
+		enc = mice.Draft02Encoding
 	case version.Version1b2:
-		if e.ResponseHeaders.Get("Digest") != "" {
-			return errors.New("signedexchange: response already has a Digest header")
-		}
-		var buf bytes.Buffer
-		digest, err := mice.Encode(&buf, e.Payload, recordSize, e.Version)
-		if err != nil {
-			return err
-		}
-		e.Payload = buf.Bytes()
-		e.ResponseHeaders.Add("Content-Encoding", "mi-sha256-03")
-		e.ResponseHeaders.Add("Digest", digest)
-
+		enc = mice.Draft03Encoding
 	default:
 		panic("not reached")
 	}
 
+	if e.ResponseHeaders.Get(enc.DigestHeaderName()) != "" {
+		return fmt.Errorf("signedexchange: response already has %q header", enc.DigestHeaderName())
+	}
+	var buf bytes.Buffer
+	digest, err := enc.Encode(&buf, e.Payload, recordSize)
+	if err != nil {
+		return err
+	}
+	e.Payload = buf.Bytes()
+	e.ResponseHeaders.Add("Content-Encoding", enc.ContentEncoding())
+	e.ResponseHeaders.Add(enc.DigestHeaderName(), digest)
 	return nil
 }
 
