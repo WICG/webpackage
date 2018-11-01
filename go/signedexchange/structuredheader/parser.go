@@ -129,7 +129,7 @@ func (p *parser) parseItem() (interface{}, error) {
 	// OWS for items. https://github.com/httpwg/http-extensions/issues/703
 
 	if p.isEmpty() {
-		return nil, errors.New("Item expected, got EOS")
+		return nil, errors.New("item expected, got EOS")
 	}
 	c := p.input[0]
 	if c == '-' || isDigit(c) {
@@ -145,16 +145,16 @@ func (p *parser) parseItem() (interface{}, error) {
 	if isLCAlpha(c) {
 		return p.parseIdentifier()
 	}
-	return nil, fmt.Errorf("Item expected, got '%c'", c)
+	return nil, fmt.Errorf("item expected, got '%c'", c)
 }
 
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-number
 func (p *parser) parseNumber() (int64, error) {
 	if p.isEmpty() {
-		return 0, errors.New("Number expected, got EOS")
+		return 0, errors.New("number expected, got EOS")
 	}
 	if p.input[0] != '-' && !isDigit(p.input[0]) {
-		return 0, fmt.Errorf("Number expected, got '%c'", p.input[0])
+		return 0, fmt.Errorf("number expected, got '%c'", p.input[0])
 	}
 	// TODO: Support Floats.
 	i := 1
@@ -172,7 +172,7 @@ func (p *parser) parseNumber() (int64, error) {
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-string
 func (p *parser) parseString() (string, error) {
 	if p.isEmpty() {
-		return "", errors.New("String expected, got EOS")
+		return "", errors.New("string expected, got EOS")
 	}
 	if !p.consumeChar('"') {
 		return "", fmt.Errorf("'\"' expected, got '%c'", p.input[0])
@@ -204,10 +204,10 @@ func (p *parser) parseString() (string, error) {
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-identifier
 func (p *parser) parseIdentifier() (Identifier, error) {
 	if p.isEmpty() {
-		return "", errors.New("Identifier expected, got EOS")
+		return "", errors.New("identifier expected, got EOS")
 	}
 	if !isLCAlpha(p.input[0]) {
-		return "", fmt.Errorf("Identifier expected, got '%c'", p.input[0])
+		return "", fmt.Errorf("identifier expected, got '%c'", p.input[0])
 	}
 	i := 0
 	for i < len(p.input) && isIdent(p.input[i]) {
@@ -220,7 +220,7 @@ func (p *parser) parseIdentifier() (Identifier, error) {
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-binary
 func (p *parser) parseByteSequence() ([]byte, error) {
 	if p.isEmpty() {
-		return nil, errors.New("Byte Sequence expected, got EOS")
+		return nil, errors.New("byte sequence expected, got EOS")
 	}
 	if !p.consumeChar('*') {
 		return nil, fmt.Errorf("'*' expected, got '%c'", p.input[0])
