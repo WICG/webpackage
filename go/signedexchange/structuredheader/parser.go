@@ -81,11 +81,11 @@ func ParseParameterisedList(input string) (ParameterisedList, error) {
 			return items, nil
 		}
 		if !p.consumeChar(',') {
-			return nil, fmt.Errorf("',' expacted, got '%c'", input[0])
+			return nil, fmt.Errorf("structuredheader: ',' expacted, got '%c'", input[0])
 		}
 		p.discardLeadingOWS()
 	}
-	return nil, errors.New("unexpected end of input; Parameterised Identifier expected")
+	return nil, errors.New("structuredheader: unexpected end of input; Parameterised Identifier expected")
 }
 
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-param-id
@@ -109,7 +109,7 @@ func (p *parser) parseParameterisedIdentifier() (*ParameterisedIdentifier, error
 			return nil, err
 		}
 		if _, ok := parameters[param_name]; ok {
-			return nil, fmt.Errorf("duplicated parameter '%s'", param_name)
+			return nil, fmt.Errorf("structuredheader: duplicated parameter '%s'", param_name)
 		}
 		var param_value interface{}
 		if p.consumeChar('=') {
@@ -129,7 +129,7 @@ func (p *parser) parseItem() (interface{}, error) {
 	// OWS for items. https://github.com/httpwg/http-extensions/issues/703
 
 	if p.isEmpty() {
-		return nil, errors.New("item expected, got EOS")
+		return nil, errors.New("structuredheader: item expected, got EOS")
 	}
 	c := p.input[0]
 	if c == '-' || isDigit(c) {
@@ -145,16 +145,16 @@ func (p *parser) parseItem() (interface{}, error) {
 	if isLCAlpha(c) {
 		return p.parseIdentifier()
 	}
-	return nil, fmt.Errorf("item expected, got '%c'", c)
+	return nil, fmt.Errorf("structuredheader: item expected, got '%c'", c)
 }
 
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-number
 func (p *parser) parseNumber() (int64, error) {
 	if p.isEmpty() {
-		return 0, errors.New("number expected, got EOS")
+		return 0, errors.New("structuredheader: number expected, got EOS")
 	}
 	if p.input[0] != '-' && !isDigit(p.input[0]) {
-		return 0, fmt.Errorf("number expected, got '%c'", p.input[0])
+		return 0, fmt.Errorf("structuredheader: number expected, got '%c'", p.input[0])
 	}
 	// TODO: Support Floats.
 	i := 1
@@ -164,7 +164,7 @@ func (p *parser) parseNumber() (int64, error) {
 	s := p.getString(i)
 	n, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("couldn't parse %q as number: %v", s, err)
+		return 0, fmt.Errorf("structuredheader: couldn't parse %q as number: %v", s, err)
 	}
 	return n, nil
 }
@@ -172,10 +172,10 @@ func (p *parser) parseNumber() (int64, error) {
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-string
 func (p *parser) parseString() (string, error) {
 	if p.isEmpty() {
-		return "", errors.New("string expected, got EOS")
+		return "", errors.New("structuredheader: string expected, got EOS")
 	}
 	if !p.consumeChar('"') {
-		return "", fmt.Errorf("'\"' expected, got '%c'", p.input[0])
+		return "", fmt.Errorf("structuredheader: '\"' expected, got '%c'", p.input[0])
 	}
 
 	var b strings.Builder
@@ -187,27 +187,27 @@ func (p *parser) parseString() (string, error) {
 			}
 			c = p.getChar()
 			if c != '"' && c != '\\' {
-				return "", fmt.Errorf("invalid escape \\%c", c)
+				return "", fmt.Errorf("structuredheader: invalid escape \\%c", c)
 			}
 			b.WriteByte(c)
 		} else if c == '"' {
 			return b.String(), nil
 		} else if c < ' ' || c > '~' {
-			return "", fmt.Errorf("invalid character \\x%02x", c)
+			return "", fmt.Errorf("structuredheader: invalid character \\x%02x", c)
 		} else {
 			b.WriteByte(c)
 		}
 	}
-	return "", errors.New("missing closing '\"'")
+	return "", errors.New("structuredheader: missing closing '\"'")
 }
 
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-identifier
 func (p *parser) parseIdentifier() (Identifier, error) {
 	if p.isEmpty() {
-		return "", errors.New("identifier expected, got EOS")
+		return "", errors.New("structuredheader: identifier expected, got EOS")
 	}
 	if !isLCAlpha(p.input[0]) {
-		return "", fmt.Errorf("identifier expected, got '%c'", p.input[0])
+		return "", fmt.Errorf("structuredheader: identifier expected, got '%c'", p.input[0])
 	}
 	i := 0
 	for i < len(p.input) && isIdent(p.input[i]) {
@@ -220,14 +220,14 @@ func (p *parser) parseIdentifier() (Identifier, error) {
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-binary
 func (p *parser) parseByteSequence() ([]byte, error) {
 	if p.isEmpty() {
-		return nil, errors.New("byte sequence expected, got EOS")
+		return nil, errors.New("structuredheader: byte sequence expected, got EOS")
 	}
 	if !p.consumeChar('*') {
-		return nil, fmt.Errorf("'*' expected, got '%c'", p.input[0])
+		return nil, fmt.Errorf("structuredheader: '*' expected, got '%c'", p.input[0])
 	}
 	len := strings.IndexByte(p.input, '*')
 	if len < 0 {
-		return nil, errors.New("missing closing '*'")
+		return nil, errors.New("structuredheader: missing closing '*'")
 	}
 	s := p.getString(len)
 	enc := base64.StdEncoding
@@ -237,7 +237,7 @@ func (p *parser) parseByteSequence() ([]byte, error) {
 	}
 	data, err := enc.DecodeString(s)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't decode base64 %q: %v", s, err)
+		return nil, fmt.Errorf("structuredheader: couldn't decode base64 %q: %v", s, err)
 	}
 	if !p.consumeChar('*') {
 		panic("cannot happen")
