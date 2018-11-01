@@ -14,7 +14,7 @@ import (
 type Identifier string
 
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#param
-type ParameterisedList []*ParameterisedIdentifier
+type ParameterisedList []ParameterisedIdentifier
 type ParameterisedIdentifier struct {
 	Label  Identifier
 	Params Parameters
@@ -89,10 +89,10 @@ func ParseParameterisedList(input string) (ParameterisedList, error) {
 }
 
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-param-id
-func (p *parser) parseParameterisedIdentifier() (*ParameterisedIdentifier, error) {
+func (p *parser) parseParameterisedIdentifier() (ParameterisedIdentifier, error) {
 	primary_identifier, err := p.parseIdentifier()
 	if err != nil {
-		return nil, err
+		return ParameterisedIdentifier{}, err
 	}
 	parameters := make(Parameters)
 	for {
@@ -106,21 +106,21 @@ func (p *parser) parseParameterisedIdentifier() (*ParameterisedIdentifier, error
 		p.discardLeadingOWS()
 		param_name, err := p.parseIdentifier()
 		if err != nil {
-			return nil, err
+			return ParameterisedIdentifier{}, err
 		}
 		if _, ok := parameters[param_name]; ok {
-			return nil, fmt.Errorf("structuredheader: duplicated parameter '%s'", param_name)
+			return ParameterisedIdentifier{}, fmt.Errorf("structuredheader: duplicated parameter '%s'", param_name)
 		}
 		var param_value interface{}
 		if p.consumeChar('=') {
 			param_value, err = p.parseItem()
 			if err != nil {
-				return nil, err
+				return ParameterisedIdentifier{}, err
 			}
 		}
 		parameters[param_name] = param_value
 	}
-	return &ParameterisedIdentifier{primary_identifier, parameters}, nil
+	return ParameterisedIdentifier{primary_identifier, parameters}, nil
 }
 
 // http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-item

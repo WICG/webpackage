@@ -215,7 +215,7 @@ func TestParseParameterisedIdentifier(t *testing.T) {
 			if err != nil {
 				t.Errorf("parseParameterisedIdentifier(%q) unexpectedly failed: %v", c.input, err)
 			}
-			if !reflect.DeepEqual(r, c.expected) {
+			if !reflect.DeepEqual(r, *c.expected) {
 				t.Errorf("parseParameterisedIdentifier(%q): got %v, want %v", c.input, r, c.expected)
 			}
 			if p.input != c.rest {
@@ -233,16 +233,16 @@ func TestParseParameterisedList(t *testing.T) {
 		expected ParameterisedList
 	}{
 		{"", nil},
-		{"item1;n=123", ParameterisedList{&ParameterisedIdentifier{"item1", Parameters{"n": int64(123)}}}},
+		{"item1;n=123", ParameterisedList{{"item1", Parameters{"n": int64(123)}}}},
 		{"item1;n=123,", nil},
 		{",item1;n=123", nil},
 		{"item1;n=123,item2,item3;n=456", ParameterisedList{
-			&ParameterisedIdentifier{"item1", Parameters{"n": int64(123)}},
-			&ParameterisedIdentifier{"item2", Parameters{}},
-			&ParameterisedIdentifier{"item3", Parameters{"n": int64(456)}}}},
+			{"item1", Parameters{"n": int64(123)}},
+			{"item2", Parameters{}},
+			{"item3", Parameters{"n": int64(456)}}}},
 		{" \t item1 , item2;n=123 ", ParameterisedList{
-			&ParameterisedIdentifier{"item1", Parameters{}},
-			&ParameterisedIdentifier{"item2", Parameters{"n": int64(123)}}}},
+			{"item1", Parameters{}},
+			{"item2", Parameters{"n": int64(123)}}}},
 	}
 	for _, c := range cases {
 		r, err := ParseParameterisedList(c.input)
