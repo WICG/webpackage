@@ -18,12 +18,12 @@ const (
 	Draft03Encoding Encoding = "mi-sha256-03"
 )
 
-// ContentEncoding() returns content encoding name of the Encoding.
+// ContentEncoding returns content encoding name of the Encoding.
 func (enc Encoding) ContentEncoding() string {
 	return string(enc)
 }
 
-// DigestHeaderName() returns the name of HTTP header that carries integrity proofs.
+// DigestHeaderName returns the name of HTTP header that carries integrity proofs.
 func (enc Encoding) DigestHeaderName() string {
 	if enc == Draft02Encoding {
 		return "MI-Draft2"
