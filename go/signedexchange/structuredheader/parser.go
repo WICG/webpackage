@@ -20,7 +20,7 @@ type ParameterisedIdentifier struct {
 	Params Parameters
 }
 
-// Parameter represents a set of parameters in a Parameterised Identifier.
+// Parameters represents a set of parameters in a Parameterised Identifier.
 // The interface{} value is one of these:
 //
 //	int64      for Numbers
