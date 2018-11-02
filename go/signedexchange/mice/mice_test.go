@@ -6,12 +6,11 @@ import (
 	"testing"
 
 	. "github.com/WICG/webpackage/go/signedexchange/mice"
-	"github.com/WICG/webpackage/go/signedexchange/version"
 )
 
-func TestEmptyV1b1(t *testing.T) {
+func TestEmptyDraft02(t *testing.T) {
 	var buf bytes.Buffer
-	mi, err := Encode(&buf, []byte{}, 16, version.Version1b1)
+	mi, err := Draft02Encoding.Encode(&buf, []byte{}, 16)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,9 +27,9 @@ func TestEmptyV1b1(t *testing.T) {
 	}
 }
 
-func TestEmptyV1b2(t *testing.T) {
+func TestEmptyDraft03(t *testing.T) {
 	var buf bytes.Buffer
-	mi, err := Encode(&buf, []byte{}, 16, version.Version1b2)
+	mi, err := Draft03Encoding.Encode(&buf, []byte{}, 16)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,10 +47,10 @@ func TestEmptyV1b2(t *testing.T) {
 }
 
 // https://tools.ietf.org/html/draft-thomson-http-mice-02#section-4.1
-func TestSingleRecordV1b1(t *testing.T) {
+func TestSingleRecordDraft02(t *testing.T) {
 	var buf bytes.Buffer
 	message := []byte("When I grow up, I want to be a watermelon")
-	mi, err := Encode(&buf, message, 0x29, version.Version1b1)
+	mi, err := Draft02Encoding.Encode(&buf, message, 0x29)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,10 +68,10 @@ func TestSingleRecordV1b1(t *testing.T) {
 }
 
 // https://tools.ietf.org/html/draft-thomson-http-mice-03#section-4.1
-func TestSingleRecordV1b2(t *testing.T) {
+func TestSingleRecordDraft03(t *testing.T) {
 	var buf bytes.Buffer
 	message := []byte("When I grow up, I want to be a watermelon")
-	mi, err := Encode(&buf, message, 0x29, version.Version1b2)
+	mi, err := Draft03Encoding.Encode(&buf, message, 0x29)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,10 +105,10 @@ func mustStdEncodeBase64(s string) []byte {
 }
 
 // https://tools.ietf.org/html/draft-thomson-http-mice-02#section-4.2
-func TestMultipleRecordsV1b1(t *testing.T) {
+func TestMultipleRecordsDraft02(t *testing.T) {
 	var buf bytes.Buffer
 	message := []byte("When I grow up, I want to be a watermelon")
-	mi, err := Encode(&buf, message, 16, version.Version1b1)
+	mi, err := Draft02Encoding.Encode(&buf, message, 16)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,10 +167,10 @@ func TestMultipleRecordsV1b1(t *testing.T) {
 }
 
 // https://tools.ietf.org/html/draft-thomson-http-mice-03#section-4.2
-func TestMultipleRecordsV1b2(t *testing.T) {
+func TestMultipleRecordsDraft03(t *testing.T) {
 	var buf bytes.Buffer
 	message := []byte("When I grow up, I want to be a watermelon")
-	mi, err := Encode(&buf, message, 16, version.Version1b2)
+	mi, err := Draft03Encoding.Encode(&buf, message, 16)
 	if err != nil {
 		t.Fatal(err)
 	}

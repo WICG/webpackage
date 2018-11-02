@@ -1,3 +1,5 @@
+// Package mice implements Merkle Integrity Content Encoding
+// (https://martinthomson.github.io/http-mice/draft-thomson-http-mice.html).
 package mice
 
 import (
@@ -5,29 +7,58 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"io"
-
-	"github.com/WICG/webpackage/go/signedexchange/version"
 )
 
-// Encode encodes the given content buf to MICE (Merkle Integrity Content Encoding)
-// format.
-//
-// Encode returns MI header field parameter string and error if one exists for version 1b1, and
-// returns Digest header value parameter string and error if one exists for version 1b2.
-//
-// Spec: https://tools.ietf.org/html/draft-thomson-http-mice-02 for version 1b1, and
-// https://tools.ietf.org/html/draft-thomson-http-mice-03 for version 1b2
-func Encode(w io.Writer, buf []byte, recordSize int, ver version.Version) (string, error) {
+// Encoding identifies which draft version of http-mice to use.
+type Encoding string
+const (
+	// https://tools.ietf.org/html/draft-thomson-http-mice-02
+	Draft02Encoding Encoding = "mi-sha256-draft2"
+	// https://tools.ietf.org/html/draft-thomson-http-mice-03
+	Draft03Encoding Encoding = "mi-sha256-03"
+)
+
+// ContentEncoding returns content encoding name of the Encoding.
+func (enc Encoding) ContentEncoding() string {
+	return string(enc)
+}
+
+// DigestHeaderName returns the name of HTTP header that carries integrity proofs.
+func (enc Encoding) DigestHeaderName() string {
+	if enc == Draft02Encoding {
+		return "MI-Draft2"
+	}
+	return "Digest"
+}
+
+func (enc Encoding) digestHeaderValue(topLevelProof []byte) string {
+	return enc.ContentEncoding() + "=" + enc.base64Encoding().EncodeToString(topLevelProof)
+}
+
+func (enc Encoding) base64Encoding() *base64.Encoding {
+	switch enc {
+	case Draft02Encoding:
+		return base64.RawURLEncoding
+	case Draft03Encoding:
+		return base64.StdEncoding
+	default:
+		panic("not reached")
+	}
+}
+
+// Encode encodes content of buf and writes to w. Encode returns Digest header
+// value (or MI header value in draft 02), and error if one exists.
+func (enc Encoding) Encode(w io.Writer, buf []byte, recordSize int) (string, error) {
 
 	numRecords := (len(buf) + recordSize - 1) / recordSize
 
-	switch ver {
-	case version.Version1b1:
+	switch enc {
+	case Draft02Encoding:
 		if len(buf) == 0 {
 			numRecords = 1
 		}
 
-	case version.Version1b2:
+	case Draft03Encoding:
 		if len(buf) == 0 {
 			// As a special case, the encoding of an empty payload is itself an
 			// empty message (i.e. it omits the initial record size), and its
@@ -35,8 +66,7 @@ func Encode(w io.Writer, buf []byte, recordSize int, ver version.Version) (strin
 			h := sha256.New()
 			h.Write([]byte{0})
 			proof := h.Sum(nil)
-			mi := "mi-sha256-03=" + base64.StdEncoding.EncodeToString(proof)
-			return mi, nil
+			return enc.digestHeaderValue(proof), nil
 		}
 
 	default:
@@ -77,15 +107,5 @@ func Encode(w io.Writer, buf []byte, recordSize int, ver version.Version) (strin
 			return "", err
 		}
 	}
-
-	mi := ""
-	switch ver {
-	case version.Version1b1:
-		mi = "mi-sha256-draft2=" + base64.RawURLEncoding.EncodeToString(proofs[0])
-	case version.Version1b2:
-		mi = "mi-sha256-03=" + base64.StdEncoding.EncodeToString(proofs[0])
-	default:
-		panic("not reached")
-	}
-	return mi, nil
+	return enc.digestHeaderValue(proofs[0]), nil
 }
