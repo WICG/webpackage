@@ -3,20 +3,30 @@
 package mice
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"io"
+	"strings"
 )
 
 // Encoding identifies which draft version of http-mice to use.
 type Encoding string
+
 const (
 	// https://tools.ietf.org/html/draft-thomson-http-mice-02
 	Draft02Encoding Encoding = "mi-sha256-draft2"
 	// https://tools.ietf.org/html/draft-thomson-http-mice-03
 	Draft03Encoding Encoding = "mi-sha256-03"
+
+	MaxRecordSize = 1024 * 1024
 )
+
+// ErrValidationFailure is returned when integrity check have failed.
+var ErrValidationFailure = errors.New("mice: failed to validate record")
 
 // ContentEncoding returns content encoding name of the Encoding.
 func (enc Encoding) ContentEncoding() string {
@@ -31,7 +41,7 @@ func (enc Encoding) DigestHeaderName() string {
 	return "Digest"
 }
 
-func (enc Encoding) digestHeaderValue(topLevelProof []byte) string {
+func (enc Encoding) FormatDigestHeader(topLevelProof []byte) string {
 	return enc.ContentEncoding() + "=" + enc.base64Encoding().EncodeToString(topLevelProof)
 }
 
@@ -66,7 +76,7 @@ func (enc Encoding) Encode(w io.Writer, buf []byte, recordSize int) (string, err
 			h := sha256.New()
 			h.Write([]byte{0})
 			proof := h.Sum(nil)
-			return enc.digestHeaderValue(proof), nil
+			return enc.FormatDigestHeader(proof), nil
 		}
 
 	default:
@@ -107,5 +117,132 @@ func (enc Encoding) Encode(w io.Writer, buf []byte, recordSize int) (string, err
 			return "", err
 		}
 	}
-	return enc.digestHeaderValue(proofs[0]), nil
+	return enc.FormatDigestHeader(proofs[0]), nil
+}
+
+func (enc Encoding) parseDigestHeader(digestHeaderValue string) ([]byte, error) {
+	// TODO: Support mutliple digest values (Section 4.3.2 of RFC3230).
+	chunks := strings.SplitN(digestHeaderValue, "=", 2)
+	if len(chunks) != 2 {
+		return nil, fmt.Errorf("mice: cannot parse digest value %q", digestHeaderValue)
+	}
+	algorithm, digest := chunks[0], chunks[1]
+
+	if algorithm != enc.ContentEncoding() {
+		return nil, fmt.Errorf("mice: unsupported digest algorithm %q", algorithm)
+	}
+	proof, err := enc.base64Encoding().DecodeString(digest)
+	if err != nil {
+		return nil, fmt.Errorf("mice: failed to decode digest value %q: %v", digest, err)
+	}
+	if len(proof) != sha256.Size {
+		return nil, fmt.Errorf("mice: wrong digest length %q", digest)
+	}
+	return proof, nil
+}
+
+type decoder struct {
+	encoding   Encoding
+	recordSize uint64
+	r          io.Reader
+	nextProof  []byte
+	recordBuf  []byte
+	out        []byte // leftover decoded output
+}
+
+// NewDecoder creates a new http-mice stream decoder. It reads first few bytes
+// from r to determine the record size.
+func (enc Encoding) NewDecoder(r io.Reader, digestHeaderValue string) (io.Reader, error) {
+	toplevelProof, err := enc.parseDigestHeader(digestHeaderValue)
+	if err != nil {
+		return nil, err
+	}
+
+	var recordSize uint64
+	err = binary.Read(r, binary.BigEndian, &recordSize)
+	if err == io.EOF && enc != Draft02Encoding {
+		// As a special case, the encoding of an empty payload is itself an
+		// empty message (i.e. it omits the initial record size), and its
+		// integrity proof is SHA-256("\0"). [spec text]
+		if !validateRecord(nil, toplevelProof, true) {
+			return nil, ErrValidationFailure
+		}
+		// Return an empty reader.
+		return &decoder{encoding: enc}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("mice: cannot read record size: %v", err)
+	}
+	if recordSize == 0 || recordSize > MaxRecordSize {
+		return nil, fmt.Errorf("mice: invalid record size %v", recordSize)
+	}
+	return &decoder{
+		encoding:   enc,
+		recordSize: recordSize,
+		r:          r,
+		nextProof:  toplevelProof,
+		recordBuf:  make([]byte, recordSize+sha256.Size),
+	}, nil
+}
+
+func (d *decoder) Read(dst []byte) (int, error) {
+	if len(d.out) == 0 {
+		if d.nextProof == nil {
+			// Already processed all records.
+			return 0, io.EOF
+		}
+		if err := d.readNextRecord(); err != nil {
+			return 0, err
+		}
+	}
+	n := copy(dst, d.out)
+	d.out = d.out[n:]
+	return n, nil
+}
+
+func (d *decoder) readNextRecord() error {
+	readBytes, err := io.ReadFull(d.r, d.recordBuf)
+	if err == io.ErrUnexpectedEOF {
+		if readBytes > recordSize {
+			return errors.New("mice: end of input reached in the middle of hash")
+		}
+		if !validateRecord(d.recordBuf[:readBytes], d.nextProof, true) {
+			return ErrValidationFailure
+		}
+		d.out = d.recordBuf[:readBytes]
+		d.nextProof = nil
+		return nil
+	}
+	if err == io.EOF {
+		// Draft02 allows empty final record.
+		if d.encoding == Draft02Encoding {
+			if !validateRecord(nil, d.nextProof, true) {
+				return ErrValidationFailure
+			}
+			d.out = nil
+			d.nextProof = nil
+			return io.EOF
+		}
+		return errors.New("mice: unexpected end of input")
+	}
+	if err != nil {
+		return err
+	}
+	if !validateRecord(d.recordBuf, d.nextProof, false) {
+		return ErrValidationFailure
+	}
+	d.out = d.recordBuf[:d.recordSize]
+	copy(d.nextProof, d.recordBuf[d.recordSize:])
+	return nil
+}
+
+func validateRecord(record, proof []byte, isLastRecord bool) bool {
+	h := sha256.New()
+	h.Write(record)
+	if isLastRecord {
+		h.Write([]byte{0})
+	} else {
+		h.Write([]byte{1})
+	}
+	return bytes.Equal(h.Sum(nil), proof)
 }
