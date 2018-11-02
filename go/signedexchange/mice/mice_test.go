@@ -12,6 +12,8 @@ import (
 	. "github.com/WICG/webpackage/go/signedexchange/mice"
 )
 
+const MaxRecordSize = 16*1024
+
 var allEncodings = []Encoding{Draft02Encoding, Draft03Encoding}
 
 func TestEncodeEmptyDraft02(t *testing.T) {
@@ -236,7 +238,7 @@ func TestEncodeMultipleRecordsDraft03(t *testing.T) {
 
 func createDecoder(enc Encoding, input, proof []byte) (io.Reader, error) {
 	digest := enc.FormatDigestHeader(proof)
-	return enc.NewDecoder(bytes.NewReader(input), digest)
+	return enc.NewDecoder(bytes.NewReader(input), digest, MaxRecordSize)
 }
 
 func decodeAll(enc Encoding, input, proof []byte) ([]byte, error) {
@@ -357,7 +359,7 @@ func TestDecodeBadDigestHeader(t *testing.T) {
 	for _, encoding := range allEncodings {
 		digest := encoding.FormatDigestHeader(proof[:])
 		digest = digest[:len(digest)-1]
-		_, err := encoding.NewDecoder(bytes.NewReader(input), digest)
+		_, err := encoding.NewDecoder(bytes.NewReader(input), digest, MaxRecordSize)
 		if err == nil {
 			t.Errorf("%s: NewDecoder should fail on invalid digest value", encoding)
 		}

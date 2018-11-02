@@ -21,8 +21,6 @@ const (
 	Draft02Encoding Encoding = "mi-sha256-draft2"
 	// https://tools.ietf.org/html/draft-thomson-http-mice-03
 	Draft03Encoding Encoding = "mi-sha256-03"
-
-	MaxRecordSize = 1024 * 1024
 )
 
 // ErrValidationFailure is returned when integrity check have failed.
@@ -151,8 +149,9 @@ type decoder struct {
 }
 
 // NewDecoder creates a new http-mice stream decoder. It reads first few bytes
-// from r to determine the record size.
-func (enc Encoding) NewDecoder(r io.Reader, digestHeaderValue string) (io.Reader, error) {
+// from r to determine the record size, and fails if the record size exceeds
+// maxRecordSize.
+func (enc Encoding) NewDecoder(r io.Reader, digestHeaderValue string, maxRecordSize uint64) (io.Reader, error) {
 	toplevelProof, err := enc.parseDigestHeader(digestHeaderValue)
 	if err != nil {
 		return nil, err
@@ -173,7 +172,7 @@ func (enc Encoding) NewDecoder(r io.Reader, digestHeaderValue string) (io.Reader
 	if err != nil {
 		return nil, fmt.Errorf("mice: cannot read record size: %v", err)
 	}
-	if recordSize == 0 || recordSize > MaxRecordSize {
+	if recordSize == 0 || recordSize > maxRecordSize {
 		return nil, fmt.Errorf("mice: invalid record size %v", recordSize)
 	}
 	return &decoder{
@@ -203,7 +202,7 @@ func (d *decoder) Read(dst []byte) (int, error) {
 func (d *decoder) readNextRecord() error {
 	readBytes, err := io.ReadFull(d.r, d.recordBuf)
 	if err == io.ErrUnexpectedEOF {
-		if readBytes > recordSize {
+		if uint64(readBytes) > d.recordSize {
 			return errors.New("mice: end of input reached in the middle of hash")
 		}
 		if !validateRecord(d.recordBuf[:readBytes], d.nextProof, true) {
