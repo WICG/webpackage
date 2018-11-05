@@ -119,7 +119,7 @@ func (enc Encoding) Encode(w io.Writer, buf []byte, recordSize int) (string, err
 }
 
 func (enc Encoding) parseDigestHeader(digestHeaderValue string) ([]byte, error) {
-	// TODO: Support mutliple digest values (Section 4.3.2 of RFC3230).
+	// TODO: Support multiple digest values (Section 4.3.2 of RFC3230).
 	chunks := strings.SplitN(digestHeaderValue, "=", 2)
 	if len(chunks) != 2 {
 		return nil, fmt.Errorf("mice: cannot parse digest value %q", digestHeaderValue)
