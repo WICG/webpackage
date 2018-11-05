@@ -3,7 +3,6 @@ package signedexchange
 import (
 	"crypto"
 	"crypto/ecdsa"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -40,7 +39,7 @@ func ParsePrivateKey(derKey []byte) (crypto.PrivateKey, error) {
 	}
 	if keyInterface, err := x509.ParsePKCS8PrivateKey(derKey); err == nil {
 		switch typedKey := keyInterface.(type) {
-		case *rsa.PrivateKey, *ecdsa.PrivateKey:
+		case *ecdsa.PrivateKey:
 			return typedKey, nil
 		default:
 			return nil, fmt.Errorf("signedexchange: unknown private key type in PKCS#8: %T", typedKey)
