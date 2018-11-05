@@ -733,7 +733,7 @@ returns a failure or an [=exchange=] via the following steps:
     * |headers|[0] contains a `` `host` `` key.
     * |headers|[0][`` `:method` ``] is not `` `GET` ``.
     * |headers|[1] contains any keys starting with `` `:` `` that aren't `` `:status` ``.
-    * |headers|[1][`` `:status` ``] doesn't consist of exactly 3 digits.
+    * |headers|[1][`` `:status` ``] is not `` 200 ``.
 
 1. Let |requestUrl| be the result of the [=URL parser=] on |headers|[0][``
     `:url` ``].
