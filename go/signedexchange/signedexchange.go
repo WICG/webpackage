@@ -479,7 +479,7 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 }
 
 func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer) error {
-	bs, err := s.serializeSignedMessage(e)
+	bs, err := serializeSignedMessage(e, calculateCertSha256(s.Certs), s.ValidityUrl.String(), s.Date.Unix(), s.Expires.Unix())
 	if err != nil {
 		return err
 	}
