@@ -1,25 +1,27 @@
 package signedexchange_test
 
 import (
-	"crypto"
 	"crypto/rand"
-	"crypto/rsa"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/sha256"
+	"encoding/asn1"
+	"math/big"
 	"testing"
 
 	"github.com/WICG/webpackage/go/signedexchange/internal/signingalgorithm"
 )
 
-func TestSignVerify_RSA_PSS_SHA256(t *testing.T) {
-	pk, err := rsa.GenerateKey(rand.Reader, 2048)
+func TestSignVerify_ECDSA_P256_SHA256(t *testing.T) {
+	pk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		t.Errorf("Failed to generate rsa private key: %v", err)
+		t.Errorf("Failed to generate ecdsa private key: %v", err)
 		return
 	}
 
 	alg, err := signingalgorithm.SigningAlgorithmForPrivateKey(pk, rand.Reader)
 	if err != nil {
-		t.Errorf("Failed to pick signing algorithm for rsa private key: %v", err)
+		t.Errorf("Failed to pick signing algorithm for ecdsa private key: %v", err)
 		return
 	}
 
@@ -30,12 +32,14 @@ func TestSignVerify_RSA_PSS_SHA256(t *testing.T) {
 		return
 	}
 
+	var v struct {R, S *big.Int}
+	if _, err := asn1.Unmarshal(sig, &v); err != nil {
+		t.Errorf("asn1.Unmarshal failed: %v", err)
+	}
+
 	hashed := sha256.Sum256(msg)
-	if err := rsa.VerifyPSS(
-		pk.Public().(*rsa.PublicKey), crypto.SHA256, hashed[:], sig,
-		&rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash},
-	); err != nil {
-		t.Errorf("Failed to verify: %v", err)
+	if !ecdsa.Verify(&pk.PublicKey, hashed[:], v.R, v.S) {
+		t.Errorf("Failed to verify")
 		return
 	}
 }

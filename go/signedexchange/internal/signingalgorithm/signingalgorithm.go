@@ -4,7 +4,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/rsa"
 	"encoding/asn1"
 	"fmt"
 	"io"
@@ -13,20 +12,6 @@ import (
 
 type SigningAlgorithm interface {
 	Sign(m []byte) ([]byte, error)
-}
-
-type rsaPSSSigningAlgorithm struct {
-	privKey *rsa.PrivateKey
-	hash    crypto.Hash
-	rand    io.Reader
-}
-
-func (s *rsaPSSSigningAlgorithm) Sign(m []byte) ([]byte, error) {
-	hash := s.hash.New()
-	hash.Write(m)
-	return rsa.SignPSS(
-		s.rand, s.privKey, s.hash, hash.Sum(nil),
-		&rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash})
 }
 
 type ecdsaSigningAlgorithm struct {
@@ -51,12 +36,6 @@ func (e *ecdsaSigningAlgorithm) Sign(m []byte) ([]byte, error) {
 
 func SigningAlgorithmForPrivateKey(pk crypto.PrivateKey, rand io.Reader) (SigningAlgorithm, error) {
 	switch pk := pk.(type) {
-	case *rsa.PrivateKey:
-		bits := pk.N.BitLen()
-		if bits == 2048 {
-			return &rsaPSSSigningAlgorithm{pk, crypto.SHA256, rand}, nil
-		}
-		return nil, fmt.Errorf("signedexchange: unsupported RSA key size: %d bits", bits)
 	case *ecdsa.PrivateKey:
 		switch name := pk.Curve.Params().Name; name {
 		case elliptic.P256().Params().Name:
