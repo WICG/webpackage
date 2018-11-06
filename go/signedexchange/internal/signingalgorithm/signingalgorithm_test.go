@@ -1,4 +1,4 @@
-package signedexchange_test
+package signingalgorithm_test
 
 import (
 	"crypto/rand"
@@ -6,7 +6,7 @@ import (
 	"crypto/elliptic"
 	"testing"
 
-	"github.com/WICG/webpackage/go/signedexchange/internal/signingalgorithm"
+	. "github.com/WICG/webpackage/go/signedexchange/internal/signingalgorithm"
 )
 
 func TestSignVerify_ECDSA_P256_SHA256(t *testing.T) {
@@ -16,7 +16,7 @@ func TestSignVerify_ECDSA_P256_SHA256(t *testing.T) {
 		return
 	}
 
-	alg, err := signingalgorithm.SigningAlgorithmForPrivateKey(pk, rand.Reader)
+	alg, err := SigningAlgorithmForPrivateKey(pk, rand.Reader)
 	if err != nil {
 		t.Fatalf("Failed to pick signing algorithm for ecdsa private key: %v", err)
 		return
@@ -29,7 +29,7 @@ func TestSignVerify_ECDSA_P256_SHA256(t *testing.T) {
 		return
 	}
 
-	verifier, err := signingalgorithm.VerifierForPublicKey(pk.Public())
+	verifier, err := VerifierForPublicKey(pk.Public())
 	if err != nil {
 		t.Fatalf("Failed to pick verifier for ecdsa public key: %v", err)
 		return

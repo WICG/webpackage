@@ -4,6 +4,8 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	_ "crypto/sha256"
+	_ "crypto/sha512"
 	"encoding/asn1"
 	"errors"
 	"fmt"
