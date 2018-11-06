@@ -23,6 +23,7 @@ type ecdsaSigningAlgorithm struct {
 	rand    io.Reader
 }
 
+// Ecdsa-Sig-Value structure in Section 2.2.3 of RFC 3279.
 type ecdsaSigValue struct {
 	R, S *big.Int
 }
@@ -46,10 +47,10 @@ func SigningAlgorithmForPrivateKey(pk crypto.PrivateKey, rand io.Reader) (Signin
 		case elliptic.P384().Params().Name:
 			return &ecdsaSigningAlgorithm{pk, crypto.SHA384, rand}, nil
 		default:
-			return nil, fmt.Errorf("signedexchange: unknown ECDSA curve: %s", name)
+			return nil, fmt.Errorf("signingalgorithm: unknown ECDSA curve: %s", name)
 		}
 	}
-	return nil, fmt.Errorf("signedexchange: unknown private key type: %T", pk)
+	return nil, fmt.Errorf("signingalgorithm: unknown private key type: %T", pk)
 }
 
 type Verifier interface {
@@ -65,10 +66,10 @@ func (e *ecdsaVerifier) Verify(msg, sig []byte) (bool, error) {
 	var v ecdsaSigValue
 	rest, err := asn1.Unmarshal(sig, &v)
 	if err != nil {
-		return false, fmt.Errorf("failed to ASN.1 decode the signature: %v", err)
+		return false, fmt.Errorf("signingalgorithm: failed to ASN.1 decode the signature: %v", err)
 	}
 	if len(rest) > 0 {
-		return false, errors.New("extra data at the signature end")
+		return false, errors.New("signingalgorithm: extra data at the signature end")
 	}
 
 	hash := e.hash.New()
@@ -85,8 +86,8 @@ func VerifierForPublicKey(k crypto.PublicKey) (Verifier, error) {
 		case elliptic.P384().Params().Name:
 			return &ecdsaVerifier{k, crypto.SHA384}, nil
 		default:
-			return nil, fmt.Errorf("unknown ECDSA curve: %s", name)
+			return nil, fmt.Errorf("signingalgorithm: unknown ECDSA curve: %s", name)
 		}
 	}
-	return nil, fmt.Errorf("unknown public key type: %T", k)
+	return nil, fmt.Errorf("signingalgorithm: unknown public key type: %T", k)
 }
