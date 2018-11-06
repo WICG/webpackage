@@ -439,7 +439,7 @@ the result of the following steps:
 <h3 algorithm id="parsing-b2">Parsing `b2` signed exchanges</h3>
 
 This section defines how to load the format defined in
-[[draft-yasskin-httpbis-origin-signed-exchanges-impl-01]].
+[[draft-yasskin-httpbis-origin-signed-exchanges-impl-02]].
 
 <dfn>Parsing a b2 signed exchange</dfn> from a [=response=] |response| in the
 context of an [=environment settings object=] |client| returns the result of the
@@ -611,7 +611,7 @@ sequences=]:
 1. `` `HTTP Exchange 1 b2` `` to serve as a context string.
 
     Note: Each draft of
-    [[draft-yasskin-httpbis-origin-signed-exchanges-impl-01]] and the final RFC
+    [[draft-yasskin-httpbis-origin-signed-exchanges-impl-02]] and the final RFC
     for [[draft-yasskin-http-origin-signed-responses]] will use distinct context
     strings.
 1. A single 0x00 byte which serves as a separator.
