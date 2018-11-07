@@ -42,7 +42,9 @@ func run() error {
 	e.PrettyPrintHeaders(os.Stdout)
 
 	if *flagVerify {
-		verify(e)
+		if err := verify(e); err != nil {
+			return err
+		}
 	}
 
 	e.PrettyPrintPayload(os.Stdout)
@@ -50,19 +52,17 @@ func run() error {
 	return nil
 }
 
-func verify(e *signedexchange.Exchange) {
+func verify(e *signedexchange.Exchange) error {
 	certFetcher := signedexchange.DefaultCertFetcher
 	if *flagCert != "" {
 		f, err := os.Open(*flagCert)
 		if err != nil {
-			fmt.Printf("Could not open %s: %v\n", *flagCert, err)
-			return
+			return fmt.Errorf("could not open %s: %v\n", *flagCert, err)
 		}
 		defer f.Close()
 		certBytes, err := ioutil.ReadAll(f)
 		if err != nil {
-			fmt.Printf("Could not read %s: %v\n", *flagCert, err)
-			return
+			return fmt.Errorf("Could not read %s: %v\n", *flagCert, err)
 		}
 		certFetcher = func(_ string) ([]byte, error) {
 			return certBytes, nil
@@ -73,6 +73,7 @@ func verify(e *signedexchange.Exchange) {
 	if e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "", 0)) {
 		fmt.Println("The exchange has valid signature.")
 	}
+	return nil
 }
 
 func main() {
