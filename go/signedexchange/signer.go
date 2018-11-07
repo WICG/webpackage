@@ -41,7 +41,7 @@ type Signer struct {
 	Rand        io.Reader
 }
 
-func certSha256(certs []*x509.Certificate) []byte {
+func calculateCertSha256(certs []*x509.Certificate) []byte {
 	// Binary content (Section 4.5 of [I-D.ietf-httpbis-header-structure])
 	// holding the SHA-256 hash of the first certificate found at "certUrl".
 	if len(certs) == 0 {
@@ -51,7 +51,7 @@ func certSha256(certs []*x509.Certificate) []byte {
 	return sum[:]
 }
 
-func (s *Signer) serializeSignedMessage(e *Exchange) ([]byte, error) {
+func serializeSignedMessage(e *Exchange, certSha256 []byte, validityUrl string, date, expires int64) ([]byte, error) {
 	switch e.Version {
 	case version.Version1b1:
 		// "Let message be the concatenation of the following byte strings.
@@ -76,11 +76,11 @@ func (s *Signer) serializeSignedMessage(e *Exchange) ([]byte, error) {
 
 		// "4.1. If cert-sha256 is set: The text string "cert-sha256" to the byte string
 		// cert-sha256." [spec text]
-		if b := certSha256(s.Certs); len(b) > 0 {
+		if certSha256 != nil {
 			mes = append(mes,
 				cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 					keyE.EncodeTextString("cert-sha256")
-					valueE.EncodeByteString(b)
+					valueE.EncodeByteString(certSha256)
 				}))
 		}
 
@@ -89,19 +89,19 @@ func (s *Signer) serializeSignedMessage(e *Exchange) ([]byte, error) {
 			// [spec text]
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeTextString("validity-url")
-				valueE.EncodeByteString([]byte(s.ValidityUrl.String()))
+				valueE.EncodeByteString([]byte(validityUrl))
 			}),
 			// "4.3. The text string "date" to the integer value of date."
 			// [spec text]
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeTextString("date")
-				valueE.EncodeInt(s.Date.Unix())
+				valueE.EncodeInt(date)
 			}),
 			// "4.4. The text string "expires" to the integer value of expires."
 			// [spec text]
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeTextString("expires")
-				valueE.EncodeInt(s.Expires.Unix())
+				valueE.EncodeInt(expires)
 			}),
 			// "4.5. The text string "headers" to the CBOR representation (Section
 			// 3.4) of exchange's headers."
@@ -135,24 +135,24 @@ func (s *Signer) serializeSignedMessage(e *Exchange) ([]byte, error) {
 		buf.WriteByte(0)
 
 		// "4. If cert-sha256 is set, a byte holding the value 32 followed by the 32 bytes of the value of cert-sha256. Otherwise a 0 byte." [spec text]
-		if b := certSha256(s.Certs); len(b) > 0 {
+		if certSha256 != nil {
 			buf.WriteByte(32)
-			buf.Write(b)
+			buf.Write(certSha256)
 		}
 
 		// "5. The 8-byte big-endian encoding of the length in bytes of validity-url, followed by the bytes of validity-url." [spec text]
 		//bigendian
-		vurl := []byte(s.ValidityUrl.String())
+		vurl := []byte(validityUrl)
 		vurlLenBytes, _ := bigendian.EncodeBytesUint(int64(len(vurl)), 8)
 		buf.Write(vurlLenBytes)
 		buf.Write(vurl)
 
 		// "6. The 8-byte big-endian encoding of date." [spec text]
-		dateBytes, _ := bigendian.EncodeBytesUint(s.Date.Unix(), 8)
+		dateBytes, _ := bigendian.EncodeBytesUint(date, 8)
 		buf.Write(dateBytes)
 
 		// "7. The 8-byte big-endian encoding of expires." [spec text]
-		expiresBytes, _ := bigendian.EncodeBytesUint(s.Expires.Unix(), 8)
+		expiresBytes, _ := bigendian.EncodeBytesUint(expires, 8)
 		buf.Write(expiresBytes)
 
 		// "8. The 8-byte big-endian encoding of the length in bytes of requestUrl, followed by the bytes of requestUrl." [spec text]
@@ -186,7 +186,7 @@ func (s *Signer) sign(e *Exchange) ([]byte, error) {
 		return nil, err
 	}
 
-	msg, err := s.serializeSignedMessage(e)
+	msg, err := serializeSignedMessage(e, calculateCertSha256(s.Certs), s.ValidityUrl.String(), s.Date.Unix(), s.Expires.Unix())
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
 	}
 	certUrl := s.CertUrl.String()
 	validityUrl := s.ValidityUrl.String()
-	certSha256b64 := base64.StdEncoding.EncodeToString(certSha256(s.Certs))
+	certSha256b64 := base64.StdEncoding.EncodeToString(calculateCertSha256(s.Certs))
 	dateUnix := s.Date.Unix()
 	expiresUnix := s.Expires.Unix()
 
