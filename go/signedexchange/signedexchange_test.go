@@ -206,7 +206,7 @@ func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	now := time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
+	now := time.Now()
 	certs, _ := ParseCertificates([]byte(pemCerts))
 	certUrl, _ := url.Parse("http://example.com/cert.msg")
 	validityUrl, _ := url.Parse("https://example.com/resource.validity")
@@ -240,7 +240,7 @@ func TestVerify(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	now := time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
+	now := time.Now()
 	certs, err := ParseCertificates([]byte(pemCerts))
 	if err != nil {
 		t.Fatal(err)
