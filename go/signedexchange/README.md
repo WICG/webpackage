@@ -143,8 +143,17 @@ As of July 2018, there are no CA that issues certificate with ["CanSignHttpExcha
 
 ### Dump a signed exchange file
 
-You can dump the content of your sxg file by dump-signedexchange. If you want to see the content of the signed exchange file `example.org.hello.sxg` you created above, run this command.
+You can dump the content of your sxg file by `dump-signedexchange`. If you want to see the content of the signed exchange file `example.org.hello.sxg` you created above, run this command.
 
 ```
 dump-signedexchange -i example.org.hello.sxg
+```
+
+If `-verify` command-line flag is specified, `dump-signedexchange` checks if the signed exchange is valid.
+
+By default, `dump-signedexchange` fetches certificate chain from network (from the URL you specified as `-certUrl` parameter of `gen-signedexchange`). But if `-cert filename` flag is given, `dump-signedexchange` reads certificates from `filename`.
+
+For example, If you want to verify `example.org.hello.sxg` using certificates in `cert.cbor`, run this command.
+```
+dump-signedexchange -i example.org.hello.sxg -verify -cert cert.cbor
 ```
