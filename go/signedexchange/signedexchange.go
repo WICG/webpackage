@@ -490,7 +490,7 @@ func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer) error {
 	return nil
 }
 
-func (e *Exchange) PrettyPrint(w io.Writer) {
+func (e *Exchange) PrettyPrintHeaders(w io.Writer) {
 	fmt.Fprintf(w, "format version: %s\n", e.Version)
 	fmt.Fprintln(w, "request:")
 	fmt.Fprintf(w, "  uri: %s\n", e.RequestURI.String())
@@ -505,6 +505,9 @@ func (e *Exchange) PrettyPrint(w io.Writer) {
 		fmt.Fprintf(w, "    %s: %s\n", k, e.ResponseHeaders.Get(k))
 	}
 	fmt.Fprintf(w, "signature: %s\n", e.SignatureHeaderValue)
+}
+
+func (e *Exchange) PrettyPrintPayload(w io.Writer) {
 	fmt.Fprintf(w, "payload [%d bytes]:\n", len(e.Payload))
 	w.Write(e.Payload)
 }
