@@ -43,6 +43,9 @@ QW4lVAz+goRnDd+gJnUoGOj/pN6eSiP/AA==
 	expectedSignatureHeader = "label; sig=*MEYCIQDmWPwHKJWOraBZyCd6guHYZi7Uh8Mcrw5sR3vcLDDgaAIhANIQWFiirvgkFyY6vsWz6hPRtr96IJJ6XU0SxuKKM5HB*; validity-url=\"https://example.com/resource.validity\"; integrity=\"mi-draft2\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400"
 )
 
+// signatureDate corresponds to the expectedSignatureHeader's date value.
+var signatureDate = time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
+
 type zeroReader struct{}
 
 func (zeroReader) Read(b []byte) (int, error) {
@@ -78,7 +81,6 @@ func TestSignedExchange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	now := time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
 	certs, err := ParseCertificates([]byte(pemCerts))
 	if err != nil {
 		t.Fatal(err)
@@ -92,8 +94,8 @@ func TestSignedExchange(t *testing.T) {
 	certUrl, _ := url.Parse("https://example.com/cert.msg")
 	validityUrl, _ := url.Parse("https://example.com/resource.validity")
 	s := &Signer{
-		Date:        now,
-		Expires:     now.Add(1 * time.Hour),
+		Date:        signatureDate,
+		Expires:     signatureDate.Add(1 * time.Hour),
 		Certs:       certs,
 		CertUrl:     certUrl,
 		ValidityUrl: validityUrl,
@@ -206,15 +208,14 @@ func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	now := time.Now()
 	certs, _ := ParseCertificates([]byte(pemCerts))
 	certUrl, _ := url.Parse("http://example.com/cert.msg")
 	validityUrl, _ := url.Parse("https://example.com/resource.validity")
 	derPrivateKey, _ := pem.Decode([]byte(pemPrivateKey))
 	privKey, _ := ParsePrivateKey(derPrivateKey.Bytes)
 	s := &Signer{
-		Date:        now,
-		Expires:     now.Add(1 * time.Hour),
+		Date:        signatureDate,
+		Expires:     signatureDate.Add(1 * time.Hour),
 		Certs:       certs,
 		CertUrl:     certUrl,
 		ValidityUrl: validityUrl,
@@ -240,7 +241,6 @@ func TestVerify(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	now := time.Now()
 	certs, err := ParseCertificates([]byte(pemCerts))
 	if err != nil {
 		t.Fatal(err)
@@ -254,8 +254,8 @@ func TestVerify(t *testing.T) {
 	certUrl, _ := url.Parse("https://example.com/cert.msg")
 	validityUrl, _ := url.Parse("https://example.com/resource.validity")
 	s := &Signer{
-		Date:        now,
-		Expires:     now.Add(1 * time.Hour),
+		Date:        signatureDate,
+		Expires:     signatureDate.Add(1 * time.Hour),
 		Certs:       certs,
 		CertUrl:     certUrl,
 		ValidityUrl: validityUrl,
@@ -277,7 +277,7 @@ func TestVerify(t *testing.T) {
 	}
 	certFetcher := func(_ string) ([]byte, error) {return certCBOR.Bytes(), nil}
 
-	verificationTime := now
+	verificationTime := signatureDate
 	if !e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "ERROR: ", 0)) {
 		t.Errorf("Verification failed")
 	}
