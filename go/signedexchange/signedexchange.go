@@ -496,7 +496,7 @@ func (e *Exchange) PrettyPrintHeaders(w io.Writer) {
 	fmt.Fprintf(w, "  uri: %s\n", e.RequestURI.String())
 	fmt.Fprintln(w, "  headers:")
 	for k := range e.RequestHeaders {
-		fmt.Fprintf(w, "    %s: %s\n", k, e.ResponseHeaders.Get(k))
+		fmt.Fprintf(w, "    %s: %s\n", k, e.RequestHeaders.Get(k))
 	}
 	fmt.Fprintln(w, "response:")
 	fmt.Fprintf(w, "  status: %d\n", e.ResponseStatus)
