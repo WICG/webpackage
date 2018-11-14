@@ -834,6 +834,8 @@ signature returns "valid", return "valid". Otherwise, return "invalid".
    return "invalid".
 1. If `response`'s headers contain a stateful header field, as defined in
    {{stateful-headers}}, return "invalid".
+1. If `exchange`'s response headers contain `Transfer-Encoding` header field,
+   return "invalid".
 1. Let `authority` be the host component of `requestUrl`.
 1. Validate the `certificate-chain` using the following substeps. If any of them
    fail, re-run {{signature-validity}} once over the signature with the
@@ -1947,6 +1949,7 @@ draft-05
   metadata and headers.
 * Explicitly check the response payload's integrity instead of assuming the
   client did it elsewhere in processing the response.
+* Reject Transfer-Encoding response header.
 
 draft-04
 
