@@ -463,6 +463,19 @@ following steps:
 1. Let |magic| be the result of [=read buffer/reading=] 8 bytes from |stream|.
 1. If |magic| is a failure, return it.
 1. If |magic| is not `` `sxg1-b2\0` ``, return a failure.
+1. Let |encodedFallbackUrlLength| be the result of [=read buffer/reading=] 2
+    bytes from |stream|.
+1. If |encodedFallbackUrlLength| is a failure, return it.
+1. Let |fallbackUrlLength| be the result of decoding |encodedFallbackUrlLength|
+    as a big-endian integer.
+1. Let |fallbackUrlBytes| be the result of [=read buffer/reading=]
+    |fallbackUrlLength| bytes from |stream|.
+1. If |fallbackUrlBytes| is a failure, return it.
+1. If the result of running the [=URL parser=] on |fallbackUrl| is a failure, if
+    it has a non-null [=url/fragment=], or if its [=url/scheme=] is something
+    other than `"https"`, return a failure.
+1. Assert: |fallbackUrlBytes| should match the result of [=extracting the
+   fallback URL=] from |response|.
 1. Let |encodedSigLength| be the result of [=read buffer/reading=] 3 bytes from
     |stream|.
 1. Let |encodedHeaderLength| be the result of [=read buffer/reading=] 3 bytes
@@ -485,7 +498,8 @@ following steps:
 1. If |headerBytes| is a failure, return it.
 1. If |parsedSignature| [=exchange signature/is not valid=] for |headerBytes|,
     return a failure.
-1. Let |parsedExchange| be the result of [=parsing CBOR headers=] |headerBytes|.
+1. Let |parsedExchange| be the result of [=parsing CBOR headers=] given
+   |headerBytes| and |fallbackUrl|.
 1. If |parsedSignature| [=exchange signature/does not establish cross-origin
     trust=] for |parsedExchange|, return a failure.
 1. Set |parsedExchange|'s [=exchange/response=]'s [=response/HTTPS state=] to
@@ -730,8 +744,8 @@ leaf|does not have a trusted leaf">has a trusted leaf</dfn> for an [=origin=]
 
 <h3 algorithm id="parse-cbor-headers">Parsing CBOR headers</h3>
 
-<dfn>Parsing CBOR headers</dfn> takes a [=byte sequence=] |headerBytes| and
-returns a failure or an [=exchange=] via the following steps:
+<dfn>Parsing CBOR headers</dfn> from a [=byte sequence=] |headerBytes| and a
+URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
 
 1. Let |headers| be the result of [=parsing a CBOR item=] from |headerBytes|,
     matching the following CDDL rule:
@@ -739,7 +753,6 @@ returns a failure or an [=exchange=] via the following steps:
     headers = [
       {
         ':method': bstr,
-        ':url': bstr,
         * bstr => bstr,
       },
       {
@@ -751,16 +764,12 @@ returns a failure or an [=exchange=] via the following steps:
 1. If any of the following is true, return a failure:
 
     * |headers| is an error.
-    * |headers|[0] contains any keys starting with `` `:` `` that aren't `` `:method` `` or `` `:url` ``.
+    * |headers|[0] contains any keys starting with `` `:` `` that isn't `` `:method` ``.
     * |headers|[0] contains a `` `host` `` key.
     * |headers|[0][`` `:method` ``] is not `` `GET` ``.
     * |headers|[1] contains any keys starting with `` `:` `` that aren't `` `:status` ``.
     * |headers|[1][`` `:status` ``] is not `` 200 ``.
 
-1. Let |requestUrl| be the result of the [=URL parser=] on |headers|[0][``
-    `:url` ``].
-1. If |requestUrl| is a failure, if it has a non-null [=url/fragment=], or if
-    its [=url/scheme=] is something other than `"https"`, return a failure.
 1. Let |requestHeaders| be the result of [=creating a header list from the CBOR
     map=] |headers|[0].
 1. If |requestHeaders| is a failure, return it.
