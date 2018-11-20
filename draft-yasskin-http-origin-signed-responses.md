@@ -836,8 +836,12 @@ signature returns "valid", return "valid". Otherwise, return "invalid".
    this returned "invalid" or didn't return a certificate chain, return
    "invalid".
 1. Let `exchange` be the exchange metadata and headers parsed out of `headers`.
-1. If `exchange`'s request method is not safe (Section 4.2.1 of {{!RFC7231}}) or
-   not cacheable (Section 4.2.3 of {{!RFC7231}}), return "invalid".
+1. If `exchange`'s request method is not safe (Section 4.2.1 of {{!RFC7231}}),
+   return "invalid".
+1. If `exchange`'s response is not complete (Section 3.1 of {{!RFC7234}}),
+   return "invalid".
+1. If Section 3 of {{!RFC7234}} forbids a shared cache from storing `exchange`'s
+   response, return "invalid".
 1. If `exchange`'s headers contain a stateful header field, as defined in
    {{stateful-headers}}, return "invalid".
 1. Let `authority` be the host component of `requestUrl`.
@@ -1930,6 +1934,7 @@ draft-05
 * Update to mice-03 including the Digest header.
 * Refer to draft-yasskin-httpbis-origin-signed-exchanges-impl for draft version
   numbers.
+* Require `exchange`'s response to be complete and cachable by a shared cache.
 
 draft-04
 
