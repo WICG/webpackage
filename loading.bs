@@ -79,6 +79,10 @@ Assume Explicit For: yes
 <pre class='anchors'>
 spec: app-manifest; urlPrefix: https://w3c.github.io/manifest/#
     text: start URL; type: dfn; url: dfn-start-
+spec: RFC3230; urlPrefix: https://tools.ietf.org/html/rfc3230#
+    type: dfn
+        text: instance digests; url: section-4.2
+        text: Digest message header field; url: section-4.3.2
 spec: RFC5280; urlPrefix: https://tools.ietf.org/html/rfc5280#
     type: dfn
         text: AlgorithmIdentifier; url: section-4.1.1.2
@@ -795,18 +799,23 @@ To <dfn lt="reading a body|read a body">read a body</dfn> from a [=read buffer=]
 
     <dl class="switch">
 
-    : "mi-sha256-03"
+    : "digest/mi-sha256-03"
     ::
         1. If the length of |signature|'s [=exchange signature/integrity header=]
             isn't 1, return a failure.
-        1. If |response|'s [=response/header list=] [=header list/does not
-            contain=] `` `mi-sha256-03` ``, return a failure.
-        1. Let |mi| be the [=header/combined value=] of `` `mi-sha256-03` `` in
-            |response|'s [=response/header list=].
+	1. Let [=instance digests=] |instance-digests| be the result of
+	   [=extracting header list values=] given `` `Digest` `` and
+	   |response|'s [=response/header list=].
+
+	Note: This uses the ABNF of the [=Digest message header field=].
+
+	1. If there is more than one element in |instance-digests|, return a
+	   failure.
+	1. Let |mi| be the "mi-sha256-03" parameter of |instance-digests|[0].
         1. If |mi| doesn't have an [=mi-sha256 parameter=], return a failure.
         1. If [=extracting header list values=] for `` `content-encoding` `` in
             |response|'s [=response/header list=] doesn't include
-            `` `mi-sha256` ``, return a failure.
+            `` `mi-sha256-03` ``, return a failure.
         1. Assert: [=Handle content codings=] used the value of the
             [=mi-sha256 parameter=] as the [=integrity proof for the first
             record=] when decoding the `mi-sha256` content encoding to produce
