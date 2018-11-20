@@ -98,7 +98,6 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 	// "...and run the following algorithm for each signature, stopping at the
 	// first one that returns "valid". If any signature returns "valid", return
 	// "valid". Otherwise, return "invalid"."
-SignatureLoop:
 	for _, item := range signatures {
 		signature, err := extractSignatureFields(item)
 		if err != nil {
@@ -129,7 +128,7 @@ SignatureLoop:
 
 		// Step 3: "Let exchange be the exchange metadata and headers parsed out
 		//         of headers."
-		// e contains the exchange metadata and headers.
+		// `e` contains the exchange metadata and headers.
 
 		// Step 4: "If exchange's request method is not safe (Section 4.2.1 of
 		//         [RFC7231]) or not cacheable (Section 4.2.3 of [RFC7231]),
@@ -143,17 +142,9 @@ SignatureLoop:
 
 		// Step 5: "If exchange's headers contain a stateful header field, as
 		//         defined in Section 4.1, return "invalid"."
-		for k := range e.RequestHeaders {
-			if IsStatefulRequestHeader(k) {
-				l.Printf("Exchange has stateful request header %q.", k)
-				continue SignatureLoop
-			}
-		}
-		for k := range e.ResponseHeaders {
-			if IsStatefulResponseHeader(k) {
-				l.Printf("Exchange has stateful response header %q.", k)
-				continue SignatureLoop
-			}
+		if err := verifyHeaders(e); err != nil {
+			l.Printf("Header validation failed: %v", err)
+			continue
 		}
 
 		// TODO: Implement Step 6 and 7 (certificate verification).
@@ -269,4 +260,18 @@ func verifyPayload(e *Exchange, signature *Signature) ([]byte, error) {
 
 func isSameOrigin(u1, u2 *url.URL) bool {
 	return u1.Scheme == u2.Scheme && u1.Host == u2.Host
+}
+
+func verifyHeaders(e *Exchange) error {
+	for k := range e.RequestHeaders {
+		if IsStatefulRequestHeader(k) {
+			return fmt.Errorf("exchange has stateful request header %q", k)
+		}
+	}
+	for k := range e.ResponseHeaders {
+		if IsStatefulResponseHeader(k) {
+			return fmt.Errorf("exchange has stateful response header %q", k)
+		}
+	}
+	return nil
 }
