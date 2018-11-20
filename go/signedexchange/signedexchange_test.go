@@ -229,7 +229,7 @@ func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 	}
 }
 
-func TestVerify(t *testing.T) {
+func createTestExchange(t *testing.T) (e *Exchange, s *Signer, certBytes []byte) {
 	u, _ := url.Parse("https://example.com/")
 	header := http.Header{}
 	header.Add("Content-Type", "text/html; charset=utf-8")
@@ -255,7 +255,7 @@ func TestVerify(t *testing.T) {
 	}
 	certUrl, _ := url.Parse("https://example.com/cert.msg")
 	validityUrl, _ := url.Parse("https://example.com/resource.validity")
-	s := &Signer{
+	s = &Signer{
 		Date:        signatureDate,
 		Expires:     signatureDate.Add(1 * time.Hour),
 		Certs:       certs,
@@ -263,9 +263,6 @@ func TestVerify(t *testing.T) {
 		ValidityUrl: validityUrl,
 		PrivKey:     privKey,
 		Rand:        zeroReader{},
-	}
-	if err := e.AddSignatureHeader(s); err != nil {
-		t.Fatal(err)
 	}
 
 	certChain := certurl.CertChain{}
@@ -277,10 +274,119 @@ func TestVerify(t *testing.T) {
 	if err := certChain.Write(&certCBOR); err != nil {
 		t.Fatal(err)
 	}
-	certFetcher := func(_ string) ([]byte, error) {return certCBOR.Bytes(), nil}
+	certBytes = certCBOR.Bytes()
+	return
+}
+
+func TestVerify(t *testing.T) {
+	e, s, c := createTestExchange(t)
+	if err := e.AddSignatureHeader(s); err != nil {
+		t.Fatal(err)
+	}
+	certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
 	verificationTime := signatureDate
 	if !e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "ERROR: ", 0)) {
 		t.Errorf("Verification failed")
+	}
+}
+
+func TestVerifyNotYetValidExchange(t *testing.T) {
+	e, s, c := createTestExchange(t)
+	if err := e.AddSignatureHeader(s); err != nil {
+		t.Fatal(err)
+	}
+	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+
+	verificationTime := signatureDate.Add(-1 * time.Second)
+	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+		t.Errorf("Verification should fail")
+	}
+}
+
+func TestVerifyExpiredExchange(t *testing.T) {
+	e, s, c := createTestExchange(t)
+	if err := e.AddSignatureHeader(s); err != nil {
+		t.Fatal(err)
+	}
+	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+
+	verificationTime := signatureDate.Add(1 * time.Hour).Add(1 * time.Second)
+	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+		t.Errorf("Verification should fail")
+	}
+}
+
+func TestVerifyBadValidityUrl(t *testing.T) {
+	e, s, c := createTestExchange(t)
+	s.ValidityUrl, _ = url.Parse("https://subdomain.example.com/resource.validity")
+	if err := e.AddSignatureHeader(s); err != nil {
+		t.Fatal(err)
+	}
+	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+
+	verificationTime := signatureDate
+	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+		t.Errorf("Verification should fail")
+	}
+}
+
+func TestVerifyBadMethod(t *testing.T) {
+	e, s, c := createTestExchange(t)
+	e.RequestMethod = "POST"
+	if err := e.AddSignatureHeader(s); err != nil {
+		t.Fatal(err)
+	}
+	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+
+	verificationTime := signatureDate
+	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+		t.Errorf("Verification should fail")
+	}
+}
+
+func TestVerifyStatefulRequestHeader(t *testing.T) {
+	e, s, c := createTestExchange(t)
+	if e.RequestHeaders == nil {
+		e.RequestHeaders = http.Header{}
+	}
+	e.RequestHeaders.Set("Authorization", "Basic Zm9vOmJhcg==")
+	if err := e.AddSignatureHeader(s); err != nil {
+		t.Fatal(err)
+	}
+	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+
+	verificationTime := signatureDate
+	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+		t.Errorf("Verification should fail")
+	}
+}
+
+func TestVerifyStatefulResponseHeader(t *testing.T) {
+	e, s, c := createTestExchange(t)
+	e.ResponseHeaders.Set("Set-Cookie", "foo=bar")
+	if err := e.AddSignatureHeader(s); err != nil {
+		t.Fatal(err)
+	}
+	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+
+	verificationTime := signatureDate
+	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+		t.Errorf("Verification should fail")
+	}
+}
+
+func TestVerifyBadSignature(t *testing.T) {
+	e, s, c := createTestExchange(t)
+	if err := e.AddSignatureHeader(s); err != nil {
+		t.Fatal(err)
+	}
+	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+
+	e.ResponseHeaders.Add("Etag", "0123")
+
+	verificationTime := signatureDate
+	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+		t.Errorf("Verification should fail")
 	}
 }
