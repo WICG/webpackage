@@ -57,7 +57,7 @@ func NewExchange(ver version.Version, uri *url.URL, method string, requestHeader
 	if uri.Scheme != "https" {
 		return nil, fmt.Errorf("signedexchange: The request with non-https scheme %q URI can't be captured inside signed exchange.", uri.Scheme)
 	}
-	if method != "GET" && method != "HEAD" {
+	if method != http.MethodGet && method != http.MethodHead {
 		return nil, fmt.Errorf("signedexchange: invalid method %q", method)
 	}
 	for name := range requestHeaders {

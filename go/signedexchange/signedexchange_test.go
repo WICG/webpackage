@@ -75,7 +75,7 @@ func TestSignedExchange(t *testing.T) {
 	respHeader.Add("Foo", "Baz")
 
 	const ver = version.Version1b1
-	e, err := NewExchange(ver, u, "GET", reqHeader, 200, respHeader, []byte(payload))
+	e, err := NewExchange(ver, u, http.MethodGet, reqHeader, 200, respHeader, []byte(payload))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,7 +176,7 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	header.Add("Set-Cookie", "wow, such cookie")
 
 	const ver = version.Version1b1
-	if _, err := NewExchange(ver, u, "GET", nil, 200, header, []byte(payload)); err == nil {
+	if _, err := NewExchange(ver, u, http.MethodGet, nil, 200, header, []byte(payload)); err == nil {
 		t.Errorf("stateful header unexpectedly allowed in an exchange")
 	}
 
@@ -186,7 +186,7 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	header.Add("cOnTent-TyPe", "text/html; charset=utf-8")
 	header.Add("setProfile", "profile X")
 
-	if _, err := NewExchange(ver, u, "GET", nil, 200, header, []byte(payload)); err == nil {
+	if _, err := NewExchange(ver, u, http.MethodGet, nil, 200, header, []byte(payload)); err == nil {
 		t.Errorf("stateful header unexpectedly allowed in an exchange")
 	}
 }
@@ -194,7 +194,7 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 func TestSignedExchangeNonHttps(t *testing.T) {
 	u, _ := url.Parse("http://example.com/")
 	const ver = version.Version1b1
-	if _, err := NewExchange(ver, u, "GET", nil, 200, http.Header{}, []byte(payload)); err == nil {
+	if _, err := NewExchange(ver, u, http.MethodGet, nil, 200, http.Header{}, []byte(payload)); err == nil {
 		t.Errorf("non-https resource URI unexpectedly allowed in an exchange")
 	}
 }
@@ -202,7 +202,7 @@ func TestSignedExchangeNonHttps(t *testing.T) {
 func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 	u, _ := url.Parse("https://example.com/")
 	const ver = version.Version1b1
-	e, err := NewExchange(ver, u, "GET", nil, 200, http.Header{}, []byte(payload))
+	e, err := NewExchange(ver, u, http.MethodGet, nil, 200, http.Header{}, []byte(payload))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -235,7 +235,7 @@ func TestVerify(t *testing.T) {
 	header.Add("Content-Type", "text/html; charset=utf-8")
 
 	const ver = version.Version1b2
-	e, err := NewExchange(ver, u, "GET", nil, 200, header, []byte(payload))
+	e, err := NewExchange(ver, u, http.MethodGet, nil, 200, header, []byte(payload))
 	if err != nil {
 		t.Fatal(err)
 	}
