@@ -35,6 +35,7 @@ type Exchange struct {
 
 	// Request
 	RequestURI     *url.URL
+	RequestMethod  string
 	RequestHeaders http.Header
 
 	// Response
@@ -50,13 +51,14 @@ var (
 	keyMethod = []byte(":method")
 	keyURL    = []byte(":url")
 	keyStatus = []byte(":status")
-
-	valueGet = []byte("GET")
 )
 
-func NewExchange(ver version.Version, uri *url.URL, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte) (*Exchange, error) {
+func NewExchange(ver version.Version, uri *url.URL, method string, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte) (*Exchange, error) {
 	if uri.Scheme != "https" {
 		return nil, fmt.Errorf("signedexchange: The request with non-https scheme %q URI can't be captured inside signed exchange.", uri.Scheme)
+	}
+	if method != "GET" && method != "HEAD" {
+		return nil, fmt.Errorf("signedexchange: invalid method %q", method)
 	}
 	for name := range requestHeaders {
 		if IsStatefulRequestHeader(name) {
@@ -72,6 +74,7 @@ func NewExchange(ver version.Version, uri *url.URL, requestHeaders http.Header, 
 	return &Exchange{
 		Version:         ver,
 		RequestURI:      uri,
+		RequestMethod:   method,
 		ResponseStatus:  status,
 		RequestHeaders:  requestHeaders,
 		ResponseHeaders: responseHeaders,
@@ -113,25 +116,22 @@ func (e *Exchange) AddSignatureHeader(s *Signer) error {
 	return nil
 }
 
-func (e *Exchange) encodeRequestCommon(enc *cbor.Encoder) []*cbor.MapEntryEncoder {
-	encoders := []*cbor.MapEntryEncoder{
+func (e *Exchange) encodeRequestMap(enc *cbor.Encoder) error {
+	mes := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString(keyMethod)
-			valueE.EncodeByteString(valueGet)
+			valueE.EncodeByteString([]byte(e.RequestMethod))
 		}),
 	}
 	if e.Version == version.Version1b1 {
-		encoders = append(encoders,
+		mes = append(mes,
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeByteString(keyURL)
 				valueE.EncodeByteString([]byte(e.RequestURI.String()))
 			}))
 	}
-	return encoders
-}
+	mes = encodeHeaders(mes, e.RequestHeaders)
 
-func (e *Exchange) encodeRequest(enc *cbor.Encoder) error {
-	mes := e.encodeRequestCommon(enc)
 	return enc.EncodeMap(mes)
 }
 
@@ -153,7 +153,7 @@ func normalizeHeaderValues(values []string) string {
 	return strings.Join(values, ",")
 }
 
-func (e *Exchange) decodeRequest(dec *cbor.Decoder) error {
+func (e *Exchange) decodeRequestMap(dec *cbor.Decoder) error {
 	n, err := dec.DecodeMapHeader()
 	if err != nil {
 		return fmt.Errorf("signedexchange: failed to decode response map header: %v", err)
@@ -168,9 +168,8 @@ func (e *Exchange) decodeRequest(dec *cbor.Decoder) error {
 			return err
 		}
 		if bytes.Equal(key, keyMethod) {
-			if !bytes.Equal(value, valueGet) {
-				return fmt.Errorf("singedexchange: method must be %q but %q", string(valueGet), value)
-			}
+			e.RequestMethod = string(value)
+			continue
 		}
 		if bytes.Equal(key, keyURL) {
 			if e.Version == version.Version1b1 {
@@ -187,24 +186,29 @@ func (e *Exchange) decodeRequest(dec *cbor.Decoder) error {
 	return nil
 }
 
-func (e *Exchange) encodeResponseHeaders(enc *cbor.Encoder) error {
+func (e *Exchange) encodeResponseMap(enc *cbor.Encoder) error {
 	mes := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString(keyStatus)
 			valueE.EncodeByteString([]byte(strconv.Itoa(e.ResponseStatus)))
 		}),
 	}
-	for name, value := range e.ResponseHeaders {
-		mes = append(mes,
+	mes = encodeHeaders(mes, e.ResponseHeaders)
+	return enc.EncodeMap(mes)
+}
+
+func encodeHeaders(encoder []*cbor.MapEntryEncoder, headers http.Header) []*cbor.MapEntryEncoder {
+	for name, value := range headers {
+		encoder = append(encoder,
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeByteString([]byte(strings.ToLower(name)))
 				valueE.EncodeByteString([]byte(normalizeHeaderValues(value)))
 			}))
 	}
-	return enc.EncodeMap(mes)
+	return encoder
 }
 
-func (e *Exchange) decodeResponseHeaders(dec *cbor.Decoder) error {
+func (e *Exchange) decodeResponseMap(dec *cbor.Decoder) error {
 	n, err := dec.DecodeMapHeader()
 	if err != nil {
 		return fmt.Errorf("signedexchange: failed to decode response map header: %v", err)
@@ -235,10 +239,10 @@ func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
 	if err := enc.EncodeArrayHeader(2); err != nil {
 		return fmt.Errorf("signedexchange: failed to encode top-level array header: %v", err)
 	}
-	if err := e.encodeRequest(enc); err != nil {
+	if err := e.encodeRequestMap(enc); err != nil {
 		return err
 	}
-	if err := e.encodeResponseHeaders(enc); err != nil {
+	if err := e.encodeResponseMap(enc); err != nil {
 		return err
 	}
 	return nil
@@ -257,10 +261,10 @@ func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
 	if n != 2 {
 		return fmt.Errorf("singedexchange: length of header array must be 2 but %d", n)
 	}
-	if err := e.decodeRequest(dec); err != nil {
+	if err := e.decodeRequestMap(dec); err != nil {
 		return err
 	}
-	if err := e.decodeResponseHeaders(dec); err != nil {
+	if err := e.decodeResponseMap(dec); err != nil {
 		return err
 	}
 	return nil

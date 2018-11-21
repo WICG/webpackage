@@ -156,7 +156,7 @@ func run() error {
 	if resHeader.Get("content-type") == "" {
 		resHeader.Add("content-type", "text/html; charset=utf-8")
 	}
-	e, err := signedexchange.NewExchange(ver, parsedUrl, reqHeader, *flagResponseStatus, resHeader, payload)
+	e, err := signedexchange.NewExchange(ver, parsedUrl, "GET", reqHeader, *flagResponseStatus, resHeader, payload)
 	if err != nil {
 		return err
 	}

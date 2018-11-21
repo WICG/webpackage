@@ -40,7 +40,7 @@ MHcCAQEEIEMac81NMjwO4pQ2IGKZ3UdymYtnFAXEjKdvAdEx4DQwoAoGCCqGSM49
 AwEHoUQDQgAEfUTqh1dGbf6vt0xiaQlGZ+3HkhgcCyqADvOOwV8K8+ov98zhS+Lw
 QW4lVAz+goRnDd+gJnUoGOj/pN6eSiP/AA==
 -----END EC PRIVATE KEY-----`
-	expectedSignatureHeader = "label; sig=*MEYCIQDmWPwHKJWOraBZyCd6guHYZi7Uh8Mcrw5sR3vcLDDgaAIhANIQWFiirvgkFyY6vsWz6hPRtr96IJJ6XU0SxuKKM5HB*; validity-url=\"https://example.com/resource.validity\"; integrity=\"mi-draft2\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400"
+	expectedSignatureHeader = "label; sig=*MEYCIQCbay5VbkR9mi4pnwDAJamuf7Fj1CWnEnJt6Uxm7YeqiwIhAL8JISyzF5sDhtUaEbNCE6vgv2NIKCkONzLgwL23UL6P*; validity-url=\"https://example.com/resource.validity\"; integrity=\"mi-draft2\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400"
 )
 
 // signatureDate corresponds to the expectedSignatureHeader's date value.
@@ -65,15 +65,17 @@ func mustReadFile(path string) []byte {
 
 func TestSignedExchange(t *testing.T) {
 	u, _ := url.Parse("https://example.com/")
-	header := http.Header{}
-	header.Add("Content-Type", "text/html; charset=utf-8")
+	reqHeader := http.Header{}
+	reqHeader.Add("Accept", "*/*")
+	respHeader := http.Header{}
+	respHeader.Add("Content-Type", "text/html; charset=utf-8")
 
 	// Multiple values for the same header
-	header.Add("Foo", "Bar")
-	header.Add("Foo", "Baz")
+	respHeader.Add("Foo", "Bar")
+	respHeader.Add("Foo", "Baz")
 
 	const ver = version.Version1b1
-	e, err := NewExchange(ver, u, nil, 200, header, []byte(payload))
+	e, err := NewExchange(ver, u, "GET", reqHeader, 200, respHeader, []byte(payload))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +176,7 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	header.Add("Set-Cookie", "wow, such cookie")
 
 	const ver = version.Version1b1
-	if _, err := NewExchange(ver, u, nil, 200, header, []byte(payload)); err == nil {
+	if _, err := NewExchange(ver, u, "GET", nil, 200, header, []byte(payload)); err == nil {
 		t.Errorf("stateful header unexpectedly allowed in an exchange")
 	}
 
@@ -184,7 +186,7 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 	header.Add("cOnTent-TyPe", "text/html; charset=utf-8")
 	header.Add("setProfile", "profile X")
 
-	if _, err := NewExchange(ver, u, nil, 200, header, []byte(payload)); err == nil {
+	if _, err := NewExchange(ver, u, "GET", nil, 200, header, []byte(payload)); err == nil {
 		t.Errorf("stateful header unexpectedly allowed in an exchange")
 	}
 }
@@ -192,7 +194,7 @@ func TestSignedExchangeStatefulHeader(t *testing.T) {
 func TestSignedExchangeNonHttps(t *testing.T) {
 	u, _ := url.Parse("http://example.com/")
 	const ver = version.Version1b1
-	if _, err := NewExchange(ver, u, nil, 200, http.Header{}, []byte(payload)); err == nil {
+	if _, err := NewExchange(ver, u, "GET", nil, 200, http.Header{}, []byte(payload)); err == nil {
 		t.Errorf("non-https resource URI unexpectedly allowed in an exchange")
 	}
 }
@@ -200,7 +202,7 @@ func TestSignedExchangeNonHttps(t *testing.T) {
 func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 	u, _ := url.Parse("https://example.com/")
 	const ver = version.Version1b1
-	e, err := NewExchange(ver, u, nil, 200, http.Header{}, []byte(payload))
+	e, err := NewExchange(ver, u, "GET", nil, 200, http.Header{}, []byte(payload))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +235,7 @@ func TestVerify(t *testing.T) {
 	header.Add("Content-Type", "text/html; charset=utf-8")
 
 	const ver = version.Version1b2
-	e, err := NewExchange(ver, u, nil, 200, header, []byte(payload))
+	e, err := NewExchange(ver, u, "GET", nil, 200, header, []byte(payload))
 	if err != nil {
 		t.Fatal(err)
 	}
