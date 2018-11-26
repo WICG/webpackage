@@ -197,15 +197,15 @@ func (e *Exchange) encodeResponseMap(enc *cbor.Encoder) error {
 	return enc.EncodeMap(mes)
 }
 
-func encodeHeaders(encoder []*cbor.MapEntryEncoder, headers http.Header) []*cbor.MapEntryEncoder {
+func encodeHeaders(encs []*cbor.MapEntryEncoder, headers http.Header) []*cbor.MapEntryEncoder {
 	for name, value := range headers {
-		encoder = append(encoder,
+		encs = append(encs,
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeByteString([]byte(strings.ToLower(name)))
 				valueE.EncodeByteString([]byte(normalizeHeaderValues(value)))
 			}))
 	}
-	return encoder
+	return encs
 }
 
 func (e *Exchange) decodeResponseMap(dec *cbor.Decoder) error {
