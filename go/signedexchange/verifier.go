@@ -134,9 +134,8 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 		//         [RFC7231]) or not cacheable (Section 4.2.3 of [RFC7231]),
 		//         return "invalid"."
 		// Per [RFC7231], only GET and HEAD are safe and cacheable.
-		method := e.RequestHeaders.Get(":method")
-		if method != "GET" && method != "HEAD" {
-			l.Printf("Request method %q is not safe or not cacheable.", method)
+		if e.RequestMethod != http.MethodGet && e.RequestMethod != http.MethodHead {
+			l.Printf("Request method %q is not safe or not cacheable.", e.RequestMethod)
 			continue
 		}
 
