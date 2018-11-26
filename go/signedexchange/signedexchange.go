@@ -497,6 +497,7 @@ func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer) error {
 func (e *Exchange) PrettyPrintHeaders(w io.Writer) {
 	fmt.Fprintf(w, "format version: %s\n", e.Version)
 	fmt.Fprintln(w, "request:")
+	fmt.Fprintf(w, "  method: %s\n", e.RequestMethod)
 	fmt.Fprintf(w, "  uri: %s\n", e.RequestURI.String())
 	fmt.Fprintln(w, "  headers:")
 	for k := range e.RequestHeaders {

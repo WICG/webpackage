@@ -30,6 +30,7 @@ func (h *headerArgs) Set(value string) error {
 }
 
 var (
+	flagMethod         = flag.String("method", http.MethodGet, "Request method")
 	flagUri            = flag.String("uri", "https://example.com/index.html", "The URI of the resource represented in the exchange")
 	flagVersion        = flag.String("version", "1b2", "The signedexchange version")
 	flagResponseStatus = flag.Int("status", 200, "The status of the response represented in the exchange")
@@ -156,7 +157,7 @@ func run() error {
 	if resHeader.Get("content-type") == "" {
 		resHeader.Add("content-type", "text/html; charset=utf-8")
 	}
-	e, err := signedexchange.NewExchange(ver, parsedUrl, http.MethodGet, reqHeader, *flagResponseStatus, resHeader, payload)
+	e, err := signedexchange.NewExchange(ver, parsedUrl, *flagMethod, reqHeader, *flagResponseStatus, resHeader, payload)
 	if err != nil {
 		return err
 	}
