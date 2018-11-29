@@ -740,11 +740,9 @@ leaf|does not have a trusted leaf">has a trusted leaf</dfn> for an [=origin=]
 
 <h3 algorithm id="parse-cbor-headers">Parsing CBOR headers</h3>
 
-<dfn>Parsing CBOR headers</dfn> from [=byte sequences=] |headerBytes| and
-|requestUrlBytes| returns a failure or an [=exchange=] via the following steps:
+<dfn>Parsing CBOR headers</dfn> from a [=byte sequence=] |headerBytes| and
+a URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
 
-1. Let |requestUrl| be the result of running the [=URL parser=] on
-    |requestUrlBytes|.
 1. Let |headers| be the result of [=parsing a CBOR item=] from |headerBytes|,
     matching the following CDDL rule:
     ```
@@ -761,7 +759,6 @@ leaf|does not have a trusted leaf">has a trusted leaf</dfn> for an [=origin=]
     ```
 1. If any of the following is true, return a failure:
 
-    * |requestUrl| is an error.
     * |headers| is an error.
     * |headers|[0] contains any keys starting with `` `:` `` that isn't `` `:method` ``.
     * |headers|[0] contains a `` `host` `` key.
