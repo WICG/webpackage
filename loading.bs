@@ -463,18 +463,18 @@ following steps:
 1. Let |magic| be the result of [=read buffer/reading=] 8 bytes from |stream|.
 1. If |magic| is a failure, return it.
 1. If |magic| is not `` `sxg1-b2\0` ``, return a failure.
-1. Let |encodedFallbackUrlLength| be the result of [=read buffer/reading=] 2
+1. Let |encodedRequestUrlLength| be the result of [=read buffer/reading=] 2
     bytes from |stream|.
-1. If |encodedFallbackUrlLength| is a failure, return it.
-1. Let |fallbackUrlLength| be the result of decoding |encodedFallbackUrlLength|
+1. If |encodedRequestUrlLength| is a failure, return it.
+1. Let |requestUrlLength| be the result of decoding |encodedRequestUrlLength|
     as a big-endian integer.
-1. Let |fallbackUrlBytes| be the result of [=read buffer/reading=]
-    |fallbackUrlLength| bytes from |stream|.
-1. If |fallbackUrlBytes| is a failure, return it.
-1. If the result of running the [=URL parser=] on |fallbackUrl| is a failure, if
+1. Let |requestUrlBytes| be the result of [=read buffer/reading=]
+    |requestUrlLength| bytes from |stream|.
+1. If |requestUrlBytes| is a failure, return it.
+1. If the result of running the [=URL parser=] on |requestUrl| is a failure, if
     it has a non-null [=url/fragment=], or if its [=url/scheme=] is something
     other than `"https"`, return a failure.
-1. Assert: |fallbackUrlBytes| should match the result of [=extracting the
+1. Assert: |requestUrlBytes| should match the result of [=extracting the
    fallback URL=] from |response|.
 1. Let |encodedSigLength| be the result of [=read buffer/reading=] 3 bytes from
     |stream|.
@@ -496,10 +496,10 @@ following steps:
 1. Let |headerBytes| be the result of [=read buffer/reading=] |headerLength|
     bytes from |stream|.
 1. If |headerBytes| is a failure, return it.
-1. If |parsedSignature| [=exchange signature/is not valid=] for |headerBytes|,
-    return a failure.
+1. If |parsedSignature| [=exchange signature/is not valid=] for |headerBytes|
+   and |requestUrlBytes|, return a failure.
 1. Let |parsedExchange| be the result of [=parsing CBOR headers=] given
-   |headerBytes| and |fallbackUrl|.
+   |headerBytes| and |requestUrl|.
 1. If |parsedSignature| [=exchange signature/does not establish cross-origin
     trust=] for |parsedExchange|, return a failure.
 1. Set |parsedExchange|'s [=exchange/response=]'s [=response/HTTPS state=] to
@@ -620,7 +620,7 @@ returns the result of the following steps:
 <h3 algorithm id="signed-message">The signed message</h3>
 
 The <dfn>b2 signed message</dfn> for an [=exchange signature=] |signature|, 
-and [=byte sequences=] |fallbackUrlBytes| and |headerBytes| is the concatenation
+and [=byte sequences=] |requestUrlBytes| and |headerBytes| is the concatenation
 of the following [=byte sequences=]:
 
 1. The byte 0x20 (SP) repeated 64 times. This matches the TLS 1.3 ([[RFC8446]])
@@ -641,15 +641,15 @@ of the following [=byte sequences=]:
 1. The 8-byte big-endian encoding of |signature|'s [=exchange signature/date=].
 1. The 8-byte big-endian encoding of |signature|'s [=exchange signature/
    expiration time=].
-1. The 8-byte big-endian encoding of the length in bytes of |fallbackUrlBytes|.
-1. |fallbackUrlBytes|.
+1. The 8-byte big-endian encoding of the length in bytes of |requestUrlBytes|.
+1. |requestUrlBytes|.
 1. The 8-byte big-endian encoding of the length in bytes of |headerBytes|.
 1. |headerBytes|.
 
 <h3 algorithm id="validating-signature">Validating a signature</h3>
 
 An [=exchange signature=] |signature| <dfn for="exchange signature" lt="is
-valid|is not valid">is valid</dfn> for [=byte sequences=] |fallbackUrlBytes| and
+valid|is not valid">is valid</dfn> for [=byte sequences=] |requestUrlBytes| and
 |headerBytes| if the following steps return `valid`:
 
 1. Let |clockSkew| be the uncertainty in the UA's estimate of the current time
@@ -674,7 +674,7 @@ valid|is not valid">is valid</dfn> for [=byte sequences=] |fallbackUrlBytes| and
     exchange trusted for longer, are constrained to modify the client's clock
     and can't also attack its estimate of its skew.
 1. Let |message| be the [=b2 signed message=] for |signature|,
-   |fallbackUrlBytes|, and |headerBytes|.
+   |requestUrlBytes|, and |headerBytes|.
 1. Let |publicKey| be the [=certificate/public key=] of |parsedSignature|'s
     [=exchange signature/certificate chain=]'s [=certificate chain/leaf=]. If
     the certificate can't be parsed enough to find this public key, return
@@ -740,9 +740,11 @@ leaf|does not have a trusted leaf">has a trusted leaf</dfn> for an [=origin=]
 
 <h3 algorithm id="parse-cbor-headers">Parsing CBOR headers</h3>
 
-<dfn>Parsing CBOR headers</dfn> from a [=byte sequence=] |headerBytes| and a
-URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
+<dfn>Parsing CBOR headers</dfn> from [=byte sequences=] |headerBytes| and
+|requestUrlBytes| returns a failure or an [=exchange=] via the following steps:
 
+1. Let |requestUrl| be the result of running the [=URL parser=] on
+   |requestUrlBytes|.
 1. Let |headers| be the result of [=parsing a CBOR item=] from |headerBytes|,
     matching the following CDDL rule:
     ```
@@ -759,6 +761,7 @@ URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
     ```
 1. If any of the following is true, return a failure:
 
+    * |requestUrl| is an error.
     * |headers| is an error.
     * |headers|[0] contains any keys starting with `` `:` `` that isn't `` `:method` ``.
     * |headers|[0] contains a `` `host` `` key.
