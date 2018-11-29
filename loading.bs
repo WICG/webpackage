@@ -619,9 +619,9 @@ returns the result of the following steps:
 
 <h3 algorithm id="signed-message">The signed message</h3>
 
-The <dfn>b2 signed message</dfn> for an [=exchange signature=] |signature| and a
-[=byte sequence=] |headerBytes| is the concatenation of the following [=byte
-sequences=]:
+The <dfn>b2 signed message</dfn> for an [=exchange signature=] |signature|, 
+and [=byte sequences=] |fallbackUrlBytes| and |headerBytes| is the concatenation
+of the following [=byte sequences=]:
 
 1. The byte 0x20 (SP) repeated 64 times. This matches the TLS 1.3 ([[RFC8446]])
     format to avoid cross- protocol attacks if anyone uses the same key in a TLS
@@ -633,29 +633,24 @@ sequences=]:
     for [[draft-yasskin-http-origin-signed-responses]] will use distinct context
     strings.
 1. A single 0x00 byte which serves as a separator.
-1. The concatenation of the following [=byte sequences=], which is the
-    [=canonically-encoded CBOR=] for a CBOR map:
-    1. 0xA5, the CBOR header for a 5-item map.
-    1. 0x64 followed by `` `date` ``
-    1. The [=CBOR integer encoding=] of |signature|'s [=exchange
-        signature/date=].
-    1. 0x67 followed by `` `expires` ``.
-    1. The [=CBOR integer encoding=] of |signature|'s [=exchange
-        signature/expiration time=].
-    1. 0x67 followed by `` `headers` ``.
-    1. |headerBytes|.
-    1. 0x6B followed by `` `cert-sha256` ``.
-    1. The [=CBOR byte string encoding=] of |signature|'s [=exchange
-        signature/certSha256=].
-    1. 0x6C followed by `` `validity-url` ``.
-    1. The [=CBOR byte string encoding=] of |signature|'s [=exchange
-        signature/validityUrlBytes=].
+1. A single 0x20 (SP) byte.
+1. |signature|'s [=exchange signature/certSha256=].
+1. The 8-byte big-endian encoding of the length in bytes of |signature|'s
+   [=exchange signature/validityUrlBytes=].
+1. |signature|'s [=exchange signature/validityUrlBytes=].
+1. The 8-byte big-endian encoding of |signature|'s [=exchange signature/date=].
+1. The 8-byte big-endian encoding of |signature|'s [=exchange signature/
+   expiration time=].
+1. The 8-byte big-endian encoding of the length in bytes of |fallbackUrlBytes|.
+1. |fallbackUrlBytes|.
+1. The 8-byte big-endian encoding of the length in bytes of |headerBytes|.
+1. |headerBytes|.
 
 <h3 algorithm id="validating-signature">Validating a signature</h3>
 
 An [=exchange signature=] |signature| <dfn for="exchange signature" lt="is
-valid|is not valid">is valid</dfn> for a [=byte sequence=] |headerBytes| if the
-following steps return `valid`:
+valid|is not valid">is valid</dfn> for [=byte sequences=] |fallbackUrlBytes| and
+|headerBytes| if the following steps return `valid`:
 
 1. Let |clockSkew| be the uncertainty in the UA's estimate of the current time
     caused by clock skew on the client. The UA MAY set this to 0 or use a more
@@ -678,7 +673,8 @@ following steps return `valid`:
     [=exchange signature/expiration time=] so that attackers trying to get an
     exchange trusted for longer, are constrained to modify the client's clock
     and can't also attack its estimate of its skew.
-1. Let |message| be the [=b2 signed message=] for |signature| and |headerBytes|.
+1. Let |message| be the [=b2 signed message=] for |signature|,
+   |fallbackUrlBytes|, and |headerBytes|.
 1. Let |publicKey| be the [=certificate/public key=] of |parsedSignature|'s
     [=exchange signature/certificate chain=]'s [=certificate chain/leaf=]. If
     the certificate can't be parsed enough to find this public key, return
