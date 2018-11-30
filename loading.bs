@@ -414,6 +414,9 @@ the result of the following steps:
 1. Let |fallbackUrlBytes| be the result of [=read buffer/reading=]
     |fallbackUrlLength| bytes from |stream|.
 1. If |fallbackUrlBytes| is a failure, return it.
+1. Let |fallbackUrl| be the result of [=UTF-8 decode without BOM or fail=] on
+    |fallbackUrlBytes|.
+1. If |fallbackUrl| is a failure, return it.
 1. If the result of running the [=URL parser=] on |fallbackUrl| is a failure, if
     it has a non-null [=url/fragment=], or if its [=url/scheme=] is something
     other than `"https"`, return a failure.
