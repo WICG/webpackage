@@ -836,15 +836,14 @@ A [=request=] |browserRequest| <dfn>matches the stored request</dfn>
 
 1. [=list/For each=] header (|name|, |storedValue|) in |storedRequest|'s
     [=request/header list=]:
-    1. If |name| doesn't name a [=content negotiation mechanism specified to be
-        usable with Variants=], return "mismatch".
+    1. If |name| doesn't name the request header field of a [=content
+        negotiation mechanism specified to be usable with Variants=], return
+        "mismatch".
     1. Otherwise, let |variantMatches| be the algorithm for selecting a result
         defined by |name|'s content negotiation mechanism.
-    1. If |browserRequest|'s [=request/header list=] [=header list/does not
-        contain=] |name|, return "mismatch".
-    1. Let |browserValue| be the [=header/combined value=] of |name| in
+    1. Let |browserValue| be the result of [=header list/getting=] |name| from
         |browserRequest|'s [=request/header list=].
-    1. If |browserValue| is empty, return "mismatch".
+    1. If |browserValue| is null, return "mismatch".
     1. If |variantMatches| returns an empty list when given a request header of
         |browserValue| and an available-values list consisting of
         «|storedValue|», return "mismatch".
