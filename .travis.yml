@@ -21,7 +21,7 @@ install:
  - git clone --depth=1 https://github.com/tabatkins/bikeshed.git
  - pip install --editable bikeshed
  - bikeshed update
- - pip install xml2rfc
+ - pip install xml2rfc!=2.15.0
  - if head -1 -q *.md | grep '^\-\-\-' >/dev/null 2>&1; then gem install --no-doc kramdown-rfc2629; fi
  - if head -1 -q *.md | grep '^%%%' >/dev/null 2>&1; then go get "$mmark_src" && go build "$mmark_src"; fi
 
