@@ -843,7 +843,6 @@ A [=request=] |browserRequest| <dfn>matches the stored request</dfn>
         defined by |name|'s content negotiation mechanism.
     1. Let |browserValue| be the result of [=header list/getting=] |name| from
         |browserRequest|'s [=request/header list=].
-    1. If |browserValue| is null, return "mismatch".
     1. If |variantMatches| returns an empty list when given a request header of
         |browserValue| and an available-values list consisting of
         «|storedValue|», return "mismatch".
