@@ -15,6 +15,15 @@ Assume Explicit For: yes
 </pre>
 <pre class='biblio'>
 {
+    "draft-ietf-httpbis-variants": {
+        "authors": [
+            "Mark Nottingham"
+        ],
+        "href": "https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html",
+        "title": "HTTP Representation Variants",
+        "status": "WD",
+        "publisher": "IETF"
+    },
     "draft-thomson-http-mice": {
         "authors": [
             "Martin Thomson"
@@ -89,6 +98,11 @@ spec: RFC7231; urlPrefix: https://tools.ietf.org/html/rfc7231#
         text: Date header field; url: section-7.1.1.2
 spec: RFC8446; urlPrefix: https://tools.ietf.org/html/draft-ietf-tls-tls13-28#
     text: ecdsa_secp256r1_sha256; type: dfn; url: section-4.2.3
+spec: draft-ietf-httpbis-variants; urlPrefix: https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html#
+    type: dfn
+        text: content negotiation mechanism specified to be usable with Variants; url: define
+        text: Variants cache behavior; url: cache
+        text: Variants header field; url: variants
 spec: draft-thomson-http-mice; urlPrefix: https://tools.ietf.org/html/draft-thomson-http-mice-02#
     type: dfn
         text: mi-sha256 parameter; url: section-3.1
@@ -812,7 +826,6 @@ To <dfn lt="reading a body|read a body">read a body</dfn> from a [=read buffer=]
 1. [=In parallel=]:
     1. [=read buffer/Dump=] |stream| to |outputStream|.
 
-
 <h3 algorithm id="request-matching">Request matching</h3>
 
 A [=request=] |browserRequest| <dfn>matches the stored request</dfn>
@@ -821,12 +834,20 @@ A [=request=] |browserRequest| <dfn>matches the stored request</dfn>
 1. If |browserRequest|'s [=request/url=] is not [=url/equal=] to
     |storedRequest|'s [=request/url=], return "mismatch".
 
-1. Issue: Flesh this out, along the lines of
-    https://docs.google.com/document/d/1JdJkdY7cK2rD9JXbK75sSn069c0rhF9UnLQACBZ1OtY/edit.
-
+1. [=list/For each=] header (|name|, |storedValue|) in |storedRequest|'s
+    [=request/header list=]:
+    1. If |name| doesn't name the request header field of a [=content
+        negotiation mechanism specified to be usable with Variants=], return
+        "mismatch".
+    1. Otherwise, let |variantMatches| be the algorithm for selecting a result
+        defined by |name|'s content negotiation mechanism.
+    1. Let |browserValue| be the result of [=header list/getting=] |name| from
+        |browserRequest|'s [=request/header list=].
+    1. If |variantMatches| returns an empty list when given a request header of
+        |browserValue| and an available-values list consisting of
+        «|storedValue|», return "mismatch".
 
 1. Return "match".
-
 
 ## Stream algorithms ## {#stream-algs}
 
