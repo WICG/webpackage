@@ -1326,9 +1326,8 @@ While modern browsers tend to trust the `Content-Type` header sent with a
 resource, especially when accompanied by `X-Content-Type-Options: nosniff`,
 plugins will sometimes search for executable content buried inside a resource
 and execute it in the context of the origin that served the resource, leading to
-XSS vulnerabilities. One bad plugin in this regard is the Adobe PDF reader,
-which looks for `%PDF` anywhere in the first 1kB and executes the code that
-follows it.
+XSS vulnerabilities. For example, some PDF reader plugins look for `%PDF`
+anywhere in the first 1kB and execute the code that follows it.
 
 The `application/signed-exchange` format ({{application-signed-exchange}})
 includes a URL and request and response headers early in the format, which an
