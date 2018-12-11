@@ -417,6 +417,14 @@ An exchange signature is a [=struct=] with the following items:
 The <dfn>signed exchange version</dfn> of a [=response=] |response| is the
 result of the following steps:
 
+1. If <a spec="fetch">determine nosniff</a> on |response|'s [=response/header
+    list=] returns false, return undefined.
+
+    Note: This requires servers to include the `X-Content-Type-Options: nosniff`
+    header when they serve signed exchanges, which prevents some clients that
+    don't understand signed exchanges from interpreting one as another content
+    type.
+
 1. Let |mimeType| be the result of [=header list/extracting a MIME type=] from
     |response|'s [=response/header list=].
 1. If |mimeType| is a failure, return undefined.

@@ -1333,10 +1333,11 @@ The `application/signed-exchange` format ({{application-signed-exchange}})
 includes a URL and response headers early in the format, which an
 attacker could use to cause these plugins to sniff a bad content type.
 
-To avoid vulnerabilities, servers are advised to only serve an
-`application/signed-exchange` resource (SXG) from a domain if it would also be
-safe for that domain to serve the SXG's content directly, and to follow at least
-one of the following strategies:
+To avoid vulnerabilities, servers are advised to always include the
+`X-Content-Type-Options: nosniff` response header field ({{FETCH}}), to only
+serve an `application/signed-exchange` resource (SXG) from a domain if it would
+also be safe for that domain to serve the SXG's content directly, and to follow
+at least one of the following strategies:
 
 1. Only serve signed exchanges from dedicated domains that don't have access to
    sensitive cookies or user storage.
@@ -1357,6 +1358,9 @@ There are still a few binary length fields that an attacker may influence to
 contain sensitive bytes, but they're always followed by lowercase alphabetic
 strings from a small set of possibilities, which reduces the chance that a
 client will sniff them as indicating a particular content type.
+
+To encourage servers to include the `X-Content-Type-Options: nosniff` header
+field, clients SHOULD reject signed exchanges served without it.
 
 # Privacy considerations
 
