@@ -34,7 +34,7 @@ type Exchange struct {
 	Version version.Version
 
 	// Request
-	RequestURI     *url.URL
+	RequestURI     string
 	RequestMethod  string
 	RequestHeaders http.Header
 
@@ -73,13 +73,25 @@ func NewExchange(ver version.Version, uri *url.URL, method string, requestHeader
 
 	return &Exchange{
 		Version:         ver,
-		RequestURI:      uri,
+		RequestURI:      uri.String(),
 		RequestMethod:   method,
 		ResponseStatus:  status,
 		RequestHeaders:  requestHeaders,
 		ResponseHeaders: responseHeaders,
 		Payload:         payload,
 	}, nil
+}
+
+func NewExchangeNoCheck(ver version.Version, uri string, method string, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte) *Exchange {
+	return &Exchange{
+		Version:         ver,
+		RequestURI:      uri,
+		RequestMethod:   method,
+		ResponseStatus:  status,
+		RequestHeaders:  requestHeaders,
+		ResponseHeaders: responseHeaders,
+		Payload:         payload,
+	}
 }
 
 func (e *Exchange) MiEncodePayload(recordSize int) error {
@@ -127,7 +139,7 @@ func (e *Exchange) encodeRequestMap(enc *cbor.Encoder) error {
 		mes = append(mes,
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeByteString(keyURL)
-				valueE.EncodeByteString([]byte(e.RequestURI.String()))
+				valueE.EncodeByteString([]byte(e.RequestURI))
 			}))
 	}
 	mes = encodeHeaders(mes, e.RequestHeaders)
@@ -173,7 +185,7 @@ func (e *Exchange) decodeRequestMap(dec *cbor.Decoder) error {
 		}
 		if bytes.Equal(key, keyURL) {
 			if e.Version == version.Version1b1 {
-				e.RequestURI, err = url.Parse(string(value))
+				e.RequestURI, err = validateFallbackURL(value)
 				if err != nil {
 					return err
 				}
@@ -330,8 +342,7 @@ func (e *Exchange) Write(w io.Writer) error {
 		}
 
 		// "2. 2 bytes storing a big-endian integer fallbackUrlLength." [spec text]
-		url := e.RequestURI.String()
-		urlLength, err := bigendian.EncodeBytesUint(int64(len(url)), 2)
+		urlLength, err := bigendian.EncodeBytesUint(int64(len(e.RequestURI)), 2)
 		if err != nil {
 			return err
 		}
@@ -341,7 +352,7 @@ func (e *Exchange) Write(w io.Writer) error {
 
 		// "3. fallbackUrlLength bytes holding a fallbackUrl, which MUST be an absolute URL with a scheme of “https”.
 		// Note: The byte location of the fallback URL is intended to remain invariant across versions of the application/signed-exchange format so that parsers encountering unknown versions can always find a URL to redirect to." [spec text]
-		if _, err := w.Write([]byte(url)); err != nil {
+		if _, err := w.Write([]byte(e.RequestURI)); err != nil {
 			return err
 		}
 
@@ -433,7 +444,7 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 			return nil, err
 		}
 		var err error
-		e.RequestURI, err = url.Parse(string(fallbackUrl))
+		e.RequestURI, err = validateFallbackURL(fallbackUrl)
 		if err != nil {
 			return nil, err
 		}
@@ -482,6 +493,20 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 	return e, nil
 }
 
+func validateFallbackURL(urlBytes []byte) (string, error) {
+	// draft-yasskin-http-origin-signed-responses.html#application-signed-exchange
+	// Step 3. "fallbackUrlLength bytes holding a fallbackUrl, which MUST be an absolute URL with a scheme of “https”. " [spec text]
+	urlStr := string(urlBytes)
+	parsedUrl, err := url.Parse(urlStr)
+	if err != nil {
+		return "", fmt.Errorf("signedexchange: cannot parse fallback URL %q: %v", urlStr, err)
+	}
+	if parsedUrl.Scheme != "https" { // This also ensures that parsedUrl is absolute.
+		return "", fmt.Errorf("signedexchange: non-https fallback URL: %q", urlStr)
+	}
+	return urlStr, nil
+}
+
 func (e *Exchange) DumpSignedMessage(w io.Writer, s *Signer) error {
 	bs, err := serializeSignedMessage(e, calculateCertSha256(s.Certs), s.ValidityUrl.String(), s.Date.Unix(), s.Expires.Unix())
 	if err != nil {
@@ -498,7 +523,7 @@ func (e *Exchange) PrettyPrintHeaders(w io.Writer) {
 	fmt.Fprintf(w, "format version: %s\n", e.Version)
 	fmt.Fprintln(w, "request:")
 	fmt.Fprintf(w, "  method: %s\n", e.RequestMethod)
-	fmt.Fprintf(w, "  uri: %s\n", e.RequestURI.String())
+	fmt.Fprintf(w, "  uri: %s\n", e.RequestURI)
 	fmt.Fprintln(w, "  headers:")
 	for k := range e.RequestHeaders {
 		fmt.Fprintf(w, "    %s: %s\n", k, e.RequestHeaders.Get(k))

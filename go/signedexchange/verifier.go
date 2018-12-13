@@ -111,7 +111,12 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 			l.Printf("Cannot parse validity-url: %q", signature.ValidityUrl)
 			continue
 		}
-		if !isSameOrigin(validityUrl, e.RequestURI) {
+		requestURI, err := url.Parse(e.RequestURI)
+		if err != nil {
+			l.Printf("Cannot parse request URI: %q", e.RequestURI)
+			continue
+		}
+		if !isSameOrigin(validityUrl, requestURI) {
 			l.Printf("validity-url (%s) is not same-origin with request URL (%v)", signature.ValidityUrl, e.RequestURI)
 			continue
 		}

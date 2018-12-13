@@ -156,7 +156,7 @@ func serializeSignedMessage(e *Exchange, certSha256 []byte, validityUrl string, 
 		buf.Write(expiresBytes)
 
 		// "8. The 8-byte big-endian encoding of the length in bytes of requestUrl, followed by the bytes of requestUrl." [spec text]
-		rurl := []byte(e.RequestURI.String())
+		rurl := []byte(e.RequestURI)
 		rurlLenBytes, _ := bigendian.EncodeBytesUint(int64(len(rurl)), 8)
 		buf.Write(rurlLenBytes)
 		buf.Write(rurl)
