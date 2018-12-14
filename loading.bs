@@ -61,6 +61,12 @@ Assume Explicit For: yes
         "status": "ED",
         "publisher": "IETF"
     },
+    "http-dig-alg": {
+        "href": "https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml",
+        "title": "Hypertext Transfer Protocol (HTTP) Digest Algorithm Values",
+        "status": "LS",
+        "publisher": "IANA"
+    },
     "RFC8446": {
         "authors": [
             "E. Rescorla"
@@ -82,7 +88,7 @@ spec: app-manifest; urlPrefix: https://w3c.github.io/manifest/#
 spec: RFC3230; urlPrefix: https://tools.ietf.org/html/rfc3230#
     type: dfn
         text: instance digests; url: section-4.2
-        text: Digest message header field; url: section-4.3.2
+        text: Digest; url: section-4.3.2
 spec: RFC5280; urlPrefix: https://tools.ietf.org/html/rfc5280#
     type: dfn
         text: AlgorithmIdentifier; url: section-4.1.1.2
@@ -127,6 +133,8 @@ spec: draft-yasskin-httpbis-origin-signed-exchanges-impl-02; urlPrefix: https://
         text: Signature header; url: section-3.1
 spec: draft-ietf-httpbis-header-structure; urlPrefix: https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-07#
     text: Parsing HTTP1 Header Fields into Structured Headers; type: dfn; url: section-4.2
+spec: http-dig-alg; urlPrefix: https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml#
+    type: dfn; text: Digest algorithm; url: http-dig-alg-1
 spec: SHA2; urlPrefix: http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf
     type: dfn
         text: SHA-256; url: #
@@ -808,23 +816,23 @@ To <dfn lt="reading a body|read a body">read a body</dfn> from a [=read buffer=]
     ::
         1. If the length of |signature|'s [=exchange signature/integrity header=]
             isn't 1, return a failure.
-        1. Let [=instance digests=] |instance-digests| be the result of
-            [=extracting header list values=] given `` `Digest` `` and
-            |response|'s [=response/header list=].
+        1. Let |instance-digests| be the result of [=header list/getting,
+            decoding, and splitting=] `` `digest` `` from |response|'s
+            [=response/header list=].
 
-	Note: This uses the ABNF of the [=Digest message header field=].
+            Note: No [=Digest algorithm=] uses non-ASCII characters or 0x22
+            (`"`), so this is equivalent to parsing from the [=Digest=] ABNF
+            `<encoded digest output>`.
 
-	1. If there is more than one element in |instance-digests|, return a
-	    failure.
-	1. Let |mi| be the "mi-sha256-03" parameter of |instance-digests|[0].
-        1. If |mi| doesn't have an [=mi-sha256 parameter=], return a failure.
-        1. If [=extracting header list values=] for `` `content-encoding` `` in
-            |response|'s [=response/header list=] doesn't include
-            `` `mi-sha256-03` ``, return a failure.
-        1. Assert: [=Handle content codings=] used the value of the
-            [=mi-sha256 parameter=] as the [=integrity proof for the first
-            record=] when decoding the `mi-sha256` content encoding to produce
-            the bytes in |stream|.
+        1. Let |mi| be the element of |instance-digests| that starts with
+            `"mi-sha256-03="`. If there is no such element, return a failure.
+        1. Let |codings| be the result of [=header list/getting, decoding, and
+            splitting=] `` `content-encoding` `` in |response|'s
+            [=response/header list=].
+        1. If |codings| doesn't include `"mi-sha256-03"`, return a failure.
+        1. Assert: [=Handle content codings=] used the value of |mi| as the
+            [=integrity proof for the first record=] when decoding the
+            `mi-sha256-03` content encoding to produce the bytes in |stream|.
 
     : Anything else
     :: Return a failure.
