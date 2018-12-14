@@ -47,7 +47,7 @@ var (
 	flagDumpHeadersCbor      = flag.String("dumpHeadersCbor", "", "Dump metadata and headers encoded as a canonical CBOR to a file for debugging.")
 	flagOutput               = flag.String("o", "out.sxg", "Signed exchange output file. If value is '-', sxg is written to stdout.")
 
-	flagSkipCheck = flag.Bool("skipcheck", false, "Do not reject invalid input arguments")
+	flagIgnoreErrors = flag.Bool("ignoreErrors", false, "Do not reject invalid input arguments")
 
 	flagRequestHeader  = headerArgs{}
 	flagResponseHeader = headerArgs{}
@@ -156,7 +156,7 @@ func run() error {
 	}
 
 	var e *signedexchange.Exchange
-	if *flagSkipCheck {
+	if *flagIgnoreErrors {
 		e = signedexchange.NewExchangeNoCheck(ver, *flagUri, *flagMethod, reqHeader, *flagResponseStatus, resHeader, payload)
 	} else {
 		parsedUrl, err := url.Parse(*flagUri)
