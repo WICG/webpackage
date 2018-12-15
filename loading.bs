@@ -87,7 +87,6 @@ spec: app-manifest; urlPrefix: https://w3c.github.io/manifest/#
     text: start URL; type: dfn; url: dfn-start-
 spec: RFC3230; urlPrefix: https://tools.ietf.org/html/rfc3230#
     type: dfn
-        text: instance digests; url: section-4.2
         text: Digest; url: section-4.3.2
 spec: RFC5280; urlPrefix: https://tools.ietf.org/html/rfc5280#
     type: dfn
@@ -631,7 +630,7 @@ returns the result of the following steps:
 
 <h3 algorithm id="signed-message">The signed message</h3>
 
-The <dfn>b2 signed message</dfn> for an [=exchange signature=] |signature|,
+The <dfn>b2 signed message</dfn> for an [=exchange signature=] |signature|
 and [=byte sequences=] |requestUrlBytes| and |headerBytes| is the concatenation
 of the following [=byte sequences=]:
 
@@ -772,10 +771,10 @@ a URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
 1. If any of the following is true, return a failure:
 
     * |headers| is an error.
-    * |headers|[0] contains any keys starting with `` `:` `` that isn't `` `:method` ``.
+    * |headers|[0] contains any key starting with `` `:` `` that isn't `` `:method` ``.
     * |headers|[0] contains a `` `host` `` key.
     * |headers|[0][`` `:method` ``] is not `` `GET` ``.
-    * |headers|[1] contains any keys starting with `` `:` `` that aren't `` `:status` ``.
+    * |headers|[1] contains any key starting with `` `:` `` that isn't `` `:status` ``.
     * |headers|[1][`` `:status` ``] is not `` 200 ``.
 
 1. Let |requestHeaders| be the result of [=creating a header list from the CBOR
