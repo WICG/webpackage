@@ -523,12 +523,13 @@ a failure or the triple of a [=byte sequence=] |magic|, [=byte sequence=]
 1. Let |fallbackUrlBytes| be the result of [=read buffer/reading=]
     |fallbackUrlLength| bytes from |stream|.
 1. If |fallbackUrlBytes| is a failure, return it.
-1. Let |fallbackUrl| be the result of [=UTF-8 decode without BOM or fail=] on
+1. Let |fallbackUrlString| be the result of [=UTF-8 decode without BOM or fail=] on
     |fallbackUrlBytes|.
-1. If |fallbackUrl| is a failure, return it.
-1. If the result of running the [=URL parser=] on |fallbackUrl| is a failure, if
-    it has a non-null [=url/fragment=], or if its [=url/scheme=] is something
-    other than `"https"`, return a failure.
+1. If |fallbackUrlString| is a failure, return it.
+1. Let |fallbackUrl| be the result of running the [=URL parser=] on
+    |fallbackUrlString|.
+1. If |fallbackUrl| is a failure, if it has a non-null [=url/fragment=], or if
+    its [=url/scheme=] is something other than `"https"`, return a failure.
 1. Return (|magic|, |fallbackUrlBytes|, |fallbackUrl|).
 
 <h3 algorithm id="parsing-signature">Parsing a Signature Header Field</h3>
