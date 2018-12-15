@@ -641,7 +641,7 @@ of the following [=byte sequences=]:
     for [[draft-yasskin-http-origin-signed-responses]] will use distinct context
     strings.
 1. A single 0x00 byte which serves as a separator.
-1. A single 0x20 (SP) byte.
+1. A single 0x20 (SP) byte, representing the length of the next field.
 1. |signature|'s [=exchange signature/certSha256=].
 1. The 8-byte big-endian encoding of the length in bytes of |signature|'s
     [=exchange signature/validityUrlBytes=].
