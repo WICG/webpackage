@@ -390,3 +390,18 @@ func TestVerifyBadSignature(t *testing.T) {
 		t.Errorf("Verification should fail")
 	}
 }
+
+func TestVerifyNonCanonicalURL(t *testing.T) {
+	e, s, c := createTestExchange(t)
+	// url.Parse() decodes "%73%78%67" to "sxg"
+	e.RequestURI = "https://example.com/%73%78%67"
+	if err := e.AddSignatureHeader(s); err != nil {
+		t.Fatal(err)
+	}
+	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+
+	verificationTime := signatureDate
+	if !e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "ERROR: ", 0)) {
+		t.Errorf("Verification failed")
+	}
+}

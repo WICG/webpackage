@@ -47,6 +47,8 @@ var (
 	flagDumpHeadersCbor      = flag.String("dumpHeadersCbor", "", "Dump metadata and headers encoded as a canonical CBOR to a file for debugging.")
 	flagOutput               = flag.String("o", "out.sxg", "Signed exchange output file. If value is '-', sxg is written to stdout.")
 
+	flagIgnoreErrors = flag.Bool("ignoreErrors", false, "Do not reject invalid input arguments")
+
 	flagRequestHeader  = headerArgs{}
 	flagResponseHeader = headerArgs{}
 )
@@ -138,11 +140,6 @@ func run() error {
 		defer f.Close()
 	}
 
-	parsedUrl, err := url.Parse(*flagUri)
-	if err != nil {
-		return fmt.Errorf("failed to parse URL %q. err: %v", *flagUri, err)
-	}
-
 	reqHeader := http.Header{}
 	for _, h := range flagRequestHeader {
 		chunks := strings.SplitN(h, ":", 2)
@@ -157,9 +154,19 @@ func run() error {
 	if resHeader.Get("content-type") == "" {
 		resHeader.Add("content-type", "text/html; charset=utf-8")
 	}
-	e, err := signedexchange.NewExchange(ver, parsedUrl, *flagMethod, reqHeader, *flagResponseStatus, resHeader, payload)
-	if err != nil {
-		return err
+
+	var e *signedexchange.Exchange
+	if *flagIgnoreErrors {
+		e = signedexchange.NewExchangeNoCheck(ver, *flagUri, *flagMethod, reqHeader, *flagResponseStatus, resHeader, payload)
+	} else {
+		parsedUrl, err := url.Parse(*flagUri)
+		if err != nil {
+			return fmt.Errorf("failed to parse URL %q. err: %v", *flagUri, err)
+		}
+		e, err = signedexchange.NewExchange(ver, parsedUrl, *flagMethod, reqHeader, *flagResponseStatus, resHeader, payload)
+		if err != nil {
+			return err
+		}
 	}
 	if err := e.MiEncodePayload(*flagMIRecordSize); err != nil {
 		return err
