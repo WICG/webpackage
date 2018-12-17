@@ -447,7 +447,8 @@ following steps:
 
 1. Assert: This algorithm is running [=in parallel=].
 1. Assert: The [=signed exchange version=] of |response| is `"b1"`.
-1. If |response|'s [=response/HTTPS state=] is `"none"`, return failure.
+1. If |response|'s [=response/URL=]'s [=url/origin=] is not a [=potentially
+    trustworthy origin=], return failure.
 
     Note: This ensures that the privacy properties of retrieving an HTTPS
     resource via a signed exchange are no worse than retrieving it via TLS.
