@@ -28,7 +28,7 @@ Assume Explicit For: yes
         "authors": [
             "Martin Thomson"
         ],
-        "href": "https://tools.ietf.org/html/draft-thomson-http-mice-02",
+        "href": "https://tools.ietf.org/html/draft-thomson-http-mice-03",
         "title": "Merkle Integrity Content Encoding",
         "status": "ED",
         "publisher": "IETF"
@@ -42,12 +42,12 @@ Assume Explicit For: yes
         "status": "ED",
         "publisher": "IETF"
     },
-    "draft-yasskin-httpbis-origin-signed-exchanges-impl-01": {
+    "draft-yasskin-httpbis-origin-signed-exchanges-impl-02": {
         "authors": [
             "Jeffrey Yasskin",
             "Kouhei Ueno"
         ],
-        "href": "https://tools.ietf.org/html/draft-yasskin-httpbis-origin-signed-exchanges-impl-01",
+        "href": "https://tools.ietf.org/html/draft-yasskin-httpbis-origin-signed-exchanges-impl-02",
         "title": "Signed HTTP Exchanges Implementation Checkpoints",
         "status": "ED",
         "publisher": "IETF"
@@ -60,6 +60,12 @@ Assume Explicit For: yes
         "title": "Bundled HTTP Exchanges",
         "status": "ED",
         "publisher": "IETF"
+    },
+    "http-dig-alg": {
+        "href": "https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml",
+        "title": "Hypertext Transfer Protocol (HTTP) Digest Algorithm Values",
+        "status": "LS",
+        "publisher": "IANA"
     },
     "RFC8446": {
         "authors": [
@@ -79,6 +85,9 @@ Assume Explicit For: yes
 <pre class='anchors'>
 spec: app-manifest; urlPrefix: https://w3c.github.io/manifest/#
     text: start URL; type: dfn; url: dfn-start-
+spec: RFC3230; urlPrefix: https://tools.ietf.org/html/rfc3230#
+    type: dfn
+        text: Digest; url: section-4.3.2
 spec: RFC5280; urlPrefix: https://tools.ietf.org/html/rfc5280#
     type: dfn
         text: AlgorithmIdentifier; url: section-4.1.1.2
@@ -103,7 +112,7 @@ spec: draft-ietf-httpbis-variants; urlPrefix: https://httpwg.org/http-extensions
         text: content negotiation mechanism specified to be usable with Variants; url: define
         text: Variants cache behavior; url: cache
         text: Variants header field; url: variants
-spec: draft-thomson-http-mice; urlPrefix: https://tools.ietf.org/html/draft-thomson-http-mice-02#
+spec: draft-thomson-http-mice; urlPrefix: https://tools.ietf.org/html/draft-thomson-http-mice-03#
     type: dfn
         text: mi-sha256 parameter; url: section-3.1
         text: integrity proof for the first record; url: section-2.2
@@ -115,7 +124,7 @@ spec: draft-yasskin-http-origin-signed-responses; urlPrefix: https://wicg.github
         text: off-path attackers; url: seccons-off-path
         text: stateful request header; url: stateful-headers
         text: stateful response header; url: stateful-headers
-spec: draft-yasskin-httpbis-origin-signed-exchanges-impl-01; urlPrefix: https://tools.ietf.org/html/draft-yasskin-httpbis-origin-signed-exchanges-impl-01#
+spec: draft-yasskin-httpbis-origin-signed-exchanges-impl-02; urlPrefix: https://tools.ietf.org/html/draft-yasskin-httpbis-origin-signed-exchanges-impl-02#
     type: dfn
         text: canonically-encoded CBOR; url: section-3.4
         text: CanSignHttpExchanges; url: section-4.2
@@ -123,6 +132,8 @@ spec: draft-yasskin-httpbis-origin-signed-exchanges-impl-01; urlPrefix: https://
         text: Signature header; url: section-3.1
 spec: draft-ietf-httpbis-header-structure; urlPrefix: https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-07#
     text: Parsing HTTP1 Header Fields into Structured Headers; type: dfn; url: section-4.2
+spec: http-dig-alg; urlPrefix: https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml#
+    type: dfn; text: Digest algorithm; url: http-dig-alg-1
 spec: SHA2; urlPrefix: http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf
     type: dfn
         text: SHA-256; url: #
@@ -245,9 +256,9 @@ add the following steps:
     : undefined
     :: Do nothing.
 
-    : `"b1"`
+    : `"b2"`
     ::
-        1. Let |parsedExchange| be the result of [=parsing a b1 signed
+        1. Let |parsedExchange| be the result of [=parsing a b2 signed
             exchange=] from |actualResponse| in the context of |request|'s
             [=request/client=].
         1. If |parsedExchange| is a failure, return a [=network error=].
@@ -375,7 +386,7 @@ An exchange signature is a [=struct=] with the following items:
     and from which the UA will try to build a path from the [=certificate
     chain/leaf=] to a trusted root.
 : <dfn>certSha256</dfn>
-:: A [=byte sequence=] holding the SHA-256 hash that verified the [=exchange
+:: A [=byte sequence=] holding the [=SHA-256=] hash that verified the [=exchange
     signature/certificate chain=]'s [=certificate chain/leaf=].
 : <dfn>integrity header</dfn>
 :: A [=list=] that describes the response header and any of its parameters that
@@ -418,35 +429,22 @@ the result of the following steps:
 1. Let |bodyStream| be |response|'s [=response/body=]'s [=body/stream=].
 1. If |bodyStream| is null, return failure.
 1. Let |stream| be a [=new read buffer=] for |bodyStream|.
-1. Let |magic| be the result of [=read buffer/reading=] 8 bytes from |stream|.
-1. If |magic| is a failure, return it.
-1. Let |encodedFallbackUrlLength| be the result of [=read buffer/reading=] 2
-    bytes from |stream|.
-1. If |encodedFallbackUrlLength| is a failure, return it.
-1. Let |fallbackUrlLength| be the result of decoding |encodedFallbackUrlLength|
-    as a big-endian integer.
-1. Let |fallbackUrlBytes| be the result of [=read buffer/reading=]
-    |fallbackUrlLength| bytes from |stream|.
-1. If |fallbackUrlBytes| is a failure, return it.
-1. Let |fallbackUrl| be the result of [=UTF-8 decode without BOM or fail=] on
-    |fallbackUrlBytes|.
-1. If |fallbackUrl| is a failure, return it.
-1. If the result of running the [=URL parser=] on |fallbackUrl| is a failure, if
-    it has a non-null [=url/fragment=], or if its [=url/scheme=] is something
-    other than `"https"`, return a failure.
+1. Let (<var ignore>magic</var>, |fallbackUrlBytes|, <var
+    ignore>fallbackUrl</var>) be the result of [=parsing the invariant prefix=]
+    from |stream|. If returns a failure, return that failure.
 1. Return |fallbackUrlBytes|.
 
-<h3 algorithm id="parsing-b1">Parsing `b1` signed exchanges</h3>
+<h3 algorithm id="parsing-b2">Parsing `b2` signed exchanges</h3>
 
 This section defines how to load the format defined in
-[[draft-yasskin-httpbis-origin-signed-exchanges-impl-01]].
+[[draft-yasskin-httpbis-origin-signed-exchanges-impl-02]].
 
-<dfn>Parsing a b1 signed exchange</dfn> from a [=response=] |response| in the
+<dfn>Parsing a b2 signed exchange</dfn> from a [=response=] |response| in the
 context of an [=environment settings object=] |client| returns the result of the
 following steps:
 
 1. Assert: This algorithm is running [=in parallel=].
-1. Assert: The [=signed exchange version=] of |response| is `"b1"`.
+1. Assert: The [=signed exchange version=] of |response| is `"b2"`.
 1. If |response|'s [=response/URL=]'s [=url/origin=] is not a [=potentially
     trustworthy origin=], return failure.
 
@@ -456,9 +454,11 @@ following steps:
 1. Let |bodyStream| be |response|'s [=response/body=]'s [=body/stream=].
 1. If |bodyStream| is null, return failure.
 1. Let |stream| be a [=new read buffer=] for |bodyStream|.
-1. Let |magic| be the result of [=read buffer/reading=] 8 bytes from |stream|.
-1. If |magic| is a failure, return it.
-1. If |magic| is not `` `sxg1-b1\0` ``, return a failure.
+1. Let (|magic|, |requestUrlBytes|, |requestUrl|) be the result of [=parsing the
+    invariant prefix=] from |stream|. If returns a failure, return that failure.
+1. If |magic| is not `` `sxg1-b2\0` ``, return a failure.
+1. Assert: |requestUrlBytes| should match the result of [=extracting the
+    fallback URL=] from |response|.
 1. Let |encodedSigLength| be the result of [=read buffer/reading=] 3 bytes from
     |stream|.
 1. Let |encodedHeaderLength| be the result of [=read buffer/reading=] 3 bytes
@@ -479,9 +479,10 @@ following steps:
 1. Let |headerBytes| be the result of [=read buffer/reading=] |headerLength|
     bytes from |stream|.
 1. If |headerBytes| is a failure, return it.
-1. If |parsedSignature| [=exchange signature/is not valid=] for |headerBytes|,
-    return a failure.
-1. Let |parsedExchange| be the result of [=parsing CBOR headers=] |headerBytes|.
+1. If |parsedSignature| [=exchange signature/is not valid=] for |headerBytes|
+    and |requestUrlBytes|, return a failure.
+1. Let |parsedExchange| be the result of [=parsing CBOR headers=] given
+    |headerBytes| and |requestUrl|.
 1. If |parsedSignature| [=exchange signature/does not establish cross-origin
     trust=] for |parsedExchange|, return a failure.
 1. Set |parsedExchange|'s [=exchange/response=]'s [=response/HTTPS state=] to
@@ -501,6 +502,35 @@ following steps:
     Note: Typically this body’s stream is still being enqueued to after
     returning.
 1. Return |parsedExchange|.
+
+<h3 algorithm id="parsing-prefix">Parsing the invariant prefix</h3>
+
+All signed exchange versions start with the same initial bytes, parsed by this
+section.
+
+<dfn>Parsing the invariant prefix</dfn> from a [=read buffer=] |stream| returns
+a failure or the triple of a [=byte sequence=] |magic|, [=byte sequence=]
+|fallbackUrlBytes|, and [=URL=] |fallbackUrl| returned by the following steps:
+
+1. Assert: This algorithm is running [=in parallel=].
+1. Let |magic| be the result of [=read buffer/reading=] 8 bytes from |stream|.
+1. If |magic| is a failure, return it.
+1. Let |encodedFallbackUrlLength| be the result of [=read buffer/reading=] 2
+    bytes from |stream|.
+1. If |encodedFallbackUrlLength| is a failure, return it.
+1. Let |fallbackUrlLength| be the result of decoding |encodedFallbackUrlLength|
+    as a big-endian integer.
+1. Let |fallbackUrlBytes| be the result of [=read buffer/reading=]
+    |fallbackUrlLength| bytes from |stream|.
+1. If |fallbackUrlBytes| is a failure, return it.
+1. Let |fallbackUrlString| be the result of [=UTF-8 decode without BOM or fail=] on
+    |fallbackUrlBytes|.
+1. If |fallbackUrlString| is a failure, return it.
+1. Let |fallbackUrl| be the result of running the [=URL parser=] on
+    |fallbackUrlString|.
+1. If |fallbackUrl| is a failure, if it has a non-null [=url/fragment=], or if
+    its [=url/scheme=] is something other than `"https"`, return a failure.
+1. Return (|magic|, |fallbackUrlBytes|, |fallbackUrl|).
 
 <h3 algorithm id="parsing-signature">Parsing a Signature Header Field</h3>
 
@@ -601,43 +631,38 @@ returns the result of the following steps:
 
 <h3 algorithm id="signed-message">The signed message</h3>
 
-The <dfn>b1 signed message</dfn> for an [=exchange signature=] |signature| and a
-[=byte sequence=] |headerBytes| is the concatenation of the following [=byte
-sequences=]:
+The <dfn>b2 signed message</dfn> for an [=exchange signature=] |signature|
+and [=byte sequences=] |requestUrlBytes| and |headerBytes| is the concatenation
+of the following [=byte sequences=]:
 
 1. The byte 0x20 (SP) repeated 64 times. This matches the TLS 1.3 ([[RFC8446]])
     format to avoid cross- protocol attacks if anyone uses the same key in a TLS
     certificate and an exchange-signing certificate.
-1. `` `HTTP Exchange 1 b1` `` to serve as a context string.
+1. `` `HTTP Exchange 1 b2` `` to serve as a context string.
 
     Note: Each draft of
-    [[draft-yasskin-httpbis-origin-signed-exchanges-impl-01]] and the final RFC
+    [[draft-yasskin-httpbis-origin-signed-exchanges-impl-02]] and the final RFC
     for [[draft-yasskin-http-origin-signed-responses]] will use distinct context
     strings.
 1. A single 0x00 byte which serves as a separator.
-1. The concatenation of the following [=byte sequences=], which is the
-    [=canonically-encoded CBOR=] for a CBOR map:
-    1. 0xA5, the CBOR header for a 5-item map.
-    1. 0x64 followed by `` `date` ``
-    1. The [=CBOR integer encoding=] of |signature|'s [=exchange
-        signature/date=].
-    1. 0x67 followed by `` `expires` ``.
-    1. The [=CBOR integer encoding=] of |signature|'s [=exchange
-        signature/expiration time=].
-    1. 0x67 followed by `` `headers` ``.
-    1. |headerBytes|.
-    1. 0x6B followed by `` `cert-sha256` ``.
-    1. The [=CBOR byte string encoding=] of |signature|'s [=exchange
-        signature/certSha256=].
-    1. 0x6C followed by `` `validity-url` ``.
-    1. The [=CBOR byte string encoding=] of |signature|'s [=exchange
-        signature/validityUrlBytes=].
+1. A single 0x20 (SP) byte, representing the length of the next field.
+1. |signature|'s [=exchange signature/certSha256=].
+1. The 8-byte big-endian encoding of the length in bytes of |signature|'s
+    [=exchange signature/validityUrlBytes=].
+1. |signature|'s [=exchange signature/validityUrlBytes=].
+1. The 8-byte big-endian encoding of |signature|'s [=exchange signature/date=].
+1. The 8-byte big-endian encoding of |signature|'s [=exchange
+    signature/expiration time=].
+1. The 8-byte big-endian encoding of the length in bytes of |requestUrlBytes|.
+1. |requestUrlBytes|.
+1. The 8-byte big-endian encoding of the length in bytes of |headerBytes|.
+1. |headerBytes|.
 
 <h3 algorithm id="validating-signature">Validating a signature</h3>
 
 An [=exchange signature=] |signature| <dfn for="exchange signature" lt="is
-valid|is not valid">is valid</dfn> for a [=byte sequence=] |headerBytes| if the
-following steps return `valid`:
+valid|is not valid">is valid</dfn> for [=byte sequences=] |requestUrlBytes| and
+|headerBytes| if the following steps return `valid`:
 
 1. Let |clockSkew| be the uncertainty in the UA's estimate of the current time
     caused by clock skew on the client. The UA MAY set this to 0 or use a more
@@ -660,7 +685,8 @@ following steps return `valid`:
     [=exchange signature/expiration time=] so that attackers trying to get an
     exchange trusted for longer, are constrained to modify the client's clock
     and can't also attack its estimate of its skew.
-1. Let |message| be the [=b1 signed message=] for |signature| and |headerBytes|.
+1. Let |message| be the [=b2 signed message=] for |signature|,
+    |requestUrlBytes|, and |headerBytes|.
 1. Let |publicKey| be the [=certificate/public key=] of |parsedSignature|'s
     [=exchange signature/certificate chain=]'s [=certificate chain/leaf=]. If
     the certificate can't be parsed enough to find this public key, return
@@ -726,8 +752,8 @@ leaf|does not have a trusted leaf">has a trusted leaf</dfn> for an [=origin=]
 
 <h3 algorithm id="parse-cbor-headers">Parsing CBOR headers</h3>
 
-<dfn>Parsing CBOR headers</dfn> takes a [=byte sequence=] |headerBytes| and
-returns a failure or an [=exchange=] via the following steps:
+<dfn>Parsing CBOR headers</dfn> from a [=byte sequence=] |headerBytes| and
+a URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
 
 1. Let |headers| be the result of [=parsing a CBOR item=] from |headerBytes|,
     matching the following CDDL rule:
@@ -735,7 +761,6 @@ returns a failure or an [=exchange=] via the following steps:
     headers = [
       {
         ':method': bstr,
-        ':url': bstr,
         * bstr => bstr,
       },
       {
@@ -747,16 +772,12 @@ returns a failure or an [=exchange=] via the following steps:
 1. If any of the following is true, return a failure:
 
     * |headers| is an error.
-    * |headers|[0] contains any keys starting with `` `:` `` that aren't `` `:method` `` or `` `:url` ``.
+    * |headers|[0] contains any key starting with `` `:` `` that isn't `` `:method` ``.
     * |headers|[0] contains a `` `host` `` key.
     * |headers|[0][`` `:method` ``] is not `` `GET` ``.
-    * |headers|[1] contains any keys starting with `` `:` `` that aren't `` `:status` ``.
+    * |headers|[1] contains any key starting with `` `:` `` that isn't `` `:status` ``.
     * |headers|[1][`` `:status` ``] is not `` 200 ``.
 
-1. Let |requestUrl| be the result of the [=URL parser=] on |headers|[0][``
-    `:url` ``].
-1. If |requestUrl| is a failure, if it has a non-null [=url/fragment=], or if
-    its [=url/scheme=] is something other than `"https"`, return a failure.
 1. Let |requestHeaders| be the result of [=creating a header list from the CBOR
     map=] |headers|[0].
 1. If |requestHeaders| is a failure, return it.
@@ -795,22 +816,27 @@ To <dfn lt="reading a body|read a body">read a body</dfn> from a [=read buffer=]
 
     <dl class="switch">
 
-    : "mi-draft2"
+    : "digest/mi-sha256-03"
     ::
         1. If the length of |signature|'s [=exchange signature/integrity header=]
             isn't 1, return a failure.
-        1. If |response|'s [=response/header list=] [=header list/does not
-            contain=] `` `mi-draft2` ``, return a failure.
-        1. Let |mi| be the [=header/combined value=] of `` `mi-draft2` `` in
-            |response|'s [=response/header list=].
-        1. If |mi| doesn't have an [=mi-sha256 parameter=], return a failure.
-        1. If [=extracting header list values=] for `` `content-encoding` `` in
-            |response|'s [=response/header list=] doesn't include
-            `` `mi-sha256` ``, return a failure.
-        1. Assert: [=Handle content codings=] used the value of the
-            [=mi-sha256 parameter=] as the [=integrity proof for the first
-            record=] when decoding the `mi-sha256` content encoding to produce
-            the bytes in |stream|.
+        1. Let |instance-digests| be the result of [=header list/getting,
+            decoding, and splitting=] `` `digest` `` from |response|'s
+            [=response/header list=].
+
+            Note: No [=Digest algorithm=] uses non-ASCII characters or 0x22
+            (`"`), so this is equivalent to parsing from the [=Digest=] ABNF
+            `<encoded digest output>`.
+
+        1. Let |mi| be the element of |instance-digests| that starts with
+            `"mi-sha256-03="`. If there is no such element, return a failure.
+        1. Let |codings| be the result of [=header list/getting, decoding, and
+            splitting=] `` `content-encoding` `` in |response|'s
+            [=response/header list=].
+        1. If |codings| doesn't include `"mi-sha256-03"`, return a failure.
+        1. Assert: [=Handle content codings=] used the value of |mi| as the
+            [=integrity proof for the first record=] when decoding the
+            `mi-sha256-03` content encoding to produce the bytes in |stream|.
 
     : Anything else
     :: Return a failure.
@@ -968,72 +994,6 @@ To <dfn for="read buffer">Dump</dfn> a [=read buffer=] |input| to a
         :: [=ReadableStream/Error=] |output| with reason |e|.
 
         </dl>
-
-## CBOR encoding ## {#cbor-encoding}
-
-A few algorithms above need to encode rather than parse CBOR. To avoid any
-ambiguity in the resulting bytes, encoding algorithms for a subset of CBOR are
-defined here.
-
-<h4 algorithm id="item-header">Encoding an item header</h4>
-
-The <dfn>CBOR item header</dfn> with major type |type| (an integer between 0 and
-7 inclusive) and argument |arg| (an unsigned 64-bit integer) is the [=byte
-sequence=] return by the following steps:
-
-1. Assert: 0 &lt;= |type| &lt;= 7 and 0 &lt;= |arg| &lt; 2<sup>64</sup>.
-1. Let |additionalData| be an integer.
-1. Let |argBytes| be an empty [=byte sequence=].
-1. If:
-
-    <dl class="switch">
-    : 0 &lt;= |arg| &lt; 0x18
-    :: Set |additionalData| to |arg|.
-
-    : 0x18 &lt;= |arg| &lt; 2<sup>8</sup>
-    ::
-        1. Set |additionalData| to 0x18.
-        1. Set |argBytes| to the 1-element [=byte sequence=] holding |arg|.
-
-    : 2<sup>8</sup> &lt;= |arg| &lt; 2<sup>16</sup>
-    ::
-        1. Set |additionalData| to 0x19.
-        1. Set |argBytes| to the 2-element [=byte sequence=] holding the
-            big-endian encoding of |arg|.
-
-    : 2<sup>16</sup> &lt;= |arg| &lt; 2<sup>32</sup>
-    ::
-        1. Set |additionalData| to 0x1A.
-        1. Set |argBytes| to the 4-element [=byte sequence=] holding the
-            big-endian encoding of |arg|.
-
-    : 2<sup>32</sup> &lt;= |arg| &lt; 2<sup>64</sup>
-    ::
-        1. Set |additionalData| to 0x1B.
-        1. Set |argBytes| to the 8-element [=byte sequence=] holding the
-            big-endian encoding of |arg|.
-
-    </dl>
-1. Let |initialByte| be <code>|type| &lt;&lt; 5 + |additionalData|</code>.
-1. Return the [=byte sequence=] consisting of |initialByte| followed by
-    |argBytes|.
-
-<h4 algorithm id="cbor-int">CBOR integer items</h4>
-
-The <dfn>CBOR integer encoding</dfn> of an integer |int| is:
-
-1. Assert: 0 &lt;= |int| &lt; 2<sup>64</sup>.
-1. Return the [=CBOR item header=] with major type 0 and argument |int|.
-
-<h4 algorithm id="cbor-bytestring">CBOR byte string items</h4>
-
-The <dfn>CBOR byte string encoding</dfn> of a [=byte sequence=] |bytes| is:
-
-1. Let |len| be the [=byte sequence/length=] of |bytes|.
-1. Assert: |len| &lt; 2<sup>64</sup>.
-1. Return the concatenation of:
-    1. The [=CBOR item header=] with major type 2 and argument |len|.
-    1. |bytes|.
 
 # Security Considerations # {#seccons}
 
