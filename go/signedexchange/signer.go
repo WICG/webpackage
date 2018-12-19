@@ -26,6 +26,8 @@ func contextString(v version.Version) string {
 		return "HTTP Exchange 1 b1"
 	case version.Version1b2:
 		return "HTTP Exchange 1 b2"
+	case version.Version1b3:
+		return "HTTP Exchange 1 b3"
 	default:
 		panic("not reached")
 	}
@@ -117,7 +119,7 @@ func serializeSignedMessage(e *Exchange, certSha256 []byte, validityUrl string, 
 		}
 		return buf.Bytes(), nil
 
-	case version.Version1b2:
+	case version.Version1b2, version.Version1b3:
 		// draft-yasskin-http-origin-signed-responses.html#signature-validity
 
 		// "Let message be the concatenation of the following byte strings. This matches the [I-D.ietf-tls-tls13] format to avoid cross-protocol attacks if anyone uses the same key in a TLS certificate and an exchange-signing certificate." [spec text]
@@ -213,7 +215,7 @@ func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
 	switch e.Version {
 	case version.Version1b1:
 		integrityStr = "mi-draft2"
-	case version.Version1b2:
+	case version.Version1b2, version.Version1b3:
 		integrityStr = "digest/mi-sha256-03"
 	default:
 		panic("not reached")

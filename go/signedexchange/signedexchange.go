@@ -17,19 +17,6 @@ import (
 	"github.com/WICG/webpackage/go/signedexchange/version"
 )
 
-const HeaderMagicBytesLen = 8
-
-func HeaderMagicBytes(v version.Version) []byte {
-	switch v {
-	case version.Version1b1:
-		return []byte("sxg1-b1\x00")
-	case version.Version1b2:
-		return []byte("sxg1-b2\x00")
-	default:
-		panic("not reached")
-	}
-}
-
 type Exchange struct {
 	Version version.Version
 
@@ -99,7 +86,7 @@ func (e *Exchange) MiEncodePayload(recordSize int) error {
 	switch e.Version {
 	case version.Version1b1:
 		enc = mice.Draft02Encoding
-	case version.Version1b2:
+	case version.Version1b2, version.Version1b3:
 		enc = mice.Draft03Encoding
 	default:
 		panic("not reached")
@@ -295,7 +282,7 @@ func (e *Exchange) Write(w io.Writer) error {
 
 		// Step 1. "The ASCII characters "sxg1" followed by a 0 byte, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don't." [spec text]
 		// "Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific string beginning with "sxg1-" and ending with a 0 byte instead." [spec text]
-		if _, err := w.Write(HeaderMagicBytes(e.Version)); err != nil {
+		if _, err := w.Write(e.Version.HeaderMagicBytes()); err != nil {
 			return err
 		}
 
@@ -332,12 +319,12 @@ func (e *Exchange) Write(w io.Writer) error {
 			return err
 		}
 
-	case version.Version1b2:
+	case version.Version1b2, version.Version1b3:
 		// draft-yasskin-http-origin-signed-responses.html#rfc.section.5.3
 
 		// "1. 8 bytes consisting of the ASCII characters “sxg1” followed by 4 0x00 bytes, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don’t.
 		// Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific 8-byte string beginning with “sxg1-“." [spec text]
-		if _, err := w.Write(HeaderMagicBytes(e.Version)); err != nil {
+		if _, err := w.Write(e.Version.HeaderMagicBytes()); err != nil {
 			return err
 		}
 
@@ -412,17 +399,13 @@ func (e *Exchange) Write(w io.Writer) error {
 func ReadExchange(r io.Reader) (*Exchange, error) {
 	// Step 1. "8 bytes consisting of the ASCII characters “sxg1” followed by 4 0x00 bytes, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don’t." [spec text]
 	// "Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific 8-byte string beginning with “sxg1-“." [spec text]
-	magic := make([]byte, HeaderMagicBytesLen)
+	magic := make([]byte, version.HeaderMagicBytesLen)
 	if _, err := io.ReadFull(r, magic); err != nil {
 		return nil, err
 	}
-	var ver version.Version
-	if bytes.Equal(magic, HeaderMagicBytes(version.Version1b1)) {
-		ver = version.Version1b1
-	} else if bytes.Equal(magic, HeaderMagicBytes(version.Version1b2)) {
-		ver = version.Version1b2
-	} else {
-		return nil, fmt.Errorf("singedexchange: wrong magic bytes: %v", magic)
+	ver, err := version.FromMagicBytes(magic)
+	if err != nil {
+		return nil, err
 	}
 
 	e := &Exchange{
@@ -484,7 +467,6 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 
 	// Step 8. "The payload body (Section 3.3 of [RFC7230]) of the exchange represented by the application/signed-exchange resource." [spec text]
 	// "Note that the use of the payload body here means that a Transfer-Encoding header field inside the application/signed-exchange header block has no effect. A Transfer-Encoding header field on the outer HTTP response that transfers this resource still has its normal effect." [spec text]
-	var err error
 	e.Payload, err = ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
