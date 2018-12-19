@@ -1320,6 +1320,48 @@ Even once all clients reject these certificates in TLS connections, this will
 still just discourage and not prevent key re-use, since a server operator can
 unwisely request two different certificates with the same private key.
 
+## Content sniffing ## {#seccons-content-sniffing}
+
+While modern browsers tend to trust the `Content-Type` header sent with a
+resource, especially when accompanied by `X-Content-Type-Options: nosniff`,
+plugins will sometimes search for executable content buried inside a resource
+and execute it in the context of the origin that served the resource, leading to
+XSS vulnerabilities. For example, some PDF reader plugins look for `%PDF`
+anywhere in the first 1kB and execute the code that follows it.
+
+The `application/signed-exchange` format ({{application-signed-exchange}})
+includes a URL and request and response headers early in the format, which an
+attacker could use to cause these plugins to sniff a bad content type.
+
+To avoid vulnerabilities, servers are advised to only serve an
+`application/signed-exchange` resource (SXG) from a domain if it would also be
+safe for that domain to serve the SXG's content directly, and to follow at least
+one of the following strategies:
+
+1. Only serve signed exchanges from dedicated domains that don't have access to
+   sensitive cookies or user storage.
+1. Generate signed exchanges "offline", that is, in response to a trusted author
+   submitting content or existing signatures reaching a certain age, rather than
+   in response to untrusted-reader queries.
+1. Do all of:
+   1. If the SXG's fallback URL ({{application-signed-exchange}}) is derived
+      from the request URL,
+      [percent-encode](https://url.spec.whatwg.org/#percent-encode) ({{URL}})
+      any bytes that are greater than 0x7E or are not [URL code
+      points](https://url.spec.whatwg.org/#url-code-points) ({{URL}}) in the
+      fallback URL . It is particularly important to make sure no unescaped
+      nulls (0x00) or angle brackets (0x3C and 0x3E) appear.
+   1. Only include request header field names **and values** that appear in a
+      static allowlist. Keep the set of allowed request header fields smaller
+      than 24 elements to prevent attackers from controlling a whole CBOR length
+      byte.
+   1. Do not reflect request header fields into the set of response headers.
+
+There are still a few binary length fields that an attacker may influence to
+contain sensitive bytes, but they're always followed by lowercase alphabetic
+strings from a small set of possibilities, which reduces the chance that a
+client will sniff them as indicating a particular content type.
+
 # Privacy considerations
 
 Normally, when a client fetches `https://o1.com/resource.js`,
