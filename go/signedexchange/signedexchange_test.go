@@ -3,20 +3,17 @@ package signedexchange_test
 import (
 	"bytes"
 	"encoding/pem"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
+	"reflect"
 	"testing"
 	"time"
 
 	. "github.com/WICG/webpackage/go/signedexchange"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
-	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
-	"github.com/WICG/webpackage/go/signedexchange/internal/testhelper"
 	"github.com/WICG/webpackage/go/signedexchange/version"
 )
 
@@ -40,7 +37,6 @@ MHcCAQEEIEMac81NMjwO4pQ2IGKZ3UdymYtnFAXEjKdvAdEx4DQwoAoGCCqGSM49
 AwEHoUQDQgAEfUTqh1dGbf6vt0xiaQlGZ+3HkhgcCyqADvOOwV8K8+ov98zhS+Lw
 QW4lVAz+goRnDd+gJnUoGOj/pN6eSiP/AA==
 -----END EC PRIVATE KEY-----`
-	expectedSignatureHeader = "label; sig=*MEYCIQCbay5VbkR9mi4pnwDAJamuf7Fj1CWnEnJt6Uxm7YeqiwIhAL8JISyzF5sDhtUaEbNCE6vgv2NIKCkONzLgwL23UL6P*; validity-url=\"https://example.com/resource.validity\"; integrity=\"mi-draft2\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400"
 )
 
 // signatureDate corresponds to the expectedSignatureHeader's date value.
@@ -64,25 +60,6 @@ func mustReadFile(path string) []byte {
 }
 
 func TestSignedExchange(t *testing.T) {
-	u, _ := url.Parse("https://example.com/")
-	reqHeader := http.Header{}
-	reqHeader.Add("Accept", "*/*")
-	respHeader := http.Header{}
-	respHeader.Add("Content-Type", "text/html; charset=utf-8")
-
-	// Multiple values for the same header
-	respHeader.Add("Foo", "Bar")
-	respHeader.Add("Foo", "Baz")
-
-	const ver = version.Version1b1
-	e, err := NewExchange(ver, u, http.MethodGet, reqHeader, 200, respHeader, []byte(payload))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := e.MiEncodePayload(16); err != nil {
-		t.Fatal(err)
-	}
-
 	certs, err := ParseCertificates([]byte(pemCerts))
 	if err != nil {
 		t.Fatal(err)
@@ -93,78 +70,109 @@ func TestSignedExchange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	requestUrl, _ := url.Parse("https://example.com/")
 	certUrl, _ := url.Parse("https://example.com/cert.msg")
 	validityUrl, _ := url.Parse("https://example.com/resource.validity")
-	s := &Signer{
-		Date:        signatureDate,
-		Expires:     signatureDate.Add(1 * time.Hour),
-		Certs:       certs,
-		CertUrl:     certUrl,
-		ValidityUrl: validityUrl,
-		PrivKey:     privKey,
-		Rand:        zeroReader{},
+
+	expectedRespHeader := map[version.Version]http.Header{
+		version.Version1b1: http.Header{
+			"Content-Type":     []string{"text/html; charset=utf-8"},
+			"Foo":              []string{"Bar,Baz"},
+			"Content-Encoding": []string{"mi-sha256-draft2"},
+			"Mi-Draft2":        []string{"mi-sha256-draft2=DRyBGPb7CAW2ukzb9sT1S1ialssthiv6QW7Ks-Trg4Y"},
+		},
+		version.Version1b2: http.Header{
+			"Content-Type":     []string{"text/html; charset=utf-8"},
+			"Foo":              []string{"Bar,Baz"},
+			"Content-Encoding": []string{"mi-sha256-03"},
+			"Digest":           []string{"mi-sha256-03=DRyBGPb7CAW2ukzb9sT1S1ialssthiv6QW7Ks+Trg4Y="},
+		},
+		version.Version1b3: http.Header{
+			"Content-Type":     []string{"text/html; charset=utf-8"},
+			"Foo":              []string{"Bar,Baz"},
+			"Content-Encoding": []string{"mi-sha256-03"},
+			"Digest":           []string{"mi-sha256-03=DRyBGPb7CAW2ukzb9sT1S1ialssthiv6QW7Ks+Trg4Y="},
+		},
 	}
-	if err := e.AddSignatureHeader(s); err != nil {
-		t.Fatal(err)
+	expectedSignatureHeader := map[version.Version]string{
+		version.Version1b1: "label; sig=*MEYCIQCbay5VbkR9mi4pnwDAJamuf7Fj1CWnEnJt6Uxm7YeqiwIhAL8JISyzF5sDhtUaEbNCE6vgv2NIKCkONzLgwL23UL6P*; validity-url=\"https://example.com/resource.validity\"; integrity=\"mi-draft2\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400",
+		version.Version1b2: "label; sig=*MEUCIHNiDRQncQpVxW2x+woinMUTY8nuSQfi0mbJ5J6x7FZyAiEAgh6FH6PdncNCK8GHTwN3wfUUUFdjVswNi1PfIgCOwHk=*; validity-url=\"https://example.com/resource.validity\"; integrity=\"digest/mi-sha256-03\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400",
+		version.Version1b3: "label; sig=*MEUCIQC1Tfv5a+tC6aiW8XudbYqsnnOo08c0rhLJENfC41Tz1AIgK1tJAuOgi74JOe7phub3LTxskRtco5SYVG41A/1M/z0=*; validity-url=\"https://example.com/resource.validity\"; integrity=\"digest/mi-sha256-03\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400",
 	}
 
-	var buf bytes.Buffer
-	if err := e.Write(&buf); err != nil {
-		t.Fatal(err)
-	}
+	for _, ver := range version.AllVersions {
+		reqHeader := http.Header{}
+		reqHeader.Add("Accept", "*/*")
+		respHeader := http.Header{}
+		respHeader.Add("Content-Type", "text/html; charset=utf-8")
 
-	magic, err := buf.ReadBytes(0x00)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(magic, HeaderMagicBytes(ver)) {
-		t.Errorf("unexpected magic: %q", magic)
-	}
+		// Multiple values for the same header
+		respHeader.Add("Foo", "Bar")
+		respHeader.Add("Foo", "Baz")
 
-	encodedSigLength := [3]byte{}
-	if _, err := io.ReadFull(&buf, encodedSigLength[:]); err != nil {
-		t.Fatal(err)
-	}
-	sigLength := bigendian.Decode3BytesUint(encodedSigLength)
+		e, err := NewExchange(ver, requestUrl, http.MethodGet, reqHeader, 200, respHeader, []byte(payload))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := e.MiEncodePayload(16); err != nil {
+			t.Fatal(err)
+		}
 
-	if sigLength != len(expectedSignatureHeader) {
-		t.Errorf("Unexpected sigLength: %d", sigLength)
-	}
+		s := &Signer{
+			Date:        signatureDate,
+			Expires:     signatureDate.Add(1 * time.Hour),
+			Certs:       certs,
+			CertUrl:     certUrl,
+			ValidityUrl: validityUrl,
+			PrivKey:     privKey,
+			Rand:        zeroReader{},
+		}
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
 
-	encodedHeaderLength := [3]byte{}
-	if _, err := io.ReadFull(&buf, encodedHeaderLength[:]); err != nil {
-		t.Fatal(err)
-	}
-	headerLength := bigendian.Decode3BytesUint(encodedHeaderLength)
+		var buf bytes.Buffer
+		if err := e.Write(&buf); err != nil {
+			t.Fatal(err)
+		}
 
-	signatureHeaderBytes := make([]byte, sigLength)
-	if _, err := io.ReadFull(&buf, signatureHeaderBytes); err != nil {
-		t.Fatal(err)
-	}
+		got, err := ReadExchange(&buf)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	if !bytes.Equal(signatureHeaderBytes, []byte(expectedSignatureHeader)) {
-		t.Errorf("Unexpected signature header: %q", signatureHeaderBytes)
-	}
+		if got.Version != ver {
+			t.Errorf("Unexpected version: got %v, want %v", got.Version, ver)
+		}
 
-	encodedHeader := make([]byte, headerLength)
-	if _, err := io.ReadFull(&buf, encodedHeader); err != nil {
-		t.Fatal(err)
-	}
+		if got.RequestURI != requestUrl.String() {
+			t.Errorf("Unexpected request URL: %q", got.RequestURI)
+		}
 
-	got, err := testhelper.CborBinaryToReadableString(encodedHeader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := strings.TrimSpace(string(mustReadFile("test-signedexchange-expected.txt")))
+		if got.RequestMethod != http.MethodGet {
+			t.Errorf("Unexpected request method: %q", got.RequestMethod)
+		}
 
-	if got != want {
-		t.Errorf("WriteExchangeFile:\ngot: %v\nwant: %v", got, want)
-	}
+		if !reflect.DeepEqual(got.RequestHeaders, reqHeader) {
+			t.Errorf("Unexpected request headers: %v", got.RequestHeaders)
+		}
 
-	gotPayload := buf.Bytes()
-	wantPayload := mustReadFile("test-signedexchange-expected-payload-mi.bin")
-	if !bytes.Equal(gotPayload, wantPayload) {
-		t.Errorf("payload mismatch")
+		if got.ResponseStatus != 200 {
+			t.Errorf("Unexpected response status: %v", got.ResponseStatus)
+		}
+
+		if !reflect.DeepEqual(got.ResponseHeaders, expectedRespHeader[ver]) {
+			t.Errorf("Unexpected response headers: %v", got.ResponseHeaders)
+		}
+
+		if got.SignatureHeaderValue != expectedSignatureHeader[ver] {
+			t.Errorf("Unexpected signature header: %q", got.SignatureHeaderValue)
+		}
+
+		wantPayload := mustReadFile("test-signedexchange-expected-payload-mi.bin")
+		if !bytes.Equal(got.Payload, wantPayload) {
+			t.Errorf("payload mismatch")
+		}
 	}
 }
 
