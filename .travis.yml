@@ -30,8 +30,7 @@ script:
  - make
  - make issues || make issues DISABLE_ISSUE_FETCH=true && make gh-issues
  - ls -l
- - make --debug=v gh-pages
- - ls -l /tmp/ghpages*
+ - make --debug=v gh-pages ; ls -l /tmp/ghpages*
 
 deploy:
   provider: script
