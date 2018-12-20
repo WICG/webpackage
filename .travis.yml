@@ -29,7 +29,7 @@ script:
  - bikeshed spec loading.bs
  - make
  - make issues || make issues DISABLE_ISSUE_FETCH=true && make gh-issues
- - make gh-pages
+ - make --debug=jb gh-pages
 
 deploy:
   provider: script
