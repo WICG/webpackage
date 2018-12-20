@@ -514,6 +514,14 @@ to retrieve an updated OCSP from the original server.
    response without updating signatures at the same time.
 1. If `signature` is not a valid signature of `message` by `publicKey` using
    `signing-alg`, return "invalid".
+1. If `headers`, interpreted according to {{cbor-representation}}, does not
+   contain a `Content-Type` response header field (Section 3.1.1.5 of
+   {{!RFC7231}}), return "invalid".
+
+   Clients MUST interpret the signed payload as this specified media type
+   instead of trying to sniff a media type from the bytes of the payload, for
+   example by attaching an `X-Content-Type-Options: nosniff` header field
+   ({{FETCH}}) to the extracted response.
 1. If `integrity` names a header field and parameter that is not present in
    `responseHeaders` or which the client cannot use to check the
    integrity of `payload` (for example, the header field is new and hasn't been

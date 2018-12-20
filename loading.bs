@@ -832,6 +832,10 @@ a URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
 1. Let |responseHeaders| be the result of [=creating a header list from the CBOR
     map=] |headers|[1].
 1. If |responseHeaders| is a failure, return it.
+1. If |responseHeaders| [=header list/does not contain=] `` `Content-Type` ``,
+    return a failure.
+1. [=header list/Set=] `` `X-Content-Type-Options` ``/`` `nosniff` `` in
+    |responseHeaders|.
 1. Let |response| be a new [=response=] with [=response/status=] |headers|[1][``
     `:status` ``] and [=response/header list=] |responseHeaders|.
 1. Return an [=exchange=] of |requestUrl| and |response|.

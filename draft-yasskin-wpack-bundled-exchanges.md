@@ -506,6 +506,13 @@ as returned by {{semantics-load-metadata}}.
 1. If `pseudos[':status']` isn't exactly 3 ASCII decimal digits, return an
    error.
 
+1. If `headers` does not contain a `Content-Type` header, return an error.
+
+   The client MUST interpret the following payload as this specified media type
+   instead of trying to sniff a media type from the bytes of the payload, for
+   example by appending an artificial `X-Content-Type-Options: nosniff` header
+   field ({{FETCH}}) to `headers`.
+
 1. Let `payloadLength` be the result of getting the length of a CBOR bytestring
    header from `stream` ({{parse-bytestring}}). If `payloadLength` is an error,
    return that error.
