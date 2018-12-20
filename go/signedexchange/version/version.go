@@ -15,6 +15,12 @@ const (
 
 const HeaderMagicBytesLen = 8
 
+var AllVersions = []Version {
+	Version1b1,
+	Version1b2,
+	Version1b3,
+}
+
 func Parse(str string) (Version, bool) {
 	switch Version(str) {
 	case Version1b1:
