@@ -238,7 +238,7 @@ func verifyPayload(e *Exchange, signature *Signature) ([]byte, error) {
 	case version.Version1b1:
 		enc = mice.Draft02Encoding
 		integrityStr = "mi-draft2"
-	case version.Version1b2:
+	case version.Version1b2, version.Version1b3:
 		enc = mice.Draft03Encoding
 		integrityStr = "digest/" + enc.ContentEncoding()
 	default:
