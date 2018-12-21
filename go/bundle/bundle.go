@@ -88,7 +88,7 @@ func (e *Exchange) Dump(w io.Writer, dumpContentText bool) error {
 			return err
 		}
 	}
-	if _, err := fmt.Fprintf(w, "< :status: %s\n", e.Response.Status); err != nil {
+	if _, err := fmt.Fprintf(w, "< :status: %v\n", e.Response.Status); err != nil {
 		return err
 	}
 	for k, v := range e.Response.Header {

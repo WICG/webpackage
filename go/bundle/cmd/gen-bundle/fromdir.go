@@ -87,7 +87,7 @@ func createExchangesFromDir(baseDir string, baseURL *url.URL) ([]*bundle.Exchang
 func convertPathToURL(path string, baseDir string, baseURL *url.URL) (string, error) {
 	relPath, err := filepath.Rel(baseDir, path)
 	if err != nil {
-		return "", fmt.Errorf("Cannot make relative path for %s", path, err)
+		return "", fmt.Errorf("Cannot make relative path for %q: %v", path, err)
 	}
 	url, err := baseURL.Parse(filepath.ToSlash(relPath))
 	if err != nil {
