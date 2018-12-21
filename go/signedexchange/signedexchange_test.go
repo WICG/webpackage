@@ -59,6 +59,12 @@ func mustReadFile(path string) []byte {
 	return b
 }
 
+func testForEachVersion(t *testing.T, testFunc func(ver version.Version, t *testing.T)) {
+	for _, ver := range version.AllVersions {
+		t.Run(string(ver), func(t *testing.T) { testFunc(ver, t) })
+	}
+}
+
 func TestSignedExchange(t *testing.T) {
 	certs, err := ParseCertificates([]byte(pemCerts))
 	if err != nil {
@@ -100,7 +106,7 @@ func TestSignedExchange(t *testing.T) {
 		version.Version1b3: "label; sig=*MEUCIQC1Tfv5a+tC6aiW8XudbYqsnnOo08c0rhLJENfC41Tz1AIgK1tJAuOgi74JOe7phub3LTxskRtco5SYVG41A/1M/z0=*; validity-url=\"https://example.com/resource.validity\"; integrity=\"digest/mi-sha256-03\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400",
 	}
 
-	for _, ver := range version.AllVersions {
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
 		reqHeader := http.Header{}
 		reqHeader.Add("Accept", "*/*")
 		respHeader := http.Header{}
@@ -173,76 +179,78 @@ func TestSignedExchange(t *testing.T) {
 		if !bytes.Equal(got.Payload, wantPayload) {
 			t.Errorf("payload mismatch")
 		}
-	}
+	})
 }
 
 func TestSignedExchangeStatefulHeader(t *testing.T) {
-	u, _ := url.Parse("https://example.com/")
-	header := http.Header{}
-	header.Add("Content-Type", "text/html; charset=utf-8")
-	// Set-Cookie is a stateful header and not available.
-	header.Add("Set-Cookie", "wow, such cookie")
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		u, _ := url.Parse("https://example.com/")
+		header := http.Header{}
+		header.Add("Content-Type", "text/html; charset=utf-8")
+		// Set-Cookie is a stateful header and not available.
+		header.Add("Set-Cookie", "wow, such cookie")
 
-	const ver = version.Version1b1
-	if _, err := NewExchange(ver, u, http.MethodGet, nil, 200, header, []byte(payload)); err == nil {
-		t.Errorf("stateful header unexpectedly allowed in an exchange")
-	}
+		if _, err := NewExchange(ver, u, http.MethodGet, nil, 200, header, []byte(payload)); err == nil {
+			t.Errorf("stateful header unexpectedly allowed in an exchange")
+		}
 
-	// Header names are case-insensitive.
-	u, _ = url.Parse("https://example.com/")
-	header = http.Header{}
-	header.Add("cOnTent-TyPe", "text/html; charset=utf-8")
-	header.Add("setProfile", "profile X")
+		// Header names are case-insensitive.
+		u, _ = url.Parse("https://example.com/")
+		header = http.Header{}
+		header.Add("cOnTent-TyPe", "text/html; charset=utf-8")
+		header.Add("setProfile", "profile X")
 
-	if _, err := NewExchange(ver, u, http.MethodGet, nil, 200, header, []byte(payload)); err == nil {
-		t.Errorf("stateful header unexpectedly allowed in an exchange")
-	}
+		if _, err := NewExchange(ver, u, http.MethodGet, nil, 200, header, []byte(payload)); err == nil {
+			t.Errorf("stateful header unexpectedly allowed in an exchange")
+		}
+	})
 }
 
 func TestSignedExchangeNonHttps(t *testing.T) {
-	u, _ := url.Parse("http://example.com/")
-	const ver = version.Version1b1
-	if _, err := NewExchange(ver, u, http.MethodGet, nil, 200, http.Header{}, []byte(payload)); err == nil {
-		t.Errorf("non-https resource URI unexpectedly allowed in an exchange")
-	}
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		u, _ := url.Parse("http://example.com/")
+		if _, err := NewExchange(ver, u, http.MethodGet, nil, 200, http.Header{}, []byte(payload)); err == nil {
+			t.Errorf("non-https resource URI unexpectedly allowed in an exchange")
+		}
+	})
 }
 
 func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
-	u, _ := url.Parse("https://example.com/")
-	const ver = version.Version1b1
-	e, err := NewExchange(ver, u, http.MethodGet, nil, 200, http.Header{}, []byte(payload))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := e.MiEncodePayload(16); err != nil {
-		t.Fatal(err)
-	}
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		u, _ := url.Parse("https://example.com/")
+		e, err := NewExchange(ver, u, http.MethodGet, nil, 200, http.Header{}, []byte(payload))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := e.MiEncodePayload(16); err != nil {
+			t.Fatal(err)
+		}
 
-	certs, _ := ParseCertificates([]byte(pemCerts))
-	certUrl, _ := url.Parse("http://example.com/cert.msg")
-	validityUrl, _ := url.Parse("https://example.com/resource.validity")
-	derPrivateKey, _ := pem.Decode([]byte(pemPrivateKey))
-	privKey, _ := ParsePrivateKey(derPrivateKey.Bytes)
-	s := &Signer{
-		Date:        signatureDate,
-		Expires:     signatureDate.Add(1 * time.Hour),
-		Certs:       certs,
-		CertUrl:     certUrl,
-		ValidityUrl: validityUrl,
-		PrivKey:     privKey,
-		Rand:        zeroReader{},
-	}
-	if err := e.AddSignatureHeader(s); err == nil {
-		t.Errorf("non-{https,data} cert-url unexpectedly allowed in an exchange")
-	}
+		certs, _ := ParseCertificates([]byte(pemCerts))
+		certUrl, _ := url.Parse("http://example.com/cert.msg")
+		validityUrl, _ := url.Parse("https://example.com/resource.validity")
+		derPrivateKey, _ := pem.Decode([]byte(pemPrivateKey))
+		privKey, _ := ParsePrivateKey(derPrivateKey.Bytes)
+		s := &Signer{
+			Date:        signatureDate,
+			Expires:     signatureDate.Add(1 * time.Hour),
+			Certs:       certs,
+			CertUrl:     certUrl,
+			ValidityUrl: validityUrl,
+			PrivKey:     privKey,
+			Rand:        zeroReader{},
+		}
+		if err := e.AddSignatureHeader(s); err == nil {
+			t.Errorf("non-{https,data} cert-url unexpectedly allowed in an exchange")
+		}
+	})
 }
 
-func createTestExchange(t *testing.T) (e *Exchange, s *Signer, certBytes []byte) {
+func createTestExchange(ver version.Version, t *testing.T) (e *Exchange, s *Signer, certBytes []byte) {
 	u, _ := url.Parse("https://example.com/")
 	header := http.Header{}
 	header.Add("Content-Type", "text/html; charset=utf-8")
 
-	const ver = version.Version1b2
 	e, err := NewExchange(ver, u, http.MethodGet, nil, 200, header, []byte(payload))
 	if err != nil {
 		t.Fatal(err)
@@ -287,129 +295,147 @@ func createTestExchange(t *testing.T) (e *Exchange, s *Signer, certBytes []byte)
 }
 
 func TestVerify(t *testing.T) {
-	e, s, c := createTestExchange(t)
-	if err := e.AddSignatureHeader(s); err != nil {
-		t.Fatal(err)
-	}
-	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
-	verificationTime := signatureDate
-	if !e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "ERROR: ", 0)) {
-		t.Errorf("Verification failed")
-	}
+		verificationTime := signatureDate
+		if !e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "ERROR: ", 0)) {
+			t.Errorf("Verification failed")
+		}
+	})
 }
 
 func TestVerifyNotYetValidExchange(t *testing.T) {
-	e, s, c := createTestExchange(t)
-	if err := e.AddSignatureHeader(s); err != nil {
-		t.Fatal(err)
-	}
-	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
-	verificationTime := signatureDate.Add(-1 * time.Second)
-	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
-		t.Errorf("Verification should fail")
-	}
+		verificationTime := signatureDate.Add(-1 * time.Second)
+		if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+			t.Errorf("Verification should fail")
+		}
+	})
 }
 
 func TestVerifyExpiredExchange(t *testing.T) {
-	e, s, c := createTestExchange(t)
-	if err := e.AddSignatureHeader(s); err != nil {
-		t.Fatal(err)
-	}
-	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
-	verificationTime := signatureDate.Add(1 * time.Hour).Add(1 * time.Second)
-	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
-		t.Errorf("Verification should fail")
-	}
+		verificationTime := signatureDate.Add(1 * time.Hour).Add(1 * time.Second)
+		if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+			t.Errorf("Verification should fail")
+		}
+	})
 }
 
 func TestVerifyBadValidityUrl(t *testing.T) {
-	e, s, c := createTestExchange(t)
-	s.ValidityUrl, _ = url.Parse("https://subdomain.example.com/resource.validity")
-	if err := e.AddSignatureHeader(s); err != nil {
-		t.Fatal(err)
-	}
-	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		s.ValidityUrl, _ = url.Parse("https://subdomain.example.com/resource.validity")
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
-	verificationTime := signatureDate
-	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
-		t.Errorf("Verification should fail")
-	}
+		verificationTime := signatureDate
+		if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+			t.Errorf("Verification should fail")
+		}
+	})
 }
 
 func TestVerifyBadMethod(t *testing.T) {
-	e, s, c := createTestExchange(t)
-	e.RequestMethod = "POST"
-	if err := e.AddSignatureHeader(s); err != nil {
-		t.Fatal(err)
-	}
-	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		e.RequestMethod = "POST"
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
-	verificationTime := signatureDate
-	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
-		t.Errorf("Verification should fail")
-	}
+		verificationTime := signatureDate
+		if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+			t.Errorf("Verification should fail")
+		}
+	})
 }
 
 func TestVerifyStatefulRequestHeader(t *testing.T) {
-	e, s, c := createTestExchange(t)
-	if e.RequestHeaders == nil {
-		e.RequestHeaders = http.Header{}
-	}
-	e.RequestHeaders.Set("Authorization", "Basic Zm9vOmJhcg==")
-	if err := e.AddSignatureHeader(s); err != nil {
-		t.Fatal(err)
-	}
-	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		if e.RequestHeaders == nil {
+			e.RequestHeaders = http.Header{}
+		}
+		e.RequestHeaders.Set("Authorization", "Basic Zm9vOmJhcg==")
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
-	verificationTime := signatureDate
-	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
-		t.Errorf("Verification should fail")
-	}
+		verificationTime := signatureDate
+		if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+			t.Errorf("Verification should fail")
+		}
+	})
 }
 
 func TestVerifyStatefulResponseHeader(t *testing.T) {
-	e, s, c := createTestExchange(t)
-	e.ResponseHeaders.Set("Set-Cookie", "foo=bar")
-	if err := e.AddSignatureHeader(s); err != nil {
-		t.Fatal(err)
-	}
-	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		e.ResponseHeaders.Set("Set-Cookie", "foo=bar")
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
-	verificationTime := signatureDate
-	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
-		t.Errorf("Verification should fail")
-	}
+		verificationTime := signatureDate
+		if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+			t.Errorf("Verification should fail")
+		}
+	})
 }
 
 func TestVerifyBadSignature(t *testing.T) {
-	e, s, c := createTestExchange(t)
-	if err := e.AddSignatureHeader(s); err != nil {
-		t.Fatal(err)
-	}
-	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
-	e.ResponseHeaders.Add("Etag", "0123")
+		e.ResponseHeaders.Add("Etag", "0123")
 
-	verificationTime := signatureDate
-	if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
-		t.Errorf("Verification should fail")
-	}
+		verificationTime := signatureDate
+		if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+			t.Errorf("Verification should fail")
+		}
+	})
 }
 
 func TestVerifyNonCanonicalURL(t *testing.T) {
-	e, s, c := createTestExchange(t)
-	// url.Parse() decodes "%73%78%67" to "sxg"
-	e.RequestURI = "https://example.com/%73%78%67"
-	if err := e.AddSignatureHeader(s); err != nil {
-		t.Fatal(err)
-	}
-	certFetcher := func(_ string) ([]byte, error) { return c, nil }
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		// url.Parse() decodes "%73%78%67" to "sxg"
+		e.RequestURI = "https://example.com/%73%78%67"
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
-	verificationTime := signatureDate
-	if !e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "ERROR: ", 0)) {
-		t.Errorf("Verification failed")
-	}
+		verificationTime := signatureDate
+		if !e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "ERROR: ", 0)) {
+			t.Errorf("Verification failed")
+		}
+	})
 }
