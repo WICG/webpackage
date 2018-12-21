@@ -97,7 +97,7 @@ func TestSignedExchange(t *testing.T) {
 	expectedSignatureHeader := map[version.Version]string{
 		version.Version1b1: "label; sig=*MEYCIQCbay5VbkR9mi4pnwDAJamuf7Fj1CWnEnJt6Uxm7YeqiwIhAL8JISyzF5sDhtUaEbNCE6vgv2NIKCkONzLgwL23UL6P*; validity-url=\"https://example.com/resource.validity\"; integrity=\"mi-draft2\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400",
 		version.Version1b2: "label; sig=*MEUCIHNiDRQncQpVxW2x+woinMUTY8nuSQfi0mbJ5J6x7FZyAiEAgh6FH6PdncNCK8GHTwN3wfUUUFdjVswNi1PfIgCOwHk=*; validity-url=\"https://example.com/resource.validity\"; integrity=\"digest/mi-sha256-03\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400",
-		version.Version1b3: "label; sig=*MEUCIQC1Tfv5a+tC6aiW8XudbYqsnnOo08c0rhLJENfC41Tz1AIgK1tJAuOgi74JOe7phub3LTxskRtco5SYVG41A/1M/z0=*; validity-url=\"https://example.com/resource.validity\"; integrity=\"digest/mi-sha256-03\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400",
+		version.Version1b3: "label; sig=*MEUCIEQPK0UKPm9/XP5Jko2V72vTrGlBqB9HHoOzhJmVPflmAiEAwCSBw98NhUhFGJaxL6ITT+QZBBeO7TCLAiHn1apY6Es=*; validity-url=\"https://example.com/resource.validity\"; integrity=\"digest/mi-sha256-03\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400",
 	}
 
 	for _, ver := range version.AllVersions {
@@ -153,8 +153,15 @@ func TestSignedExchange(t *testing.T) {
 			t.Errorf("Unexpected request method: %q", got.RequestMethod)
 		}
 
-		if !reflect.DeepEqual(got.RequestHeaders, reqHeader) {
-			t.Errorf("Unexpected request headers: %v", got.RequestHeaders)
+		if ver == version.Version1b1 || ver == version.Version1b2 {
+			if !reflect.DeepEqual(got.RequestHeaders, reqHeader) {
+				t.Errorf("Unexpected request headers: %v", got.RequestHeaders)
+			}
+		} else {
+			emptyHeader := http.Header{}
+			if !reflect.DeepEqual(got.RequestHeaders, emptyHeader) {
+				t.Errorf("Unexpected request headers: %v", got.RequestHeaders)
+			}
 		}
 
 		if got.ResponseStatus != 200 {

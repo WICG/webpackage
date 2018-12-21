@@ -3,7 +3,6 @@ package signedexchange
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -117,8 +116,8 @@ func (e *Exchange) AddSignatureHeader(s *Signer) error {
 }
 
 func (e *Exchange) encodeRequestMap(enc *cbor.Encoder) error {
-	if e.Version == version.Version1b3 {
-		return errors.New("signedexchange: b3 doesn't have request map.")
+	if e.Version != version.Version1b1 && e.Version != version.Version1b2 {
+		panic("signedexchange: b3 and beyond don't have request map.")
 	}
 
 	mes := []*cbor.MapEntryEncoder{
@@ -271,6 +270,8 @@ func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
 		if err := e.decodeRequestMap(dec); err != nil {
 			return err
 		}
+	} else {
+		e.RequestMethod = http.MethodGet
 	}
 	if err := e.decodeResponseMap(dec); err != nil {
 		return err
