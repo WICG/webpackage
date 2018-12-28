@@ -52,6 +52,16 @@ Assume Explicit For: yes
         "status": "ED",
         "publisher": "IETF"
     },
+    "draft-yasskin-httpbis-origin-signed-exchanges-impl-03": {
+        "authors": [
+            "Jeffrey Yasskin",
+            "Kouhei Ueno"
+        ],
+        "href": "https://tools.ietf.org/html/draft-yasskin-httpbis-origin-signed-exchanges-impl-03",
+        "title": "Signed HTTP Exchanges Implementation Checkpoints",
+        "status": "ED",
+        "publisher": "IETF"
+    },
     "draft-yasskin-wpack-bundled-exchanges": {
         "authors": [
             "Jeffrey Yasskin"
@@ -109,7 +119,7 @@ spec: RFC8446; urlPrefix: https://tools.ietf.org/html/draft-ietf-tls-tls13-28#
     text: ecdsa_secp256r1_sha256; type: dfn; url: section-4.2.3
 spec: draft-ietf-httpbis-variants; urlPrefix: https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html#
     type: dfn
-        text: content negotiation mechanism specified to be usable with Variants; url: define
+        text: Variant-Key header field; url: variant-key
         text: Variants cache behavior; url: cache
         text: Variants header field; url: variants
 spec: draft-thomson-http-mice; urlPrefix: https://tools.ietf.org/html/draft-thomson-http-mice-03#
@@ -222,8 +232,8 @@ Rewrite [=request/clone|clone a request=] to run these steps:
 
  <li><ins>If |request|'s [=request/stashed exchange=] is non-null, set
   |newRequest|'s [=request/stashed exchange=] to an exchange whose
-  [=exchange/request=] is the [=request/clone=] of |request|'s [=request/stashed
-  exchange=]'s [=exchange/request=] and whose [=exchange/response=] is the
+  [=exchange/request URL=] is a copy of |request|'s [=request/stashed
+  exchange=]'s [=exchange/request URL=] and whose [=exchange/response=] is the
   [=response/clone=] of |request|'s [=request/stashed exchange=]'s
   [=exchange/response=].</ins>
 
@@ -256,16 +266,16 @@ add the following steps:
     : undefined
     :: Do nothing.
 
-    : `"b2"`
+    : `"b2"` or `"b3"`
     ::
-        1. Let |parsedExchange| be the result of [=parsing a b2 signed
-            exchange=] from |actualResponse| in the context of |request|'s
-            [=request/client=].
+        1. Let |parsedExchange| be the result of [=parsing a signed
+            exchange=] of version `b2` or `b3`, respectively, from
+            |actualResponse| in the context of |request|'s [=request/client=].
         1. If |parsedExchange| is a failure, return a [=network error=].
         1. Set |actualResponse|'s [=status=] to `303`.
         1. [=header list/Set=] |actualResponse|'s `` `Location` `` header to
             the [=ASCII encoding=] of the [=URL serializer|serialization=]
-            of |parsedExchange|'s [=exchange/request=]'s [=request/url=].
+            of |parsedExchange|'s [=exchange/request URL=].
         1. Set |request|'s [=request/stashed exchange=] to |parsedExchange|.
 
     : Anything else
@@ -293,10 +303,9 @@ In <a spec="fetch">HTTP-network-or-cache fetch</a>, after
 add the following steps:
 
 20. If |httpRequest|'s [=request/stashed exchange=] isn't null:
-    1. Let |stashedRequest| be |httpRequest|'s [=request/stashed exchange=]'s
-        [=exchange/request=]
+    1. Let |stashedExchange| be |httpRequest|'s [=request/stashed exchange=].
     1. If
-        * |httpRequest| [=matches the stored request=] |stashedRequest| and
+        * |httpRequest| [=matches the stored exchange=] |stashedExchange| and
         * |response| is null or |response|'s [=response/date=] is earlier than
             |httpRequest|'s [=request/stashed exchange=]'s
             [=exchange/response=]'s [=response/date=]
@@ -323,7 +332,7 @@ An exchange is a [=struct=] with the following items:
 
 <ul dfn-for="exchange">
 
-* <dfn export>request</dfn>, a [=request=].
+* <dfn export>request URL</dfn>, a [=URL=].
 * <dfn export>response</dfn>, a [=response=].
 
 </ul>
@@ -434,17 +443,25 @@ the result of the following steps:
     from |stream|. If returns a failure, return that failure.
 1. Return |fallbackUrlBytes|.
 
-<h3 algorithm id="parsing-b2">Parsing `b2` signed exchanges</h3>
+<h3 algorithm id="parsing">Parsing signed exchanges</h3>
 
-This section defines how to load the format defined in
-[[draft-yasskin-httpbis-origin-signed-exchanges-impl-02]].
+This section defines how to load the formats defined in
+[[draft-yasskin-httpbis-origin-signed-exchanges-impl-02]] and
+[[draft-yasskin-httpbis-origin-signed-exchanges-impl-03]].
 
-<dfn>Parsing a b2 signed exchange</dfn> from a [=response=] |response| in the
-context of an [=environment settings object=] |client| returns the result of the
-following steps:
+<dfn>Parsing a signed exchange</dfn> of version |version| from a [=response=]
+|response| in the context of an [=environment settings object=] |client| returns
+the result of the following steps:
 
 1. Assert: This algorithm is running [=in parallel=].
-1. Assert: The [=signed exchange version=] of |response| is `"b2"`.
+1. Assert: The [=signed exchange version=] of |response| is, if |version| is
+    <dl class="switch">
+    : `b2`
+    :: `"b2"`
+    : `b3`
+    :: `"b3"`
+
+    </dl>
 1. If |response|'s [=response/URL=]'s [=url/origin=] is not a [=potentially
     trustworthy origin=], return failure.
 
@@ -456,7 +473,14 @@ following steps:
 1. Let |stream| be a [=new read buffer=] for |bodyStream|.
 1. Let (|magic|, |requestUrlBytes|, |requestUrl|) be the result of [=parsing the
     invariant prefix=] from |stream|. If returns a failure, return that failure.
-1. If |magic| is not `` `sxg1-b2\0` ``, return a failure.
+1. If |magic| is not the following value, depending on |version|, return a failure:
+    <dl class="switch">
+    : `b2`
+    :: `` `sxg1-b2\0` ``
+    : `b3`
+    :: `` `sxg1-b3\0` ``
+
+    </dl>
 1. Assert: |requestUrlBytes| should match the result of [=extracting the
     fallback URL=] from |response|.
 1. Let |encodedSigLength| be the result of [=read buffer/reading=] 3 bytes from
@@ -480,9 +504,15 @@ following steps:
     bytes from |stream|.
 1. If |headerBytes| is a failure, return it.
 1. If |parsedSignature| [=exchange signature/is not valid=] for |headerBytes|
-    and |requestUrlBytes|, return a failure.
-1. Let |parsedExchange| be the result of [=parsing CBOR headers=] given
-    |headerBytes| and |requestUrl|.
+    and |requestUrlBytes|, and signed exchange version |version|, return a failure.
+1. Let |parsedExchange| be, if |version| is:
+    <dl class="switch">
+    : `b2`
+    :: the result of [=parsing b2 CBOR headers=] given |headerBytes| and
+        |requestUrl|.
+    : `b3`
+    :: the result of [=parsing b3 CBOR headers=] given |headerBytes| and
+        |requestUrl|.
 1. If |parsedSignature| [=exchange signature/does not establish cross-origin
     trust=] for |parsedExchange|, return a failure.
 1. Set |parsedExchange|'s [=exchange/response=]'s [=response/HTTPS state=] to
@@ -629,16 +659,25 @@ returns the result of the following steps:
     certificate/certificate=] is not equal to |certSha256|, return a failure.
 1. Return |chain|.
 
-<h3 algorithm id="signed-message">The signed message</h3>
+<h3 algorithm id="the-signed-message">The signed message</h3>
 
-The <dfn>b2 signed message</dfn> for an [=exchange signature=] |signature|
-and [=byte sequences=] |requestUrlBytes| and |headerBytes| is the concatenation
-of the following [=byte sequences=]:
+The <dfn>signed message</dfn> for a version |version|, an [=exchange signature=]
+|signature| and [=byte sequences=] |requestUrlBytes| and |headerBytes| is the
+concatenation of the following [=byte sequences=]:
 
 1. The byte 0x20 (SP) repeated 64 times. This matches the TLS 1.3 ([[RFC8446]])
     format to avoid cross- protocol attacks if anyone uses the same key in a TLS
     certificate and an exchange-signing certificate.
-1. `` `HTTP Exchange 1 b2` `` to serve as a context string.
+1. A context string consisting of, if |version| is:
+
+    <dl class="switch">
+
+    : `b2`
+    :: `` `HTTP Exchange 1 b2` ``
+    : `b3`
+    :: `` `HTTP Exchange 1 b3` ``
+
+    </dl>
 
     Note: Each draft of
     [[draft-yasskin-httpbis-origin-signed-exchanges-impl-02]] and the final RFC
@@ -662,7 +701,8 @@ of the following [=byte sequences=]:
 
 An [=exchange signature=] |signature| <dfn for="exchange signature" lt="is
 valid|is not valid">is valid</dfn> for [=byte sequences=] |requestUrlBytes| and
-|headerBytes| if the following steps return `valid`:
+|headerBytes|, and signed exchange version |version|, if the following steps
+return `valid`:
 
 1. Let |clockSkew| be the uncertainty in the UA's estimate of the current time
     caused by clock skew on the client. The UA MAY set this to 0 or use a more
@@ -685,7 +725,7 @@ valid|is not valid">is valid</dfn> for [=byte sequences=] |requestUrlBytes| and
     [=exchange signature/expiration time=] so that attackers trying to get an
     exchange trusted for longer, are constrained to modify the client's clock
     and can't also attack its estimate of its skew.
-1. Let |message| be the [=b2 signed message=] for |signature|,
+1. Let |message| be the [=signed message=] for |version|, |signature|,
     |requestUrlBytes|, and |headerBytes|.
 1. Let |publicKey| be the [=certificate/public key=] of |parsedSignature|'s
     [=exchange signature/certificate chain=]'s [=certificate chain/leaf=]. If
@@ -705,13 +745,11 @@ for="exchange signature" lt="establishes cross-origin trust|does not establish
 cross-origin trust">establishes cross-origin trust</dfn> in an [=exchange=]
 |exchange| if the following steps return "trusted":
 
-1. Let |requestUrl| be |exchange|'s [=exchange/request=]'s [=request/url=].
+1. Let |requestUrl| be |exchange|'s [=exchange/request URL=].
 1. If |signature|'s [=exchange signature/validityUrl=]'s [=url/origin=] is not
     [=same origin=] with |requestUrl|'s [=url/origin=], return "untrusted".
-1. If |exchange|'s [=exchange/request=]'s [=request/header list=] includes a
-    [=stateful request header=] or |exchange|'s [=exchange/response=]'s
-    [=response/header list=] includes a [=stateful response header=], return
-    "untrusted".
+1. If |exchange|'s [=exchange/response=]'s [=response/header list=] includes a
+    [=stateful response header=], return "untrusted".
 1. If |signature|'s [=exchange signature/expiration time=] is more than 604800
     seconds (7 days) after |signature|'s [=exchange signature/date=], return
     "untrusted".
@@ -750,9 +788,9 @@ leaf|does not have a trusted leaf">has a trusted leaf</dfn> for an [=origin=]
     OID to the ASN.1/DER encoding of NULL (0x05 0x00), return `untrusted`.
 1. Return `trusted`.
 
-<h3 algorithm id="parse-cbor-headers">Parsing CBOR headers</h3>
+<h3 algorithm id="parse-b2-cbor-headers">Parsing b2 CBOR headers</h3>
 
-<dfn>Parsing CBOR headers</dfn> from a [=byte sequence=] |headerBytes| and
+<dfn>Parsing b2 CBOR headers</dfn> from a [=byte sequence=] |headerBytes| and
 a URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
 
 1. Let |headers| be the result of [=parsing a CBOR item=] from |headerBytes|,
@@ -781,14 +819,40 @@ a URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
 1. Let |requestHeaders| be the result of [=creating a header list from the CBOR
     map=] |headers|[0].
 1. If |requestHeaders| is a failure, return it.
-1. Let |request| be a new [=request=] with [=request/url=] |requestUrl| and
-    [=request/header list=] |requestHeaders|.
 1. Let |responseHeaders| be the result of [=creating a header list from the CBOR
     map=] |headers|[1].
 1. If |responseHeaders| is a failure, return it.
 1. Let |response| be a new [=response=] with [=response/status=] |headers|[1][``
     `:status` ``] and [=response/header list=] |responseHeaders|.
-1. Return an [=exchange=] of |request| and |response|.
+1. Return an [=exchange=] of |requestUrl| and |response|.
+
+    Note: This ignores |requestHeaders|, which can't be encoded in b3 and later.
+
+<h3 algorithm id="parse-cbor-headers">Parsing b3 CBOR headers</h3>
+
+<dfn>Parsing b3 CBOR headers</dfn> from a [=byte sequence=] |headerBytes| and
+a URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
+
+1. Let |headers| be the result of [=parsing a CBOR item=] from |headerBytes|,
+    matching the following CDDL rule:
+    ```
+    headers = {
+      ':status': bstr,
+      * bstr => bstr,
+    }
+    ```
+1. If any of the following is true, return a failure:
+
+    * |headers| is an error.
+    * |headers| contains any key starting with `` `:` `` that isn't `` `:status` ``.
+    * |headers|[`` `:status` ``] is not `` 200 ``.
+
+1. Let |responseHeaders| be the result of [=creating a header list from the CBOR
+    map=] |headers|.
+1. If |responseHeaders| is a failure, return it.
+1. Let |response| be a new [=response=] with [=response/status=] |headers|[``
+    `:status` ``] and [=response/header list=] |responseHeaders|.
+1. Return an [=exchange=] of |requestUrl| and |response|.
 
 <h4 algorithm id="headers-from-map">Converting a map to a header list</h4>
 
@@ -855,25 +919,52 @@ To <dfn lt="reading a body|read a body">read a body</dfn> from a [=read buffer=]
 
 <h3 algorithm id="request-matching">Request matching</h3>
 
-A [=request=] |browserRequest| <dfn>matches the stored request</dfn>
-|storedRequest| if the following steps return "match":
+A [=request=] |browserRequest| <dfn>matches the stored exchange</dfn>
+|storedExchange| if the following steps return "match":
 
 1. If |browserRequest|'s [=request/url=] is not [=url/equal=] to
-    |storedRequest|'s [=request/url=], return "mismatch".
+    |storedExchange|'s [=exchange/request URL=], return "mismatch".
 
-1. [=list/For each=] header (|name|, |storedValue|) in |storedRequest|'s
-    [=request/header list=]:
-    1. If |name| doesn't name the request header field of a [=content
-        negotiation mechanism specified to be usable with Variants=], return
-        "mismatch".
-    1. Otherwise, let |variantMatches| be the algorithm for selecting a result
-        defined by |name|'s content negotiation mechanism.
-    1. Let |browserValue| be the result of [=header list/getting=] |name| from
-        |browserRequest|'s [=request/header list=].
-    1. If |variantMatches| returns an empty list when given a request header of
-        |browserValue| and an available-values list consisting of
-        «|storedValue|», return "mismatch".
+1. If |storedExchange|'s [=exchange/response=]'s [=response/header list=]
+    [=header list/contains=]:
 
+    <dl class="switch">
+
+    : Neither a `` `Variants` `` nor a `` `Variant-Key` `` header
+    :: Return "match".
+
+        Note: This states that exactly one resource lives at the request URL, and
+        no content negotiation is intended.
+    : A `` `Variant-Key` `` header but no `` `Variants` `` header
+    :: Return "mismatch".
+
+        Note: This indicates a likely misconfiguration, and returning "mismatch"
+        makes that fail fast.
+    : A `` `Variants` `` header but no `` `Variant-Key` `` header
+    :: Return "mismatch".
+
+        Note: This behavior is implied by the below steps, but we make it
+        explicit here.
+    : Both a `` `Variants` `` and a `` `Variant-Key` `` header
+    :: Proceed to the following steps.
+
+1. If [=header list/getting=] `` `Variants` `` from |storedExchange|'s
+    [=exchange/response=]'s [=response/header list=] returns a value that fails
+    to parse according to the instructions for the [=Variants Header Field=],
+    return "mismatch".
+1. Let |acceptableVariantKeys| be the result of running the [=Variants Cache
+    Behavior=] on an incoming-request of |browserRequest| and stored-responses
+    of a [=list=] containing |storedExchange|'s [=exchange/response=].
+1. Let |variantKeys| be the result of [=header list/getting=] `` `Variant-Key`
+    `` from |storedExchange|'s [=exchange/response=]'s [=response/header list=],
+    and parsing it into a [=list=] of [=lists=] as described in [=Variant-Key
+    Header Field=].
+1. If parsing |variantKeys| failed, return "mismatch".
+1. If the [=set/intersection=] of |acceptableVariantKeys| and |variantKeys| is
+    [=list/empty=], return "mismatch".
+
+    Issue(httpwg/http-extensions#744): This depends on the [=Variants Cache
+    Behavior=] returning a list of lists.
 1. Return "match".
 
 ## Stream algorithms ## {#stream-algs}
