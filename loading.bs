@@ -420,7 +420,7 @@ result of the following steps:
 
 1. Let |mimeType| be the result of [=header list/extracting a MIME type=] from
     |response|'s [=response/header list=].
-1. If |mimeType| is undefined, return undefined.
+1. If |mimeType| is a failure, return undefined.
 1. If |mimeType|'s [=MIME type/essence=] is not `"application/signed-exchange"`,
     return undefined.
 1. Let |params| be |mimeType|'s [=MIME type/parameters=]
