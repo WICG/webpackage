@@ -645,6 +645,8 @@ returns the result of the following steps:
 1. If |certResponse|'s [=response/status=] is not `200`, or [=header
     list/extracting a MIME type=] from |certResponse|'s [=response/header list=]
     does not return `"application/cert-chain+cbor"`, return a failure.
+
+    Note: This forbids the MIME type from including parameters.
 1. If |certResponse|'s [=response/body=] is null or that body's [=body/stream=]
     is null, return a failure.
 1. Let |bytes| be the result of [=ReadableStream/read all bytes|reading all
