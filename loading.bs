@@ -922,6 +922,13 @@ To <dfn lt="reading a body|read a body">read a body</dfn> from a [=read buffer=]
 A [=request=] |browserRequest| <dfn>matches the stored exchange</dfn>
 |storedExchange| if the following steps return "match":
 
+1. If |browserRequest|'s [=request/method=] is not `` `GET` `` or `` `HEAD` ``,
+    return "mismatch".
+
+    Note: The |browserRequest|'s method can be something other than `` `GET` ``
+    if a Service Worker intercepts the redirect and modifies the request before
+    re-fetching it.
+
 1. If |browserRequest|'s [=request/url=] is not [=url/equal=] to
     |storedExchange|'s [=exchange/request URL=], return "mismatch".
 
