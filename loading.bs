@@ -642,11 +642,11 @@ returns the result of the following steps:
     : [=request/mode=]
     :: "`cors`"
 1. Let |certResponse| be the result of [=fetching=] |certRequest|.
-1. If |certResponse|'s [=response/status=] is not `200`, or [=header
-    list/extracting a MIME type=] from |certResponse|'s [=response/header list=]
-    does not return `"application/cert-chain+cbor"`, return a failure.
-
-    Note: This forbids the MIME type from including parameters.
+1. If |certResponse|'s [=response/status=] is not `200`, return a failure.
+1. Let |certMimeType| be the result of [=header list/extracting a MIME type=]
+    from |certResponse|'s [=response/header list=].
+1. If |certMimeType| is a failure or its [=MIME type/essence=] is not
+    `"application/cert-chain+cbor"`, return a failure.
 1. If |certResponse|'s [=response/body=] is null or that body's [=body/stream=]
     is null, return a failure.
 1. Let |bytes| be the result of [=ReadableStream/read all bytes|reading all
