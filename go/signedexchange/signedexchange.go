@@ -116,6 +116,10 @@ func (e *Exchange) AddSignatureHeader(s *Signer) error {
 }
 
 func (e *Exchange) encodeRequestMap(enc *cbor.Encoder) error {
+	if e.Version != version.Version1b1 && e.Version != version.Version1b2 {
+		panic("signedexchange: b3 and beyond don't have request map.")
+	}
+
 	mes := []*cbor.MapEntryEncoder{
 		cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 			keyE.EncodeByteString(keyMethod)
@@ -235,11 +239,13 @@ func (e *Exchange) decodeResponseMap(dec *cbor.Decoder) error {
 
 // draft-yasskin-http-origin-signed-responses.html#rfc.section.3.4
 func (e *Exchange) encodeExchangeHeaders(enc *cbor.Encoder) error {
-	if err := enc.EncodeArrayHeader(2); err != nil {
-		return fmt.Errorf("signedexchange: failed to encode top-level array header: %v", err)
-	}
-	if err := e.encodeRequestMap(enc); err != nil {
-		return err
+	if e.Version == version.Version1b1 || e.Version == version.Version1b2 {
+		if err := enc.EncodeArrayHeader(2); err != nil {
+			return fmt.Errorf("signedexchange: failed to encode top-level array header: %v", err)
+		}
+		if err := e.encodeRequestMap(enc); err != nil {
+			return err
+		}
 	}
 	if err := e.encodeResponseMap(enc); err != nil {
 		return err
@@ -253,15 +259,19 @@ func (e *Exchange) DumpExchangeHeaders(w io.Writer) error {
 }
 
 func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
-	n, err := dec.DecodeArrayHeader()
-	if err != nil {
-		return fmt.Errorf("signedexchange: failed to decode top-level array header: %v", err)
-	}
-	if n != 2 {
-		return fmt.Errorf("singedexchange: length of header array must be 2 but %d", n)
-	}
-	if err := e.decodeRequestMap(dec); err != nil {
-		return err
+	if e.Version == version.Version1b1 || e.Version == version.Version1b2 {
+		n, err := dec.DecodeArrayHeader()
+		if err != nil {
+			return fmt.Errorf("signedexchange: failed to decode top-level array header: %v", err)
+		}
+		if n != 2 {
+			return fmt.Errorf("singedexchange: length of header array must be 2 but %d", n)
+		}
+		if err := e.decodeRequestMap(dec); err != nil {
+			return err
+		}
+	} else {
+		e.RequestMethod = http.MethodGet
 	}
 	if err := e.decodeResponseMap(dec); err != nil {
 		return err
@@ -270,8 +280,8 @@ func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
 }
 
 func (e *Exchange) Write(w io.Writer) error {
-	headerBuf := &bytes.Buffer{}
-	if err := e.DumpExchangeHeaders(headerBuf); err != nil {
+	var headerBuf bytes.Buffer
+	if err := e.DumpExchangeHeaders(&headerBuf); err != nil {
 		return err
 	}
 	headerLength := headerBuf.Len()
@@ -310,7 +320,7 @@ func (e *Exchange) Write(w io.Writer) error {
 		}
 
 		// Step 5. "headerLength bytes holding the signed headers, the canonical serialization (Section 3.4) of the CBOR representation of the request and response headers of the exchange represented by the application/signed-exchange resource (Section 3.2), excluding the Signature header field." [spec text]
-		if _, err := io.Copy(w, headerBuf); err != nil {
+		if _, err := io.Copy(w, &headerBuf); err != nil {
 			return err
 		}
 
@@ -378,7 +388,7 @@ func (e *Exchange) Write(w io.Writer) error {
 		}
 
 		// "7. headerLength bytes holding signedHeaders, the canonical serialization (Section 3.4) of the CBOR representation of the request and response headers of the exchange represented by the application/signed-exchange resource (Section 3.2), excluding the Signature header field." [spec text]
-		if _, err := io.Copy(w, headerBuf); err != nil {
+		if _, err := io.Copy(w, &headerBuf); err != nil {
 			return err
 		}
 
