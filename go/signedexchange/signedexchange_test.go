@@ -378,6 +378,23 @@ func TestVerifyBadMethod(t *testing.T) {
 	})
 }
 
+func TestVerifyIncompleteResponse(t *testing.T) {
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		e.ResponseStatus = 206
+		e.ResponseHeaders.Set("Content-Range", "200-1000/67589")
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
+
+		verificationTime := signatureDate
+		if e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)) {
+			t.Errorf("Verification should fail")
+		}
+	})
+}
+
 func TestVerifyStatefulRequestHeader(t *testing.T) {
 	testForEachVersion(t, func(ver version.Version, t *testing.T) {
 		e, s, c := createTestExchange(ver, t)

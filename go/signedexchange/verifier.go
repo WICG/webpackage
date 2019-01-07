@@ -144,16 +144,27 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 			continue
 		}
 
-		// Step 5: "If exchange's headers contain a stateful header field, as
+		// Step 5: "If exchange’s response is not complete (Section 3.1 of
+		//         [RFC7234]), return “invalid”."
+		if e.ResponseStatus == 206 {
+			l.Print("Response is not complete.")
+			continue
+		}
+
+		// Step 6: "If Section 3 of [RFC7234] forbids a shared cache from
+		//         storing exchange’s response, return “invalid”."
+		// TODO: Implement.
+
+		// Step 7: "If exchange's headers contain a stateful header field, as
 		//         defined in Section 4.1, return "invalid"."
 		if err := verifyHeaders(e); err != nil {
 			l.Printf("Header validation failed: %v", err)
 			continue
 		}
 
-		// TODO: Implement Step 6 and 7 (certificate verification).
+		// TODO: Implement Step 8 and 9 (certificate verification).
 
-		// Step 8: "Return "valid"."
+		// Step 10: "Return "valid"."
 		return true
 	}
 	return false
