@@ -299,10 +299,15 @@ func isComplete(e *Exchange) error {
 		panic("not reached")
 	}
 
+	// Disallow range responses.
+	// Per https://datatracker.ietf.org/doc/rfc7233 , Content-Range header
+	// seems only allowed on 206 status code, so check that.
+	// https://tools.ietf.org/html/rfc7234#section-3.1
 	if e.ResponseStatus == 206 {
 		return fmt.Errorf("Response status is 206 Partial Content.")
 	}
 
+	// Check if message framing is valid per RFC7230 Section 3.3.3.
 	if cl := e.ResponseHeaders.Get("Content-Length"); cl != "" {
 		cln, err := strconv.ParseInt(cl, 10, 64)
 		if err != nil || cln < 0 {
