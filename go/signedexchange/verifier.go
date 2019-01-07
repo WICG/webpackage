@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
@@ -121,8 +122,8 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 			continue
 		}
 
-		// Step 2: "Use Section 3.5 to determine the signature's validity for
-		//         requestUrl, headers, and payload, getting certificate-chain
+		// Step 2: "Use {{signature-validity}} to determine the signature's validity for
+		//         requestUrl, responseHeaders, and payload, getting certificate-chain
 		//         back. If this returned "invalid" or didn't return a
 		//         certificate chain, return "invalid"."
 		_, err = verifySignature(e, verificationTime, certFetcher, signature)
@@ -131,13 +132,19 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 			continue
 		}
 
-		// Step 3: "Let exchange be the exchange metadata and headers parsed out
+		// Step 3: "Let response be the response metadata and headers parsed out
 		//         of headers."
 		// `e` contains the exchange metadata and headers.
 
-		// Step 4: "If exchange's request method is not safe (Section 4.2.1 of
-		//         [RFC7231]) or not cacheable (Section 4.2.3 of [RFC7231]),
-		//         return "invalid"."
+		// Step 4: "If response is not complete (Section 3.1 of RFC7234), return
+		//         "invalid""
+		if err := isComplete(e); err != nil {
+			l.Printf("Response is not complete: %v", err)
+			continue
+		}
+
+		// Step 4: "If Section 3 of RFC7234 forbids a shared cache from storing
+		//          response, return "invalid"."
 		// Per [RFC7231], only GET and HEAD are safe and cacheable.
 		if e.RequestMethod != http.MethodGet && e.RequestMethod != http.MethodHead {
 			l.Printf("Request method %q is not safe or not cacheable.", e.RequestMethod)
@@ -277,5 +284,32 @@ func verifyHeaders(e *Exchange) error {
 			return fmt.Errorf("exchange has stateful response header %q", k)
 		}
 	}
+	return nil
+}
+
+func isComplete(e *Exchange) error {
+	switch e.Version {
+	case version.Version1b1, version.Version1b2:
+		// These versions do not require the response to be complete.
+		return nil
+	case version.Version1b3:
+		// Proceed to the check
+		break
+	default:
+		panic("not reached")
+	}
+
+	if e.ResponseStatus == 206 {
+		return fmt.Errorf("Response status is 206 Partial Content.")
+	}
+
+	if cl := e.ResponseHeaders.Get("Content-Length"); cl != "" {
+		cln, err := strconv.ParseInt(cl, 10, 64)
+		if err != nil || cln < 0 {
+			return fmt.Errorf("Invalid \"Content-Length\" response header format.")
+		}
+		// TODO(kouhei): Check len(e.DecodedPayload) == cln
+	}
+
 	return nil
 }

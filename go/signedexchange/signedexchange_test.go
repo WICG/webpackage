@@ -446,3 +446,54 @@ func TestVerifyNonCanonicalURL(t *testing.T) {
 		}
 	})
 }
+
+func TestVerify206(t *testing.T) {
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		e.ResponseStatus = 206
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
+
+		verificationTime := signatureDate
+		success := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0))
+		switch ver {
+		case version.Version1b1, version.Version1b2:
+			if !success {
+				t.Errorf("Verification should succeed.")
+			}
+		default:
+			if success {
+				t.Errorf("Verification should fail.")
+			}
+		}
+	})
+}
+
+func TestVerifyBadContentLength(t *testing.T) {
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+
+		// Content-Length should contain a single numeric value.
+		e.ResponseHeaders.Add("Content-Length", "123, 456")
+
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
+
+		verificationTime := signatureDate
+		success := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0))
+		switch ver {
+		case version.Version1b1, version.Version1b2:
+			if !success {
+				t.Errorf("Verification should succeed.")
+			}
+		default:
+			if success {
+				t.Errorf("Verification should fail.")
+			}
+		}
+	})
+}
