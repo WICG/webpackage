@@ -148,8 +148,8 @@ signature vouches for can depend on how the exchange is transferred
 
 The client categorizes each signature as "valid" or "invalid" by validating that
 signature with its certificate or public key and other metadata against the
-exchange's headers and content ({{signature-validity}}). This validity then
-informs higher-level protocols.
+exchange's URL, response headers, and content ({{signature-validity}}). This
+validity then informs higher-level protocols.
 
 Each signature is parameterised with information to let a client fetch assurance
 that a signed exchange is still valid, in the face of revoked certificates and
@@ -162,8 +162,8 @@ this validity information for some period of time.
 The `Signature` header field conveys a list of signatures for an exchange, each
 one accompanied by information about how to determine the authority of and
 refresh that signature. Each signature directly signs the exchange's URL and
-headers and identifies one of those headers that enforces the integrity of the
-exchange's payload.
+response headers and identifies one of those headers that enforces the integrity
+of the exchange's payload.
 
 The `Signature` header is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a parameterised list
@@ -182,7 +182,8 @@ values:
 "sig"
 
 : Binary content (Section 3.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
-  the signature of most of these parameters and the exchange's headers.
+  the signature of most of these parameters and the exchange's URL and response
+  headers.
 
 "integrity"
 
