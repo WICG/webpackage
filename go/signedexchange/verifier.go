@@ -9,6 +9,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
@@ -151,12 +153,123 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 			continue
 		}
 
+		// Step 6: "If Section 3 of [RFC7234] forbids a shared cache from
+		//         storing exchange’s response, return "invalid"."
+		if e.Version != version.Version1b1 && e.Version != version.Version1b2 && !e.IsCacheable(l) {
+			continue
+		}
+
 		// TODO: Implement Step 6 and 7 (certificate verification).
 
 		// Step 8: "Return "valid"."
 		return true
 	}
 	return false
+}
+
+// IsCacheable returns true if Exchange is cacheable by a shared cache
+// (Section 3 of [RFC7234]).
+func (e *Exchange) IsCacheable(l *log.Logger) bool {
+	if e.Version == version.Version1b1 || e.Version == version.Version1b2 {
+		panic("IsCacheable is only applicable to version b3 or later")
+	}
+
+	// "A cache MUST NOT store a response to any request, unless:"
+	//
+	// "o  The request method is understood by the cache and defined as being
+	//     cacheable, and"
+
+	// Version b3 and later don't have a request method.
+
+	// "o  the response status code is understood by the cache, and"
+
+	// Check if the status code is understood by the net/http package.
+	if http.StatusText(e.ResponseStatus) == "" {
+		l.Printf("Unknown response status %d", e.ResponseStatus)
+		return false
+	}
+
+	cacheDirectives := parseCacheControlDirectives(e.ResponseHeaders.Get("Cache-Control"))
+
+	// "o  the "no-store" cache directive (see Section 5.2) does not appear
+	//     in request or response header fields, and"
+	if _, ok := cacheDirectives["no-store"]; ok {
+		l.Print("Response has the \"no-store\" cache directive")
+		return false
+	}
+
+	// "o  the "private" response directive (see Section 5.2.2.6) does not
+	//     ppear in the response, if the cache is shared, and"
+	if _, ok := cacheDirectives["private"]; ok {
+		l.Print("Response has the \"private\" response directive")
+		return false
+	}
+
+	// "o  the Authorization header field (see Section 4.2 of [RFC7235]) does
+	//     not appear in the request, if the cache is shared, unless the
+	//     response explicitly allows it (see Section 3.2), and"
+
+	// Version b3 and later don't have request headers.
+
+	// "o  the response either:"
+	//
+	// "  *  contains an Expires header field (see Section 5.3), or"
+	if e.ResponseHeaders.Get("Expires") != "" {
+		return true
+	}
+
+	// "  *  contains a max-age response directive (see Section 5.2.2.8), or"
+	if _, ok := cacheDirectives["max-age"]; ok {
+		return true
+	}
+
+	// "  *  contains a s-maxage response directive (see Section 5.2.2.9)
+	//       and the cache is shared, or"
+	if _, ok := cacheDirectives["s-maxage"]; ok {
+		return true
+	}
+
+	// "  *  contains a Cache Control Extension (see Section 5.2.3) that
+	//       allows it to be cached, or"
+	// This implementation does not recognize any Cache Control Extension.
+
+	// "  *  has a status code that is defined as cacheable by default (see
+	//       Section 4.2.2), or"
+
+	// Status codes that are cachable by default (Section 6.1 of [RFC7231]).
+	// The elements must be sorted.
+	CacheableStatusCodes := []int{
+		200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501,
+	}
+	i := sort.SearchInts(CacheableStatusCodes, e.ResponseStatus)
+	if i < len(CacheableStatusCodes) && CacheableStatusCodes[i] == e.ResponseStatus {
+		return true
+	}
+
+	// "  *  contains a public response directive (see Section 5.2.2.5)."
+	if _, ok := cacheDirectives["public"]; ok {
+		return true
+	}
+
+	l.Print("Response is not cacheable by a shared cache")
+	return false
+}
+
+// parseCacheControlDirectives parses a Cache-Control header value
+// (Section 5.2 of [RFC7234]).
+func parseCacheControlDirectives(cacheControl string) map[string]string {
+	directives := map[string]string{}
+	// TODO: correctly handle quoted-string arguments.
+	for _, s := range strings.Split(cacheControl, ",") {
+		s = strings.TrimSpace(s)
+		eq := strings.IndexByte(s, '=')
+		if eq >= 0 {
+			directives[strings.ToLower(s[:eq])] = s[eq+1:]
+		} else {
+			directives[strings.ToLower(s)] = ""
+		}
+	}
+	return directives
 }
 
 // verifySignature verifies single signature, as described in
