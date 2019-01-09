@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto"
 	"encoding/pem"
 	"flag"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/signedexchange/certurl"
 	"github.com/WICG/webpackage/go/signedexchange/version"
 )
 
@@ -155,19 +157,7 @@ func run() error {
 		resHeader.Add("content-type", "text/html; charset=utf-8")
 	}
 
-	var e *signedexchange.Exchange
-	if *flagIgnoreErrors {
-		e = signedexchange.NewExchangeNoCheck(ver, *flagUri, *flagMethod, reqHeader, *flagResponseStatus, resHeader, payload)
-	} else {
-		parsedUrl, err := url.Parse(*flagUri)
-		if err != nil {
-			return fmt.Errorf("failed to parse URL %q. err: %v", *flagUri, err)
-		}
-		e, err = signedexchange.NewExchange(ver, parsedUrl, *flagMethod, reqHeader, *flagResponseStatus, resHeader, payload)
-		if err != nil {
-			return err
-		}
-	}
+	e := signedexchange.NewExchange(ver, *flagUri, *flagMethod, reqHeader, *flagResponseStatus, resHeader, payload)
 	if err := e.MiEncodePayload(*flagMIRecordSize); err != nil {
 		return err
 	}
@@ -193,6 +183,24 @@ func run() error {
 	}
 	if err := e.AddSignatureHeader(s); err != nil {
 		return err
+	}
+
+	if !*flagIgnoreErrors {
+		certChain, err := certurl.NewCertChain(certs, []byte("dummy"), nil)
+		if err != nil {
+			return err
+		}
+		var certBuf bytes.Buffer
+		if err := certChain.Write(&certBuf); err != nil {
+			return err
+		}
+		certFetcher := func(_ string) ([]byte, error) {
+			return certBuf.Bytes(), nil
+		}
+		var logBuf bytes.Buffer
+		if !e.Verify(date, certFetcher, log.New(&logBuf, "", 0)) {
+			return fmt.Errorf("failed to verify generated exchange: %s", logBuf.String())
+		}
 	}
 
 	if fMsg != nil {

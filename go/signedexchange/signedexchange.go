@@ -40,36 +40,7 @@ var (
 	keyStatus = []byte(":status")
 )
 
-func NewExchange(ver version.Version, uri *url.URL, method string, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte) (*Exchange, error) {
-	if uri.Scheme != "https" {
-		return nil, fmt.Errorf("signedexchange: The request with non-https scheme %q URI can't be captured inside signed exchange.", uri.Scheme)
-	}
-	if method != http.MethodGet && method != http.MethodHead {
-		return nil, fmt.Errorf("signedexchange: invalid method %q", method)
-	}
-	for name := range requestHeaders {
-		if IsStatefulRequestHeader(name) {
-			return nil, fmt.Errorf("signedexchange: stateful request header %q can't be captured inside signed exchange", name)
-		}
-	}
-	for name := range responseHeaders {
-		if IsStatefulResponseHeader(name) {
-			return nil, fmt.Errorf("signedexchange: stateful response header %q can't be captured inside signed exchange", name)
-		}
-	}
-
-	return &Exchange{
-		Version:         ver,
-		RequestURI:      uri.String(),
-		RequestMethod:   method,
-		ResponseStatus:  status,
-		RequestHeaders:  requestHeaders,
-		ResponseHeaders: responseHeaders,
-		Payload:         payload,
-	}, nil
-}
-
-func NewExchangeNoCheck(ver version.Version, uri string, method string, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte) *Exchange {
+func NewExchange(ver version.Version, uri string, method string, requestHeaders http.Header, status int, responseHeaders http.Header, payload []byte) *Exchange {
 	return &Exchange{
 		Version:         ver,
 		RequestURI:      uri,
