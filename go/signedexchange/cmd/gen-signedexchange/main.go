@@ -186,15 +186,19 @@ func run() error {
 	}
 
 	if !*flagIgnoreErrors {
-		certChain, err := certurl.NewCertChain(certs, []byte("dummy"), nil)
-		if err != nil {
-			return err
-		}
-		var certBuf bytes.Buffer
-		if err := certChain.Write(&certBuf); err != nil {
-			return err
-		}
+		// Check if the generated exchange passes Verify().
+
+		// Create a cert fetcher for Verify() that returns `certs` in
+		// application/cert-chain+cbor format.
 		certFetcher := func(_ string) ([]byte, error) {
+			certChain, err := certurl.NewCertChain(certs, []byte("dummy"), nil)
+			if err != nil {
+				return nil, err
+			}
+			var certBuf bytes.Buffer
+			if err := certChain.Write(&certBuf); err != nil {
+				return nil, err
+			}
 			return certBuf.Bytes(), nil
 		}
 		var logBuf bytes.Buffer
