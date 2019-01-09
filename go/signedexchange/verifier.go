@@ -85,7 +85,7 @@ func DefaultCertFetcher(url string) ([]byte, error) {
 // Signature timestamps are checked against verificationTime.
 // Certificates for signatures are fetched using certFetcher.
 // Errors encountered during verification are logged to l.
-func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l *log.Logger) bool {
+func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l *log.Logger) (bool, []byte) {
 	// draft-yasskin-http-origin-signed-responses.html#cross-origin-trust
 
 	// "The client MUST parse the Signature header into a list of signatures
@@ -93,7 +93,7 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 	signatures, err := structuredheader.ParseParameterisedList(e.SignatureHeaderValue)
 	if err != nil {
 		l.Printf("Could not parse signature header: %v", err)
-		return false
+		return false, nil
 	}
 	// "...and run the following algorithm for each signature, stopping at the
 	// first one that returns "valid". If any signature returns "valid", return
@@ -125,7 +125,7 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 		//         requestUrl, headers, and payload, getting certificate-chain
 		//         back. If this returned "invalid" or didn't return a
 		//         certificate chain, return "invalid"."
-		_, err = verifySignature(e, verificationTime, certFetcher, signature)
+		_, decodedPayload, err := verifySignature(e, verificationTime, certFetcher, signature)
 		if err != nil {
 			l.Printf("Verification of sinature %q failed: %v", signature.Label, err)
 			continue
@@ -154,66 +154,65 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 		// TODO: Implement Step 6 and 7 (certificate verification).
 
 		// Step 8: "Return "valid"."
-		return true
+		return true, decodedPayload
 	}
-	return false
+	return false, nil
 }
 
 // verifySignature verifies single signature, as described in
 // https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#signature-validity.
-func verifySignature(e *Exchange, verificationTime time.Time, fetch CertFetcher, signature *Signature) (certurl.CertChain, error) {
+func verifySignature(e *Exchange, verificationTime time.Time, fetch CertFetcher, signature *Signature) (certurl.CertChain, []byte, error) {
 	// Step 1: Extract the signature fields
 	// |signature| is the parsed signature.
 
 	// Step 2: Fetch cert-url and determine the signing algorithm
 	certBytes, err := fetch(signature.CertUrl)
 	if err != nil {
-		return nil, fmt.Errorf("verify: failed to fetch %q: %v", signature.CertUrl, err)
+		return nil, nil, fmt.Errorf("verify: failed to fetch %q: %v", signature.CertUrl, err)
 	}
 	certs, err := certurl.ReadCertChain(bytes.NewReader(certBytes))
 	if err != nil {
-		return nil, fmt.Errorf("verify: could not parse certificate CBOR: %v", err)
+		return nil, nil, fmt.Errorf("verify: could not parse certificate CBOR: %v", err)
 	}
 	mainCert := certs[0].Cert
 	verifier, err := signingalgorithm.VerifierForPublicKey(mainCert.PublicKey)
 	if err != nil {
-		return nil, fmt.Errorf("verify: unsupported main certificate public key: %v", err)
+		return nil, nil, fmt.Errorf("verify: unsupported main certificate public key: %v", err)
 	}
 
 	// Step 3 and 4: Timestamp checks
 	if err := verifyTimestamps(signature, verificationTime); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// Step 5: Reconstruct the signing message
 	certSha256 := calculateCertSha256([]*x509.Certificate{mainCert})
 	if certSha256 == nil {
-		return nil, errors.New("verify: cannot calculate certificate fingerprint")
+		return nil, nil, errors.New("verify: cannot calculate certificate fingerprint")
 	}
 	msg, err := serializeSignedMessage(e, certSha256, signature.ValidityUrl, signature.Date, signature.Expires)
 	if err != nil {
-		return nil, errors.New("verify: cannot reconstruct signed message")
+		return nil, nil, errors.New("verify: cannot reconstruct signed message")
 	}
 	// Step 6: Cert-sha256 check
 	if !bytes.Equal(signature.CertSha256, certSha256) {
-		return nil, errors.New("verify: cert-sha256 mismatch")
+		return nil, nil, errors.New("verify: cert-sha256 mismatch")
 	}
 	// Step 7: Signature verification
 	ok, err := verifier.Verify(msg, signature.Sig)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if !ok {
-		return nil, errors.New("verify: signature verification failed")
+		return nil, nil, errors.New("verify: signature verification failed")
 	}
 	// Step 8: Payload integrity check
 	decodedPayload, err := verifyPayload(e, signature)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	e.Payload = decodedPayload
 
 	// Step 9: Return "potentially-valid" with certificate-chain.
-	return certs, nil
+	return certs, decodedPayload, nil
 }
 
 func verifyTimestamps(sig *Signature, verificationTime time.Time) error {
