@@ -828,8 +828,6 @@ signature returns "valid", return "valid". Otherwise, return "invalid".
    "invalid".
 1. Let `response` be the response metadata and headers parsed out of
    `responseHeaders`.
-1. If `response` is not complete (Section 3.1 of {{!RFC7234}}),
-   return "invalid".
 1. If Section 3 of {{!RFC7234}} forbids a shared cache from storing `response`,
    return "invalid".
 1. If `response`'s headers contain a stateful header field, as defined in
@@ -1934,7 +1932,7 @@ draft-05
 * Update to mice-03 including the Digest header.
 * Refer to draft-yasskin-httpbis-origin-signed-exchanges-impl for draft version
   numbers.
-* Require `exchange`'s response to be complete and cachable by a shared cache.
+* Require `exchange`'s response to be cachable by a shared cache.
 * Define the "integrity" field of the Signature header to include subfields of
   the main integrity-protecting header, including the digest algorithm.
 * Put a fallback URL at the beginning of the `application/signed-exchange`
