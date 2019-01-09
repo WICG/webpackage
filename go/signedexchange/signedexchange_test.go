@@ -288,11 +288,10 @@ func createTestExchange(ver version.Version, t *testing.T) (e *Exchange, s *Sign
 		Rand:        zeroReader{},
 	}
 
-	certChain := certurl.CertChain{}
-	for _, cert := range certs {
-		certChain = append(certChain, &certurl.CertChainItem{Cert: cert})
+	certChain, err := certurl.NewCertChain(certs, []byte("dummy"), nil)
+	if err != nil {
+		t.Fatal(err)
 	}
-	certChain[0].OCSPResponse = []byte("dummy")
 	var certCBOR bytes.Buffer
 	if err := certChain.Write(&certCBOR); err != nil {
 		t.Fatal(err)

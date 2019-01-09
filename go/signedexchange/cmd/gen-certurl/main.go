@@ -21,8 +21,6 @@ var (
 )
 
 func run(pemFilePath, ocspFilePath, sctDirPath string) error {
-	certChain := certurl.CertChain{}
-
 	pem, err := ioutil.ReadFile(pemFilePath)
 	if err != nil {
 		return err
@@ -33,9 +31,6 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 	}
 	if len(certs) == 0 {
 		return fmt.Errorf("input file %q has no certificates.", pemFilePath)
-	}
-	for _, cert := range certs {
-		certChain = append(certChain, &certurl.CertChainItem{Cert: cert})
 	}
 
 	var ocspDer []byte
@@ -54,8 +49,8 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Warning: ocsp is not a correct DER-encoded OCSP response.")
 	}
-	certChain[0].OCSPResponse = ocspDer
 
+	var sctList []byte
 	if sctDirPath != "" {
 		files, err := filepath.Glob(filepath.Join(sctDirPath, "*.sct"))
 		if err != nil {
@@ -69,7 +64,7 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 			}
 			scts = append(scts, sct)
 		}
-		certChain[0].SCTList, err = certurl.SerializeSCTList(scts)
+		sctList, err = certurl.SerializeSCTList(scts)
 		if err != nil {
 			return err
 		}
@@ -77,6 +72,10 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 		if !certurl.HasEmbeddedSCT(certs[0], parsedOcsp) {
 			fmt.Fprintln(os.Stderr, "Warning: Neither cert nor OCSP have embedded SCT list. Use -sctDir flag to add SCT from files.")
 		}
+	}
+	certChain, err := certurl.NewCertChain(certs, ocspDer, sctList)
+	if err != nil {
+		return err
 	}
 
 	buf := &bytes.Buffer{}
