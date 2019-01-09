@@ -19,13 +19,11 @@ func createCertChain(t *testing.T) CertChain {
 	if err != nil {
 		t.Fatalf("Cannot parse test-cert.pem: %v", err)
 	}
-	certChain := CertChain{}
-	for _, cert := range certs {
-		certChain = append(certChain, &CertChainItem{Cert: cert})
+	chain, err := NewCertChain(certs, []byte("OCSP"), []byte("SCT"))
+	if err != nil {
+		t.Fatalf("NewCertChain failed: %v", err)
 	}
-	certChain[0].OCSPResponse = []byte("OCSP")
-	certChain[0].SCTList = []byte("SCT")
-	return certChain
+	return chain
 }
 
 func TestParsePEM(t *testing.T) {

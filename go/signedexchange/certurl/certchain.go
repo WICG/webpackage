@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/asn1"
+	"errors"
 	"fmt"
 	"io"
 
@@ -19,6 +20,22 @@ type CertChainItem struct {
 type CertChain []*CertChainItem
 
 const magicString = "\U0001F4DC\u26D3" // "📜⛓"
+
+// NewCertChain creates a new CertChain from a list of X.509 certificates,
+// an OCSP response, and a SCT.
+func NewCertChain(certs []*x509.Certificate, ocsp, sct []byte) (CertChain, error) {
+	if len(certs) == 0 {
+		return nil, errors.New("cert-chain: cert chain must not be empty")
+	}
+
+	certChain := CertChain{}
+	for _, cert := range certs {
+		certChain = append(certChain, &CertChainItem{Cert: cert})
+	}
+	certChain[0].OCSPResponse = ocsp
+	certChain[0].SCTList = sct
+	return certChain, nil
+}
 
 // Write generates a certificate chain of application/cert-chain+cbor format and writes to w.
 // See https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cert-chain-format for the spec.
