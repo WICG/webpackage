@@ -873,13 +873,14 @@ they're listed here:
   {{!RFC7230}}).
 * Header fields listed in the no-cache response directive in the Cache-Control
   header field (Section 5.2.2.2 of {{!RFC7234}}).
-* Header fields whose name appears in the following list:
+* Header fields defined as hop-by-hop:
    * Connection
    * Keep-Alive
    * Proxy-Connection
    * Trailer
    * Transfer-Encoding
    * Upgrade
+* Stateful headers as defined below.
 
 ### Stateful header fields {#stateful-headers}
 
