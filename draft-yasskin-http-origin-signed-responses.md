@@ -1968,7 +1968,7 @@ draft-05
   metadata and headers.
 * Explicitly check the response payload's integrity instead of assuming the
   client did it elsewhere in processing the response.
-* Reject Transfer-Encoding response header.
+* Reject uncached header fields.
 
 draft-04
 
