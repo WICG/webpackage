@@ -132,8 +132,7 @@ spec: draft-yasskin-wpack-bundled-exchanges; urlPrefix: https://wicg.github.io/w
 spec: draft-yasskin-http-origin-signed-responses; urlPrefix: https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#
     type: dfn
         text: off-path attackers; url: seccons-off-path
-        text: stateful request header; url: stateful-headers
-        text: stateful response header; url: stateful-headers
+        text: uncached response header; url: uncached-headers
 spec: draft-yasskin-httpbis-origin-signed-exchanges-impl-02; urlPrefix: https://tools.ietf.org/html/draft-yasskin-httpbis-origin-signed-exchanges-impl-02#
     type: dfn
         text: canonically-encoded CBOR; url: section-3.4
@@ -748,8 +747,8 @@ cross-origin trust">establishes cross-origin trust</dfn> in an [=exchange=]
 1. Let |requestUrl| be |exchange|'s [=exchange/request URL=].
 1. If |signature|'s [=exchange signature/validityUrl=]'s [=url/origin=] is not
     [=same origin=] with |requestUrl|'s [=url/origin=], return "untrusted".
-1. If |exchange|'s [=exchange/response=]'s [=response/header list=] includes a
-    [=stateful response header=], return "untrusted".
+1. If |exchange|'s [=exchange/response=]'s [=response/header list=] includes an
+    [=uncached response header=], return "untrusted".
 1. If |signature|'s [=exchange signature/expiration time=] is more than 604800
     seconds (7 days) after |signature|'s [=exchange signature/date=], return
     "untrusted".
