@@ -85,6 +85,8 @@ func DefaultCertFetcher(url string) ([]byte, error) {
 // Signature timestamps are checked against verificationTime.
 // Certificates for signatures are fetched using certFetcher.
 // Errors encountered during verification are logged to l.
+// If successful, it returns true and the decoded payload. otherwise it returns
+// false and nil.
 func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l *log.Logger) (bool, []byte) {
 	// draft-yasskin-http-origin-signed-responses.html#cross-origin-trust
 
@@ -161,6 +163,7 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 
 // verifySignature verifies single signature, as described in
 // https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#signature-validity.
+// On success, returns a potentially-valid cert chain and decoded payload bytes.
 func verifySignature(e *Exchange, verificationTime time.Time, fetch CertFetcher, signature *Signature) (certurl.CertChain, []byte, error) {
 	// Step 1: Extract the signature fields
 	// |signature| is the parsed signature.
