@@ -202,7 +202,7 @@ func run() error {
 			return certBuf.Bytes(), nil
 		}
 		var logBuf bytes.Buffer
-		if !e.Verify(date, certFetcher, log.New(&logBuf, "", 0)) {
+		if _, ok := e.Verify(date, certFetcher, log.New(&logBuf, "", 0)); !ok {
 			return fmt.Errorf("failed to verify generated exchange: %s", logBuf.String())
 		}
 	}
