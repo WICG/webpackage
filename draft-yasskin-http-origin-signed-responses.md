@@ -894,13 +894,16 @@ These include but are not limited to:
 
 * `Authentication-Control`, {{?RFC8053}}
 * `Authentication-Info`, {{?RFC7615}}
+* `Clear-Site-Data`, {{?W3C.WD-clear-site-data-20171130}}
 * `Optional-WWW-Authenticate`, {{?RFC8053}}
 * `Proxy-Authenticate`, {{?RFC7235}}
 * `Proxy-Authentication-Info`, {{?RFC7615}}
+* `Public-Key-Pins`, {{?RFC7469}}
 * `Sec-WebSocket-Accept`, {{?RFC6455}}
 * `Set-Cookie`, {{?RFC6265}}
 * `Set-Cookie2`, {{?RFC2965}}
 * `SetProfile`, {{?W3C.NOTE-OPS-OverHTTP}}
+* `Strict-Transport-Security`, {{?RFC6797}}
 * `WWW-Authenticate`, {{?RFC7235}}
 
 ## Certificate Requirements {#cross-origin-cert-req}
