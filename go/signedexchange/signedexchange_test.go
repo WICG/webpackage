@@ -42,6 +42,9 @@ QW4lVAz+goRnDd+gJnUoGOj/pN6eSiP/AA==
 // signatureDate corresponds to the expectedSignatureHeader's date value.
 var signatureDate = time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
 
+var nullLogger = log.New(ioutil.Discard, "", 0)     // Use when some output is expected.
+var stdoutLogger = log.New(os.Stdout, "ERROR: ", 0) // Use when no output is expected.
+
 type zeroReader struct{}
 
 func (zeroReader) Read(b []byte) (int, error) {
@@ -309,7 +312,7 @@ func TestVerify(t *testing.T) {
 		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
 		verificationTime := signatureDate
-		if ok, _ := e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "ERROR: ", 0)); !ok {
+		if ok, _ := e.Verify(verificationTime, certFetcher, stdoutLogger); !ok {
 			t.Errorf("Verification failed")
 		}
 	})
@@ -324,7 +327,7 @@ func TestVerifyNotYetValidExchange(t *testing.T) {
 		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
 		verificationTime := signatureDate.Add(-1 * time.Second)
-		if ok, _ := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)); ok {
+		if ok, _ := e.Verify(verificationTime, certFetcher, nullLogger); ok {
 			t.Errorf("Verification should fail")
 		}
 	})
@@ -339,7 +342,7 @@ func TestVerifyExpiredExchange(t *testing.T) {
 		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
 		verificationTime := signatureDate.Add(1 * time.Hour).Add(1 * time.Second)
-		if ok, _ := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)); ok {
+		if ok, _ := e.Verify(verificationTime, certFetcher, nullLogger); ok {
 			t.Errorf("Verification should fail")
 		}
 	})
@@ -355,7 +358,7 @@ func TestVerifyBadValidityUrl(t *testing.T) {
 		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
 		verificationTime := signatureDate
-		if ok, _ := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)); ok {
+		if ok, _ := e.Verify(verificationTime, certFetcher, nullLogger); ok {
 			t.Errorf("Verification should fail")
 		}
 	})
@@ -371,7 +374,7 @@ func TestVerifyBadMethod(t *testing.T) {
 		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
 		verificationTime := signatureDate
-		if ok, _ := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)); ok {
+		if ok, _ := e.Verify(verificationTime, certFetcher, nullLogger); ok {
 			t.Errorf("Verification should fail")
 		}
 	})
@@ -390,7 +393,7 @@ func TestVerifyStatefulRequestHeader(t *testing.T) {
 		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
 		verificationTime := signatureDate
-		if ok, _ := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)); ok {
+		if ok, _ := e.Verify(verificationTime, certFetcher, nullLogger); ok {
 			t.Errorf("Verification should fail")
 		}
 	})
@@ -406,7 +409,7 @@ func TestVerifyStatefulResponseHeader(t *testing.T) {
 		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
 		verificationTime := signatureDate
-		if ok, _ := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)); ok {
+		if ok, _ := e.Verify(verificationTime, certFetcher, nullLogger); ok {
 			t.Errorf("Verification should fail")
 		}
 	})
@@ -423,7 +426,7 @@ func TestVerifyBadSignature(t *testing.T) {
 		e.ResponseHeaders.Add("Etag", "0123")
 
 		verificationTime := signatureDate
-		if ok, _ := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0)); ok {
+		if ok, _ := e.Verify(verificationTime, certFetcher, nullLogger); ok {
 			t.Errorf("Verification should fail")
 		}
 	})
@@ -440,8 +443,76 @@ func TestVerifyNonCanonicalURL(t *testing.T) {
 		certFetcher := func(_ string) ([]byte, error) { return c, nil }
 
 		verificationTime := signatureDate
-		if ok, _ := e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "ERROR: ", 0)); !ok {
+		if ok, _ := e.Verify(verificationTime, certFetcher, stdoutLogger); !ok {
 			t.Errorf("Verification failed")
+		}
+	})
+}
+
+func TestVerifyNonCacheable(t *testing.T) {
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		e.ResponseHeaders.Add("Cache-Control", "no-store")
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
+
+		verificationTime := signatureDate
+		switch ver {
+		case version.Version1b1, version.Version1b2:
+			if ok, _ := e.Verify(verificationTime, certFetcher, stdoutLogger); !ok {
+				t.Errorf("Verification should succeed")
+			}
+		default:
+			if ok, _ := e.Verify(verificationTime, certFetcher, nullLogger); ok {
+				t.Errorf("Verification should fail")
+			}
+		}
+	})
+}
+
+func TestIsCacheable(t *testing.T) {
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		if ver == version.Version1b1 || ver == version.Version1b2 {
+			return
+		}
+
+		e, _, _ := createTestExchange(ver, t)
+		if !e.IsCacheable(stdoutLogger) {
+			t.Errorf("Response should be cacheable")
+		}
+
+		e, _, _ = createTestExchange(ver, t)
+		e.ResponseHeaders.Add("cache-control", "no-store")
+		if e.IsCacheable(nullLogger) {
+			t.Errorf("Response with \"no-store\" cache directive shouldn't be cacheable")
+		}
+
+		e, _, _ = createTestExchange(ver, t)
+		e.ResponseHeaders.Add("cache-control", "max-age=300, private")
+		if e.IsCacheable(nullLogger) {
+			t.Errorf("Response with \"private\" cache directive shouldn't be cacheable")
+		}
+
+		e, _, _ = createTestExchange(ver, t)
+		e.ResponseStatus = 201
+		if e.IsCacheable(nullLogger) {
+			t.Errorf("Response with status code 201 shouldn't be cacheable by default")
+		}
+
+		e, _, _ = createTestExchange(ver, t)
+		e.ResponseStatus = 201
+		e.ResponseHeaders.Add("cache-control", "max-age=300")
+		if !e.IsCacheable(stdoutLogger) {
+			t.Errorf("Response with \"max-age\" cache directive should be cacheable")
+		}
+
+		e, _, _ = createTestExchange(ver, t)
+		e.ResponseStatus = 201
+		e.ResponseHeaders.Add("expires", "Mon, 07 Jan 2019 07:29:39 GMT")
+		if !e.IsCacheable(stdoutLogger) {
+			t.Errorf("Response with \"Expires\" header should be cacheable")
 		}
 	})
 }
