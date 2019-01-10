@@ -87,9 +87,9 @@ func DefaultCertFetcher(url string) ([]byte, error) {
 // Signature timestamps are checked against verificationTime.
 // Certificates for signatures are fetched using certFetcher.
 // Errors encountered during verification are logged to l.
-// On success, returns decoded payload bytes (can be an empty slice). Otherwise,
-// returns nil.
-func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l *log.Logger) []byte {
+// If successful, it returns the decoded payload and true. otherwise it returns
+// nil and false.
+func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l *log.Logger) ([]byte, bool) {
 	// draft-yasskin-http-origin-signed-responses.html#cross-origin-trust
 
 	// "The client MUST parse the Signature header into a list of signatures
@@ -97,7 +97,7 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 	signatures, err := structuredheader.ParseParameterisedList(e.SignatureHeaderValue)
 	if err != nil {
 		l.Printf("Could not parse signature header: %v", err)
-		return nil
+		return nil, false
 	}
 	// "...and run the following algorithm for each signature, stopping at the
 	// first one that returns "valid". If any signature returns "valid", return
@@ -164,14 +164,9 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 		// TODO: Implement Step 6 and 7 (certificate verification).
 
 		// Step 8: "Return "valid"."
-
-		// Make sure to return non-nil value, even if the payload is empty.
-		if decodedPayload == nil {
-			decodedPayload = make([]byte, 0)
-		}
-		return decodedPayload
+		return decodedPayload, true
 	}
-	return nil
+	return nil, false
 }
 
 // IsCacheable returns true if Exchange is cacheable by a shared cache

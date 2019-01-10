@@ -70,8 +70,7 @@ func verify(e *signedexchange.Exchange) error {
 	}
 
 	verificationTime := time.Now()
-	decodedPayload := e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "", 0))
-	if decodedPayload != nil {
+	if decodedPayload, ok := e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "", 0)); ok {
 		e.Payload = decodedPayload
 		fmt.Println("The exchange has valid signature.")
 	}
