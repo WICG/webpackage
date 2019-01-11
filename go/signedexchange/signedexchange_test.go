@@ -356,7 +356,7 @@ func TestVerifyStatefulRequestHeader(t *testing.T) {
 	})
 }
 
-func TestVerifyStatefulResponseHeader(t *testing.T) {
+func TestVerifyUncachedHeader(t *testing.T) {
 	testForEachVersion(t, func(ver version.Version, t *testing.T) {
 		e, s, c := createTestExchange(ver, t)
 		e.ResponseHeaders.Set("Set-Cookie", "foo=bar")

@@ -830,8 +830,8 @@ signature returns "valid", return "valid". Otherwise, return "invalid".
    `responseHeaders`.
 1. If Section 3 of {{!RFC7234}} forbids a shared cache from storing `response`,
    return "invalid".
-1. If `response`'s headers contain a stateful header field, as defined in
-   {{stateful-headers}}, return "invalid".
+1. If `response`'s headers contain an uncached header field, as defined in
+   {{uncached-headers}}, return "invalid".
 1. Let `authority` be the host component of `requestUrl`.
 1. Validate the `certificate-chain` using the following substeps. If any of them
    fail, re-run {{signature-validity}} once over the signature with the
@@ -861,7 +861,26 @@ signature returns "valid", return "valid". Otherwise, return "invalid".
       as described by Section 3.3 of {{!RFC6962}}.
 1. Return "valid".
 
-## Stateful header fields {#stateful-headers}
+## Uncached header fields {#uncached-headers}
+
+Hop-by-hop and other uncached headers MUST NOT appear in a signed exchange.
+These will eventually be listed in {{?I-D.ietf-httpbis-cache}}, but for now
+they're listed here:
+
+* Hop-by-hop header fields listed in the Connection header field (Section 6.1 of
+  {{!RFC7230}}).
+* Header fields listed in the no-cache response directive in the Cache-Control
+  header field (Section 5.2.2.2 of {{!RFC7234}}).
+* Header fields defined as hop-by-hop:
+   * Connection
+   * Keep-Alive
+   * Proxy-Connection
+   * Trailer
+   * Transfer-Encoding
+   * Upgrade
+* Stateful headers as defined below.
+
+### Stateful header fields {#stateful-headers}
 
 As described in {{seccons-over-signing}}, a publisher can cause problems if they
 sign an exchange that includes private information. There's no way for a client
@@ -874,13 +893,16 @@ These include but are not limited to:
 
 * `Authentication-Control`, {{?RFC8053}}
 * `Authentication-Info`, {{?RFC7615}}
+* `Clear-Site-Data`, {{?W3C.WD-clear-site-data-20171130}}
 * `Optional-WWW-Authenticate`, {{?RFC8053}}
 * `Proxy-Authenticate`, {{?RFC7235}}
 * `Proxy-Authentication-Info`, {{?RFC7615}}
+* `Public-Key-Pins`, {{?RFC7469}}
 * `Sec-WebSocket-Accept`, {{?RFC6455}}
 * `Set-Cookie`, {{?RFC6265}}
 * `Set-Cookie2`, {{?RFC2965}}
 * `SetProfile`, {{?W3C.NOTE-OPS-OverHTTP}}
+* `Strict-Transport-Security`, {{?RFC6797}}
 * `WWW-Authenticate`, {{?RFC7235}}
 
 ## Certificate Requirements {#cross-origin-cert-req}
@@ -1945,6 +1967,7 @@ draft-05
   metadata and headers.
 * Explicitly check the response payload's integrity instead of assuming the
   client did it elsewhere in processing the response.
+* Reject uncached header fields.
 
 draft-04
 
