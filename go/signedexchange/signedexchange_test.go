@@ -121,9 +121,6 @@ func TestSignedExchange(t *testing.T) {
 		respHeader.Add("Foo", "Baz")
 
 		e := NewExchange(ver, requestUrl, http.MethodGet, reqHeader, 200, respHeader, []byte(payload))
-		if err != nil {
-			t.Fatal(err)
-		}
 		if err := e.MiEncodePayload(16); err != nil {
 			t.Fatal(err)
 		}
