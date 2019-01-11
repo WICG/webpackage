@@ -18,6 +18,8 @@ import (
 )
 
 const (
+	requestUrl = "https://example.com/"
+
 	payload  = `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`
 	pemCerts = `-----BEGIN CERTIFICATE-----
 MIIBhjCCAS2gAwIBAgIJAOhR3xtYd5QsMAoGCCqGSM49BAMCMDIxFDASBgNVBAMM
@@ -79,7 +81,6 @@ func TestSignedExchange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	requestUrl, _ := url.Parse("https://example.com/")
 	certUrl, _ := url.Parse("https://example.com/cert.msg")
 	validityUrl, _ := url.Parse("https://example.com/resource.validity")
 
@@ -119,10 +120,7 @@ func TestSignedExchange(t *testing.T) {
 		respHeader.Add("Foo", "Bar")
 		respHeader.Add("Foo", "Baz")
 
-		e, err := NewExchange(ver, requestUrl, http.MethodGet, reqHeader, 200, respHeader, []byte(payload))
-		if err != nil {
-			t.Fatal(err)
-		}
+		e := NewExchange(ver, requestUrl, http.MethodGet, reqHeader, 200, respHeader, []byte(payload))
 		if err := e.MiEncodePayload(16); err != nil {
 			t.Fatal(err)
 		}
@@ -154,7 +152,7 @@ func TestSignedExchange(t *testing.T) {
 			t.Errorf("Unexpected version: got %v, want %v", got.Version, ver)
 		}
 
-		if got.RequestURI != requestUrl.String() {
+		if got.RequestURI != requestUrl {
 			t.Errorf("Unexpected request URL: %q", got.RequestURI)
 		}
 
@@ -192,46 +190,9 @@ func TestSignedExchange(t *testing.T) {
 	})
 }
 
-func TestSignedExchangeStatefulHeader(t *testing.T) {
-	testForEachVersion(t, func(ver version.Version, t *testing.T) {
-		u, _ := url.Parse("https://example.com/")
-		header := http.Header{}
-		header.Add("Content-Type", "text/html; charset=utf-8")
-		// Set-Cookie is a stateful header and not available.
-		header.Add("Set-Cookie", "wow, such cookie")
-
-		if _, err := NewExchange(ver, u, http.MethodGet, nil, 200, header, []byte(payload)); err == nil {
-			t.Errorf("stateful header unexpectedly allowed in an exchange")
-		}
-
-		// Header names are case-insensitive.
-		u, _ = url.Parse("https://example.com/")
-		header = http.Header{}
-		header.Add("cOnTent-TyPe", "text/html; charset=utf-8")
-		header.Add("setProfile", "profile X")
-
-		if _, err := NewExchange(ver, u, http.MethodGet, nil, 200, header, []byte(payload)); err == nil {
-			t.Errorf("stateful header unexpectedly allowed in an exchange")
-		}
-	})
-}
-
-func TestSignedExchangeNonHttps(t *testing.T) {
-	testForEachVersion(t, func(ver version.Version, t *testing.T) {
-		u, _ := url.Parse("http://example.com/")
-		if _, err := NewExchange(ver, u, http.MethodGet, nil, 200, http.Header{}, []byte(payload)); err == nil {
-			t.Errorf("non-https resource URI unexpectedly allowed in an exchange")
-		}
-	})
-}
-
 func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 	testForEachVersion(t, func(ver version.Version, t *testing.T) {
-		u, _ := url.Parse("https://example.com/")
-		e, err := NewExchange(ver, u, http.MethodGet, nil, 200, http.Header{}, []byte(payload))
-		if err != nil {
-			t.Fatal(err)
-		}
+		e := NewExchange(ver, requestUrl, http.MethodGet, nil, 200, http.Header{}, []byte(payload))
 		if err := e.MiEncodePayload(16); err != nil {
 			t.Fatal(err)
 		}
@@ -257,14 +218,10 @@ func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 }
 
 func createTestExchange(ver version.Version, t *testing.T) (e *Exchange, s *Signer, certBytes []byte) {
-	u, _ := url.Parse("https://example.com/")
 	header := http.Header{}
 	header.Add("Content-Type", "text/html; charset=utf-8")
 
-	e, err := NewExchange(ver, u, http.MethodGet, nil, 200, header, []byte(payload))
-	if err != nil {
-		t.Fatal(err)
-	}
+	e = NewExchange(ver, requestUrl, http.MethodGet, nil, 200, header, []byte(payload))
 	if err := e.MiEncodePayload(16); err != nil {
 		t.Fatal(err)
 	}
