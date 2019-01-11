@@ -44,14 +44,14 @@ func ReadHarFromFile(path string) (*hargo.Har, error) {
 	return ReadHar(fi)
 }
 
-func nvpToHeader(nvps []hargo.NVP, isStatefulHeader func(string) bool) (http.Header, error) {
+func nvpToHeader(nvps []hargo.NVP, predBanned func(string) bool) (http.Header, error) {
 	h := make(http.Header)
 	for _, nvp := range nvps {
 		// Drop HTTP/2 pseudo headers.
 		if strings.HasPrefix(nvp.Name, ":") {
 			continue
 		}
-		if isStatefulHeader(nvp.Name) {
+		if predBanned(nvp.Name) {
 			log.Printf("Dropping banned header: %q", nvp.Name)
 			continue
 		}
@@ -92,7 +92,7 @@ func fromHar(harPath string) error {
 		if err != nil {
 			return fmt.Errorf("Failed to parse request header for the request %q. err: %v", e.Request.URL, err)
 		}
-		resh, err := nvpToHeader(e.Response.Headers, signedexchange.IsStatefulResponseHeader)
+		resh, err := nvpToHeader(e.Response.Headers, signedexchange.IsUncachedHeader)
 		if err != nil {
 			return fmt.Errorf("Failed to parse response header for the request %q. err: %v", e.Request.URL, err)
 		}

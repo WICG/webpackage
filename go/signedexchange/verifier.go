@@ -387,10 +387,8 @@ func verifyHeaders(e *Exchange) error {
 			return fmt.Errorf("exchange has stateful request header %q", k)
 		}
 	}
-	for k := range e.ResponseHeaders {
-		if IsStatefulResponseHeader(k) {
-			return fmt.Errorf("exchange has stateful response header %q", k)
-		}
+	if err := VerifyUncachedHeader(e.ResponseHeaders); err != nil {
+		return err
 	}
 	return nil
 }

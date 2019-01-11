@@ -52,10 +52,8 @@ func NewExchange(ver version.Version, uri *url.URL, method string, requestHeader
 			return nil, fmt.Errorf("signedexchange: stateful request header %q can't be captured inside signed exchange", name)
 		}
 	}
-	for name := range responseHeaders {
-		if IsStatefulResponseHeader(name) {
-			return nil, fmt.Errorf("signedexchange: stateful response header %q can't be captured inside signed exchange", name)
-		}
+	if err := VerifyUncachedHeader(responseHeaders); err != nil {
+		return nil, err
 	}
 
 	return &Exchange{
