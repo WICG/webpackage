@@ -1124,6 +1124,13 @@ define the  `application/signed-exchange` content type that represents a signed
 HTTP exchange, including a request URL, response metadata
 and header fields, and a response payload.
 
+When served over HTTP, a response containing an `application/signed-exchange`
+payload MUST include at least the following response header fields, to reduce
+content sniffing vulnerabilities ({{seccons-content-sniffing}}):
+
+* Content-Type: application/signed-exchange;v=*version*
+* X-Content-Type-Options: nosniff
+
 This content type consists of the concatenation of the following items:
 
 1. 8 bytes consisting of the ASCII characters "sxg1" followed by 4 0x00 bytes,
@@ -1341,11 +1348,11 @@ The `application/signed-exchange` format ({{application-signed-exchange}})
 includes a URL and response headers early in the format, which an
 attacker could use to cause these plugins to sniff a bad content type.
 
-To avoid vulnerabilities, servers are advised to always include the
-`X-Content-Type-Options: nosniff` response header field ({{FETCH}}), to only
-serve an `application/signed-exchange` resource (SXG) from a domain if it would
-also be safe for that domain to serve the SXG's content directly, and to follow
-at least one of the following strategies:
+To avoid vulnerabilities, in addition to the response header requirements in
+{{application-signed-exchange}}, servers are advised to only serve an
+`application/signed-exchange` resource (SXG) from a domain if it would also be
+safe for that domain to serve the SXG's content directly, and to follow at least
+one of the following strategies:
 
 1. Only serve signed exchanges from dedicated domains that don't have access to
    sensitive cookies or user storage.

@@ -216,6 +216,15 @@ responses = [*response]
 
 ~~~~~
 
+## Serving constraints {#serving-constraints}
+
+When served over HTTP, a response containing an `application/webbundle`
+payload MUST include at least the following response header fields, to reduce
+content sniffing vulnerabilities ({{seccons-content-sniffing}}):
+
+* Content-Type: application/webbundle
+* X-Content-Type-Options: nosniff
+
 ## Load a bundle's metadata {#load-metadata}
 
 A bundle holds a series of sections, which can be accessed randomly using the
@@ -679,11 +688,11 @@ The `application/webbundle` format defined above includes URLs and request
 headers early in the format, which an attacker could use to cause these plugins
 to sniff a bad content type.
 
-To avoid vulnerabilities, servers are advised to always include the
-`X-Content-Type-Options: nosniff` response header field ({{FETCH}}), to only
-serve an `application/webbundle` resource from a domain if it would also be safe
-for that domain to serve the bundle's content directly, and to follow at least
-one of the following strategies:
+To avoid vulnerabilities, in addition to the response header requirements in
+{{serving-constraints}}, servers are advised to only serve an
+`application/webbundle` resource from a domain if it would also be safe for that
+domain to serve the bundle's content directly, and to follow at least one of the
+following strategies:
 
 1. Only serve bundles from dedicated domains that don't have access to sensitive
    cookies or user storage.
@@ -715,7 +724,7 @@ Any existing mechanisms that prevent polyglot documents probably keep working in
 the face of this new attack, but we don't have a guarantee of that.
 
 To encourage servers to include the `X-Content-Type-Options: nosniff` header
-field, clients SHOULD reject signed exchanges served without it.
+field, clients SHOULD reject bundles served without it.
 
 # IANA considerations
 
