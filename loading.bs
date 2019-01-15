@@ -521,8 +521,6 @@ which indicates an error returned by the following steps:
     :: `"b3"`
 
     </dl>
-1. Set |report|'s [=signed exchange report/inner URL=] to |response|'s
-    [=response/URL=].
 1. If |response|'s [=response/URL=]'s [=url/origin=] is not a [=potentially
     trustworthy origin=], return `"non_secure_origin"`.
 
@@ -535,6 +533,7 @@ which indicates an error returned by the following steps:
 1. Let (|magic|, |requestUrlBytes|, |requestUrl|) be the result of [=parsing the
     invariant prefix=] from |stream|. If returns a failure, return
     `"parse_error"`.
+1. Set |report|'s [=signed exchange report/inner URL=] to |requestUrl|.
 1. If |magic| is not the following value, depending on |version|, return
     `"parse_error"`:
     <dl class="switch">
