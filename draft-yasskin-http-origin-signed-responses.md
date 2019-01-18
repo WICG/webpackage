@@ -2059,6 +2059,7 @@ draft-06
 
 * Add a security consideration for future-dated OCSP responses and for stolen
   private keys.
+* Define a CAA parameter to opt into certificate issuance.
 
 draft-05
 
