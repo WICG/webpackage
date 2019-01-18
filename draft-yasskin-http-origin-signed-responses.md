@@ -979,6 +979,16 @@ extension. This OID might or might not be used as the final OID for the
 extension, so certificates including it might need to be reissued once the final
 RFC is published.
 
+### Extensions to the CAA Record: cansignhttpexchanges Parameter {#caa-cansignhttpexchanges}
+
+A CAA parameter "cansignhttpexchanges" is defined for the "issue" and
+"issuewild" properties defined by {{!RFC6844}}.  The value of this parameter, if
+specified, SHOULD be "yes".
+
+If the "cansignhttpexchanges" parameter is not present and equal to "yes", the
+CA indicated by the "issue" or "issuewild" property SHOULD NOT issue certificates
+with the CanSignHttpExchanges extension defined in {{cross-origin-cert-req}}.
+
 # Transferring a signed exchange {#transfer}
 
 A signed exchange can be transferred in several ways, of which three are
@@ -1650,6 +1660,13 @@ Restrictions on usage:  N/A
 Author:  See Authors' Addresses section.
 
 Change controller:  IESG
+
+## The cansignhttpexchanges CAA Parameter {#iana-caa-cansignhttpexchanges}
+
+There are no IANA considerations for this parameter. As per the CAA
+specification, the parameter namespace for the CAA "issue" and "issuewild"
+properties has CA-defined semantics. This document merely specifies a
+RECOMMENDED semantic for parameters of the name "cansignhttpexchanges".
 
 --- back
 
