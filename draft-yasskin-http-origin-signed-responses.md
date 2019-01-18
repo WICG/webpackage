@@ -989,6 +989,9 @@ If the "cansignhttpexchanges" parameter is not present and equal to "yes", the
 CA indicated by the "issue" or "issuewild" property SHOULD NOT issue certificates
 with the CanSignHttpExchanges extension defined in {{cross-origin-cert-req}}.
 
+The CA/Browser Forum Baseline Requirements ({{BRs}}) are expected to establish
+requirements around the treatment of this parameter.
+
 # Transferring a signed exchange {#transfer}
 
 A signed exchange can be transferred in several ways, of which three are
