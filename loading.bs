@@ -149,6 +149,7 @@ spec: SHA2; urlPrefix: http://csrc.nist.gov/publications/fips/fips180-4/fips-180
 spec: network-error-logging; urlPrefix: https://w3c.github.io/network-error-logging/#
     type: dfn
         text: generate a network error report ; url: generate-a-network-error-report
+        text: AdditionalReportBody ; url: dom-additionalreportbody
 </pre>
 <pre class='link-defaults'>
 spec:fetch; type:dfn; for:/; text:response
@@ -1054,7 +1055,8 @@ A [=request=] |browserRequest| <dfn>matches the stored exchange</dfn>
 
 <dfn>Queuing signed exchange report</dfn> |report| is the following steps:
 
-1. Let |additional body| be a new ECMAScript object with the following properties:
+1. Let |additional body| be a new [=AdditionalReportBody=] object with the
+    following properties:
 
     * outer_url: |report|'s [=signed exchange report/outer request=]'s
           [=request/url=].
