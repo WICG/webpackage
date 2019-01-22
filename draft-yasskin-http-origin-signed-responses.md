@@ -985,9 +985,10 @@ A CAA parameter "cansignhttpexchanges" is defined for the "issue" and
 "issuewild" properties defined by {{!RFC6844}}.  The value of this parameter, if
 specified, SHOULD be "yes".
 
-If the "cansignhttpexchanges" parameter is not present and equal to "yes", the
-CA indicated by the "issue" or "issuewild" property SHOULD NOT issue certificates
-with the CanSignHttpExchanges extension defined in {{cross-origin-cert-req}}.
+A CA SHOULD NOT issue certificates with the CanSignHttpExchanges extension
+defined in {{cross-origin-cert-req}} unless an applicable issue or issuewild
+property exists for the CA, and the "cansignhttpexchanges" parameter is present
+on the property and is equal to "yes".
 
 The CA/Browser Forum Baseline Requirements ({{BRs}}) are expected to establish
 requirements around the treatment of this parameter.
