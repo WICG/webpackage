@@ -988,7 +988,7 @@ RFC is published.
 
 A CAA parameter "cansignhttpexchanges" is defined for the "issue" and
 "issuewild" properties defined by {{!RFC6844}}.  The value of this parameter, if
-specified, SHOULD be "yes".
+specified, MUST be "yes".
 
 # Transferring a signed exchange {#transfer}
 
