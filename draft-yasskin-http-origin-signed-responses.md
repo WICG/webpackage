@@ -963,6 +963,11 @@ able to make even one unauthorized signature.
 
 Conforming CAs MUST NOT mark this extension as critical.
 
+A conforming CA MUST NOT issue certificates with this extension unless an
+applicable "issue" or "issuewild" CAA property ({{!RFC6844}}) exists for the CA,
+and the "cansignhttpexchanges" parameter ({{caa-cansignhttpexchanges}}) is
+present on the property and is equal to "yes".
+
 Clients MUST NOT accept certificates with this extension in TLS connections
 (Section 4.4.2.2 of {{!RFC8446}}).
 
@@ -984,14 +989,6 @@ RFC is published.
 A CAA parameter "cansignhttpexchanges" is defined for the "issue" and
 "issuewild" properties defined by {{!RFC6844}}.  The value of this parameter, if
 specified, SHOULD be "yes".
-
-A CA SHOULD NOT issue certificates with the CanSignHttpExchanges extension
-defined in {{cross-origin-cert-req}} unless an applicable issue or issuewild
-property exists for the CA, and the "cansignhttpexchanges" parameter is present
-on the property and is equal to "yes".
-
-The CA/Browser Forum Baseline Requirements ({{BRs}}) are expected to establish
-requirements around the treatment of this parameter.
 
 # Transferring a signed exchange {#transfer}
 
@@ -1667,10 +1664,7 @@ Change controller:  IESG
 
 ## The cansignhttpexchanges CAA Parameter {#iana-caa-cansignhttpexchanges}
 
-There are no IANA considerations for this parameter. As per the CAA
-specification, the parameter namespace for the CAA "issue" and "issuewild"
-properties has CA-defined semantics. This document merely specifies a
-RECOMMENDED semantic for parameters of the name "cansignhttpexchanges".
+There are no IANA considerations for this parameter.
 
 --- back
 
