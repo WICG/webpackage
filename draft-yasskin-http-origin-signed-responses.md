@@ -1480,6 +1480,8 @@ field, clients SHOULD reject signed exchanges served without it.
 
 # Privacy considerations
 
+## Confidentiality {#priv-confidentiality}
+
 Normally, when a client fetches `https://o1.com/resource.js`,
 `o1.com` learns that the client is interested in the resource. If
 `o1.com` signs `resource.js`, `o2.com` serves it as
@@ -1502,6 +1504,19 @@ exchange is being loaded from local disk, but when the client itself requested
 the exchange over a network it SHOULD require TLS ({{!RFC8446}}) or a
 successor transport layer, and MUST NOT accept exchanges transferred over plain
 HTTP without TLS.
+
+## Watermarking {#priv-watermarking}
+
+When a client requests a signed exchange from a publisher, the publisher could
+embed some information identifying that client into the exchange they return.
+This would allow the publisher to track who is using packages downloaded by what
+other users, although it wouldn't allow them to track the intermediate hops if
+user A shared the exchange to user B who then shares it to user C.
+
+A transparency log, as envisioned by {{uc-transparency}}, could be used to
+detect that a publisher is watermarking their signed exchanges, and if the
+transparency log includes the actual exchanges, could be used to confuse the
+publisher's tracking.
 
 # IANA considerations
 
