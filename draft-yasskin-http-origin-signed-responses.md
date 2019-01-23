@@ -961,6 +961,9 @@ able to make even one unauthorized signature.
 Certificates with this extension MUST be revoked if an unauthorized entity is
 able to make even one unauthorized signature.
 
+Certificates with this extension MUST have a Validity Period no greater than 90
+days.
+
 Conforming CAs MUST NOT mark this extension as critical.
 
 A conforming CA MUST NOT issue certificates with this extension unless, for each
@@ -2061,6 +2064,7 @@ draft-06
 * Add a security consideration for future-dated OCSP responses and for stolen
   private keys.
 * Define a CAA parameter to opt into certificate issuance.
+* Limit certificate lifetimes to 90 days.
 
 draft-05
 
