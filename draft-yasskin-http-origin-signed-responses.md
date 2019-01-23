@@ -2092,6 +2092,7 @@ draft-06
   private keys.
 * Define a CAA parameter to opt into certificate issuance.
 * Limit certificate lifetimes to 90 days.
+* Add a privacy consideration about watermarking.
 
 draft-05
 
