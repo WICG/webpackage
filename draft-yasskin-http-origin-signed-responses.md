@@ -167,7 +167,7 @@ of the exchange's payload.
 
 The `Signature` header is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a parameterised list
-(Section 3.3 of {{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
+(Section 3.4 of {{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
 
     Signature = sh-param-list
 
@@ -181,13 +181,13 @@ values:
 
 "sig"
 
-: Binary content (Section 3.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Byte sequence (Section 3.10 of {{!I-D.ietf-httpbis-header-structure}}) holding
   the signature of most of these parameters and the exchange's URL and response
   headers.
 
 "integrity"
 
-: A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing a
+: A string (Section 3.8 of {{!I-D.ietf-httpbis-header-structure}}) containing a
   "/"-separated sequence of names starting with the lowercase name of the
   response header field that guards the response payload's integrity. The
   meaning of subsequent names depends on the response header field, but for the
@@ -196,27 +196,27 @@ values:
 
 "cert-url"
 
-: A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
+: A string (Section 3.8 of {{!I-D.ietf-httpbis-header-structure}}) containing an
   absolute URL ({{terminology}}) with a scheme of "https" or "data".
 
 "cert-sha256"
 
-: Binary content (Section 3.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Byte sequence (Section 3.10 of {{!I-D.ietf-httpbis-header-structure}}) holding
   the SHA-256 hash of the first certificate found at "cert-url".
 
 "ed25519key"
 
-: Binary content (Section 3.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Byte sequence (Section 3.10 of {{!I-D.ietf-httpbis-header-structure}}) holding
   an Ed25519 public key ({{!RFC8032}}).
 
 {:#signature-validityurl} "validity-url"
 
-: A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
+: A string (Section 3.8 of {{!I-D.ietf-httpbis-header-structure}}) containing an
   absolute URL ({{terminology}}) with a scheme of "https".
 
 "date" and "expires"
 
-: An integer (Section 3.5 of {{!I-D.ietf-httpbis-header-structure}})
+: An integer (Section 3.6 of {{!I-D.ietf-httpbis-header-structure}})
   representing a Unix time.
 
 The "cert-url" parameter is *not* signed, so intermediates can update it with a
@@ -290,9 +290,9 @@ grants 4-day signatures, so clients will need to re-validate more often.
 ### Open Questions ### {#oq-signature-header}
 
 {{?I-D.ietf-httpbis-header-structure}} provides a way to parameterise
-identifiers but not other supported types like binary content. If the
+identifiers but not other supported types like byte sequences. If the
 `Signature` header field is notionally a list of parameterised signatures, maybe
-we should add a "parameterised binary content" type.
+we should add a "parameterised byte sequence" type.
 {:#parameterised-binary}
 
 Should the cert-url and validity-url be lists so that intermediates can offer a
@@ -419,7 +419,7 @@ complex data types, so it doesn't need rules to canonicalize those.
 ## Signature validity ## {#signature-validity}
 
 The client MUST parse the `Signature` header field as the parameterised list
-(Section 4.2.3 of {{!I-D.ietf-httpbis-header-structure}}) described in
+(Section 4.2.5 of {{!I-D.ietf-httpbis-header-structure}}) described in
 {{signature-header}}. If an error is thrown during this parsing or any of the
 requirements described there aren't satisfied, the exchange has no valid
 signatures. Otherwise, each member of this list represents a signature with
@@ -451,7 +451,7 @@ to retrieve an updated OCSP from the original server.
 {:#force-fetch}
 
 1. Let:
-   * `signature` be the signature (binary content in the parameterised
+   * `signature` be the signature (byte sequence in the parameterised
      identifier's "sig" parameter).
    * `integrity` be the signature's "integrity" parameter.
    * `validity-url` be the signature's "validity-url" parameter.
@@ -596,7 +596,7 @@ validity = {
 ~~~
 
 The elements of the `signatures` array are parameterised identifiers (Section
-4.2.4 of {{!I-D.ietf-httpbis-header-structure}}) meant to replace the signatures
+4.2.6 of {{!I-D.ietf-httpbis-header-structure}}) meant to replace the signatures
 within the `Signature` header field pointing to this validity data. If the
 signed exchange contains a bug severe enough that clients need to stop using the
 content, the `signatures` array MUST NOT be present.
@@ -705,7 +705,7 @@ all.
 
 The `Accept-Signature` header field is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a parameterised list
-(Section 3.3 of {{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
+(Section 3.4 of {{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
 
     Accept-Signature = sh-param-list
 
@@ -746,7 +746,7 @@ for "ecdsa/secp256r1" unless the header field states otherwise.
 
 The "ed25519key" identifier has parameters indicating the public keys that will
 be used to validate the returned signature. Each parameter's name is
-re-interpreted as binary content (Section 3.9 of
+re-interpreted as a byte sequence (Section 3.10 of
 {{!I-D.ietf-httpbis-header-structure}}) encoding a prefix of the public key. For
 example, if the client will validate signatures using the public key whose
 base64 encoding is `11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=`, valid
@@ -771,7 +771,7 @@ because 5 bytes isn't a valid length for encoded base64, and not
 Accept-Signature: ..., ed25519key; 11qYAQ
 ~~~
 
-because it doesn't start or end with the `*`s that indicate binary content.
+because it doesn't start or end with the `*`s that indicate a byte sequence.
 
 Note that `ed25519key; **` is an empty prefix, which matches all public keys, so
 it's useful in subresource integrity ({{uc-sri}}) cases like `<link rel=preload
@@ -1032,7 +1032,7 @@ merge the header field lists of valid signatures.
     Signed-Headers = sh-list
 
 Each element of the `Signed-Headers` list must be a lowercase string (Section
-3.7 of {{!I-D.ietf-httpbis-header-structure}}) naming an HTTP response header
+3.8 of {{!I-D.ietf-httpbis-header-structure}}) naming an HTTP response header
 field. Pseudo-header field names (Section 8.1.2.1 of {{!RFC7540}}) MUST NOT
 appear in this list.
 
@@ -1987,6 +1987,7 @@ draft-05
 * Explicitly check the response payload's integrity instead of assuming the
   client did it elsewhere in processing the response.
 * Reject uncached header fields.
+* Update to draft-ietf-httpbis-header-structure-09.
 
 draft-04
 
