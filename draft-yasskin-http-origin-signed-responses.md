@@ -1988,7 +1988,7 @@ draft-05
   client did it elsewhere in processing the response.
 * Reject uncached header fields.
 * Update to draft-ietf-httpbis-header-structure-09.
-* Update to the final TLS RFC.
+* Update to the final TLS 1.3 RFC.
 
 draft-04
 
