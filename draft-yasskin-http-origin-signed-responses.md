@@ -471,10 +471,10 @@ to retrieve an updated OCSP from the original server.
       1. If `publicKey` is an RSA key, return "invalid".
       1. If `publicKey` is a key using the secp256r1 elliptic curve, set
          `signing-alg` to ecdsa_secp256r1_sha256 as defined in Section 4.2.3 of
-         {{!I-D.ietf-tls-tls13}}.
+         {{!RFC8446}}.
       1. Otherwise, either return "invalid" or set `signing-alg` to a non-legacy
          signing algorithm defined by TLS 1.3 or later
-         ({{!I-D.ietf-tls-tls13}}). This choice MUST depend only on
+         ({{!RFC8446}}). This choice MUST depend only on
          `publicKey`'s type and not on any other context.
    1. If `ed25519key` is present, set `publicKey` to `ed25519key` and
       `signing-alg` to ed25519, as defined by {{!RFC8032}}
@@ -482,7 +482,7 @@ to retrieve an updated OCSP from the original server.
    "invalid".
 1. If the current time is before `date` or after `expires`, return "invalid".
 1. Let `message` be the concatenation of the following byte strings. This
-   matches the {{?I-D.ietf-tls-tls13}} format to avoid cross-protocol attacks if
+   matches the {{?RFC8446}} format to avoid cross-protocol attacks if
    anyone uses the same key in a TLS certificate and an exchange-signing
    certificate.
    1. A string that consists of octet 32 (0x20) repeated 64 times.
@@ -510,7 +510,7 @@ to retrieve an updated OCSP from the original server.
 
    Note that this intentionally differs from TLS 1.3, which signs the entire
    certificate chain in its Certificate Verify (Section 4.4.3 of
-   {{?I-D.ietf-tls-tls13}}), in order to allow updating the stapled OCSP
+   {{?RFC8446}}), in order to allow updating the stapled OCSP
    response without updating signatures at the same time.
 1. If `signature` is not a valid signature of `message` by `publicKey` using
    `signing-alg`, return "invalid".
@@ -944,7 +944,7 @@ able to make even one unauthorized signature.
 Conforming CAs MUST NOT mark this extension as critical.
 
 Clients MUST NOT accept certificates with this extension in TLS connections
-(Section 4.4.2.2 of {{!I-D.ietf-tls-tls13}}).
+(Section 4.4.2.2 of {{!RFC8446}}).
 
 RFC EDITOR PLEASE DELETE THE REST OF THE PARAGRAPHS IN THIS SECTION
 
@@ -1398,7 +1398,7 @@ To prevent network operators other than `o1.com` or `o2.com` from learning which
 exchanges were read, clients SHOULD only load exchanges fetched over a transport
 that's protected from eavesdroppers. This can be difficult to determine when the
 exchange is being loaded from local disk, but when the client itself requested
-the exchange over a network it SHOULD require TLS ({{!I-D.ietf-tls-tls13}}) or a
+the exchange over a network it SHOULD require TLS ({{!RFC8446}}) or a
 successor transport layer, and MUST NOT accept exchanges transferred over plain
 HTTP without TLS.
 
@@ -1726,7 +1726,7 @@ to:
    confused with a signature. That may be just the `rsaEncryption` OID from
    {{?RFC8017}}.
 2. Use the same format as TLS's signatures, specified in Section 4.4.3 of
-   {{?I-D.ietf-tls-tls13}}, with a context string that's specific to this use.
+   {{?RFC8446}}, with a context string that's specific to this use.
 
 The specification also needs to define which signing algorithm to use. It
 currently specifies that as a function from the key type, instead of allowing
@@ -1754,7 +1754,7 @@ by loading other HTML.
 To avoid using an unintended certificate with the same public key as the
 intended one, the content of the leaf certificate or the chain should be
 included in the signed data, like TLS does (Section 4.4.3 of
-{{?I-D.ietf-tls-tls13}}).
+{{?RFC8446}}).
 
 ## How much to sign ## {#how-much-to-sign}
 
@@ -1988,6 +1988,7 @@ draft-05
   client did it elsewhere in processing the response.
 * Reject uncached header fields.
 * Update to draft-ietf-httpbis-header-structure-09.
+* Update to the final TLS RFC.
 
 draft-04
 
