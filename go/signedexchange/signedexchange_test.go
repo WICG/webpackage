@@ -458,3 +458,11 @@ func TestIsCacheable(t *testing.T) {
 		}
 	})
 }
+
+func TestVariants(t *testing.T) {
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		if ver == version.Version1b1 || ver == version.Version1b2 {
+			return
+		}
+	})
+}

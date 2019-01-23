@@ -1,4 +1,6 @@
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/golang/gddo v0.0.0-20181116215533-9bd4a3295021 h1:HYV500jCgk+IC68L5sWrLFIWMpaUFfXXpJSAb7XOoBk=
+github.com/golang/gddo v0.0.0-20181116215533-9bd4a3295021/go.mod h1:xEhNfoBDX1hzLm2Nf80qUvZ2sVwoMZ8d6IE2SrsQfh4=
 github.com/influxdata/influxdb v1.6.3 h1:TioHM/BpNNH25J89jnL2tk45ww8e2CF+3Q/ih0CMw1I=
 github.com/influxdata/influxdb v1.6.3/go.mod h1:qZna6X/4elxqT3yI9iZYdZrWWdeFOOprn86kgg4+IzY=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
