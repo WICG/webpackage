@@ -323,6 +323,11 @@ func TestVerifyBadValidityUrl(t *testing.T) {
 
 func TestVerifyBadMethod(t *testing.T) {
 	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		// The test doesn't make sense in version >= b3, which doesn't have request method.
+		if ver != version.Version1b1 && ver != version.Version1b2 {
+			return
+		}
+
 		e, s, c := createTestExchange(ver, t)
 		e.RequestMethod = "POST"
 		if err := e.AddSignatureHeader(s); err != nil {
@@ -385,6 +390,29 @@ func TestVerifyBadSignature(t *testing.T) {
 		verificationTime := signatureDate
 		if _, ok := e.Verify(verificationTime, certFetcher, nullLogger); ok {
 			t.Errorf("Verification should fail")
+		}
+	})
+}
+
+func TestVerifyNoContentType(t *testing.T) {
+	testForEachVersion(t, func(ver version.Version, t *testing.T) {
+		e, s, c := createTestExchange(ver, t)
+		e.ResponseHeaders.Del("Content-Type");
+		if err := e.AddSignatureHeader(s); err != nil {
+			t.Fatal(err)
+		}
+		certFetcher := func(_ string) ([]byte, error) { return c, nil }
+		verificationTime := signatureDate
+
+		// The requirement for Content-Type is only for version >= b3.
+		if ver == version.Version1b1 || ver == version.Version1b2 {
+			if _, ok := e.Verify(verificationTime, certFetcher, stdoutLogger); !ok {
+				t.Errorf("Verification should succeed")
+			}
+		} else {
+			if _, ok := e.Verify(verificationTime, certFetcher, nullLogger); ok {
+				t.Errorf("Verification should fail")
+			}
 		}
 	})
 }
