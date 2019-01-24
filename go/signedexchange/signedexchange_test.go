@@ -260,18 +260,27 @@ func createTestExchange(ver version.Version, t *testing.T) (e *Exchange, s *Sign
 	return
 }
 
+func verificationShouldSucceed(t *testing.T, e *Exchange, certBytes []byte, verificationTime time.Time) {
+	certFetcher := func(_ string) ([]byte, error) { return certBytes, nil }
+	if _, ok := e.Verify(verificationTime, certFetcher, stdoutLogger); !ok {
+		t.Errorf("Verification should succeed")
+	}
+}
+
+func verificationShouldFail(t *testing.T, e *Exchange, certBytes []byte, verificationTime time.Time) {
+	certFetcher := func(_ string) ([]byte, error) { return certBytes, nil }
+	if _, ok := e.Verify(verificationTime, certFetcher, nullLogger); ok {
+		t.Errorf("Verification should fail")
+	}
+}
+
 func TestVerify(t *testing.T) {
 	testForEachVersion(t, func(ver version.Version, t *testing.T) {
 		e, s, c := createTestExchange(ver, t)
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
 		}
-		certFetcher := func(_ string) ([]byte, error) { return c, nil }
-
-		verificationTime := signatureDate
-		if _, ok := e.Verify(verificationTime, certFetcher, stdoutLogger); !ok {
-			t.Errorf("Verification failed")
-		}
+		verificationShouldSucceed(t, e, c, signatureDate)
 	})
 }
 
@@ -281,12 +290,8 @@ func TestVerifyNotYetValidExchange(t *testing.T) {
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
 		}
-		certFetcher := func(_ string) ([]byte, error) { return c, nil }
-
 		verificationTime := signatureDate.Add(-1 * time.Second)
-		if _, ok := e.Verify(verificationTime, certFetcher, nullLogger); ok {
-			t.Errorf("Verification should fail")
-		}
+		verificationShouldFail(t, e, c, verificationTime)
 	})
 }
 
@@ -296,12 +301,8 @@ func TestVerifyExpiredExchange(t *testing.T) {
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
 		}
-		certFetcher := func(_ string) ([]byte, error) { return c, nil }
-
 		verificationTime := signatureDate.Add(1 * time.Hour).Add(1 * time.Second)
-		if _, ok := e.Verify(verificationTime, certFetcher, nullLogger); ok {
-			t.Errorf("Verification should fail")
-		}
+		verificationShouldFail(t, e, c, verificationTime)
 	})
 }
 
@@ -312,12 +313,7 @@ func TestVerifyBadValidityUrl(t *testing.T) {
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
 		}
-		certFetcher := func(_ string) ([]byte, error) { return c, nil }
-
-		verificationTime := signatureDate
-		if _, ok := e.Verify(verificationTime, certFetcher, nullLogger); ok {
-			t.Errorf("Verification should fail")
-		}
+		verificationShouldFail(t, e, c, signatureDate)
 	})
 }
 
@@ -328,12 +324,7 @@ func TestVerifyBadMethod(t *testing.T) {
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
 		}
-		certFetcher := func(_ string) ([]byte, error) { return c, nil }
-
-		verificationTime := signatureDate
-		if _, ok := e.Verify(verificationTime, certFetcher, nullLogger); ok {
-			t.Errorf("Verification should fail")
-		}
+		verificationShouldFail(t, e, c, signatureDate)
 	})
 }
 
@@ -347,12 +338,7 @@ func TestVerifyStatefulRequestHeader(t *testing.T) {
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
 		}
-		certFetcher := func(_ string) ([]byte, error) { return c, nil }
-
-		verificationTime := signatureDate
-		if _, ok := e.Verify(verificationTime, certFetcher, nullLogger); ok {
-			t.Errorf("Verification should fail")
-		}
+		verificationShouldFail(t, e, c, signatureDate)
 	})
 }
 
@@ -363,12 +349,7 @@ func TestVerifyUncachedHeader(t *testing.T) {
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
 		}
-		certFetcher := func(_ string) ([]byte, error) { return c, nil }
-
-		verificationTime := signatureDate
-		if _, ok := e.Verify(verificationTime, certFetcher, nullLogger); ok {
-			t.Errorf("Verification should fail")
-		}
+		verificationShouldFail(t, e, c, signatureDate)
 	})
 }
 
@@ -378,14 +359,8 @@ func TestVerifyBadSignature(t *testing.T) {
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
 		}
-		certFetcher := func(_ string) ([]byte, error) { return c, nil }
-
 		e.ResponseHeaders.Add("Etag", "0123")
-
-		verificationTime := signatureDate
-		if _, ok := e.Verify(verificationTime, certFetcher, nullLogger); ok {
-			t.Errorf("Verification should fail")
-		}
+		verificationShouldFail(t, e, c, signatureDate)
 	})
 }
 
@@ -397,12 +372,7 @@ func TestVerifyNonCanonicalURL(t *testing.T) {
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
 		}
-		certFetcher := func(_ string) ([]byte, error) { return c, nil }
-
-		verificationTime := signatureDate
-		if _, ok := e.Verify(verificationTime, certFetcher, stdoutLogger); !ok {
-			t.Errorf("Verification failed")
-		}
+		verificationShouldSucceed(t, e, c, signatureDate)
 	})
 }
 
@@ -413,18 +383,11 @@ func TestVerifyNonCacheable(t *testing.T) {
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
 		}
-		certFetcher := func(_ string) ([]byte, error) { return c, nil }
-
-		verificationTime := signatureDate
 		switch ver {
 		case version.Version1b1, version.Version1b2:
-			if _, ok := e.Verify(verificationTime, certFetcher, stdoutLogger); !ok {
-				t.Errorf("Verification should succeed")
-			}
+			verificationShouldSucceed(t, e, c, signatureDate)
 		default:
-			if _, ok := e.Verify(verificationTime, certFetcher, nullLogger); ok {
-				t.Errorf("Verification should fail")
-			}
+			verificationShouldFail(t, e, c, signatureDate)
 		}
 	})
 }
