@@ -167,7 +167,7 @@ of the exchange's payload.
 
 The `Signature` header is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a parameterised list
-(Section 3.3 of {{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
+(Section 3.4 of {{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
 
     Signature = sh-param-list
 
@@ -181,13 +181,13 @@ values:
 
 "sig"
 
-: Binary content (Section 3.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Byte sequence (Section 3.10 of {{!I-D.ietf-httpbis-header-structure}}) holding
   the signature of most of these parameters and the exchange's URL and response
   headers.
 
 "integrity"
 
-: A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing a
+: A string (Section 3.8 of {{!I-D.ietf-httpbis-header-structure}}) containing a
   "/"-separated sequence of names starting with the lowercase name of the
   response header field that guards the response payload's integrity. The
   meaning of subsequent names depends on the response header field, but for the
@@ -196,27 +196,27 @@ values:
 
 "cert-url"
 
-: A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
+: A string (Section 3.8 of {{!I-D.ietf-httpbis-header-structure}}) containing an
   absolute URL ({{terminology}}) with a scheme of "https" or "data".
 
 "cert-sha256"
 
-: Binary content (Section 3.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Byte sequence (Section 3.10 of {{!I-D.ietf-httpbis-header-structure}}) holding
   the SHA-256 hash of the first certificate found at "cert-url".
 
 "ed25519key"
 
-: Binary content (Section 3.9 of {{!I-D.ietf-httpbis-header-structure}}) holding
+: Byte sequence (Section 3.10 of {{!I-D.ietf-httpbis-header-structure}}) holding
   an Ed25519 public key ({{!RFC8032}}).
 
 {:#signature-validityurl} "validity-url"
 
-: A string (Section 3.7 of {{!I-D.ietf-httpbis-header-structure}}) containing an
+: A string (Section 3.8 of {{!I-D.ietf-httpbis-header-structure}}) containing an
   absolute URL ({{terminology}}) with a scheme of "https".
 
 "date" and "expires"
 
-: An integer (Section 3.5 of {{!I-D.ietf-httpbis-header-structure}})
+: An integer (Section 3.6 of {{!I-D.ietf-httpbis-header-structure}})
   representing a Unix time.
 
 The "cert-url" parameter is *not* signed, so intermediates can update it with a
@@ -290,9 +290,9 @@ grants 4-day signatures, so clients will need to re-validate more often.
 ### Open Questions ### {#oq-signature-header}
 
 {{?I-D.ietf-httpbis-header-structure}} provides a way to parameterise
-identifiers but not other supported types like binary content. If the
+identifiers but not other supported types like byte sequences. If the
 `Signature` header field is notionally a list of parameterised signatures, maybe
-we should add a "parameterised binary content" type.
+we should add a "parameterised byte sequence" type.
 {:#parameterised-binary}
 
 Should the cert-url and validity-url be lists so that intermediates can offer a
@@ -419,7 +419,7 @@ complex data types, so it doesn't need rules to canonicalize those.
 ## Signature validity ## {#signature-validity}
 
 The client MUST parse the `Signature` header field as the parameterised list
-(Section 4.2.3 of {{!I-D.ietf-httpbis-header-structure}}) described in
+(Section 4.2.5 of {{!I-D.ietf-httpbis-header-structure}}) described in
 {{signature-header}}. If an error is thrown during this parsing or any of the
 requirements described there aren't satisfied, the exchange has no valid
 signatures. Otherwise, each member of this list represents a signature with
@@ -451,7 +451,7 @@ to retrieve an updated OCSP from the original server.
 {:#force-fetch}
 
 1. Let:
-   * `signature` be the signature (binary content in the parameterised
+   * `signature` be the signature (byte sequence in the parameterised
      identifier's "sig" parameter).
    * `integrity` be the signature's "integrity" parameter.
    * `validity-url` be the signature's "validity-url" parameter.
@@ -471,10 +471,10 @@ to retrieve an updated OCSP from the original server.
       1. If `publicKey` is an RSA key, return "invalid".
       1. If `publicKey` is a key using the secp256r1 elliptic curve, set
          `signing-alg` to ecdsa_secp256r1_sha256 as defined in Section 4.2.3 of
-         {{!I-D.ietf-tls-tls13}}.
+         {{!RFC8446}}.
       1. Otherwise, either return "invalid" or set `signing-alg` to a non-legacy
          signing algorithm defined by TLS 1.3 or later
-         ({{!I-D.ietf-tls-tls13}}). This choice MUST depend only on
+         ({{!RFC8446}}). This choice MUST depend only on
          `publicKey`'s type and not on any other context.
    1. If `ed25519key` is present, set `publicKey` to `ed25519key` and
       `signing-alg` to ed25519, as defined by {{!RFC8032}}
@@ -482,7 +482,7 @@ to retrieve an updated OCSP from the original server.
    "invalid".
 1. If the current time is before `date` or after `expires`, return "invalid".
 1. Let `message` be the concatenation of the following byte strings. This
-   matches the {{?I-D.ietf-tls-tls13}} format to avoid cross-protocol attacks if
+   matches the {{?RFC8446}} format to avoid cross-protocol attacks if
    anyone uses the same key in a TLS certificate and an exchange-signing
    certificate.
    1. A string that consists of octet 32 (0x20) repeated 64 times.
@@ -510,7 +510,7 @@ to retrieve an updated OCSP from the original server.
 
    Note that this intentionally differs from TLS 1.3, which signs the entire
    certificate chain in its Certificate Verify (Section 4.4.3 of
-   {{?I-D.ietf-tls-tls13}}), in order to allow updating the stapled OCSP
+   {{?RFC8446}}), in order to allow updating the stapled OCSP
    response without updating signatures at the same time.
 1. If `signature` is not a valid signature of `message` by `publicKey` using
    `signing-alg`, return "invalid".
@@ -596,7 +596,7 @@ validity = {
 ~~~
 
 The elements of the `signatures` array are parameterised identifiers (Section
-4.2.4 of {{!I-D.ietf-httpbis-header-structure}}) meant to replace the signatures
+4.2.6 of {{!I-D.ietf-httpbis-header-structure}}) meant to replace the signatures
 within the `Signature` header field pointing to this validity data. If the
 signed exchange contains a bug severe enough that clients need to stop using the
 content, the `signatures` array MUST NOT be present.
@@ -705,7 +705,7 @@ all.
 
 The `Accept-Signature` header field is a Structured Header as defined by
 {{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a parameterised list
-(Section 3.3 of {{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
+(Section 3.4 of {{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
 
     Accept-Signature = sh-param-list
 
@@ -746,7 +746,7 @@ for "ecdsa/secp256r1" unless the header field states otherwise.
 
 The "ed25519key" identifier has parameters indicating the public keys that will
 be used to validate the returned signature. Each parameter's name is
-re-interpreted as binary content (Section 3.9 of
+re-interpreted as a byte sequence (Section 3.10 of
 {{!I-D.ietf-httpbis-header-structure}}) encoding a prefix of the public key. For
 example, if the client will validate signatures using the public key whose
 base64 encoding is `11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=`, valid
@@ -771,7 +771,7 @@ because 5 bytes isn't a valid length for encoded base64, and not
 Accept-Signature: ..., ed25519key; 11qYAQ
 ~~~
 
-because it doesn't start or end with the `*`s that indicate binary content.
+because it doesn't start or end with the `*`s that indicate a byte sequence.
 
 Note that `ed25519key; **` is an empty prefix, which matches all public keys, so
 it's useful in subresource integrity ({{uc-sri}}) cases like `<link rel=preload
@@ -944,7 +944,7 @@ able to make even one unauthorized signature.
 Conforming CAs MUST NOT mark this extension as critical.
 
 Clients MUST NOT accept certificates with this extension in TLS connections
-(Section 4.4.2.2 of {{!I-D.ietf-tls-tls13}}).
+(Section 4.4.2.2 of {{!RFC8446}}).
 
 RFC EDITOR PLEASE DELETE THE REST OF THE PARAGRAPHS IN THIS SECTION
 
@@ -1032,7 +1032,7 @@ merge the header field lists of valid signatures.
     Signed-Headers = sh-list
 
 Each element of the `Signed-Headers` list must be a lowercase string (Section
-3.7 of {{!I-D.ietf-httpbis-header-structure}}) naming an HTTP response header
+3.8 of {{!I-D.ietf-httpbis-header-structure}}) naming an HTTP response header
 field. Pseudo-header field names (Section 8.1.2.1 of {{!RFC7540}}) MUST NOT
 appear in this list.
 
@@ -1398,7 +1398,7 @@ To prevent network operators other than `o1.com` or `o2.com` from learning which
 exchanges were read, clients SHOULD only load exchanges fetched over a transport
 that's protected from eavesdroppers. This can be difficult to determine when the
 exchange is being loaded from local disk, but when the client itself requested
-the exchange over a network it SHOULD require TLS ({{!I-D.ietf-tls-tls13}}) or a
+the exchange over a network it SHOULD require TLS ({{!RFC8446}}) or a
 successor transport layer, and MUST NOT accept exchanges transferred over plain
 HTTP without TLS.
 
@@ -1726,7 +1726,7 @@ to:
    confused with a signature. That may be just the `rsaEncryption` OID from
    {{?RFC8017}}.
 2. Use the same format as TLS's signatures, specified in Section 4.4.3 of
-   {{?I-D.ietf-tls-tls13}}, with a context string that's specific to this use.
+   {{?RFC8446}}, with a context string that's specific to this use.
 
 The specification also needs to define which signing algorithm to use. It
 currently specifies that as a function from the key type, instead of allowing
@@ -1754,7 +1754,7 @@ by loading other HTML.
 To avoid using an unintended certificate with the same public key as the
 intended one, the content of the leaf certificate or the chain should be
 included in the signed data, like TLS does (Section 4.4.3 of
-{{?I-D.ietf-tls-tls13}}).
+{{?RFC8446}}).
 
 ## How much to sign ## {#how-much-to-sign}
 
@@ -1966,6 +1966,8 @@ exchange argues for embedding a signature's lifetime into the signature.
 
 RFC EDITOR PLEASE DELETE THIS SECTION.
 
+draft-06
+
 draft-05
 
 * Define absolute URLs, and limit the schemes each instance can use.
@@ -1987,6 +1989,8 @@ draft-05
 * Explicitly check the response payload's integrity instead of assuming the
   client did it elsewhere in processing the response.
 * Reject uncached header fields.
+* Update to draft-ietf-httpbis-header-structure-09.
+* Update to the final TLS 1.3 RFC.
 
 draft-04
 
