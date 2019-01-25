@@ -1069,12 +1069,16 @@ A [=request=] |browserRequest| <dfn>matches the stored exchange</dfn>
     * type: the result of concatenating a string `"sxg."` and the |report|'s
         [=signed exchange report/result=].
 
-1. If |additional body|'s `"type"` is not `"sxg.ok"` and |report|'s
-    [=signed exchange report/cert server IP=] is not empty and is different from
-    |report|'s [=signed exchange report/cert server IP=]:
+1. If |additional body|'s `"type"` is not `"sxg.ok"` and |additional body|'s
+    `"cert_url"`'s [=url/scheme=] is not `"data"`:
 
-    1. Set |additional body|'s `"type"` to `"sxg.failed"`.
-    1. Set |additional body|'s `"elapsed_time"` to 0.
+    1. If |additional body|'s `"outer_url"`'s [=url/origin=] is different from
+        |additional body|'s `"cert_url"`'s [=url/origin=] or |report|'s
+        [=signed exchange report/server IP=] is different from  |report|'s
+        [=signed exchange report/cert server IP=]:
+
+        1. Set |additional body|'s `"type"` to `"sxg.failed"`.
+        1. Set |additional body|'s `"elapsed_time"` to 0.
 
 1. [=Generate a network error report=]</a> with |report|'s
     [=signed exchange report/outer request=], and |report|'s
