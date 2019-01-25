@@ -126,38 +126,42 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 		}
 
 		// Step 2: "Use Section 3.5 to determine the signature's validity for
-		//         requestUrl, headers, and payload, getting certificate-chain
-		//         back. If this returned "invalid" or didn't return a
-		//         certificate chain, return "invalid"."
+		//         requestUrl, responseHeaders, and payload, getting
+		//         certificate-chain back. If this returned "invalid" or didn't
+		//         return a certificate chain, return "invalid"."
 		_, decodedPayload, err := verifySignature(e, verificationTime, certFetcher, signature)
 		if err != nil {
 			l.Printf("Verification of sinature %q failed: %v", signature.Label, err)
 			continue
 		}
 
-		// Step 3: "Let exchange be the exchange metadata and headers parsed out
-		//         of headers."
+		// Step 3: "Let response be the exchange metadata and headers parsed out
+		//         of responseHeaders."
 		// `e` contains the exchange metadata and headers.
 
-		// Step 4: "If exchange's request method is not safe (Section 4.2.1 of
-		//         [RFC7231]) or not cacheable (Section 4.2.3 of [RFC7231]),
-		//         return "invalid"."
-		// Per [RFC7231], only GET and HEAD are safe and cacheable.
-		if e.RequestMethod != http.MethodGet && e.RequestMethod != http.MethodHead {
-			l.Printf("Request method %q is not safe or not cacheable.", e.RequestMethod)
+		if e.Version == version.Version1b1 || e.Version == version.Version1b2 {
+			// Version 1b1 and 1b2 only -- Step 4 of
+			// https://tools.ietf.org/html/draft-yasskin-httpbis-origin-signed-exchanges-impl-02#section-4:
+			// "If exchange's request method is not safe (Section 4.2.1 of
+			// [RFC7231]) or not cacheable (Section 4.2.3 of [RFC7231]),
+			// return "invalid"."
+			// Per [RFC7231], only GET and HEAD are safe and cacheable.
+			if e.RequestMethod != http.MethodGet && e.RequestMethod != http.MethodHead {
+				l.Printf("Request method %q is not safe or not cacheable.", e.RequestMethod)
+				continue
+			}
+		}
+
+		// Step 4: If Section 3 of [RFC7234] forbids a shared cache from storing
+		//         response, return "invalid".
+		if e.Version != version.Version1b1 && e.Version != version.Version1b2 && !e.IsCacheable(l) {
 			continue
 		}
 
-		// Step 5: "If exchange's headers contain a stateful header field, as
+		// Step 5: "If response's headers contain an uncached header field, as
 		//         defined in Section 4.1, return "invalid"."
 		if err := verifyHeaders(e); err != nil {
 			l.Printf("Header validation failed: %v", err)
-			continue
-		}
-
-		// Step 6: "If Section 3 of [RFC7234] forbids a shared cache from
-		//         storing exchange’s response, return "invalid"."
-		if e.Version != version.Version1b1 && e.Version != version.Version1b2 && !e.IsCacheable(l) {
 			continue
 		}
 
@@ -321,13 +325,19 @@ func verifySignature(e *Exchange, verificationTime time.Time, fetch CertFetcher,
 	if !ok {
 		return nil, nil, errors.New("verify: signature verification failed")
 	}
-	// Step 8: Payload integrity check
+	// Step 8: (version >= 1b3) Response headers must contain Content-Type
+	if e.Version != version.Version1b1 && e.Version != version.Version1b2 {
+		if e.ResponseHeaders.Get("Content-Type") == "" {
+			return nil, nil, errors.New("verify: Content-Type response header is absent")
+		}
+	}
+	// Step 9: Payload integrity check
 	decodedPayload, err := verifyPayload(e, signature)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Step 9: Return "potentially-valid" with certificate-chain.
+	// Step 10: Return "potentially-valid" with certificate-chain.
 	return certs, decodedPayload, nil
 }
 
