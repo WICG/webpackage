@@ -376,18 +376,12 @@ func TestVerifyNoContentType(t *testing.T) {
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
 		}
-		certFetcher := func(_ string) ([]byte, error) { return c, nil }
-		verificationTime := signatureDate
 
 		// The requirement for Content-Type is only for version >= b3.
 		if ver == version.Version1b1 || ver == version.Version1b2 {
-			if _, ok := e.Verify(verificationTime, certFetcher, stdoutLogger); !ok {
-				t.Errorf("Verification should succeed")
-			}
+			verificationShouldSucceed(t, e, c, signatureDate)
 		} else {
-			if _, ok := e.Verify(verificationTime, certFetcher, nullLogger); ok {
-				t.Errorf("Verification should fail")
-			}
+			verificationShouldFail(t, e, c, signatureDate)
 		}
 	})
 }
