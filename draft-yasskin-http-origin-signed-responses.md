@@ -42,6 +42,26 @@ normative:
 
 informative:
   SRI: W3C.REC-SRI-20160623
+  BRs:
+    target: https://cabforum.org/baseline-requirements-documents/
+    title: Baseline Requirements for the Issuance and Management of Publicly-Trusted Certificates
+    author:
+      - org: CA/Browser Forum
+    date: 2018-12-10
+  CRLSets:
+    target: https://www.imperialviolet.org/2012/02/05/crlsets.html
+    title: Revocation checking and Chrome's CRL
+    author:
+      - name: Adam Langley
+        org: Chromium
+    date: 2012-02-05
+  OneCrl:
+    target: https://blog.mozilla.org/security/2015/03/03/revoking-intermediate-certificates-introducing-onecrl/
+    title: "Revoking Intermediate Certificates: Introducing OneCRL"
+    author:
+      - name: Mark Goodwin
+        org: Mozilla
+    date: 2015-03-03
 
 --- abstract
 
@@ -1249,10 +1269,62 @@ attacker.
 
 Relaxing the requirement to consult DNS when determining authority for an origin
 means that an attacker who possesses a valid certificate no longer needs to be
-on-path to redirect traffic to them; instead of modifying DNS, they need only
-convince the user to visit another Web site in order to serve responses signed
-as the target. This consideration and mitigations for it are shared by the
-combination of {{?RFC8336}} and {{?I-D.ietf-httpbis-http2-secondary-certs}}.
+on-path to redirect traffic to them; instead of modifying DNS or IP routing,
+they need only convince the user to visit another Web site in order to serve
+responses signed as the target. This consideration and mitigations for it are
+shared by the combination of {{?RFC8336}} and
+{{?I-D.ietf-httpbis-http2-secondary-certs}}, and are discussed further in
+{{?I-D.bishop-httpbis-origin-fed-up}}.
+
+### Mis-issued certificates
+
+If a CA mis-issues a certificate for a domain, this specification provides a way
+to detect the mis-issuance and mitigate harm within approximately two weeks.
+Specifically, because all signed exchanges must include a
+`SignedCertificateTimestampList` ({{?RFC6962}}, the mis-issued certificate will
+appear in a CT log within that log's Maximum Merge Delay, 1 day for many logs.
+The domain owner can then detect the mis-issued certificate and notify the CA to
+revoke it, which the {{BRs}}, section 4.9.1.1, say they must do within another 5
+days.
+
+Once the mis-issued certificate is revoked, existing OCSP responses begin to
+expire. The {{BRs}}, section 4.9.10, require that OCSP responses have a maximum
+expiration time of 10 days, after which they can't be used to validate a
+certificate chain ({{cert-chain-format}}). This leads to a total compromised
+time of 16 days after a mis-issuance.
+
+However, CAs might future-date their OCSP responses, in which case the
+mitigation doesn't work.
+
+CAs are forbidden from future-dating their OCSP responses by the {{BRs}} section
+4.9.9, "OCSP responses MUST conform to RFC6960 and/or RFC5019." {{?RFC6960}}
+includes, "The time at which the status was known to be correct SHALL be
+reflected in the thisUpdate field of the response.", and {{?RFC5019}} includes,
+"When pre-producing OCSPResponse messages, the responder MUST set the
+thisUpdate, nextUpdate, and producedAt times as follows: thisUpdate: The time at
+which the status being indicated is known to be correct."
+
+However, if a CA violates the {{BRs}} to sign future-dated OCSP responses,
+attempts to keep the nonconformant OCSP responses private, but then leaks them,
+it could cause clients to trust a hostile signed exchange long after its
+certificate has been revoked.
+
+Clients could use systems like {{CRLSets}} and {{OneCrl}} to revoke the
+intermediate certificate that signed the future-dated OCSP responses.
+
+### Stolen private keys
+
+If the private key for a CanSignHttpExchanges certificate is stolen, it can be
+used at scale until the certificate expires or is revoked, and unlike for a
+stolen key for a normal TLS-terminating certificate, the rightful owner can't
+detect the problem by watching for attacks on the DNS or routing infrastructure.
+
+This specification does not currently propose a way for the rightful owner to
+detect that their keys are being used by an attacker, after they've opted into
+the risk by requesting a CanSignHttpExchanges certificate in the first place.
+Clients can fetch a signature's "validity-url" ({{signature-header}}) to help
+owners detect key compromise, but that compromises some of the privacy
+properties of this specification.
 
 ## Downgrades ## {#seccons-downgrades}
 
@@ -1967,6 +2039,9 @@ exchange argues for embedding a signature's lifetime into the signature.
 RFC EDITOR PLEASE DELETE THIS SECTION.
 
 draft-06
+
+* Add a security consideration for future-dated OCSP responses and for stolen
+  private keys.
 
 draft-05
 
