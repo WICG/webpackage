@@ -149,7 +149,7 @@ spec: SHA2; urlPrefix: http://csrc.nist.gov/publications/fips/fips180-4/fips-180
 spec: network-error-logging; urlPrefix: https://w3c.github.io/network-error-logging/#
     type: dfn
         text: generate a network error report ; url: generate-a-network-error-report
-        text: AdditionalReportBody ; url: dom-additionalreportbody
+        text: deliver a network report ; url: deliver-a-network-report
 </pre>
 <pre class='link-defaults'>
 spec:fetch; type:dfn; for:/; text:response
@@ -1055,34 +1055,39 @@ A [=request=] |browserRequest| <dfn>matches the stored exchange</dfn>
 
 <dfn>Queuing signed exchange report</dfn> |report| is the following steps:
 
-1. Let |additional body| be a new [=AdditionalReportBody=] object with the
-    following properties:
+1. Let |report body| and |policy| be the result of
+    [=generate a network error report=]</a> with |report|'s
+    [=signed exchange report/outer request=]. If the result is null, abort
+    these steps.
+
+1. If |report body|'s `"type"` is `"dns.address_changed"`, abort these steps.
+
+1. Add a new property `"sxg"` to |report body| with a new ECMAScript object with
+     the following properties:
 
     * outer_url: |report|'s [=signed exchange report/outer request=]'s
           [=request/url=].
     * inner_url: |report|'s [=signed exchange report/inner URL=].
     * cert_url: |report|'s [=signed exchange report/cert URL=].
-    * elapsed_time: the elapsed number of milliseconds between the start of
-        |report|'s [=signed exchange report/outer request=] fetch and when this
-        algorithm is called.
-    * phase: `"sxg"`.
-    * type: the result of concatenating a string `"sxg."` and the |report|'s
-        [=signed exchange report/result=].
 
-1. If |additional body|'s `"type"` is not `"sxg.ok"` and |additional body|'s
+1. Set |report body|'s `"phase"` to `"sxg"`.
+
+1. Set |report body|'s `"type"` to the result of concatenating a string `"sxg."`
+     and the |report|'s [=signed exchange report/result=].
+
+1. If |report body|'s `"type"` is not `"sxg.ok"` and |report body|'s `"sxg"`'s
     `"cert_url"`'s [=url/scheme=] is not `"data"`:
 
-    1. If |additional body|'s `"outer_url"`'s [=url/origin=] is different from
-        |additional body|'s `"cert_url"`'s [=url/origin=] or |report|'s
-        [=signed exchange report/server IP=] is different from  |report|'s
-        [=signed exchange report/cert server IP=]:
+    1. If |report body|'s `"sxg"`'s `"outer_url"`'s [=url/origin=] is different
+        from |report body|'s `"sxg"`'s `"cert_url"`'s [=url/origin=] or
+        |report|'s [=signed exchange report/server IP=] is different from
+        |report|'s [=signed exchange report/cert server IP=]:
 
-        1. Set |additional body|'s `"type"` to `"sxg.failed"`.
-        1. Set |additional body|'s `"elapsed_time"` to 0.
+        1. Set |report body|'s `"type"` to `"sxg.failed"`.
+        1. Set |report body|'s `"elapsed_time"` to 0.
 
-1. [=Generate a network error report=]</a> with |report|'s
-    [=signed exchange report/outer request=], and |report|'s
-    [=signed exchange report/outer response=] and |additional body|.
+1. [=Deliver a network report=]</a> with |report body| and |policy| and
+    |report|'s [=signed exchange report/outer request=].
 
 ## Stream algorithms ## {#stream-algs}
 
