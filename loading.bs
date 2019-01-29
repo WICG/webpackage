@@ -271,31 +271,17 @@ add the following steps:
 
     : `"b2"` or `"b3"`
     ::
-        1. Let |report| be a new [=signed exchange report=] struct.
-        1. Set |report|'s [=signed exchange report/outer request=] to |request|.
-        1. Set |report|'s [=signed exchange report/outer response=] to |actualResponse|.
-        1. Set |report|'s [=signed exchange report/server IP=] to the IP address
-            of the server to which the user agent recieved the |actualResponse|,
-            if available.
+        1. Let |report| be the result of [=create a new signed exchange report=]
+            with |request| and |actualResponse|.
         1. Let |parsedExchange| be the result of [=parsing a signed
             exchange=] of version `b2` or `b3`, respectively, from
-            |actualResponse| with |report| in the context of |request|'s
-            [=request/client=].
-        1. If |parsedExchange| is not an [=exchange=]:
-            1. Set |report|'s [=signed exchange report/result=] to
-                |parsedExchange|.
-            1. Run [=queuing signed exchange report=] with |report|.
-            1. Return a [=network error=].
-        1. [=In parallel=]:
-            1. Wait until |parsedExchange|'s [=response/body=]'s [=body/stream=]
-                is [=ReadableStream/closed=] or [=ReadableStream/errored=].
-            1. If |parsedExchange|'s [=response/body=]'s [=body/stream=] is
-                [=ReadableStream/closed=], set |report|'s
-                [=signed exchange report/result=] to `"ok"`.
-            1. If |parsedExchange|'s [=response/body=]'s [=body/stream=] is
-                [=ReadableStream/errored=], set |report|'s
-                [=signed exchange report/result=] to `"mi_error"`.
-            1. Run [=queuing signed exchange report=] with |report|.
+            |actualResponse| in the context of |request|'s [=request/client=],
+            reporting to |report|.
+        1. If |parsedExchange| is not an [=exchange=], run
+            [=queue a signed exchange report=] |report| and
+            |parsedExchange| as the result, and return a [=network error=].
+        1. [=In parallel=], [=wait and queue a report for=] |parsedExchange| and
+            |report|.
         1. Set |actualResponse|'s [=status=] to `303`.
         1. [=header list/Set=] |actualResponse|'s `` `Location` `` header to
             the [=ASCII encoding=] of the [=URL serializer|serialization=]
@@ -412,23 +398,29 @@ A signed exchange report is a [=struct=] with the following items:
 
 <dl dfn-for="signed exchange report">
 : <dfn>result</dfn>
-:: A result of loading signed exchange.
+:: The result string of loading signed exchange. This must be one of an empty
+    string, "<dfn>`ok`</dfn>", "<dfn>`mi_error`</dfn>",
+    "<dfn>`non_secure_origin`</dfn>", "<dfn>`parse_error`</dfn>",
+    "<dfn>`invalid_integrity_header`</dfn>",
+    "<dfn>`signature_verification_error`</dfn>",
+    "<dfn>`cert_verification_error`</dfn>", "<dfn>`cert_fetch_error`</dfn>",
+    "<dfn>`cert_parse_error`</dfn>",
 : <dfn>outer request</dfn>
-:: A [=request=] which the user agent sent to the server to load the signed exchange.
+:: The [=request=] which the user agent sent to the server to load the signed exchange.
 : <dfn>outer response</dfn>
-:: A [=response=] which the user agent recieved from the server.
-
+:: The [=response=] which the user agent received from the server.
 : <dfn>inner URL</dfn>
-:: A logical [=URL=] of the signed exchange.
-: <dfn>cert URL</dfn>
-:: A [=URL=] of the first "`cert-url`" parameter of signed exchange.
+:: The logical [=URL=] of the signed exchange, if available. Otherwise, an empty
+    string.
+: <dfn>cert URL list</dfn>
+:: The list of [=URL=] of the first "`cert-url`" parameter of signed exchange,
+    if available. Otherwise, an empty list.
 : <dfn>server IP</dfn>
-:: The IP address of the server from which the user agent recieved the signed
-       exchange, if available. Otherwise, an empty string.
-: <dfn>cert server IP</dfn>
-:: The IP address of the server from which the user agent recieved the
-       certificate of the signed exchange, if available. Otherwise, an empty
-       string.
+:: The IP address of the server from which the user agent received the signed
+    exchange, if available. Otherwise, an empty string.
+: <dfn>cert server IP list</dfn>
+:: The list of IP address of the server from which the user agent received the
+    certificate of the signed exchange, if available. Otherwise, an empty list.
 
 </dl>
 
@@ -509,9 +501,9 @@ This section defines how to load the formats defined in
 [[draft-yasskin-httpbis-origin-signed-exchanges-impl-03]].
 
 <dfn>Parsing a signed exchange</dfn> of version |version| from a [=response=]
-|response| with a [=signed exchange report=] |report| in the context of an
-[=environment settings object=] |client| returns an [=exchange=] or a string
-which indicates an error returned by the following steps:
+|response| in the context of an [=environment settings object=] |client|,
+reporting to a [=signed exchange report=] |report| returns an [=exchange=] or a
+string which indicates an error returned by the following steps:
 
 1. Assert: This algorithm is running [=in parallel=].
 1. Assert: The [=signed exchange version=] of |response| is, if |version| is
@@ -523,20 +515,20 @@ which indicates an error returned by the following steps:
 
     </dl>
 1. If |response|'s [=response/URL=]'s [=url/origin=] is not a [=potentially
-    trustworthy origin=], return `"non_secure_origin"`.
+    trustworthy origin=], return "[=signed exchange report/non_secure_origin=]".
 
     Note: This ensures that the privacy properties of retrieving an HTTPS
     resource via a signed exchange are no worse than retrieving it via TLS.
 
 1. Let |bodyStream| be |response|'s [=response/body=]'s [=body/stream=].
-1. If |bodyStream| is null, return `"parse_error"`.
+1. If |bodyStream| is null, return "[=signed exchange report/parse_error=]".
 1. Let |stream| be a [=new read buffer=] for |bodyStream|.
 1. Let (|magic|, |requestUrlBytes|, |requestUrl|) be the result of [=parsing the
     invariant prefix=] from |stream|. If returns a failure, return
-    `"parse_error"`.
+    "[=signed exchange report/parse_error=]".
 1. Set |report|'s [=signed exchange report/inner URL=] to |requestUrl|.
 1. If |magic| is not the following value, depending on |version|, return
-    `"parse_error"`:
+    "[=signed exchange report/parse_error=]":
     <dl class="switch">
     : `b2`
     :: `` `sxg1-b2\0` ``
@@ -551,24 +543,26 @@ which indicates an error returned by the following steps:
 1. Let |encodedHeaderLength| be the result of [=read buffer/reading=] 3 bytes
     from |stream|.
 1. If |encodedSigLength| or |encodedHeaderLength| is a failure, return
-    `"parse_error"`.
+    "[=signed exchange report/parse_error=]".
 1. Let |sigLength| be the result of decoding |encodedSigLength| as a big-endian
     integer.
 1. Let |headerLength| be the result of decoding |encodedHeaderLength| as a
     big-endian integer.
-1. If |sigLength| > 16384 or |headerLength| > 524288, return `"parse_error"`.
+1. If |sigLength| > 16384 or |headerLength| > 524288, return
+    "[=signed exchange report/parse_error=]".
 1. Let |signature| be the result of [=read buffer/reading=] |sigLength| bytes
     from |stream|.
-1. If |signature| is a failure, return `"parse_error"`.
+1. If |signature| is a failure, return "[=signed exchange report/parse_error=]".
 1. Let |parsedSignature| be the result of [=parsing the Signature header field=]
-    |signature| with |report| in the context of |client|.
+    |signature| in the context of |client| reporting to with |report|.
 1. If |parsedSignature| is not an [=exchange signature=], return it.
 1. Let |headerBytes| be the result of [=read buffer/reading=] |headerLength|
     bytes from |stream|.
-1. If |headerBytes| is a failure, return `"parse_error"`.
+1. If |headerBytes| is a failure, return
+    "[=signed exchange report/parse_error=]".
 1. If |parsedSignature| [=exchange signature/is not valid=] for |headerBytes|
     and |requestUrlBytes|, and signed exchange version |version|, return
-    `"signature_verification_error"`.
+    "[=signed exchange report/signature_verification_error=]".
 1. Let |parsedExchange| be, if |version| is:
     <dl class="switch">
     : `b2`
@@ -578,20 +572,22 @@ which indicates an error returned by the following steps:
     :: the result of [=parsing b3 CBOR headers=] given |headerBytes| and
         |requestUrl|.
 1. If |parsedSignature| [=exchange signature/does not establish cross-origin
-    trust=] for |parsedExchange|, return `"cert_verification_error"`.
+    trust=] for |parsedExchange|, return
+    "[=signed exchange report/cert_verification_error=]".
 1. Set |parsedExchange|'s [=exchange/response=]'s [=response/HTTPS state=] to
     either "`deprecated`" or "`modern`".
 
     Note: See <a spec="fetch">HTTP-network fetch</a> for details of this choice.
 1. If |parsedExchange|'s [=exchange/response=]'s [=response/status=] is a
     [=redirect status=] or the [=signed exchange version=] of |parsedExchange|'s
-    [=exchange/response=] is not undefined, return `"parse_error"`.
+    [=exchange/response=] is not undefined, return
+    "[=signed exchange report/parse_error=]".
 
     Note: This might simplify the UA's implementation, since it doesn't have to
     handle nested signed exchanges.
-1. [=Read a body=] from |stream| into |parsedExchange|'s [=exchange/response=]
-    using |parsedSignature| to check its integrity. If this is a failure, return
-    `"mi_error"`.
+1. Run [=read a body=] from |stream| into |parsedExchange|'s
+    [=exchange/response=] using |parsedSignature| to check its integrity. If
+    this returns an error, return it.
 
     Note: Typically this body’s stream is still being enqueued to after
     returning.
@@ -604,7 +600,8 @@ section.
 
 <dfn>Parsing the invariant prefix</dfn> from a [=read buffer=] |stream| returns
 a failure or the triple of a [=byte sequence=] |magic|, [=byte sequence=]
-|fallbackUrlBytes|, and [=URL=] |fallbackUrl| returned by the following steps:
+|fallbackUrlBytes|, and [=URL=] |fallbackUrl|, as described by the following
+steps:
 
 1. Assert: This algorithm is running [=in parallel=].
 1. Let |magic| be the result of [=read buffer/reading=] 8 bytes from |stream|.
@@ -628,22 +625,22 @@ a failure or the triple of a [=byte sequence=] |magic|, [=byte sequence=]
 
 <h3 algorithm id="parsing-signature">Parsing a Signature Header Field</h3>
 
-<dfn>Parsing the Signature header field</dfn> |signatureString| with a
-[=signed exchange report=] |report| in the context of an
-[=environment settings object=] |client| returns an [=exchange signature=] or
-a string which indicates an error returned by the following steps:
+<dfn>Parsing the Signature header field</dfn> |signatureString| in the context
+of an [=environment settings object=] |client|, reporting to a
+[=signed exchange report=] |report| returns an [=exchange signature=] or
+a string which indicates an error, as described by the following steps:
 
 1. Assert: This algorithm is running [=in parallel=].
 1. If |signatureString| contains any bytes that aren't [=ASCII bytes=], return
-    `"parse_error"`.
+    "[=signed exchange report/parse_error=]".
 1. Let |parsed| be the result of [=Parsing HTTP1 Header Fields into Structured
     Headers=] given an <var ignore>input_string</var> of the [=ASCII decoding=]
     of |signatureString| and a <var ignore>header_type</var> of "param-list".
-1. If |parsed| has more than one element, return `"parse_error"`.
+1. If |parsed| has more than one element, "[=signed exchange report/parse_error=]".
 
     Note: This limitation of current implementations will go away in the future.
 1. If any of the parameters of |parsed|[0] listed here doesn't have the
-    associated type, return `"parse_error"`:
+    associated type, "[=signed exchange report/parse_error=]".
 
     : Byte sequence
     :: "sig", "cert-sha256"
@@ -659,10 +656,10 @@ a string which indicates an error returned by the following steps:
     (`/`).
 1. Let |certUrl| be the result of running the [=URL parser=] on the "cert-url"
     parameter of |parsed|[0].
-1. Set |report|'s [=signed exchange report/cert URL=] to |certUrl|.
+1. Append |certUrl| to |report|'s [=signed exchange report/cert URL list=].
 1. If |certUrl| is a failure, if it has a non-null [=url/fragment=], or if its
     [=url/scheme=] is something other than `"https"` or `"data"`, return
-    `"parse_error"`.
+    "[=signed exchange report/parse_error=]".
 1. Set |result|'s [=exchange signature/certSha256=] to the "cert-sha256"
     parameter of |parsed|[0].
 1. Set |result|'s [=exchange signature/validityUrlBytes=] to the [=ASCII
@@ -671,7 +668,7 @@ a string which indicates an error returned by the following steps:
     "validity-url" parameter of |parsed|[0]..
 1. If |validityUrl| is a failure, if it has a non-null [=url/fragment=], or if
     its [=url/scheme=] is something other than `"https"`, return
-    `"parse_error"`.
+    "[=signed exchange report/parse_error=]".
 1. Set |result|'s [=exchange signature/validityUrl=] to |validityUrl|.
 1. Set |result|'s [=exchange signature/date=] to the "date" parameter of
     |parsed|[0].
@@ -679,9 +676,10 @@ a string which indicates an error returned by the following steps:
     parameter of |parsed|[0].
 1. If |result|'s [=exchange signature/expiration time=] or |result|'s [=exchange
     signature/date=] is less than 0 or greater than 2<sup>63</sup>-1, return
-    `"parse_error"`.
+    "[=signed exchange report/parse_error=]".
 1. If |result|'s [=exchange signature/expiration time=] &lt;= |result|'s
-    [=exchange signature/date=], return `"parse_error"`.
+    [=exchange signature/date=], return
+    "[=signed exchange report/parse_error=]".
 1. Set |result|'s [=exchange signature/certificate chain=] to the result of
     [=handling the certificate reference=] |certUrl| with a hash of |result|'s
     [=exchange signature/certSha256=] and |report| in the context of |client|.
@@ -691,9 +689,10 @@ a string which indicates an error returned by the following steps:
 <h4 algorithm id="handling-cert-url">Handling the certificate reference</h4>
 
 <dfn>Handling the certificate reference</dfn> |certUrl| with the SHA-256 hash
-|certSha256| and a [=signed exchange report=] |report|, in the context of an
-[=environment settings object=] |client|, returns a [=certificate chain=] or a
-string which indicates an error returned by the following steps:
+|certSha256| in the context of an[=environment settings object=] |client|
+reporting to a [=signed exchange report=] |report|, returns a
+[=certificate chain=] or a string which indicates an error, as described by the
+following steps:
 
 1. Assert: This algorithm is running [=in parallel=].
 1. Let |certRequest| be a new [=request=] with the following items:
@@ -709,29 +708,31 @@ string which indicates an error returned by the following steps:
     : [=request/mode=]
     :: "`cors`"
 1. Let |certResponse| be the result of [=fetching=] |certRequest|.
-1. Set |report|'s [=signed exchange report/cert server IP=] to the IP address
-    of the server to which the user agent recieved the |certResponse|, if
-    available.
+1. Append the IP address of the server from which the user agent received the
+    |certResponse| to |report|'s [=signed exchange report/cert server IP list=],
+    if available.
 1. If |certResponse|'s [=response/status=] is not `200`, return
-    `"cert_fetch_error"`.
+    "[=signed exchange report/cert_fetch_error=]".
 1. Let |certMimeType| be the result of [=header list/extracting a MIME type=]
     from |certResponse|'s [=response/header list=].
 1. If |certMimeType| is a failure or its [=MIME type/essence=] is not
-    `"application/cert-chain+cbor"`, return `"cert_fetch_error"`.
+    `"application/cert-chain+cbor"`, return
+    "[=signed exchange report/cert_fetch_error=]".
 1. If |certResponse|'s [=response/body=] is null or that body's [=body/stream=]
-    is null, return `"cert_parse_error"`.
+    is null, return "[=signed exchange report/cert_parse_error=]".
 1. Let |bytes| be the result of [=ReadableStream/read all bytes|reading all
     bytes=] from |certResponse|'s [=response/body=]'s [=body/stream=] with a
     [=ReadableStream/get a reader|new reader=] over the same stream.
 1. Wait for |bytes| to settle.
-1. If |bytes| was rejected, return `"cert_parse_error"`.
+1. If |bytes| was rejected, return "[=signed exchange report/cert_parse_error=]".
 1. Let |chain| be the [=certificate chain=] produced by parsing |bytes|' value
     using the [=cert-chain CDDL=]. If |bytes|'s value doesn't match this CDDL or
-    isn't [=canonically-encoded CBOR=], return `"cert_parse_error"`.
+    isn't [=canonically-encoded CBOR=], return
+     "[=signed exchange report/cert_parse_error=]".
 1. Assert: |chain| has at least one [=list/item=].
 1. If the [=SHA-256=] hash of |chain|'s [=certificate chain/leaf=]'s [=augmented
     certificate/certificate=] is not equal to |certSha256|, return
-    `"signature_verification_error"`.
+     "[=signed exchange report/signature_verification_error=]".
 1. Return |chain|.
 
 <h3 algorithm id="the-signed-message">The signed message</h3>
@@ -970,17 +971,20 @@ To <dfn lt="reading a body|read a body">read a body</dfn> from a [=read buffer=]
             `<encoded digest output>`.
 
         1. Let |mi| be the element of |instance-digests| that starts with
-            `"mi-sha256-03="`. If there is no such element, return a failure.
+            `"mi-sha256-03="`. If there is no such element, return an error
+            string "[=signed exchange report/invalid_integrity_header=]".
         1. Let |codings| be the result of [=header list/getting, decoding, and
             splitting=] `` `content-encoding` `` in |response|'s
             [=response/header list=].
-        1. If |codings| doesn't include `"mi-sha256-03"`, return a failure.
+        1. If |codings| doesn't include `"mi-sha256-03"`, return an error string
+            "[=signed exchange report/invalid_integrity_header=]".
         1. Assert: [=Handle content codings=] used the value of |mi| as the
             [=integrity proof for the first record=] when decoding the
             `mi-sha256-03` content encoding to produce the bytes in |stream|.
 
     : Anything else
-    :: Return a failure.
+    :: Return an error string
+        "[=signed exchange report/invalid_integrity_header=]".
 
     </dl>
 1. Let |body| be a new [=body=].
@@ -1051,9 +1055,36 @@ A [=request=] |browserRequest| <dfn>matches the stored exchange</dfn>
     Behavior=] returning a list of lists.
 1. Return "match".
 
+<h3 algorithm id="create-a-new-report">Create a new signed exchange report</h3>
+To <dfn>create a new signed exchange report</dfn> with |request| and
+|actualResponse|, the UA MUST:
+
+1. Let |report| be a new [=signed exchange report=] struct.
+1. Set |report|'s [=signed exchange report/outer request=] to |request|.
+1. Set |report|'s [=signed exchange report/outer response=] to |actualResponse|.
+1. Set |report|'s [=signed exchange report/server IP=] to the IP address of the
+    server from which the user agent received the |actualResponse|, if
+    available.
+1. Return |report|.
+
+<h3 algorithm id="wait-and-queue-a-report">Wait and queue a report</h3>
+To <dfn>wait and queue a report for</dfn> |parsedExchange| and |report|, the UA
+MUST:
+
+1. Wait until |parsedExchange|'s [=response/body=]'s [=body/stream=] is
+    [=ReadableStream/closed=] or [=ReadableStream/errored=].
+1. If |parsedExchange|'s [=response/body=]'s [=body/stream=] is
+    [=ReadableStream/closed=], run [=queue a signed exchange report=] |report|
+    with "[=signed exchange report/ok=]" as the result and abort these steps.
+1. If |parsedExchange|'s [=response/body=]'s [=body/stream=] is
+    [=ReadableStream/errored=], run [=queue a signed exchange report=] |report|
+    with "[=signed exchange report/mi_error=]" as the result.
+
 <h3 algorithm id="queue-report">Queuing signed exchange report</h3>
 
-<dfn>Queuing signed exchange report</dfn> |report| is the following steps:
+To <dfn>queue a signed exchange report</dfn> |report| and |result|, the UA MUST:
+
+1. Set |report|'s [=signed exchange report/result=] to |result|.
 
 1. Let |report body| and |policy| be the result of
     [=generate a network error report=]</a> with |report|'s
@@ -1062,30 +1093,46 @@ A [=request=] |browserRequest| <dfn>matches the stored exchange</dfn>
 
 1. If |report body|'s `"type"` is `"dns.address_changed"`, abort these steps.
 
+    Note: This means that the NEL report was downgraded because the IP addresses
+    of the server and the |policy| don't match. In this case,
+    [=deliver a network report=] algorithm MUST be called with the error report
+    while handling the response. So we don't need to send the same error report
+    while processing the response as a signed exchange.
+
 1. Add a new property `"sxg"` to |report body| with a new ECMAScript object with
      the following properties:
 
-    * outer_url: |report|'s [=signed exchange report/outer request=]'s
+    * `outer_url`: The [=ASCII encoding=] of the [=URL serializer|serialization=]
+          of |report|'s [=signed exchange report/outer request=]'s
           [=request/url=].
-    * inner_url: |report|'s [=signed exchange report/inner URL=].
-    * cert_url: |report|'s [=signed exchange report/cert URL=].
+    * `inner_url`: |report|'s [=signed exchange report/inner URL=].
+    * `cert_url`: |report|'s [=signed exchange report/cert URL list=].
 
 1. Set |report body|'s `"phase"` to `"sxg"`.
 
 1. Set |report body|'s `"type"` to the result of concatenating a string `"sxg."`
      and the |report|'s [=signed exchange report/result=].
 
-1. If |report body|'s `"type"` is not `"sxg.ok"` and |report body|'s `"sxg"`'s
-    `"cert_url"`'s [=url/scheme=] is not `"data"`:
+1. If |report body|'s `"sxg"`'s `"cert_url"`'s [=url/scheme=] is not `"data"`
+    and |report|'s [=signed exchange report/result=] is
+    "[=signed exchange report/signature_verification_error=]" or
+    "[=signed exchange report/cert_verification_error=]" or
+    "[=signed exchange report/cert_fetch_error=]" or
+    "[=signed exchange report/cert_parse_error=]":
 
-    1. If |report body|'s `"sxg"`'s `"outer_url"`'s [=url/origin=] is different
-        from |report body|'s `"sxg"`'s `"cert_url"`'s [=url/origin=] or
+    1. If |report|'s [=signed exchange report/outer request=]'s
+        [=request/url=]'s [=url/origin=] is different from any [=url/origin=] of
+        the URLs in |report|'s [=signed exchange report/cert URL list=], or
         |report|'s [=signed exchange report/server IP=] is different from
-        |report|'s [=signed exchange report/cert server IP=]:
+        any of the IP address in |report|'s
+        [=signed exchange report/cert server IP list=]:
 
         1. Set |report body|'s `"type"` to `"sxg.failed"`.
         1. Set |report body|'s `"elapsed_time"` to 0.
 
+    Note: This step "downgrades" a Signed Exchange report if the certificate
+    was served from the different server from the server of `"outer_url"`. This
+    is intended to avoid leaking the information about the certificate server.
 1. [=Deliver a network report=]</a> with |report body| and |policy| and
     |report|'s [=signed exchange report/outer request=].
 
