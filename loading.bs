@@ -148,7 +148,6 @@ spec: SHA2; urlPrefix: http://csrc.nist.gov/publications/fips/fips180-4/fips-180
         text: SHA-256; url: #
 spec: network-error-logging; urlPrefix: https://w3c.github.io/network-error-logging/#
     type: dfn
-        text: generate a network error report ; url: generate-a-network-error-report
         text: deliver a network report ; url: deliver-a-network-report
 </pre>
 <pre class='link-defaults'>
