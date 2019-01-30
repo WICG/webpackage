@@ -963,10 +963,13 @@ able to make even one unauthorized signature.
 
 Conforming CAs MUST NOT mark this extension as critical.
 
-A conforming CA MUST NOT issue certificates with this extension unless an
-applicable "issue" or "issuewild" CAA property ({{!RFC6844}}) exists for the CA,
-and the "cansignhttpexchanges" parameter ({{caa-cansignhttpexchanges}}) is
-present on the property and is equal to "yes".
+A conforming CA MUST NOT issue certificates with this extension unless, for each
+dNSName in the subjectAltName extension of the certificate to be issued:
+
+1. An "issue" or "issuewild" CAA property ({{!RFC6844}}) exists that authorizes
+   the CA to issue the certificate; and
+1. The "cansignhttpexchanges" parameter ({{caa-cansignhttpexchanges}}) is
+   present on the property and is equal to "yes"
 
 Clients MUST NOT accept certificates with this extension in TLS connections
 (Section 4.4.2.2 of {{!RFC8446}}).
