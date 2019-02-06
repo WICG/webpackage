@@ -2136,5 +2136,6 @@ draft-02
 
 # Acknowledgements
 
-Thanks to Devin Mullins, Ilari Liusvaara, Justin Schuh, Mark Nottingham, Mike
-Bishop, Ryan Sleevi, and Yoav Weiss for comments that improved this draft.
+Thanks to Andrew Ayer, Devin Mullins, Ilari Liusvaara, Justin Schuh, Mark
+Nottingham, Mike Bishop, Ryan Sleevi, and Yoav Weiss for comments that improved
+this draft.
