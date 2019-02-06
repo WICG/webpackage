@@ -963,6 +963,14 @@ able to make even one unauthorized signature.
 
 Conforming CAs MUST NOT mark this extension as critical.
 
+A conforming CA MUST NOT issue certificates with this extension unless, for each
+dNSName in the subjectAltName extension of the certificate to be issued:
+
+1. An "issue" or "issuewild" CAA property ({{!RFC6844}}) exists that authorizes
+   the CA to issue the certificate; and
+1. The "cansignhttpexchanges" parameter ({{caa-cansignhttpexchanges}}) is
+   present on the property and is equal to "yes"
+
 Clients MUST NOT accept certificates with this extension in TLS connections
 (Section 4.4.2.2 of {{!RFC8446}}).
 
@@ -978,6 +986,12 @@ Implementations of drafts of this specification MAY recognize the
 extension. This OID might or might not be used as the final OID for the
 extension, so certificates including it might need to be reissued once the final
 RFC is published.
+
+### Extensions to the CAA Record: cansignhttpexchanges Parameter {#caa-cansignhttpexchanges}
+
+A CAA parameter "cansignhttpexchanges" is defined for the "issue" and
+"issuewild" properties defined by {{!RFC6844}}.  The value of this parameter, if
+specified, MUST be "yes".
 
 # Transferring a signed exchange {#transfer}
 
@@ -1651,6 +1665,10 @@ Author:  See Authors' Addresses section.
 
 Change controller:  IESG
 
+## The cansignhttpexchanges CAA Parameter {#iana-caa-cansignhttpexchanges}
+
+There are no IANA considerations for this parameter.
+
 --- back
 
 # Use cases
@@ -2042,6 +2060,7 @@ draft-06
 
 * Add a security consideration for future-dated OCSP responses and for stolen
   private keys.
+* Define a CAA parameter to opt into certificate issuance.
 
 draft-05
 
@@ -2117,5 +2136,6 @@ draft-02
 
 # Acknowledgements
 
-Thanks to Devin Mullins, Ilari Liusvaara, Justin Schuh, Mark Nottingham, Mike
-Bishop, Ryan Sleevi, and Yoav Weiss for comments that improved this draft.
+Thanks to Andrew Ayer, Devin Mullins, Ilari Liusvaara, Justin Schuh, Mark
+Nottingham, Mike Bishop, Ryan Sleevi, and Yoav Weiss for comments that improved
+this draft.
