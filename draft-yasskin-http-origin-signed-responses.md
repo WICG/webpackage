@@ -1281,11 +1281,11 @@ shared by the combination of {{?RFC8336}} and
 If a CA mis-issues a certificate for a domain, this specification provides a way
 to detect the mis-issuance and mitigate harm within approximately two weeks.
 Specifically, because all signed exchanges must include a
-`SignedCertificateTimestampList` ({{?RFC6962}}, the mis-issued certificate will
-appear in a CT log within that log's Maximum Merge Delay, 1 day for many logs.
-The domain owner can then detect the mis-issued certificate and notify the CA to
-revoke it, which the {{BRs}}, section 4.9.1.1, say they must do within another 5
-days.
+`SignedCertificateTimestampList` ({{?RFC6962}}, a CT log has promised to publish
+the mis-issued certificate within that log's Maximum Merge Delay, 1 day for many
+logs. The domain owner can then detect the mis-issued certificate and notify the
+CA to revoke it, which the {{BRs}}, section 4.9.1.1, say they must do within
+another 5 days.
 
 Once the mis-issued certificate is revoked, existing OCSP responses begin to
 expire. The {{BRs}}, section 4.9.10, require that OCSP responses have a maximum
