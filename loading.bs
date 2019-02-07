@@ -397,8 +397,8 @@ An exchange signature is a [=struct=] with the following items:
 :: A [=byte sequence=] holding the [=SHA-256=] hash that verified the [=exchange
     signature/certificate chain=]'s [=certificate chain/leaf=].
 : <dfn>integrity header</dfn>
-:: A [=list=] that describes the response header and any of its parameters that
-    guard the integrity of the response payload.
+:: A [=list=] of [=ASCII strings=] that describes the response header and any of
+    its parameters that guard the integrity of the response payload.
 : <dfn>validityUrl</dfn>
 :: A [=URL=] describing where to update this signature.
 : <dfn>validityUrlBytes</dfn>
@@ -890,14 +890,12 @@ To <dfn lt="reading a body|read a body">read a body</dfn> from a [=read buffer=]
 |stream| into a [=response=] |response| using an [=exchange signature=]
 |signature| to check its integrity, the UA MUST:
 
-1. If |signature|'s [=exchange signature/integrity header=]'s first item is:
+1. If |signature|'s [=exchange signature/integrity header=] is:
 
     <dl class="switch">
 
-    : "digest/mi-sha256-03"
+    : «"`digest`", "`mi-sha256-03`"»
     ::
-        1. If the length of |signature|'s [=exchange signature/integrity header=]
-            isn't 1, return a failure.
         1. Let |instance-digests| be the result of [=header list/getting,
             decoding, and splitting=] `` `digest` `` from |response|'s
             [=response/header list=].
