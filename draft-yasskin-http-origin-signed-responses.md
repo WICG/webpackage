@@ -999,6 +999,9 @@ as invalid. Instead:
 * After 2019-08-01, clients MUST reject all certificates with this extension
   that have a Validity Period longer than 90 days.
 
+The above requirements on CAs to limit the Validity Period and check for a CAA
+parameter are effective starting 2019-05-01.
+
 ### Extensions to the CAA Record: cansignhttpexchanges Parameter {#caa-cansignhttpexchanges}
 
 A CAA parameter "cansignhttpexchanges" is defined for the "issue" and
