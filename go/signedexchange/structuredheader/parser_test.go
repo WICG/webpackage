@@ -88,11 +88,11 @@ func TestParseString(t *testing.T) {
 	}
 }
 
-func TestParseIdentifier(t *testing.T) {
+func TestParseKey(t *testing.T) {
 	cases := []struct {
 		input         string
 		shouldSucceed bool
-		expected      Identifier
+		expected      Key
 		rest          string
 	}{
 		{"", false, "", ""},
@@ -101,25 +101,61 @@ func TestParseIdentifier(t *testing.T) {
 		{"Foo", false, "", ""},
 		{"foo123", true, "foo123", ""},
 		{"1foo", false, "", ""},
+		{"foo_-*/", true, "foo_-", "*/"},
+		{"foo=bar", true, "foo", "=bar"},
+		{"_foo", false, "", ""},
+	}
+	for _, c := range cases {
+		p := &parser{c.input}
+		id, err := p.parseKey()
+		if c.shouldSucceed {
+			if err != nil {
+				t.Errorf("parseKey(%q) unexpectedly failed: %v", c.input, err)
+			}
+			if id != c.expected {
+				t.Errorf("parseKey(%q): got %v, want %v", c.input, id, c.expected)
+			}
+			if p.input != c.rest {
+				t.Errorf("parseKey(%q): remaining input was %q, should be %q", c.input, p.input, c.rest)
+			}
+		} else if err == nil {
+			t.Errorf("parseKey(%q) did not fail", c.input)
+		}
+	}
+}
+
+func TestParseToken(t *testing.T) {
+	cases := []struct {
+		input         string
+		shouldSucceed bool
+		expected      Token
+		rest          string
+	}{
+		{"", false, "", ""},
+		{"a", true, "a", ""},
+		{"foo", true, "foo", ""},
+		{"Foo", true, "Foo", ""},
+		{"foo123", true, "foo123", ""},
+		{"1foo", false, "", ""},
 		{"foo_-*/", true, "foo_-*/", ""},
 		{"foo=bar", true, "foo", "=bar"},
 		{"_foo", false, "", ""},
 	}
 	for _, c := range cases {
 		p := &parser{c.input}
-		id, err := p.parseIdentifier()
+		id, err := p.parseToken()
 		if c.shouldSucceed {
 			if err != nil {
-				t.Errorf("parseIdentifier(%q) unexpectedly failed: %v", c.input, err)
+				t.Errorf("parseToken(%q) unexpectedly failed: %v", c.input, err)
 			}
 			if id != c.expected {
-				t.Errorf("parseIdentifier(%q): got %v, want %v", c.input, id, c.expected)
+				t.Errorf("parseToken(%q): got %v, want %v", c.input, id, c.expected)
 			}
 			if p.input != c.rest {
-				t.Errorf("parseIdentifier(%q): remaining input was %q, should be %q", c.input, p.input, c.rest)
+				t.Errorf("parseToken(%q): remaining input was %q, should be %q", c.input, p.input, c.rest)
 			}
 		} else if err == nil {
-			t.Errorf("parseIdentifier(%q) did not fail", c.input)
+			t.Errorf("parseToken(%q) did not fail", c.input)
 		}
 	}
 }
@@ -169,7 +205,7 @@ func TestParseItem(t *testing.T) {
 	}{
 		{"", nil, ""},
 		{"42", int64(42), ""},
-		{"foo", Identifier("foo"), ""},
+		{"foo", Token("foo"), ""},
 		{`" foo "`, " foo ", ""},
 		{"*Zm9v*;", []byte("foo"), ";"},
 	}
@@ -202,7 +238,7 @@ func TestParseParameterisedIdentifier(t *testing.T) {
 		{"label", &ParameterisedIdentifier{"label", Parameters{}}, ""},
 		{";foo", nil, ""},
 		{"label;foo", &ParameterisedIdentifier{"label", Parameters{"foo": nil}}, ""},
-		{"label;foo=bar;n=42", &ParameterisedIdentifier{"label", Parameters{"foo": Identifier("bar"), "n": int64(42)}}, ""},
+		{"label;foo=bar;n=42", &ParameterisedIdentifier{"label", Parameters{"foo": Token("bar"), "n": int64(42)}}, ""},
 		{"label;n=123;", nil, ""},
 		{"label ; n=123 ; m=42", &ParameterisedIdentifier{"label", Parameters{"n": int64(123), "m": int64(42)}}, ""},
 		{"label;n =123", &ParameterisedIdentifier{"label", Parameters{"n": nil}}, "=123"},

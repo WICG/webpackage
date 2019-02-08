@@ -1,5 +1,5 @@
 // Package structuredheader parses Structured Headers for HTTP
-// (https://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html).
+// (https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09).
 package structuredheader
 
 import (
@@ -10,25 +10,29 @@ import (
 	"strings"
 )
 
-// http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#identifier
-type Identifier string
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-3.1
+type Key string
 
-// http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#param
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-3.4
 type ParameterisedList []ParameterisedIdentifier
 type ParameterisedIdentifier struct {
-	Label  Identifier
+	Label  Token
 	Params Parameters
 }
 
 // Parameters represents a set of parameters in a Parameterised Identifier.
 // The interface{} value is one of these:
 //
-//	int64      for Numbers
-//	string     for Strings
-//	Identifier for Identifiers
-//	[]byte     for Byte Sequences
-//	nil        for parameters with no value
-type Parameters map[Identifier]interface{}
+//	int64  for Numbers
+//	string for Strings
+//	Token  for Tokens
+//	[]byte for Byte Sequences
+//	nil    for parameters with no value
+type Parameters map[Key]interface{}
+
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-3.9
+type Token string
+
 
 type parser struct {
 	input string
@@ -62,13 +66,39 @@ func (p *parser) consumeChar(c byte) bool {
 	return false
 }
 
-// http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-param-list
+// ParseParameterisedList parses input as a Parameterised List.
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2
 func ParseParameterisedList(input string) (ParameterisedList, error) {
 	p := &parser{input}
-	// In the spec, this is done in the Step 1 of the top-level parsing algorithm.
-	// http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#text-parse
 	p.discardLeadingOWS()
+	pl, err := p.parseParameterisedList()
+	if err != nil {
+		return nil, err
+	}
+	p.discardLeadingOWS()
+	if !p.isEmpty() {
+		return nil, errors.New("structuredheader: extraneous data at the end")
+	}
+	return pl, nil
+}
 
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.2
+func (p *parser) parseKey() (Key, error) {
+	if p.isEmpty() {
+		return "", errors.New("structuredheader: token expected, got EOS")
+	}
+	if !isLCAlpha(p.input[0]) {
+		return "", fmt.Errorf("structuredheader: token expected, got '%c'", p.input[0])
+	}
+	i := 0
+	for i < len(p.input) && isKeyChar(p.input[i]) {
+		i++
+	}
+	return Key(p.getString(i)), nil
+}
+
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.5
+func (p *parser) parseParameterisedList() (ParameterisedList, error) {
 	var items ParameterisedList
 	for !p.isEmpty() {
 		item, err := p.parseParameterisedIdentifier()
@@ -81,30 +111,27 @@ func ParseParameterisedList(input string) (ParameterisedList, error) {
 			return items, nil
 		}
 		if !p.consumeChar(',') {
-			return nil, fmt.Errorf("structuredheader: ',' expacted, got '%c'", input[0])
+			return nil, fmt.Errorf("structuredheader: ',' expacted, got '%c'", p.input[0])
 		}
 		p.discardLeadingOWS()
 	}
 	return nil, errors.New("structuredheader: unexpected end of input; Parameterised Identifier expected")
 }
 
-// http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-param-id
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.6
 func (p *parser) parseParameterisedIdentifier() (ParameterisedIdentifier, error) {
-	primary_identifier, err := p.parseIdentifier()
+	primary_identifier, err := p.parseToken()
 	if err != nil {
 		return ParameterisedIdentifier{}, err
 	}
 	parameters := make(Parameters)
 	for {
-		// This is not in the spec algorithm but ABNF allows OWS here.
-		// https://github.com/httpwg/http-extensions/issues/703
 		p.discardLeadingOWS()
-
 		if !p.consumeChar(';') {
 			break
 		}
 		p.discardLeadingOWS()
-		param_name, err := p.parseIdentifier()
+		param_name, err := p.parseKey()
 		if err != nil {
 			return ParameterisedIdentifier{}, err
 		}
@@ -123,11 +150,8 @@ func (p *parser) parseParameterisedIdentifier() (ParameterisedIdentifier, error)
 	return ParameterisedIdentifier{primary_identifier, parameters}, nil
 }
 
-// http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-item
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.7
 func (p *parser) parseItem() (interface{}, error) {
-	// The spec algorithm has "Discard OWS" here but ABNF doesn't permit leading
-	// OWS for items. https://github.com/httpwg/http-extensions/issues/703
-
 	if p.isEmpty() {
 		return nil, errors.New("structuredheader: item expected, got EOS")
 	}
@@ -142,13 +166,13 @@ func (p *parser) parseItem() (interface{}, error) {
 		return p.parseByteSequence()
 	}
 	// TODO: Support Booleans.
-	if isLCAlpha(c) {
-		return p.parseIdentifier()
+	if isAlpha(c) {
+		return p.parseToken()
 	}
 	return nil, fmt.Errorf("structuredheader: item expected, got '%c'", c)
 }
 
-// http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-number
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.8
 func (p *parser) parseNumber() (int64, error) {
 	if p.isEmpty() {
 		return 0, errors.New("structuredheader: number expected, got EOS")
@@ -169,7 +193,7 @@ func (p *parser) parseNumber() (int64, error) {
 	return n, nil
 }
 
-// http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-string
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.9
 func (p *parser) parseString() (string, error) {
 	if p.isEmpty() {
 		return "", errors.New("structuredheader: string expected, got EOS")
@@ -201,23 +225,22 @@ func (p *parser) parseString() (string, error) {
 	return "", errors.New("structuredheader: missing closing '\"'")
 }
 
-// http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-identifier
-func (p *parser) parseIdentifier() (Identifier, error) {
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.10
+func (p *parser) parseToken() (Token, error) {
 	if p.isEmpty() {
-		return "", errors.New("structuredheader: identifier expected, got EOS")
+		return "", errors.New("structuredheader: token expected, got EOS")
 	}
-	if !isLCAlpha(p.input[0]) {
-		return "", fmt.Errorf("structuredheader: identifier expected, got '%c'", p.input[0])
+	if !isAlpha(p.input[0]) {
+		return "", fmt.Errorf("structuredheader: token expected, got '%c'", p.input[0])
 	}
 	i := 0
-	for i < len(p.input) && isIdent(p.input[i]) {
+	for i < len(p.input) && isTokenChar(p.input[i]) {
 		i++
 	}
-	id := Identifier(p.getString(i))
-	return id, nil
+	return Token(p.getString(i)), nil
 }
 
-// http://httpwg.org/http-extensions/draft-ietf-httpbis-header-structure.html#parse-binary
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.11
 func (p *parser) parseByteSequence() ([]byte, error) {
 	if p.isEmpty() {
 		return nil, errors.New("structuredheader: byte sequence expected, got EOS")
@@ -253,7 +276,16 @@ func isLCAlpha(c byte) bool {
 	return c >= 'a' && c <= 'z'
 }
 
-// isIdent returns true if c is allowed in subsequent characters of Identifiers.
-func isIdent(c byte) bool {
-	return isLCAlpha(c) || isDigit(c) || c == '_' || c == '-' || c == '*' || c == '/'
+func isAlpha(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
+// isKeyChar returns true if c is allowed in subsequent characters of Keys.
+func isKeyChar(c byte) bool {
+	return isLCAlpha(c) || isDigit(c) || c == '_' || c == '-'
+}
+
+// isTokenChar returns true if c is allowed in subsequent characters of Tokens.
+func isTokenChar(c byte) bool {
+	return isAlpha(c) || isDigit(c) || c == '_' || c == '-' || c == '.' || c == ':' || c == '%' || c == '*' || c == '/'
 }
