@@ -277,7 +277,7 @@ add the following steps:
             |actualResponse| in the context of |request|'s [=request/client=],
             reporting to |report|.
         1. If |parsedExchange| is not an [=exchange=], run
-            [=queue a signed exchange report=] |report| and
+            [=queue a signed exchange report=] |report| with
             |parsedExchange| as the result, and return a [=network error=].
         1. [=In parallel=], [=wait and queue a report for=] |parsedExchange| and
             |report|.
@@ -397,8 +397,8 @@ A signed exchange report is a [=struct=] with the following items:
 
 <dl dfn-for="signed exchange report">
 : <dfn>result</dfn>
-:: The result string of loading signed exchange. This must be one of an empty
-    string, "<dfn>`ok`</dfn>", "<dfn>`mi_error`</dfn>",
+:: The result string of loading signed exchange. This must be unset or one of
+    "<dfn>`ok`</dfn>", "<dfn>`mi_error`</dfn>",
     "<dfn>`non_secure_origin`</dfn>", "<dfn>`parse_error`</dfn>",
     "<dfn>`invalid_integrity_header`</dfn>",
     "<dfn>`signature_verification_error`</dfn>",
@@ -412,8 +412,8 @@ A signed exchange report is a [=struct=] with the following items:
 :: The logical [=URL=] of the signed exchange, if available. Otherwise, an empty
     string.
 : <dfn>cert URL list</dfn>
-:: The list of [=URL=] of the first "`cert-url`" parameter of signed exchange,
-    if available. Otherwise, an empty list.
+:: The list of [=URL=] which first element is the first "`cert-url`" parameter
+    of signed exchange, if available. Otherwise, an empty list.
 : <dfn>server IP</dfn>
 :: The IP address of the server from which the user agent received the signed
     exchange, if available. Otherwise, an empty string.
@@ -502,7 +502,7 @@ This section defines how to load the formats defined in
 <dfn>Parsing a signed exchange</dfn> of version |version| from a [=response=]
 |response| in the context of an [=environment settings object=] |client|,
 reporting to a [=signed exchange report=] |report| returns an [=exchange=] or a
-string which indicates an error returned by the following steps:
+string which indicates an error  as described by the following steps:
 
 1. Assert: This algorithm is running [=in parallel=].
 1. Assert: The [=signed exchange version=] of |response| is, if |version| is
@@ -1081,7 +1081,8 @@ MUST:
 
 <h3 algorithm id="queue-report">Queuing signed exchange report</h3>
 
-To <dfn>queue a signed exchange report</dfn> |report| and |result|, the UA MUST:
+To <dfn>queue a signed exchange report</dfn> |report| with |result| as the
+result, the UA MUST:
 
 1. Set |report|'s [=signed exchange report/result=] to |result|.
 
@@ -1093,19 +1094,21 @@ To <dfn>queue a signed exchange report</dfn> |report| and |result|, the UA MUST:
 1. If |report body|'s `"type"` is `"dns.address_changed"`, abort these steps.
 
     Note: This means that the NEL report was downgraded because the IP addresses
-    of the server and the |policy| don't match. In this case,
-    [=deliver a network report=] algorithm MUST be called with the error report
-    while handling the response. So we don't need to send the same error report
-    while processing the response as a signed exchange.
+    of the server and the |policy| don't match. In this case, UA have called
+    [=deliver a network report=] algorithm with the error report while handling
+    the response. So we don't need to send the same error report while
+    processing the response as a signed exchange.
 
 1. Add a new property `"sxg"` to |report body| with a new ECMAScript object with
      the following properties:
 
-    * `outer_url`: The [=ASCII encoding=] of the [=URL serializer|serialization=]
-          of |report|'s [=signed exchange report/outer request=]'s
-          [=request/url=].
-    * `inner_url`: |report|'s [=signed exchange report/inner URL=].
-    * `cert_url`: |report|'s [=signed exchange report/cert URL list=].
+    * `outer_url`: The [=URL serializer|serialization=] of |report|'s
+          [=signed exchange report/outer request=]'s [=request/url=].
+    * `inner_url`: The [=URL serializer|serialization=] of |report|'s
+          [=signed exchange report/inner URL=].
+    * `cert_url`: The [=sequence type=] of the result of
+          [=URL serializer|serialization=] of each element of |report|'s
+          [=signed exchange report/cert URL list=].
 
 1. Set |report body|'s `"phase"` to `"sxg"`.
 
