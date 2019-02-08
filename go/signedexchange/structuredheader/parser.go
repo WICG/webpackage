@@ -13,22 +13,26 @@ import (
 // https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-3.1
 type Key string
 
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-3.3
+type ListOfLists [][]Item
+
 // https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-3.4
 type ParameterisedList []ParameterisedIdentifier
 type ParameterisedIdentifier struct {
 	Label  Token
 	Params Parameters
 }
+type Parameters map[Key]Item
 
-// Parameters represents a set of parameters in a Parameterised Identifier.
-// The interface{} value is one of these:
+// Item is one of these:
 //
 //	int64  for Numbers
 //	string for Strings
 //	Token  for Tokens
 //	[]byte for Byte Sequences
-//	nil    for parameters with no value
-type Parameters map[Key]interface{}
+//
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-3.5
+type Item interface{}
 
 // https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-3.9
 type Token string
@@ -66,6 +70,22 @@ func (p *parser) consumeChar(c byte) bool {
 	return false
 }
 
+// ParseListOfLists parses input as a List of Lists.
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2
+func ParseListOfLists(input string) (ListOfLists, error) {
+	p := &parser{input}
+	p.discardLeadingOWS()
+	ll, err := p.parseListOfLists()
+	if err != nil {
+		return nil, err
+	}
+	p.discardLeadingOWS()
+	if !p.isEmpty() {
+		return nil, errors.New("structuredheader: extraneous data at the end")
+	}
+	return ll, nil
+}
+
 // ParseParameterisedList parses input as a Parameterised List.
 // https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2
 func ParseParameterisedList(input string) (ParameterisedList, error) {
@@ -95,6 +115,31 @@ func (p *parser) parseKey() (Key, error) {
 		i++
 	}
 	return Key(p.getString(i)), nil
+}
+// https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.4
+func (p *parser) parseListOfLists() (ListOfLists, error) {
+	var top_list ListOfLists
+	var inner_list []Item
+	for !p.isEmpty() {
+		item, err := p.parseItem()
+		if err != nil {
+			return nil, err
+		}
+		inner_list = append(inner_list, item)
+		p.discardLeadingOWS()
+		if p.isEmpty() {
+			top_list = append(top_list, inner_list)
+			return top_list, nil
+		}
+		if p.consumeChar(',') {
+			top_list = append(top_list, inner_list)
+			inner_list = nil
+		} else if !p.consumeChar(';') {
+			return nil, fmt.Errorf("structuredheader: ',' or ';' expected, got '%c'", p.input[0])
+		}
+		p.discardLeadingOWS()
+	}
+	return nil, errors.New("structuredheader: unexpected end of input; List of Lists expected")
 }
 
 // https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.5
@@ -138,7 +183,7 @@ func (p *parser) parseParameterisedIdentifier() (ParameterisedIdentifier, error)
 		if _, ok := parameters[param_name]; ok {
 			return ParameterisedIdentifier{}, fmt.Errorf("structuredheader: duplicated parameter '%s'", param_name)
 		}
-		var param_value interface{}
+		var param_value Item
 		if p.consumeChar('=') {
 			param_value, err = p.parseItem()
 			if err != nil {
@@ -151,7 +196,7 @@ func (p *parser) parseParameterisedIdentifier() (ParameterisedIdentifier, error)
 }
 
 // https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.7
-func (p *parser) parseItem() (interface{}, error) {
+func (p *parser) parseItem() (Item, error) {
 	if p.isEmpty() {
 		return nil, errors.New("structuredheader: item expected, got EOS")
 	}
