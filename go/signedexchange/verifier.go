@@ -26,7 +26,7 @@ import (
 const maxMIRecordSize = 16384
 
 type Signature struct {
-	Label       structuredheader.Identifier
+	Label       structuredheader.Token
 	Sig         []byte
 	Integrity   string
 	CertUrl     string
