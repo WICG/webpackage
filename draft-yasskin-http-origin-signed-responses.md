@@ -961,6 +961,9 @@ able to make even one unauthorized signature.
 Certificates with this extension MUST be revoked if an unauthorized entity is
 able to make even one unauthorized signature.
 
+Certificates with this extension MUST have a Validity Period no greater than 90
+days.
+
 Conforming CAs MUST NOT mark this extension as critical.
 
 A conforming CA MUST NOT issue certificates with this extension unless, for each
@@ -986,6 +989,15 @@ Implementations of drafts of this specification MAY recognize the
 extension. This OID might or might not be used as the final OID for the
 extension, so certificates including it might need to be reissued once the final
 RFC is published.
+
+Some certificates have already been issued with this extension and with validity
+periods longer than 90 days. These certificates will not immediately be treated
+as invalid. Instead:
+
+* Clients MUST reject certificates with this extension that were issued after
+  2019-05-01 and have a Validity Period longer than 90 days.
+* After 2019-08-01, clients MUST reject all certificates with this extension
+  that have a Validity Period longer than 90 days.
 
 ### Extensions to the CAA Record: cansignhttpexchanges Parameter {#caa-cansignhttpexchanges}
 
@@ -2061,6 +2073,7 @@ draft-06
 * Add a security consideration for future-dated OCSP responses and for stolen
   private keys.
 * Define a CAA parameter to opt into certificate issuance.
+* Limit certificate lifetimes to 90 days.
 
 draft-05
 
