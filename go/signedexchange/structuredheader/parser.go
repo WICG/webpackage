@@ -118,22 +118,22 @@ func (p *parser) parseKey() (Key, error) {
 }
 // https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.4
 func (p *parser) parseListOfLists() (ListOfLists, error) {
-	var top_list ListOfLists
-	var inner_list []Item
+	var topList ListOfLists
+	var innerList []Item
 	for !p.isEmpty() {
 		item, err := p.parseItem()
 		if err != nil {
 			return nil, err
 		}
-		inner_list = append(inner_list, item)
+		innerList = append(innerList, item)
 		p.discardLeadingOWS()
 		if p.isEmpty() {
-			top_list = append(top_list, inner_list)
-			return top_list, nil
+			topList = append(topList, innerList)
+			return topList, nil
 		}
 		if p.consumeChar(',') {
-			top_list = append(top_list, inner_list)
-			inner_list = nil
+			topList = append(topList, innerList)
+			innerList = nil
 		} else if !p.consumeChar(';') {
 			return nil, fmt.Errorf("structuredheader: ',' or ';' expected, got '%c'", p.input[0])
 		}
@@ -165,7 +165,7 @@ func (p *parser) parseParameterisedList() (ParameterisedList, error) {
 
 // https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.6
 func (p *parser) parseParameterisedIdentifier() (ParameterisedIdentifier, error) {
-	primary_identifier, err := p.parseToken()
+	primaryIdentifier, err := p.parseToken()
 	if err != nil {
 		return ParameterisedIdentifier{}, err
 	}
@@ -176,23 +176,23 @@ func (p *parser) parseParameterisedIdentifier() (ParameterisedIdentifier, error)
 			break
 		}
 		p.discardLeadingOWS()
-		param_name, err := p.parseKey()
+		paramName, err := p.parseKey()
 		if err != nil {
 			return ParameterisedIdentifier{}, err
 		}
-		if _, ok := parameters[param_name]; ok {
-			return ParameterisedIdentifier{}, fmt.Errorf("structuredheader: duplicated parameter '%s'", param_name)
+		if _, ok := parameters[paramName]; ok {
+			return ParameterisedIdentifier{}, fmt.Errorf("structuredheader: duplicated parameter '%s'", paramName)
 		}
-		var param_value Item
+		var paramValue Item
 		if p.consumeChar('=') {
-			param_value, err = p.parseItem()
+			paramValue, err = p.parseItem()
 			if err != nil {
 				return ParameterisedIdentifier{}, err
 			}
 		}
-		parameters[param_name] = param_value
+		parameters[paramName] = paramValue
 	}
-	return ParameterisedIdentifier{primary_identifier, parameters}, nil
+	return ParameterisedIdentifier{primaryIdentifier, parameters}, nil
 }
 
 // https://tools.ietf.org/html/draft-ietf-httpbis-header-structure-09#section-4.2.7
