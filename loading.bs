@@ -399,7 +399,7 @@ A signed exchange report is a [=struct=] with the following items:
 : <dfn>result</dfn>
 :: The result string of loading signed exchange. This must be unset or one of
     "<dfn>`ok`</dfn>", "<dfn>`mi_error`</dfn>",
-    "<dfn>`non_secure_origin`</dfn>", "<dfn>`parse_error`</dfn>",
+    "<dfn>`non_secure_distributor`</dfn>", "<dfn>`parse_error`</dfn>",
     "<dfn>`invalid_integrity_header`</dfn>",
     "<dfn>`signature_verification_error`</dfn>",
     "<dfn>`cert_verification_error`</dfn>", "<dfn>`cert_fetch_error`</dfn>",
@@ -412,14 +412,14 @@ A signed exchange report is a [=struct=] with the following items:
 :: The logical [=URL=] of the signed exchange, if available. Otherwise, an empty
     string.
 : <dfn>cert URL list</dfn>
-:: The list of [=URL=] which first element is the first "`cert-url`" parameter
-    of signed exchange, if available. Otherwise, an empty list.
+:: The list of [=URLs=] in "`cert-url`" parameters for the signed exchange's
+    signatures, if available. Otherwise, an empty list.
 : <dfn>server IP</dfn>
 :: The IP address of the server from which the user agent received the signed
     exchange, if available. Otherwise, an empty string.
 : <dfn>cert server IP list</dfn>
-:: The list of IP address of the server from which the user agent received the
-    certificate of the signed exchange, if available. Otherwise, an empty list.
+:: The list of IP addresses of the servers from which the user agent received
+    the certificates listed in [=signed exchange report/cert URL list=].
 
 </dl>
 
@@ -501,8 +501,9 @@ This section defines how to load the formats defined in
 
 <dfn>Parsing a signed exchange</dfn> of version |version| from a [=response=]
 |response| in the context of an [=environment settings object=] |client|,
-reporting to a [=signed exchange report=] |report| returns an [=exchange=] or a
-string which indicates an error  as described by the following steps:
+reporting to a [=signed exchange report=] |report|, returns an [=exchange=] or a
+string which indicates a [=signed exchange report/result=] as described by the
+following steps
 
 1. Assert: This algorithm is running [=in parallel=].
 1. Assert: The [=signed exchange version=] of |response| is, if |version| is
@@ -514,7 +515,8 @@ string which indicates an error  as described by the following steps:
 
     </dl>
 1. If |response|'s [=response/URL=]'s [=url/origin=] is not a [=potentially
-    trustworthy origin=], return "[=signed exchange report/non_secure_origin=]".
+    trustworthy origin=], return
+    "[=signed exchange report/non_secure_distributor=]".
 
     Note: This ensures that the privacy properties of retrieving an HTTPS
     resource via a signed exchange are no worse than retrieving it via TLS.
@@ -584,9 +586,9 @@ string which indicates an error  as described by the following steps:
 
     Note: This might simplify the UA's implementation, since it doesn't have to
     handle nested signed exchanges.
-1. Run [=read a body=] from |stream| into |parsedExchange|'s
+1. [=Read a body=] from |stream| into |parsedExchange|'s
     [=exchange/response=] using |parsedSignature| to check its integrity. If
-    this returns an error, return it.
+    this returns an error string, return it.
 
     Note: Typically this body’s stream is still being enqueued to after
     returning.
@@ -626,8 +628,9 @@ steps:
 
 <dfn>Parsing the Signature header field</dfn> |signatureString| in the context
 of an [=environment settings object=] |client|, reporting to a
-[=signed exchange report=] |report| returns an [=exchange signature=] or
-a string which indicates an error, as described by the following steps:
+[=signed exchange report=] |report|, returns an [=exchange signature=] or
+a string which indicates a [=signed exchange report/result=], as described by
+the following steps:
 
 1. Assert: This algorithm is running [=in parallel=].
 1. If |signatureString| contains any bytes that aren't [=ASCII bytes=], return
@@ -688,10 +691,10 @@ a string which indicates an error, as described by the following steps:
 <h4 algorithm id="handling-cert-url">Handling the certificate reference</h4>
 
 <dfn>Handling the certificate reference</dfn> |certUrl| with the SHA-256 hash
-|certSha256| in the context of an[=environment settings object=] |client|
+|certSha256| in the context of an [=environment settings object=] |client|,
 reporting to a [=signed exchange report=] |report|, returns a
-[=certificate chain=] or a string which indicates an error, as described by the
-following steps:
+[=certificate chain=] or a string which indicates a
+[=signed exchange report/result=], as described by the following steps:
 
 1. Assert: This algorithm is running [=in parallel=].
 1. Let |certRequest| be a new [=request=] with the following items:
@@ -1094,7 +1097,7 @@ result, the UA MUST:
 1. If |report body|'s `"type"` is `"dns.address_changed"`, abort these steps.
 
     Note: This means that the NEL report was downgraded because the IP addresses
-    of the server and the |policy| don't match. In this case, UA have called
+    of the server and the |policy| don't match. In this case, the UA has called
     [=deliver a network report=] algorithm with the error report while handling
     the response. So we don't need to send the same error report while
     processing the response as a signed exchange.
