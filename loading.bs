@@ -146,9 +146,6 @@ spec: http-dig-alg; urlPrefix: https://www.iana.org/assignments/http-dig-alg/htt
 spec: SHA2; urlPrefix: http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf
     type: dfn
         text: SHA-256; url: #
-spec: network-error-logging; urlPrefix: https://w3c.github.io/network-error-logging/#
-    type: dfn
-        text: deliver a network report ; url: deliver-a-network-report
 </pre>
 <pre class='link-defaults'>
 spec:fetch; type:dfn; for:/; text:response
@@ -1115,8 +1112,10 @@ result, the UA MUST:
 
 1. Set |report body|'s `"phase"` to `"sxg"`.
 
-1. Set |report body|'s `"type"` to the result of concatenating a string `"sxg."`
-     and the |report|'s [=signed exchange report/result=].
+1. If the |report|'s [=signed exchange report/result=] is
+    "[=signed exchange report/ok=]", set |report body|'s `"type"` to `"ok"`.
+    Otherwise, set |report body|'s `"type"` to the result of concatenating a
+    string `"sxg."` and the |report|'s [=signed exchange report/result=].
 
 1. If |report body|'s `"sxg"`'s `"cert_url"`'s [=url/scheme=] is not `"data"`
     and |report|'s [=signed exchange report/result=] is
