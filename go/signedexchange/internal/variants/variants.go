@@ -4,17 +4,14 @@ import (
 	"net/http"
 	"net/textproto"
 	"strings"
+	"sort"
 
 	"github.com/golang/gddo/httputil/header"
 )
 
-func includes(strs []string, str string) bool {
-	for _, s := range strs {
-		if s == str {
-			return true
-		}
-	}
-	return false
+func MatchesMimeType(mimeTypePattern, mimeType string) bool {
+	// TODO(hajimehoshi): Implement this. See Chromium's MatchesMimeType.
+	return mimeTypePattern == mimeType
 }
 
 func ParseListOfLists(h http.Header, key string) [][]string {
@@ -38,6 +35,26 @@ func ParseListOfLists(h http.Header, key string) [][]string {
 	return ll
 }
 
+func ParseRequestHeaderValue(h http.Header, key string) []string {
+	var specs []header.AcceptSpec
+	for _, spec := range header.ParseAccept(h, key) {
+		if spec.Q == 0 {
+			continue
+		}
+		specs = append(specs, spec)
+	}
+
+	sort.Slice(specs, func(i, j int) bool {
+		return specs[i].Q > specs[j].Q
+	})
+
+	var items []string
+	for _, spec := range specs {
+		items = append(items, spec.Value)
+	}
+	return items
+}
+
 // https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html#variant-key
 func ParseVariantKey(h http.Header, numVariantAxes int) [][]string {
 	parsed := ParseListOfLists(h, "Variant-Key")
@@ -57,6 +74,22 @@ func ParseVariantKey(h http.Header, numVariantAxes int) [][]string {
 	return parsed
 }
 
+func matchedLanguages(availableValues []string, preferredLang string) []string {
+	if preferredLang == "*" {
+		return availableValues
+	}
+
+	var out []string
+	prefix := strings.ToLower(preferredLang) + "-"
+	for _, available := range availableValues {
+		if strings.ToLower(preferredLang) == strings.ToLower(available) ||
+			strings.HasPrefix(strings.ToLower(available), prefix) {
+			out = append(out, available)
+		}
+	}
+	return out
+}
+
 // https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html#content-type
 func contentTypeNegotiation(availableValues []string, request http.Header, fieldName string) []string {
 	// Step 1. Let preferred-available be an empty list. [spec text]
@@ -67,12 +100,9 @@ func contentTypeNegotiation(availableValues []string, request http.Header, field
 	// to lowest, as per Section 5.3.2 of [RFC7231] (omitting any coding with a
 	// weight of 0). If a type lacks an explicit weight, an implementation MAY
 	// assign one.
-	// TODO(ksakamoto): Omit items with q=0.
 	var preferredTypes []string
 	if request.Get(fieldName) != "" {
-		for _, list := range ParseListOfLists(request, fieldName) {
-			preferredTypes = append(preferredTypes, list[0])
-		}
+		preferredTypes = ParseRequestHeaderValue(request, fieldName)
 	}
 
 	// Step 3. For each preferred-type in preferred-types: [spec text]
@@ -82,10 +112,10 @@ func contentTypeNegotiation(availableValues []string, request http.Header, field
 		// [RFC7231] (which is case-insensitive), append those members of
 		// available-values to preferred-available (preserving the precedence order
 		// implied by the media ranges’ specificity).
-		// TODO(ksakamoto): Use the media-range matching mechanism specified in
-		// Section 5.3.2 of [RFC7231].
-		if includes(availableValues, preferredType) {
-			preferredAvailable = append(preferredAvailable, preferredType)
+		for _, available := range availableValues {
+			if MatchesMimeType(preferredType, available) {
+				preferredAvailable = append(preferredAvailable, available)
+			}
 		}
 	}
 
@@ -111,12 +141,9 @@ func acceptLanguageNegotiation(availableValues []string, request http.Header, fi
 	// their weight, highest to lowest, as per Section 5.3.1 of [RFC7231]
 	// (omitting any language-range with a weight of 0). If a language-range lacks
 	// a weight, an implementation MAY assign one. [spec text]
-	// TODO(ksakamoto): Omit items with q=0.
 	var preferredLangs []string
 	if request.Get(fieldName) != "" {
-		for _, list := range ParseListOfLists(request, fieldName) {
-			preferredLangs = append(preferredLangs, list[0])
-		}
+		preferredLangs = ParseRequestHeaderValue(request, fieldName)
 	}
 
 	// Step 3. For each preferred-lang in preferred-langs: [spec text]
@@ -127,9 +154,7 @@ func acceptLanguageNegotiation(availableValues []string, request http.Header, fi
 		// preferred-available (preserving their order). [spec text]
 		// TODO(ksakamoto): Use Basic or Extended Filtering scheme defined in
 		// Section 3.3 of [RFC4647].
-		if includes(availableValues, preferredLang) {
-			preferredAvailable = append(preferredAvailable, preferredLang)
-		}
+		preferredAvailable = append(preferredAvailable, matchedLanguages(availableValues, preferredLang)...)
 	}
 
 	// Step 4. If preferred-available is empty, append the first member of
