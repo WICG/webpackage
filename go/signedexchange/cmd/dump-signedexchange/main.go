@@ -39,14 +39,14 @@ func run() error {
 		return nil
 	}
 
-	e.PrettyPrintHeaders(os.Stdout)
-
 	if *flagVerify {
 		if err := verify(e); err != nil {
 			return err
 		}
+		fmt.Println()
 	}
 
+	e.PrettyPrintHeaders(os.Stdout)
 	e.PrettyPrintPayload(os.Stdout)
 
 	return nil
