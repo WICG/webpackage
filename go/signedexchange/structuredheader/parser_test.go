@@ -200,7 +200,7 @@ func TestParseByteSequence(t *testing.T) {
 func TestParseItem(t *testing.T) {
 	cases := []struct {
 		input    string
-		expected interface{}
+		expected Item
 		rest     string
 	}{
 		{"", nil, ""},
@@ -259,6 +259,37 @@ func TestParseParameterisedIdentifier(t *testing.T) {
 			}
 		} else if err == nil {
 			t.Errorf("parseParameterisedIdentifier(%q) did not fail", c.input)
+		}
+	}
+}
+
+func TestParseListOfLists(t *testing.T) {
+	cases := []struct {
+		input    string
+		expected ListOfLists
+	}{
+		{"", nil},
+		{"1;2", ListOfLists{[]Item{int64(1), int64(2)}}},
+		{"1;2,foo;bar", ListOfLists{[]Item{int64(1), int64(2)}, []Item{Token("foo"), Token("bar")}}},
+		{" 1 ; 2 , foo ; bar ", ListOfLists{[]Item{int64(1), int64(2)}, []Item{Token("foo"), Token("bar")}}},
+		{"42,", nil},
+		{",42", nil},
+		{"1;2;", nil},
+		{";2", nil},
+		{"1;;2", nil},
+		{"1,,2", nil},
+	}
+	for _, c := range cases {
+		r, err := ParseListOfLists(c.input)
+		if c.expected != nil {
+			if err != nil {
+				t.Errorf("ParseListOfLists(%q) unexpectedly failed: %v", c.input, err)
+			}
+			if !reflect.DeepEqual(r, c.expected) {
+				t.Errorf("ParseListOfLists(%q): got %v, want %v", c.input, r, c.expected)
+			}
+		} else if err == nil {
+			t.Errorf("ParseListOfLists(%q) did not fail", c.input)
 		}
 	}
 }
