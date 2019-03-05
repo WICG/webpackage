@@ -1141,8 +1141,9 @@ result, the UA MUST:
     |report|'s [=signed exchange report/outer request=].
 
     <div class="example" id="example-network-error-log">
-    If a [=NEL policy=] was received from the distributor's origin, this step
-    will send the error information like this.
+    If a [=NEL policy=] was received from the distributor's origin,
+    `distributor.example`, this step  will send the following JSON data to
+    describe an invalid signature:
     <pre highlight="json">
     {
       "type": "network-error",
@@ -1152,13 +1153,13 @@ result, the UA MUST:
       "body": {
         "referrer": "https://aggregator.example/article.html",
         "sampling_fraction": 1,
-        "server_ip": "123.122.121.120",  // The IP address of distributor.example.
+        "server_ip": "192.0.2.42",  // The IP address of distributor.example.
         "protocol": "http/1.1",
         "method": "GET",
         "status_code": 200,
         "elapsed_time": 1234,
         "phase": "sxg",
-        "type": "sxg.failed",
+        "type": "sxg.signature_verification_error",
         "sxg": {
           "outer_url": "https://distributor.example/publisher.example/article.html.sxg",
           "inner_url": "https://publisher.example/article.html",
