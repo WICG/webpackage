@@ -10,7 +10,7 @@ import (
 	"unicode"
 )
 
-func (ll ListOfLists) ToString() (string, error) {
+func (ll ListOfLists) String() (string, error) {
 	var b strings.Builder
 	if err := ll.serialize(&b); err != nil {
 		return "", err
@@ -18,7 +18,7 @@ func (ll ListOfLists) ToString() (string, error) {
 	return b.String(), nil
 }
 
-func (pl ParameterisedList) ToString() (string, error) {
+func (pl ParameterisedList) String() (string, error) {
 	var b strings.Builder
 	if err := pl.serialize(&b); err != nil {
 		return "", err
@@ -26,7 +26,7 @@ func (pl ParameterisedList) ToString() (string, error) {
 	return b.String(), nil
 }
 
-func (pi *ParameterisedIdentifier) ToString() (string, error) {
+func (pi *ParameterisedIdentifier) String() (string, error) {
 	var b strings.Builder
 	if err := pi.serialize(&b); err != nil {
 		return "", err

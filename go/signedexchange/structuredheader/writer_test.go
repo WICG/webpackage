@@ -33,7 +33,7 @@ func TestSerializeItem(t *testing.T) {
 		{[]byte("hoge"), "*aG9nZQ==*"},
 	}
 	for _, c := range cases {
-		s, err := ListOfLists{{c.input}}.ToString()
+		s, err := ListOfLists{{c.input}}.String()
 		if c.expected != "" {
 			if err != nil {
 				t.Errorf("Unexpetedly failed to serialize %v: %v", c.input, err)
@@ -62,7 +62,7 @@ func TestSerializeListOfLists(t *testing.T) {
 		{ListOfLists{{int64(42), int64(-42)}, {Token("foo"), Token("bar")}}, "42; -42, foo; bar"},
 	}
 	for _, c := range cases {
-		s, err := c.input.ToString()
+		s, err := c.input.String()
 		if c.expected != "" {
 			if err != nil {
 				t.Errorf("Unexpetedly failed to serialize %v: %v", c.input, err)
@@ -95,7 +95,7 @@ func TestSerializeParameterisedList(t *testing.T) {
 		{ParameterisedList{{"item1", Parameters{"InvalidKey": int64(123)}}}, ""},
 	}
 	for _, c := range cases {
-		s, err := c.input.ToString()
+		s, err := c.input.String()
 		if c.expected != "" {
 			if err != nil {
 				t.Errorf("Unexpetedly failed to serialize %v: %v", c.input, err)

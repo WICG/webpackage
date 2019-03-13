@@ -230,5 +230,5 @@ func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
 			"date": s.Date.Unix(),
 			"expires": s.Expires.Unix(),
 		}}
-	return pi.ToString()
+	return pi.String()
 }
