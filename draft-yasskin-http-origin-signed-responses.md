@@ -742,7 +742,7 @@ parameters on existing identifiers may be defined by future specifications.
 ### Integrity identifiers ### {#accept-signature-integrity}
 
 Identifiers starting with "digest/" indicate that the client supports the
-`Digest` header field ({{!RFC3230) with the parameter from the [HTTP Digest
+`Digest` header field ({{!RFC3230}}) with the parameter from the [HTTP Digest
 Algorithm Values
 Registry](https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml)
 registry named in lower-case by the rest of the identifier. For example,
