@@ -60,6 +60,14 @@ informative:
     seriesinfo:
       Internet-Draft: draft-yasskin-http-origin-signed-responses-04
     date: 2018-06-14
+  I-D.yasskin-http-origin-signed-responses-05:
+    target: https://tools.ietf.org/html/draft-yasskin-http-origin-signed-responses-05
+    title: Signed HTTP Exchanges
+    author:
+      - name: Jeffrey Yasskin
+    seriesinfo:
+      Internet-Draft: draft-yasskin-http-origin-signed-responses-05
+    date: 2019-01-23
 
 --- abstract
 
@@ -880,7 +888,7 @@ request/response pair, it MUST pass:
 If the client relies on signature validity for any aspect of its behavior, it
 MUST ignore any header fields that it didn't pass to the validation procedure.
 
-If the signed response includes a `Variants` header field, the client MUST use
+If the signed response includes a `Variants-04` header field, the client MUST use
 the cache behavior algorithm in Section 4 of {{!I-D.ietf-httpbis-variants}} to
 check that the signed response is an appropriate representation for the request
 the client is trying to fulfil. If the response is not an appropriate
@@ -962,14 +970,12 @@ This content type consists of the concatenation of the following items:
    {{?I-D.yasskin-http-origin-signed-responses}}, it uses a distinct file
    signature.
 1. 2 bytes storing a big-endian integer `fallbackUrlLength`.
-1. `fallbackUrlLength` bytes holding a `fallbackUrl`, which MUST be an absolute
-   URL with a scheme of "https".
+1. `fallbackUrlLength` bytes holding a `fallbackUrl`, which MUST UTF-8 decode to
+   an absolute URL with a scheme of "https".
 
    Note: The byte location of the fallback URL is intended to remain invariant
    across versions of the `application/signed-exchange` format so that parsers
    encountering unknown versions can always find a URL to redirect to.
-
-   Issue: Should this fallback information also include the method?
 1. 3 bytes storing a big-endian integer `sigLength`. If this is larger than
    16384 (16*1024), parsing MUST fail.
 1. 3 bytes storing a big-endian integer `headerLength`. If this is larger than
@@ -1081,6 +1087,28 @@ The other fields are the same as the registration in
 --- back
 
 # Change Log
+
+draft-03
+
+Vs. draft-02
+
+* Updates to match {{I-D.yasskin-http-origin-signed-responses-05}}.
+* UTF-8 decode the fallback URL.
+* Define a CAA parameter to opt into certificate issuance, which CAs need to
+  enforce after May 1.
+* Limit lifetimes of certificates issued after May 1 to 90 days.
+
+Vs. {{I-D.yasskin-http-origin-signed-responses-05}}:
+
+* Versions in file signatures and context strings are "b3".
+* Signed exchanges cannot be transmitted using HTTP/2 Push.
+* Removed non-normative sections.
+* Only 1 signature is supported.
+* Removed support for ed25519 signatures.
+* The above UTF-8 decoding.
+* The above CAA parameter and certificate lifetimes.
+* Versioned the Variants header field at draft-ietf-httpbis-variants-04 and the
+  mi-sha256 digest algorithm at draft-thomson-http-mice-03.
 
 draft-02
 
