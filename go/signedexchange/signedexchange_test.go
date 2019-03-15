@@ -105,9 +105,9 @@ func TestSignedExchange(t *testing.T) {
 		},
 	}
 	expectedSignatureHeader := map[version.Version]string{
-		version.Version1b1: "label; sig=*MEYCIQCbay5VbkR9mi4pnwDAJamuf7Fj1CWnEnJt6Uxm7YeqiwIhAL8JISyzF5sDhtUaEbNCE6vgv2NIKCkONzLgwL23UL6P*; validity-url=\"https://example.com/resource.validity\"; integrity=\"mi-draft2\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400",
-		version.Version1b2: "label; sig=*MEUCIHNiDRQncQpVxW2x+woinMUTY8nuSQfi0mbJ5J6x7FZyAiEAgh6FH6PdncNCK8GHTwN3wfUUUFdjVswNi1PfIgCOwHk=*; validity-url=\"https://example.com/resource.validity\"; integrity=\"digest/mi-sha256-03\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400",
-		version.Version1b3: "label; sig=*MEUCIEQPK0UKPm9/XP5Jko2V72vTrGlBqB9HHoOzhJmVPflmAiEAwCSBw98NhUhFGJaxL6ITT+QZBBeO7TCLAiHn1apY6Es=*; validity-url=\"https://example.com/resource.validity\"; integrity=\"digest/mi-sha256-03\"; cert-url=\"https://example.com/cert.msg\"; cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*; date=1517418800; expires=1517422400",
+		version.Version1b1: "label;cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*;cert-url=\"https://example.com/cert.msg\";date=1517418800;expires=1517422400;integrity=\"mi-draft2\";sig=*MEYCIQCbay5VbkR9mi4pnwDAJamuf7Fj1CWnEnJt6Uxm7YeqiwIhAL8JISyzF5sDhtUaEbNCE6vgv2NIKCkONzLgwL23UL6P*;validity-url=\"https://example.com/resource.validity\"",
+		version.Version1b2: "label;cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*;cert-url=\"https://example.com/cert.msg\";date=1517418800;expires=1517422400;integrity=\"digest/mi-sha256-03\";sig=*MEUCIHNiDRQncQpVxW2x+woinMUTY8nuSQfi0mbJ5J6x7FZyAiEAgh6FH6PdncNCK8GHTwN3wfUUUFdjVswNi1PfIgCOwHk=*;validity-url=\"https://example.com/resource.validity\"",
+		version.Version1b3: "label;cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*;cert-url=\"https://example.com/cert.msg\";date=1517418800;expires=1517422400;integrity=\"digest/mi-sha256-03\";sig=*MEUCIEQPK0UKPm9/XP5Jko2V72vTrGlBqB9HHoOzhJmVPflmAiEAwCSBw98NhUhFGJaxL6ITT+QZBBeO7TCLAiHn1apY6Es=*;validity-url=\"https://example.com/resource.validity\"",
 	}
 
 	testForEachVersion(t, func(ver version.Version, t *testing.T) {

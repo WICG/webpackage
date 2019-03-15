@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"net/url"
@@ -15,6 +14,7 @@ import (
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
 	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
 	"github.com/WICG/webpackage/go/signedexchange/internal/signingalgorithm"
+	"github.com/WICG/webpackage/go/signedexchange/structuredheader"
 	"github.com/WICG/webpackage/go/signedexchange/version"
 )
 
@@ -209,8 +209,6 @@ func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
 		return "", err
 	}
 
-	label := "label"
-	sigb64 := base64.StdEncoding.EncodeToString(sig)
 	integrityStr := ""
 	switch e.Version {
 	case version.Version1b1:
@@ -220,13 +218,17 @@ func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
 	default:
 		panic("not reached")
 	}
-	certUrl := s.CertUrl.String()
-	validityUrl := s.ValidityUrl.String()
-	certSha256b64 := base64.StdEncoding.EncodeToString(calculateCertSha256(s.Certs))
-	dateUnix := s.Date.Unix()
-	expiresUnix := s.Expires.Unix()
 
-	return fmt.Sprintf(
-		"%s; sig=*%s*; validity-url=%q; integrity=%q; cert-url=%q; cert-sha256=*%s*; date=%d; expires=%d",
-		label, sigb64, validityUrl, integrityStr, certUrl, certSha256b64, dateUnix, expiresUnix), nil
+	pi := structuredheader.ParameterisedIdentifier{
+		Label: "label",
+		Params: structuredheader.Parameters{
+			"sig": sig,
+			"validity-url": s.ValidityUrl.String(),
+			"integrity": integrityStr,
+			"cert-url": s.CertUrl.String(),
+			"cert-sha256": calculateCertSha256(s.Certs),
+			"date": s.Date.Unix(),
+			"expires": s.Expires.Unix(),
+		}}
+	return pi.String()
 }
