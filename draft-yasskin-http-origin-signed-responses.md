@@ -1192,8 +1192,8 @@ This content type consists of the concatenation of the following items:
    and MUST use another implementation-specific 8-byte string beginning with
    "sxg1-".
 1. 2 bytes storing a big-endian integer `fallbackUrlLength`.
-1. `fallbackUrlLength` bytes holding a `fallbackUrl`, which MUST be an absolute
-   URL with a scheme of "https".
+1. `fallbackUrlLength` bytes holding a `fallbackUrl`, which MUST UTF-8 decode to
+   an absolute URL with a scheme of "https".
 
    Note: The byte location of the fallback URL is intended to remain invariant
    across versions of the `application/signed-exchange` format so that parsers
@@ -2077,6 +2077,7 @@ draft-06
   private keys.
 * Define a CAA parameter to opt into certificate issuance.
 * Limit certificate lifetimes to 90 days.
+* UTF-8 decode the fallback URL.
 
 draft-05
 
