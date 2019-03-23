@@ -265,8 +265,8 @@ The CBOR representation of a set of response metadata and headers is the CBOR
 
 * The byte string ':status' to the byte string containing the response's 3-digit
   status code, and
-   * For each response header field, the header field's lowercase name as a byte
-     string to the header field's value as a byte string.
+* For each response header field, the header field's lowercase name as a byte
+  string to the header field's value as a byte string.
 
 ### Example ### {#example-cbor-representation}
 
@@ -445,8 +445,8 @@ to retrieve an updated OCSP from the original server.
    1. The 8-byte big-endian encoding of `expires`.
    1. The 8-byte big-endian encoding of the length in bytes of `requestUrl`,
       followed by the bytes of `requestUrl`.
-   1. The 8-byte big-endian encoding of the length in bytes of `headers`,
-      followed by the bytes of `headers`.
+   1. The 8-byte big-endian encoding of the length in bytes of `responseHeaders`,
+      followed by the bytes of `responseHeaders`.
 1. If `cert-url` is present and the SHA-256 hash of `main-certificate`'s
    `cert_data` is not equal to `cert-sha256` (whose presence was checked when the
    `Signature` header field was parsed), return "invalid".
