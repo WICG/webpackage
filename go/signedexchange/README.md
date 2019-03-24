@@ -76,9 +76,9 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
 
 In this section, you will create a signed exchange using a certificate issued by a publicly trusted CA.
 
-Signed exchange needs to be signed with a certificate with ["CanSignHttpExchanges" extension](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req).
+Your signed exchange needs to be signed with a certificate with the ["CanSignHttpExchanges" extension](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req).
 
-1. Get a certificate from a CA. You have to use prime256v1 ecdsa keys, as you did in the previous section. Please follow the CA's instructions ([DigiCert](https://www.digicert.com/account/ietf/http-signed-exchange.php)).
+1. Get a certificate from a CA. You have to use prime256v1 ecdsa keys, as you did in the previous section. Please follow the CA's instructions. (For example, [DigiCert](https://www.digicert.com/account/ietf/http-signed-exchange.php) offers the right kind of certificates.)
 
    Assume you got a server certificate `server.pem` and an intermediate certificate `intermediates.pem`. The tools need all certificates in a single file, so concatenate them.
     ```
