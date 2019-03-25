@@ -71,7 +71,7 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
 1. Navigate to the signed exchange URL using a web browser supporting signed exchanges.
     - Chrome: To ignore certificate errors of the self-signed certificate:
       ```
-      # Note that --user-data-dir is required --ignore-certificate-errors-spki-list
+      # Note that --user-data-dir is required for --ignore-certificate-errors-spki-list
       # to take effect.
       google-chrome \
         --user-data-dir=/tmp/udd \
