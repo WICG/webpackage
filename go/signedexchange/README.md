@@ -32,7 +32,7 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
     echo "<h1>hi</h1>" > payload.html
     ```
 
-1. Prepare a certificate and private key pair to use for signing the exchange. As of July 2018, we need to use self-signed certificate for testing, since there are no CA that issues certificate with ["CanSignHttpExchanges" extension](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req). To generate a signed-exchange-compatible self-signed key pair with OpenSSL, invoke:
+1. Prepare a certificate and private key pair to use for signing the exchange. To generate a signed-exchange-compatible self-signed key pair with OpenSSL, invoke:
     ```
     # Generate prime256v1 ecdsa private key.
     openssl ecparam -out priv.key -name prime256v1 -genkey
@@ -69,14 +69,13 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
     - Note: If you are using [Firebase Hosting](https://firebase.google.com/docs/hosting/) as your HTTPS server, see an example config [here](https://github.com/WICG/webpackage/blob/master/examples/firebase.json).
 
 1. Navigate to the signed exchange URL using a web browser supporting signed exchanges.
-    - As of July 2018, you can use Chrome M69 [Dev](https://www.google.com/chrome/?extra=devchannel)/[Canary](https://www.google.com/chrome/browser/canary.html) versions with a command-line flag to enable signed exchange support.
+    - Chrome: To ignore certificate errors of the self-signed certificate:
       ```
-      # Launch chrome dev set to ignore certificate errors of the self-signed certificate,
-      # with an experimental feature of signed exchange support enabled.
-      google-chrome-unstable \
+      # Note that --user-data-dir is required for --ignore-certificate-errors-spki-list
+      # to take effect.
+      google-chrome \
         --user-data-dir=/tmp/udd \
         --ignore-certificate-errors-spki-list=`openssl x509 -noout -pubkey -in cert.pem | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64` \
-        --enable-features=SignedHTTPExchange \
         https://yourcdn.example.net/example.org.hello.sxg
       ```
 
@@ -86,9 +85,12 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
 
 In this section, you will create a signed exchange using a certificate issued by a publicly trusted CA.
 
-As of July 2018, there are no CA that issues certificate with ["CanSignHttpExchanges" extension](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req). So, created signed exchange can be used only for testing.
+Your signed exchange needs to be signed with a certificate with the ["CanSignHttpExchanges" extension](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req).
 
-1. Get a certificate from a CA. You have to use prime256v1 ecdsa keys, as you did in the previous section. Please follow the CA's instructions.
+For testing purposes, Chrome M73+ will accept the signed exchanges without the "CanSignHttpExchanges" extention with the following flag enabled:
+- chrome://flags/#allow-sxg-certs-without-extension
+
+1. Get a certificate from a CA. You have to use prime256v1 ecdsa keys, as you did in the previous section. Please follow the CA's instructions. (For example, [DigiCert](https://www.digicert.com/account/ietf/http-signed-exchange.php) offers the right kind of certificates.)
 
    Assume you got a server certificate `server.pem` and an intermediate certificate `intermediates.pem`. The tools need all certificates in a single file, so concatenate them.
     ```
@@ -137,9 +139,6 @@ As of July 2018, there are no CA that issues certificate with ["CanSignHttpExcha
 1. Host `example.org.hello.sxg` on a HTTPS server. Please see the previous section for details.
 
 1. Navigate to the signed exchange URL using a web browser supporting signed exchanges.
-    - As of July 2018, you can use Chrome M69 [Dev](https://www.google.com/chrome/?extra=devchannel)/[Canary](https://www.google.com/chrome/browser/canary.html) versions with the following two flags enabled:
-      - chrome://flags/#enable-signed-http-exchange
-      - chrome://flags/#allow-sxg-certs-without-extension
 
 ### Dump a signed exchange file
 
