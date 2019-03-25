@@ -69,6 +69,15 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
     - Note: If you are using [Firebase Hosting](https://firebase.google.com/docs/hosting/) as your HTTPS server, see an example config [here](https://github.com/WICG/webpackage/blob/master/examples/firebase.json).
 
 1. Navigate to the signed exchange URL using a web browser supporting signed exchanges.
+    - Chrome: To ignore certificate errors of the self-signed certificate:
+      ```
+      # Note that --user-data-dir is required --ignore-certificate-errors-spki-list
+      # to take effect.
+      google-chrome \
+        --user-data-dir=/tmp/udd \
+        --ignore-certificate-errors-spki-list=`openssl x509 -noout -pubkey -in cert.pem | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64` \
+        https://yourcdn.example.net/example.org.hello.sxg
+      ```
 
 [1]: You can deploy your own HTTPS server or use a cloud hosting service. Note that the server must support configuring "Content-Type" HTTP headers, like [Firebase Hosting](https://firebase.google.com/docs/hosting/).
 
