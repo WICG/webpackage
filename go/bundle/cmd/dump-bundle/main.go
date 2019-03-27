@@ -29,6 +29,10 @@ func run() error {
 		return err
 	}
 
+	if b.ManifestURL != nil {
+		fmt.Printf("Manifest URL: %v\n", b.ManifestURL)
+	}
+
 	for _, e := range b.Exchanges {
 		if err := e.Dump(os.Stdout, *flagDumpContentText); err != nil {
 			return err

@@ -19,11 +19,12 @@ import (
 )
 
 var (
-	flagHar      = flag.String("har", "", "HTTP Archive (HAR) input file")
-	flagDir      = flag.String("dir", "", "Input directory")
-	flagBaseURL  = flag.String("baseURL", "", "Base URL")
-	flagStartURL = flag.String("startURL", "", "Entry point URL (relative from -baseURL)")
-	flagOutput   = flag.String("o", "out.wbn", "Webbundle output file")
+	flagHar         = flag.String("har", "", "HTTP Archive (HAR) input file")
+	flagDir         = flag.String("dir", "", "Input directory")
+	flagBaseURL     = flag.String("baseURL", "", "Base URL")
+	flagStartURL    = flag.String("startURL", "", "Entry point URL (relative from -baseURL)")
+	flagManifestURL = flag.String("manifestURL", "", "Manifest URL (relative from -baseURL)")
+	flagOutput      = flag.String("o", "out.wbn", "Webbundle output file")
 )
 
 func ReadHar(r io.Reader) (*hargo.Har, error) {
@@ -150,7 +151,7 @@ func main() {
 			flag.Usage()
 			return
 		}
-		if err := fromDir(*flagDir, *flagBaseURL, *flagStartURL); err != nil {
+		if err := fromDir(*flagDir, *flagBaseURL, *flagStartURL, *flagManifestURL); err != nil {
 			log.Fatal(err)
 		}
 	} else {
