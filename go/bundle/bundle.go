@@ -142,7 +142,7 @@ type requestEntryWithOffset struct {
 type section interface {
 	Name() string
 	Len() int
-	Bytes() []byte
+	io.WriterTo
 }
 
 // staging area for writing index section
@@ -228,11 +228,12 @@ func (is *indexSection) Len() int {
 	return len(is.bytes)
 }
 
-func (is *indexSection) Bytes() []byte {
+func (is *indexSection) WriteTo(w io.Writer) (int64, error) {
 	if is.bytes == nil {
 		panic("indexSection must be Finalize()-d before calling Bytes()")
 	}
-	return is.bytes
+	n, err := w.Write(is.bytes)
+	return int64(n), err
 }
 
 // staging area for writing responses section
@@ -274,9 +275,11 @@ func (rs *responsesSection) addResponse(r Response) (int, error) {
 	return length, nil
 }
 
-func (rs *responsesSection) Name() string  { return "responses" }
-func (rs *responsesSection) Len() int      { return rs.buf.Len() }
-func (rs *responsesSection) Bytes() []byte { return rs.buf.Bytes() }
+func (rs *responsesSection) Name() string { return "responses" }
+func (rs *responsesSection) Len() int     { return rs.buf.Len() }
+func (rs *responsesSection) WriteTo(w io.Writer) (int64, error) {
+	return rs.buf.WriteTo(w)
+}
 
 type manifestSection struct {
 	bytes.Buffer
@@ -914,7 +917,7 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 		return cw.Written, err
 	}
 	for _, s := range sections {
-		if _, err := cw.Write(s.Bytes()); err != nil {
+		if _, err := s.WriteTo(cw); err != nil {
 			return cw.Written, err
 		}
 	}
