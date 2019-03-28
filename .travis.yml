@@ -6,6 +6,8 @@ jobs:
   include:
     - stage: go
       language: go
+      env:
+        - GO111MODULE=on
       script: go test -v ./go/...
 
     - stage: spec
