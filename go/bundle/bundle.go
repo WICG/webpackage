@@ -285,9 +285,6 @@ type manifestSection struct {
 func (ms *manifestSection) Name() string { return "manifest" }
 
 func newManifestSection(url *url.URL) (*manifestSection, error) {
-	if url == nil {
-		return nil, nil
-	}
 	var ms manifestSection
 	enc := cbor.NewEncoder(&ms)
 	if err := enc.EncodeTextString(url.String()); err != nil {
@@ -896,14 +893,13 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 		return cw.Written, err
 	}
 
-	ms, err := newManifestSection(b.ManifestURL)
-	if err != nil {
-		return cw.Written, err
-	}
-
 	sections := []section{}
 	sections = append(sections, is)
-	if ms != nil {
+	if b.ManifestURL != nil {
+		ms, err := newManifestSection(b.ManifestURL)
+		if err != nil {
+			return cw.Written, err
+		}
 		sections = append(sections, ms)
 	}
 	sections = append(sections, rs)
