@@ -42,7 +42,7 @@ var (
 	flagValidityUrl    = flag.String("validityUrl", "https://example.com/resource.validity.msg", "The URL where resource validity info is hosted at.")
 	flagPrivateKey     = flag.String("privateKey", "cert-key.pem", "Private key PEM file of the origin")
 	flagMIRecordSize   = flag.Int("miRecordSize", 4096, "The record size of Merkle Integrity Content Encoding")
-	flagDate           = flag.String("date", "", "The datetime for the signed exchange in RFC3339 format (2006-01-02T15:04:05Z07:00). Use now by default.")
+	flagDate           = flag.String("date", "", "The datetime for the signed exchange in RFC3339 format (2006-01-02T15:04:05Z). Use now by default.")
 	flagExpire         = flag.Duration("expire", 1*time.Hour, "The expire time of the signed exchange")
 
 	flagDumpSignatureMessage = flag.String("dumpSignatureMessage", "", "Dump signature message bytes to a file for debugging.")
