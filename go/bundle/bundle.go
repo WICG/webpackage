@@ -118,7 +118,8 @@ func (e *Exchange) Dump(w io.Writer, dumpContentText bool) error {
 }
 
 type Bundle struct {
-	Exchanges []*Exchange
+	Exchanges   []*Exchange
+	ManifestURL *url.URL
 }
 
 var _ = io.WriterTo(&Bundle{})
@@ -136,6 +137,12 @@ type requestEntryWithOffset struct {
 	Request
 	Length uint64
 	Offset uint64
+}
+
+type section interface {
+	Name() string
+	Len() int
+	io.WriterTo
 }
 
 // staging area for writing index section
@@ -210,6 +217,10 @@ func (is *indexSection) Finalize() error {
 	return nil
 }
 
+func (is *indexSection) Name() string {
+	return "index"
+}
+
 func (is *indexSection) Len() int {
 	if is.bytes == nil {
 		panic("indexSection must be Finalize()-d before calling Len()")
@@ -217,11 +228,12 @@ func (is *indexSection) Len() int {
 	return len(is.bytes)
 }
 
-func (is *indexSection) Bytes() []byte {
+func (is *indexSection) WriteTo(w io.Writer) (int64, error) {
 	if is.bytes == nil {
 		panic("indexSection must be Finalize()-d before calling Bytes()")
 	}
-	return is.bytes
+	n, err := w.Write(is.bytes)
+	return int64(n), err
 }
 
 // staging area for writing responses section
@@ -263,8 +275,26 @@ func (rs *responsesSection) addResponse(r Response) (int, error) {
 	return length, nil
 }
 
-func (rs *responsesSection) Len() int      { return rs.buf.Len() }
-func (rs *responsesSection) Bytes() []byte { return rs.buf.Bytes() }
+func (rs *responsesSection) Name() string { return "responses" }
+func (rs *responsesSection) Len() int     { return rs.buf.Len() }
+func (rs *responsesSection) WriteTo(w io.Writer) (int64, error) {
+	return rs.buf.WriteTo(w)
+}
+
+type manifestSection struct {
+	bytes.Buffer
+}
+
+func (ms *manifestSection) Name() string { return "manifest" }
+
+func newManifestSection(url *url.URL) (*manifestSection, error) {
+	var ms manifestSection
+	enc := cbor.NewEncoder(&ms)
+	if err := enc.EncodeTextString(url.String()); err != nil {
+		return nil, err
+	}
+	return &ms, nil
+}
 
 func addExchange(is *indexSection, rs *responsesSection, e *Exchange) error {
 	length, err := rs.addResponse(e.Response)
@@ -296,17 +326,17 @@ func FindSection(sos []sectionOffset, name string) (sectionOffset, uint64, bool)
 
 // https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html#load-metadata
 // Steps 3-7.
-func writeSectionOffsets(w io.Writer, sos []sectionOffset) error {
+func writeSectionOffsets(w io.Writer, sections []section) error {
 	var b bytes.Buffer
 	nenc := cbor.NewEncoder(&b)
-	if err := nenc.EncodeArrayHeader(len(sos) * 2); err != nil {
+	if err := nenc.EncodeArrayHeader(len(sections) * 2); err != nil {
 		return err
 	}
-	for _, so := range sos {
-		if err := nenc.EncodeTextString(so.Name); err != nil {
+	for _, s := range sections {
+		if err := nenc.EncodeTextString(s.Name()); err != nil {
 			return err
 		}
-		if err := nenc.EncodeUint(so.Length); err != nil {
+		if err := nenc.EncodeUint(uint64(s.Len())); err != nil {
 			return err
 		}
 	}
@@ -346,6 +376,7 @@ func writeFooter(w io.Writer, offset int) error {
 type meta struct {
 	sectionOffsets []sectionOffset
 	sectionsStart  uint64
+	manifestURL    *url.URL
 	requests       []requestEntryWithOffset
 }
 
@@ -578,8 +609,31 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []secti
 	return requests, nil
 }
 
+// https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#manifest-section
+// "To parse the manifest section, given its sectionContents and the metadata map to fill in, the parser MUST do the following:" [spec text]
+func parseManifestSection(sectionContents []byte) (*url.URL, error) {
+	// Step 1. "Let urlString be the result of parsing sectionContents as a CBOR item matching the above manifest rule (Section 3.5). If urlString is an error, return that error." [spec text]
+	dec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
+	urlString, err := dec.DecodeTextString()
+	if err != nil {
+		return nil, fmt.Errorf("bundle: failed to parse manifest section: %v", err)
+	}
+	// Step 2. "Let url be the result of parsing ([URL]) urlString with no base URL." [spec text]
+	manifestURL, err := url.Parse(urlString)
+	// Step 3. "If url is a failure, its fragment is not null, or it includes credentials, return an error." [spec text]
+	if err != nil {
+		return nil, fmt.Errorf("bundle: failed to parse manifest URL (%s): %v", urlString, err)
+	}
+	if !manifestURL.IsAbs() || manifestURL.Fragment != "" || manifestURL.User != nil {
+		return nil, fmt.Errorf("bundle: manifest URL (%s) must be an absolute url without fragment or credentials.", urlString)
+	}
+	// Step 4. "Set metadata["manifest"] to url." [spec text]
+	return manifestURL, nil
+}
+
 var knownSections = map[string]struct{}{
 	"index":     struct{}{},
+	"manifest":  struct{}{},
 	"responses": struct{}{},
 }
 
@@ -694,6 +748,12 @@ func loadMetadata(bs []byte) (*meta, error) {
 				return nil, err
 			}
 			meta.requests = requests
+		case "manifest":
+			manifestURL, err := parseManifestSection(sectionContents)
+			if err != nil {
+				return nil, err
+			}
+			meta.manifestURL = manifestURL
 		case "responses":
 			continue
 		default:
@@ -817,7 +877,7 @@ func Read(r io.Reader) (*Bundle, error) {
 		es = append(es, e)
 	}
 
-	b := &Bundle{Exchanges: es}
+	b := &Bundle{Exchanges: es, ManifestURL: m.manifestURL}
 	return b, nil
 }
 
@@ -836,25 +896,30 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 		return cw.Written, err
 	}
 
-	sos := []sectionOffset{
-		sectionOffset{"index", uint64(is.Len())},
-		sectionOffset{"responses", uint64(rs.Len())},
+	sections := []section{}
+	sections = append(sections, is)
+	if b.ManifestURL != nil {
+		ms, err := newManifestSection(b.ManifestURL)
+		if err != nil {
+			return cw.Written, err
+		}
+		sections = append(sections, ms)
 	}
+	sections = append(sections, rs)
 
 	if _, err := cw.Write(HeaderMagicBytes); err != nil {
 		return cw.Written, err
 	}
-	if err := writeSectionOffsets(cw, sos); err != nil {
+	if err := writeSectionOffsets(cw, sections); err != nil {
 		return cw.Written, err
 	}
-	if err := writeSectionHeader(cw, len(sos)); err != nil {
+	if err := writeSectionHeader(cw, len(sections)); err != nil {
 		return cw.Written, err
 	}
-	if _, err := cw.Write(is.Bytes()); err != nil {
-		return cw.Written, err
-	}
-	if _, err := cw.Write(rs.Bytes()); err != nil {
-		return cw.Written, err
+	for _, s := range sections {
+		if _, err := s.WriteTo(cw); err != nil {
+			return cw.Written, err
+		}
 	}
 	if err := writeFooter(cw, int(cw.Written)); err != nil {
 		return cw.Written, err
