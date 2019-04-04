@@ -1013,7 +1013,7 @@ header field and payload elided with a ...:
 sxg1-b3\0<2-byte length of the following url string>
 https://example.com/<3-byte length of the following header
 value><3-byte length of the encoding of the
-following map>sig1; sig=*...; integrity="digest/mi-sha256"; ...{
+following map>sig1; sig=*...; integrity="digest/mi-sha256-03"; ...{
     ':status': '200',
     'content-type': 'text/html'
 }<!doctype html>\r\n<html>...
