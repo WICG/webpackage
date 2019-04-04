@@ -42,6 +42,14 @@ normative:
     author:
       org: WHATWG
     date: Living Standard
+  I-D.ietf-httpbis-variants-05:
+    target: https://tools.ietf.org/html/ietf-httpbis-variants-05
+    title: HTTP Representation Variants
+    author:
+      - name: Mark Nottingham
+    seriesinfo:
+      Internet-Draft: draft-ietf-httpbis-variants-05
+    date: 2019-03-25
 
 informative:
   I-D.yasskin-http-origin-signed-responses-03:
@@ -117,7 +125,7 @@ Exchange (noun)
   This can be encoded into a request message from a client with its matching
   response from a server, into the request in a PUSH_PROMISE with its matching
   response stream, or into the dedicated format in
-  {{application-signed-exchange}}, which uses {{?I-D.ietf-httpbis-variants}} to
+  {{application-signed-exchange}}, which uses {{I-D.ietf-httpbis-variants-05}} to
   encode the content negotiation information. This is not quite the same meaning
   as defined by Section 8 of {{?RFC7540}}, which assumes the content negotiation
   information is embedded into HTTP request headers.
@@ -888,8 +896,9 @@ request/response pair, it MUST pass:
 If the client relies on signature validity for any aspect of its behavior, it
 MUST ignore any header fields that it didn't pass to the validation procedure.
 
-If the signed response includes a `Variants-04` header field, the client MUST use
-the cache behavior algorithm in Section 4 of {{!I-D.ietf-httpbis-variants}} to
+If the signed response includes a `Variants-04` header field, the client MUST
+use the cache behavior algorithm in Section 4 of
+{{I-D.ietf-httpbis-variants-05}} (Note the mismatch between -04 and -05) to
 check that the signed response is an appropriate representation for the request
 the client is trying to fulfil. If the response is not an appropriate
 representation, the client MUST treat the signature as invalid.
@@ -1107,8 +1116,9 @@ Vs. {{I-D.yasskin-http-origin-signed-responses-05}}:
 * Removed support for ed25519 signatures.
 * The above UTF-8 decoding.
 * The above CAA parameter and certificate lifetimes.
-* Versioned the Variants header field at draft-ietf-httpbis-variants-04 and the
-  mi-sha256 digest algorithm at draft-thomson-http-mice-03.
+* Versioned the Variants header field at draft-ietf-httpbis-variants-05 (but
+  spelled Variants-04) and the mi-sha256 digest algorithm at
+  draft-thomson-http-mice-03.
 
 draft-02
 
