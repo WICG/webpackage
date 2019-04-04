@@ -122,9 +122,7 @@ Publisher
 
 Exchange (noun)
 : An HTTP request URL, content negotiation information, and an HTTP response.
-  This can be encoded into a request message from a client with its matching
-  response from a server, into the request in a PUSH_PROMISE with its matching
-  response stream, or into the dedicated format in
+  This are encoded into the dedicated format in
   {{application-signed-exchange}}, which uses {{I-D.ietf-httpbis-variants-05}} to
   encode the content negotiation information. This is not quite the same meaning
   as defined by Section 8 of {{?RFC7540}}, which assumes the content negotiation
@@ -592,111 +590,7 @@ Signature:
 
 ## The Accept-Signature header ## {#accept-signature}
 
-`Signature` header fields cost on the order of 300 bytes for ECDSA signatures,
-so servers might prefer to avoid sending them to clients that don't intend to
-use them. A client can send the `Accept-Signature` header field to indicate that
-it does intend to take advantage of any available signatures and to indicate
-what kinds of signatures it supports.
-
-When a server receives an `Accept-Signature` header field in a client request,
-it SHOULD reply with any available `Signature` header fields for its response
-that the `Accept-Signature` header field indicates the client supports. However,
-if the `Accept-Signature` value violates a requirement in this section, the
-server MUST behave as if it hadn't received any `Accept-Signature` header at
-all.
-
-The `Accept-Signature` header field is a Structured Header as defined by
-{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a parameterised list
-(Section 3.4 of {{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
-
-    Accept-Signature = sh-param-list
-
-The order of identifiers in the `Accept-Signature` list is not significant.
-Identifiers, ignoring any initial "-" character, MUST NOT be duplicated.
-
-Each identifier in the `Accept-Signature` header field's value indicates that a
-feature of the `Signature` header field ({{signature-header}}) is supported. If
-the identifier begins with a "-" character, it instead indicates that the
-feature named by the rest of the identifier is not supported. Unknown
-identifiers and parameters MUST be ignored because new identifiers and new
-parameters on existing identifiers may be defined by future specifications.
-
-### Integrity identifiers ### {#accept-signature-integrity}
-
-Identifiers starting with "digest/" indicate that the client supports the
-`Digest` header field ({{!RFC3230}}) with the parameter from the [HTTP Digest
-Algorithm Values
-Registry](https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml)
-registry named in lower-case by the rest of the identifier. For example,
-"digest/mi-blake2" indicates support for Merkle integrity with the
-as-yet-unspecified mi-blake2 parameter, and "-digest/mi-sha256" indicates
-non-support for Merkle integrity with the mi-sha256 content encoding.
-
-If the `Accept-Signature` header field is present, servers SHOULD assume support
-for "digest/mi-sha256-03" unless the header field states otherwise.
-
-### Key type identifiers ### {#accept-signature-key-types}
-
-Identifiers starting with "ecdsa/" indicate that the client supports
-certificates holding ECDSA public keys on the curve named in lower-case by the
-rest of the identifier.
-
-If the `Accept-Signature` header field is present, servers SHOULD assume support
-for "ecdsa/secp256r1" unless the header field states otherwise.
-
-### Key value identifiers ### {#accept-signature-key-values}
-
-The "ed25519key" identifier has parameters indicating the public keys that will
-be used to validate the returned signature. Each parameter's name is
-re-interpreted as a byte sequence (Section 3.10 of
-{{!I-D.ietf-httpbis-header-structure}}) encoding a prefix of the public key. For
-example, if the client will validate signatures using the public key whose
-base64 encoding is `11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=`, valid
-`Accept-Signature` header fields include:
-
-~~~http
-Accept-Signature: ..., ed25519key; *11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=*
-Accept-Signature: ..., ed25519key; *11qYAYKxCrfVS/7TyWQHOg==*
-Accept-Signature: ..., ed25519key; *11qYAQ==*
-Accept-Signature: ..., ed25519key; **
-~~~
-
-but not
-
-~~~http
-Accept-Signature: ..., ed25519key; *11qYA===*
-~~~
-
-because 5 bytes isn't a valid length for encoded base64, and not
-
-~~~http
-Accept-Signature: ..., ed25519key; 11qYAQ
-~~~
-
-because it doesn't start or end with the `*`s that indicate a byte sequence.
-
-Note that `ed25519key; **` is an empty prefix, which matches all public keys, so
-it's useful in subresource integrity cases like `<link rel=preload
-as=script href="...">` where the public key isn't known until the matching
-`<script src="..." integrity="...">` tag.
-
-### Examples ### {#accept-signature-examples}
-
-~~~http
-Accept-Signature: digest/mi-sha256-03
-~~~
-
-states that the client will accept signatures with payload integrity assured by
-the `Digest` header and `mi-sha256-03` digest algorithm and implies that the client
-will accept signatures from ECDSA keys on the secp256r1 curve.
-
-~~~http
-Accept-Signature: -ecdsa/secp256r1, ecdsa/secp384r1
-~~~
-
-states that the client will accept ECDSA keys on the secp384r1 curve but not the
-secp256r1 curve and payload integrity assured with the `Digest: mi-sha256-03`
-header field.
+The `Accept-Signature` request header is not used.
 
 # Cross-origin trust {#cross-origin-trust}
 
@@ -879,76 +773,7 @@ described here.
 
 ## Same-origin response {#same-origin-response}
 
-The signature for a signed exchange can be included in a normal HTTP response.
-Because different clients send different request header fields, clients don't
-know how the server's content negotiation algorithm works, and intermediate
-servers add response header fields, it can be impossible to have a signature for
-the exchange's exact request, content negotiation, and response. Therefore, when a client
-calls the validation procedure in {{signature-validity}}) to validate the
-`Signature` header field for an exchange represented as a normal HTTP
-request/response pair, it MUST pass:
-
-* The `Signature` header field,
-* The effective request URI (Section 5.5 of {{!RFC7230}}) of the request,
-* The serialized headers defined by {{serialized-headers}}, and
-* The response's payload.
-
-If the client relies on signature validity for any aspect of its behavior, it
-MUST ignore any header fields that it didn't pass to the validation procedure.
-
-If the signed response includes a `Variants-04` header field, the client MUST
-use the cache behavior algorithm in Section 4 of
-{{I-D.ietf-httpbis-variants-05}} (Note the mismatch between -04 and -05) to
-check that the signed response is an appropriate representation for the request
-the client is trying to fulfil. If the response is not an appropriate
-representation, the client MUST treat the signature as invalid.
-
-### Serialized headers for a same-origin response {#serialized-headers}
-
-The serialized headers of an exchange represented as a normal HTTP
-request/response pair (Section 2.1 of {{?RFC7230}} or Section 8.1 of
-{{?RFC7540}}) are the canonical serialization ({{canonical-cbor}}) of the CBOR
-representation ({{cbor-representation}}) of the response status code (Section 6
-of {{!RFC7231}}) and the response header fields whose names are listed in that
-response's `Signed-Headers` header field ({{signed-headers}}). If a response
-header field name from `Signed-Headers` does not appear in the response's header
-fields, the exchange has no serialized headers.
-
-If the exchange's `Signed-Headers` header field is not present, doesn't parse as
-a Structured Header ({{!I-D.ietf-httpbis-header-structure}}) or doesn't follow
-the constraints on its value described in {{signed-headers}}, the exchange has
-no serialized headers.
-
-### The Signed-Headers Header {#signed-headers}
-
-The `Signed-Headers` header field identifies an ordered list of response header
-fields to include in a signature. The request URL and response status are
-included unconditionally. This allows a TLS-terminating intermediate to reorder
-headers without breaking the signature. This *can* also allow the intermediate
-to add headers that will be ignored by some higher-level protocols, but
-{{signature-validity}} provides a hook to let other higher-level protocols
-reject such insecure headers.
-
-This header field appears once instead of being incorporated into the
-signatures' parameters because the signed header fields need to be consistent
-across all signatures of an exchange, to avoid forcing higher-level protocols to
-merge the header field lists of valid signatures.
-
-`Signed-Headers` is a Structured Header as defined by
-{{!I-D.ietf-httpbis-header-structure}}. Its value MUST be a list (Section 3.2 of
-{{!I-D.ietf-httpbis-header-structure}}). Its ABNF is:
-
-    Signed-Headers = sh-list
-
-Each element of the `Signed-Headers` list must be a lowercase string (Section
-3.8 of {{!I-D.ietf-httpbis-header-structure}}) naming an HTTP response header
-field. Pseudo-header field names (Section 8.1.2.1 of {{!RFC7540}}) MUST NOT
-appear in this list.
-
-Higher-level protocols SHOULD place requirements on the minimum set of headers
-to include in the `Signed-Headers` header field.
-
-
+Same-origin responses are not implemented.
 
 ## HTTP/2 extension for cross-origin Server Push # {#cross-origin-push}
 
@@ -1063,8 +888,6 @@ HTTP without TLS.
 This depends on the following IANA registrations in {{?I-D.yasskin-http-origin-signed-responses}}:
 
 * The `Signature` header field
-* The `Accept-Signature` header field
-* The `Signed-Headers` header field
 * The application/cert-chain+cbor media type
 
 This document also modifies the registration for:
@@ -1106,11 +929,14 @@ Vs. draft-02
 * Define a CAA parameter to opt into certificate issuance, which CAs need to
   enforce after May 1.
 * Limit lifetimes of certificates issued after May 1 to 90 days.
+* Accept-Signature and same-origin responses are removed.
 
 Vs. {{I-D.yasskin-http-origin-signed-responses-05}}:
 
 * Versions in file signatures and context strings are "b3".
-* Signed exchanges cannot be transmitted using HTTP/2 Push.
+* Signed exchanges can only be transmitted in the application/signed-exchange
+  format, not HTTP/2 Push or plain HTTP request/response pairs.
+* The Accept-Signature request header isn't used.
 * Removed non-normative sections.
 * Only 1 signature is supported.
 * Removed support for ed25519 signatures.
