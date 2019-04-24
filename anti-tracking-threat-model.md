@@ -129,7 +129,7 @@ This is a case of cross-site tracking. The user is on a `news.example` webpage,
 convinced that their user agent protects them from AdTech tracking them on this
 site, but instead they got a signed package with tracking built in.
 
-### Mitigations
+### Possible Mitigations
 
 #### Preflight to publisher
 
@@ -151,3 +151,12 @@ The above scheme would make it significantly harder to “personalize” package
 
 Another potential mitigation would be some kind of public repository of
 signatures to check against.
+
+#### Make package loads stateless
+
+When requesting a signed package:
+
+1. The request chain must be credential-less. Maybe we can leverage some Fetch policy here.
+1. It must be an HTTP GET request.
+1. The request URL must not have a query string or fragment.
+1. The path of the package request must be the same as the path on the target domain.
