@@ -156,7 +156,18 @@ signatures to check against.
 
 When requesting a signed package:
 
-1. The request chain must be credential-less. Maybe we can leverage some Fetch policy here.
-1. It must be an HTTP GET request.
-1. The request URL must not have a query string or fragment.
-1. The path of the package request must be the same as the path on the target domain.
+1. The request to the distributor must be credential-less. i.e. the [credentials
+   mode](https://fetch.spec.whatwg.org/#concept-request-credentials-mode) must
+   be `"omit"`. This prevents AdTech from learning the user's identity from its
+   first-party cookies.
+1. It must be an HTTP GET request to prevent, for example, a POST request body
+   from including a user ID.
+1. The request URL on the distributor must not have a query string. Fragments
+   aren't sent to the server and would be blocked after the redirect, if
+   necessary, by anti-tracking measures that are independent of web packages.
+1. The path of the package request must be the same as the path on the target
+   domain to prevent the distributor from encoding a user ID in the path.
+
+Note that this still allows AdTech to encode a user ID in the *signed* path and
+inject Javascript to decode it into local variables and `pushState()` the URL
+back to what the publisher's Javascript expects.
