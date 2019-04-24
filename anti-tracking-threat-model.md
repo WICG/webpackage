@@ -1,6 +1,19 @@
 # Anti-tracking Threat Model
 
-## How the Attack Relates To Other Means of Cross-Site Tracking
+WebKit and other browsers are trying to reduce websites' ability to track users
+across the internet. While the success of their effort remains to be seen, we
+don't want Web Packaging to make the problem any more difficult.
+
+This document contains a proposed threat model for the best-case outcome of that anti-tracking effort. We do not yet claim there is consensus about any of:
+
+1. Whether the [attacker capabilities](#attacker-capabilities) are plausible.
+1. Whether it will eventually be possible to frustrate the [ttacker goals that we want to frustrate](#attacker-goals-that-we-want-to-frustrate).
+1. Whether the costs of the mitigations are worth the benefits.
+1. Probably other things.
+
+Nonetheless, we feel it's important to start with a concrete proposal in mind
+when discussing how to evolve both this threat model and the Web Packaging
+proposals.
 
 Often when we criticize new, technically distinct tracking vectors, we are told
 that “you can track users in so many ways so why care about this one?” In the
@@ -8,15 +21,12 @@ case of signed packages we hear about means of tracking such as doctored links
 where cross-site tracking is built into the URL, or server-side exchanges of
 personally identifiable information such as users' email addresses.
 
-First, we don't think past mistakes and flaws in web technologies is a valid argument for why new web technologies should enable cross-site tracking.
+Browsers are working hard to prevent cross-site tracking, including with new
+limits and restrictions on old technologies. Web Packaging must not add to that work, although it's acceptable for Web Packaging to prevent tracking only after that other work has been done.
 
-Second, WebKit is working hard to prevent cross-site tracking, including new
-limits and restrictions on old technologies. Piling on more such work is not
-acceptable to us.
-
-Finally, the success of new web technologies such as signed packages relies on
-better security and privacy guarantees than what we've had in the past. We want
-progression in this space, not the status quo.
+Finally, the success of new web technologies, including signed packages, relies
+on better security and privacy guarantees than what we've had in the past. We
+want progression in this space, not the status quo.
 
 ## The Actors
 
