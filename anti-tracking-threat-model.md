@@ -6,14 +6,17 @@
   privacy.
 * **The user agent.** This is the web browser that tries to protect the user's
   privacy.
-* **AdTech or `adtech.example`.** This is a website that the user engages with as
-  first-party site and that has a financial interest in
-  1. knowing what the user does on other websites to augment its rich profile of
-     the user and
-  2. individual targeting of ads, based on its rich profile of the user.
-* **News or `news.example`.** This is a news website which wants its articles to
-  be served as signed packages with the user agent's URL bar showing
-  `news.example`.
+* **Distributor.** An entity that delivers a signed package to either the user or another distributor.
+  * **AdTech or `adtech.example`.** This is a distributor that the user also
+    engages with as a first-party site and that has a financial interest in
+    1. knowing what the user does on other websites to augment its rich profile
+       of the user and
+    2. individual targeting of ads, based on its rich profile of the user.
+* **Publisher.** An entity that owns a domain and publishes content there. The
+  publisher may not actually author the content, but they put their name on it.
+  * **News or `news.example`.** This is a publisher for a news website which
+    wants its articles to be served as signed packages with the user agent's URL
+    bar showing `news.example`.
 
 ## The Threat
 
