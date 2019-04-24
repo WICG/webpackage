@@ -7,7 +7,9 @@ don't want Web Packaging to make the problem any more difficult.
 This document contains a proposed threat model for the best-case outcome of that anti-tracking effort. We do not yet claim there is consensus about any of:
 
 1. Whether the [attacker capabilities](#attacker-capabilities) are plausible.
-1. Whether it will eventually be possible to frustrate the [ttacker goals that we want to frustrate](#attacker-goals-that-we-want-to-frustrate).
+1. Whether it will eventually be possible to frustrate the [attacker goals that
+   we want to frustrate](#attacker-goals-that-we-want-to-frustrate).
+1. Whether the mitigations actually mitigate the attacks.
 1. Whether the costs of the mitigations are worth the benefits.
 1. Probably other things.
 
@@ -88,6 +90,8 @@ those mitigations should call out the use cases they break.
    of ads or articles on `news.example`.
 1. More abstractly, AdTech cannot transfer its unique ID for a user to
    the Javascript environment created for `news.example`.
+   1. Failing this, the user agent or external auditors should be able to detect
+      that AdTech is tracking users.
 
 # Attacks and their Mitigations
 
@@ -100,57 +104,55 @@ implications for the rest of the web platform.
 
 ### The Attack
 
-TODO: Simplify this description now that bits are in the threat model above.
+1. AdTech convinces News to give AdTech a package-signing certificate for
+   `news.example`, perhaps by offering to handle the technical complications of
+   signing packages.
+   1. Alternately, News could set up a service that signs packages AdTech sends
+      it.
+1. When a user clicks a link from `adtech.example` to
+   `https://adtech.example/news.example.sxg`, they send identifying information
+   to the `adtech.example` server. This could be cookies or a user ID encoded in
+   the query, path, or even hostname.
+1. Instead of signing `news.example`'s content directly, AdTech embeds the
+   user's identity in that content and signs the result on the fly.
+1. This successfully transfers the unique ID to the `news.example` JS
+   environment, where it can be picked up by advertising code there.
 
-This is how AdTech could foil the user agent's privacy protections with the
-current signed packages proposal:
-
-News wants to take part in signed package loading but thinks the actual
-packaging is cumbersome and costly in terms of engineering resources.
-
-AdTech has a financial incentive to help News get going with signed packages
-because the technology makes AdTech's services better. Because of this
-incentive, AdTech decides to offer News a more convenient way to do the
-packaging; it offers to pull unsigned articles directly from News's servers and
-do packaging for them. News just has to set up a signing service that AdTech can
-call to get signatures back, or just hand a signing key straight to AdTech. News
-sees the opportunity to reduce cost and takes the offer.
-
-AdTech also has a financial incentive to identify the user on `news.example` to
-augment its profile of the user and to earn extra money by serving the user
-individually targeted ads, but it can't do so because the user's user agent is
-protecting the user's privacy. However, the request to get a signed News package
-is actually made to `adtech.example`, containing the user's AdTech cookies. To
-achieve their goals and earn more money, AdTech's decides to create
-`news.example` packages on the fly, bake in individually targeted ads plus an
-AdTech user ID for profile enrichment, and sign the whole thing with News's key.
-
-This is a case of cross-site tracking. The user is on a `news.example` webpage,
-convinced that their user agent protects them from AdTech tracking them on this
-site, but instead they got a signed package with tracking built in.
-
-### Possible Mitigations
+### Proposed Mitigations
 
 #### Preflight to publisher
 
 1. The server responding with the signed package is required to send the
-   signature up front. This is to incentivize AdTech to not sign other websites'
-   packages on the fly.
+   signature up front. This does not prevent any attacks but increases the
+   user-visible latency, which AdTech experiences as a cost.
 2. The user agent makes an ephemeral, cookie-less preflight request to
    `news.example` to get the signature and then validates the package from
    `adtech.example` against that signature.
+
+   Both the
+   [fully-offline](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html#fully-offline-use)
+   use case and [cryptographic
+   agility](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html#crypto-agility)
+   require `news.example` to be able to declare that multiple signatures are
+   currently valid. This requires AdTech to send all of its signatures to
+   `news.example` and for News to list them all in the now-quite-large preflight
+   response. Having enough signatures that each one identifies a user would be
+   detectable by clients and might be enough cost that News wouldn't be willing
+   to do it.
 3. We add a signed time stamp to the package signature to avoid AdTech telling
    News to get signatures from `adtech.example` backend and send personalized
    signatures back as preflight responses. With such time stamps, the user agent
    can decide to not accept signatures younger than, say one minute. For this to
    work we need signed, official time.
 
-The above scheme would make it significantly harder to “personalize” packages.
+   TODO: Figure out how this blocks the attack.
 
 #### Public signature repository
 
 Another potential mitigation would be some kind of public repository of
 signatures to check against.
+
+This does not prevent any attacks, but could make them detectable.
 
 #### Make package loads stateless
 
@@ -171,3 +173,5 @@ When requesting a signed package:
 Note that this still allows AdTech to encode a user ID in the *signed* path and
 inject Javascript to decode it into local variables and `pushState()` the URL
 back to what the publisher's Javascript expects.
+
+This also still allows AdTech to encode a user ID into the hostname.
