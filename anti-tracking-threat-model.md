@@ -46,14 +46,61 @@ want progression in this space, not the status quo.
     wants its articles to be served as signed packages with the user agent's URL
     bar showing `news.example`.
 
-## The Threat
+## Use Cases
+
+See https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html
+for use cases. It's possible some mitigations will sacrifice some use cases, but
+those mitigations should call out the use cases they break.
+
+## Attacker Capabilities
+
+1. AdTech has significant first-party traffic which means most users have an
+   `adtech.example` cookie holding a unique ID, even in browsers with
+   multi-keyed caches.
+1. AdTech can convince News to give them a `news.example` certificate's private
+   key or to tell a CA that AdTech has permission to receive certificates valid
+   to sign exchanges for `news.example`.
+
+   This seems like an implausible capability at first glance, but publishers
+   routinely give CDNs this ability to terminate TLS traffic, and a
+   generally-trusted AdTech could convince publishers that it's merely doing
+   what a good CDN would, for cheaper.
+1. `adtech.example` can serve a link to `news.example` and expect users to click
+   on it and then browse around `news.example`.
+   1. This link can point to a resource that redirects to `news.example`.
+   1. This link can point to a signed exchange or web package containing
+      content signed by `news.example`'s certificate.
+1. AdTech can make any number of signatures with private keys it controls.
+
+## Attacker Non-capabilities
+
+1. AdTech cannot manipulate the DNS system.
+1. There is a limit to the complexity AdTech can convince News to add to its
+   serving infrastructure. For example, News is willing to ignore unknown query
+   parameters and fragments, but is not willing to ignore unexpected path
+   segments. TODO: Can we describe this limit any more precisely?
+
+## Attacker goals that we want to frustrate
 
 1. The user does not want AdTech to be able to augment its profile of them while
    reading articles on `news.example`.
-2. The user does not want AdTech's rich profile of them to influence the content
+1. The user does not want AdTech's rich profile of them to influence the content
    of ads or articles on `news.example`.
+1. More abstractly, AdTech cannot transfer its unique ID for a user to
+   the Javascript environment created for `news.example`.
 
-## The Attack
+# Attacks and their Mitigations
+
+This section lists potential ways AdTech might achieve its unwanted goals, along
+with proposed or already-adopted mitigations to frustrate those goals. Not all
+of the attacks use Web Packaging, so that we can explore the threat model's
+implications for the rest of the web platform.
+
+## Sign identifying information into the package
+
+### The Attack
+
+TODO: Simplify this description now that bits are in the threat model above.
 
 This is how AdTech could foil the user agent's privacy protections with the
 current signed packages proposal:
