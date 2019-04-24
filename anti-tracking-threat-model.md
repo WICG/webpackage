@@ -129,9 +129,9 @@ This is a case of cross-site tracking. The user is on a `news.example` webpage,
 convinced that their user agent protects them from AdTech tracking them on this
 site, but instead they got a signed package with tracking built in.
 
-## Potential Mitigations and Fixes
+### Mitigations
 
-A mitigation we'd like to discuss is this:
+#### Preflight to publisher
 
 1. The server responding with the signed package is required to send the
    signature up front. This is to incentivize AdTech to not sign other websites'
@@ -146,6 +146,8 @@ A mitigation we'd like to discuss is this:
    work we need signed, official time.
 
 The above scheme would make it significantly harder to “personalize” packages.
+
+#### Public signature repository
 
 Another potential mitigation would be some kind of public repository of
 signatures to check against.
