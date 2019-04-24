@@ -76,7 +76,7 @@ those mitigations should call out the use cases they break.
 
 ## Attacker Non-capabilities
 
-1. AdTech cannot manipulate the DNS system.
+1. AdTech cannot manipulate the DNS system on a per-user basis.
 1. There is a limit to the complexity AdTech can convince News to add to its
    serving infrastructure. For example, News is willing to ignore unknown query
    parameters and fragments, but is not willing to ignore unexpected path
@@ -175,3 +175,22 @@ inject Javascript to decode it into local variables and `pushState()` the URL
 back to what the publisher's Javascript expects.
 
 This also still allows AdTech to encode a user ID into the hostname.
+
+## ORIGIN frame and shared connections
+
+### The Attack
+
+Sketch: AdTech gets a certificate that covers both `adtech.example` and
+`news.example`. They associate the user's ID with the HTTP/2 connection, use the
+ORIGIN frame to convince the client to make a `news.example` request over that
+connection, and return a `Set-Cookie` header with the user's ID.
+
+## AdTech subdomain
+
+### The Attack
+
+Sketch: AdTech convinces News to point `*.adtech.news.example` to AdTech's
+servers, perhaps by offering News higher rates on ads. AdTech has users click on
+a link to `userid.adtech.news.example` and returns a `Set-Cookie` header setting
+a user-id cookie for all of `news.example`, followed by a redirect to the real
+URL.
