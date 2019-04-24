@@ -1,5 +1,23 @@
 # Anti-tracking Threat Model
 
+## How the Attack Relates To Other Means of Cross-Site Tracking
+
+Often when we criticize new, technically distinct tracking vectors, we are told
+that “you can track users in so many ways so why care about this one?” In the
+case of signed packages we hear about means of tracking such as doctored links
+where cross-site tracking is built into the URL, or server-side exchanges of
+personally identifiable information such as users' email addresses.
+
+First, we don't think past mistakes and flaws in web technologies is a valid argument for why new web technologies should enable cross-site tracking.
+
+Second, WebKit is working hard to prevent cross-site tracking, including new
+limits and restrictions on old technologies. Piling on more such work is not
+acceptable to us.
+
+Finally, the success of new web technologies such as signed packages relies on
+better security and privacy guarantees than what we've had in the past. We want
+progression in this space, not the status quo.
+
 ## The Actors
 
 * **The user.** This is the human who relies on the user agent to protect their
@@ -53,24 +71,6 @@ AdTech user ID for profile enrichment, and sign the whole thing with News's key.
 This is a case of cross-site tracking. The user is on a `news.example` webpage,
 convinced that their user agent protects them from AdTech tracking them on this
 site, but instead they got a signed package with tracking built in.
-
-## How the Attack Relates To Other Means of Cross-Site Tracking
-
-Often when we criticize new, technically distinct tracking vectors, we are told
-that “you can track users in so many ways so why care about this one?” In the
-case of signed packages we hear about means of tracking such as doctored links
-where cross-site tracking is built into the URL, or server-side exchanges of
-personally identifiable information such as users' email addresses.
-
-First, we don't think past mistakes and flaws in web technologies is a valid argument for why new web technologies should enable cross-site tracking.
-
-Second, WebKit is working hard to prevent cross-site tracking, including new
-limits and restrictions on old technologies. Piling on more such work is not
-acceptable to us.
-
-Finally, the success of new web technologies such as signed packages relies on
-better security and privacy guarantees than what we've had in the past. We want
-progression in this space, not the status quo.
 
 ## Potential Mitigations and Fixes
 
