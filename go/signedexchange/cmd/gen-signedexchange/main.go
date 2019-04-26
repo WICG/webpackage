@@ -2,8 +2,6 @@ package main
 
 import (
 	"bytes"
-	"crypto"
-	"encoding/pem"
 	"flag"
 	"fmt"
 	"io"
@@ -93,24 +91,9 @@ func run() error {
 	if !ok {
 		return fmt.Errorf("failed to parse version %q", *flagVersion)
 	}
-
-	var privkey crypto.PrivateKey
-	for {
-		var pemBlock *pem.Block
-		pemBlock, privkeytext = pem.Decode(privkeytext)
-		if pemBlock == nil {
-			return fmt.Errorf("invalid PEM block in private key file %q.", *flagPrivateKey)
-		}
-
-		var err error
-		privkey, err = signedexchange.ParsePrivateKey(pemBlock.Bytes)
-		if err == nil || len(privkeytext) == 0 {
-			break
-		}
-		// Else try next PEM block.
-	}
-	if privkey == nil {
-		return fmt.Errorf("failed to parse private key file %q.", *flagPrivateKey)
+	privkey, err := signedexchange.ParsePrivateKey(privkeytext)
+	if err != nil {
+		return fmt.Errorf("failed to parse private key file %q. err: %v", *flagPrivateKey, err)
 	}
 
 	var fMsg io.WriteCloser

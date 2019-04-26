@@ -2,7 +2,6 @@ package signedexchange_test
 
 import (
 	"bytes"
-	"encoding/pem"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -76,8 +75,7 @@ func TestSignedExchange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	derPrivateKey, _ := pem.Decode([]byte(pemPrivateKey))
-	privKey, err := ParsePrivateKey(derPrivateKey.Bytes)
+	privKey, err := ParsePrivateKey([]byte(pemPrivateKey))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,8 +198,7 @@ func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 		certs, _ := ParseCertificates([]byte(pemCerts))
 		certUrl, _ := url.Parse("http://example.com/cert.msg")
 		validityUrl, _ := url.Parse("https://example.com/resource.validity")
-		derPrivateKey, _ := pem.Decode([]byte(pemPrivateKey))
-		privKey, _ := ParsePrivateKey(derPrivateKey.Bytes)
+		privKey, _ := ParsePrivateKey([]byte(pemPrivateKey))
 		s := &Signer{
 			Date:        signatureDate,
 			Expires:     signatureDate.Add(1 * time.Hour),
@@ -231,8 +228,7 @@ func createTestExchange(ver version.Version, t *testing.T) (e *Exchange, s *Sign
 		t.Fatal(err)
 	}
 
-	derPrivateKey, _ := pem.Decode([]byte(pemPrivateKey))
-	privKey, err := ParsePrivateKey(derPrivateKey.Bytes)
+	privKey, err := ParsePrivateKey([]byte(pemPrivateKey))
 	if err != nil {
 		t.Fatal(err)
 	}
