@@ -1,8 +1,8 @@
 # Anti-tracking Threat Model
 
-WebKit and other browsers are trying to reduce websites' ability to track users
-across the internet. While the success of their effort remains to be seen, we
-don't want Web Packaging to make the problem any more difficult.
+WebKit and other browser engines are trying to reduce websites' ability to track
+users across the web. We don't want Web Packaging to make this effort any more
+difficult.
 
 This document contains a proposed threat model for the best-case outcome of that anti-tracking effort. We do not yet claim there is consensus about any of:
 
@@ -17,18 +17,17 @@ Nonetheless, we feel it's important to start with a concrete proposal in mind
 when discussing how to evolve both this threat model and the Web Packaging
 proposals.
 
-Often when we criticize new, technically distinct tracking vectors, we are told
-that “you can track users in so many ways so why care about this one?” In the
-case of signed packages we hear about means of tracking such as doctored links
-where cross-site tracking is built into the URL, or server-side exchanges of
-personally identifiable information such as users' email addresses.
+One argument to avoid restricting web packaging is, “you can track users in so
+many ways so why care about this one?” For example, any link can convey a
+user-id hidden in the URL. Because of the effort mentioned above to reduce
+tracking abilities, this document assumes that browser engines will succeed in
+adding all the limits and restrictions on existing technologies necessary to
+eliminate tracking through them. It then analyzes what restrictions on web
+packaging are necessary to prevent it from undoing that progress.
 
-Browsers are working hard to prevent cross-site tracking, including with new
-limits and restrictions on old technologies. Web Packaging must not add to that work, although it's acceptable for Web Packaging to prevent tracking only after that other work has been done.
-
-Finally, the success of new web technologies, including signed packages, relies
-on better security and privacy guarantees than what we've had in the past. We
-want progression in this space, not the status quo.
+The success of new web technologies, including signed packages, relies on better
+security and privacy guarantees than what we've had in the past. We want
+progression in this space, not the status quo.
 
 ## The Actors
 
@@ -59,14 +58,27 @@ those mitigations should call out the use cases they break.
 1. AdTech has significant first-party traffic which means most users have an
    `adtech.example` cookie holding a unique ID, even in browsers with
    multi-keyed caches.
-1. AdTech can convince News to give them a `news.example` certificate's private
-   key or to tell a CA that AdTech has permission to receive certificates valid
-   to sign exchanges for `news.example`.
+1. AdTech can convince News to let them create packages that get signed as
+   `news.example`, in a couple alternate ways.
 
    This seems like an implausible capability at first glance, but publishers
    routinely give CDNs this ability to terminate TLS traffic, and a
    generally-trusted AdTech could convince publishers that it's merely doing
    what a good CDN would, for cheaper.
+
+   1. News acquires a `news.example` [exchange-signing
+      certificate](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req)
+      and gives its private key to AdTech.
+   1. News acquires a `news.example` exchange-signing certificate and uses it to
+      authorize a short-lived key owned by AdTech, using a system like
+      [Delegated
+      Credentials](https://tools.ietf.org/html/draft-ietf-tls-subcerts-03).
+   1. News tells a CA that AdTech has permission to receive exchange-signing
+      certificates for `news.example`. This is the model CDNs usually use.
+   1. News hosts a signing service that signs packages given to News by AdTech.
+      This resembles the CDN "Split-TLS" model. News would expect AdTech to
+      fetch News's content, optimize it in some way, and send the result back to
+      News for signing on the fly.
 1. `adtech.example` can serve a link to `news.example` and expect users to click
    on it and then browse around `news.example`.
    1. This link can point to a resource that redirects to `news.example`.
@@ -84,14 +96,14 @@ those mitigations should call out the use cases they break.
 
 ## Attacker goals that we want to frustrate
 
-1. The user does not want AdTech to be able to augment its profile of them while
-   reading articles on `news.example`.
-1. The user does not want AdTech's rich profile of them to influence the content
-   of ads or articles on `news.example`.
-1. More abstractly, AdTech cannot transfer its unique ID for a user to
+1. AdTech wants to augment its profile of the user while the user reads articles
+   on `news.example`.
+1. AdTech wants to use its rich profile of the user to influence the content of
+   ads or articles on `news.example`.
+1. More abstractly, AdTech wants to transfer its unique ID for a user to
    the Javascript environment created for `news.example`.
-   1. Failing this, the user agent or external auditors should be able to detect
-      that AdTech is tracking users.
+1. AdTech doesn't want the user agent or external auditors to be able to detect
+   that AdTech is tracking users.
 
 # Attacks and their Mitigations
 
@@ -104,11 +116,8 @@ implications for the rest of the web platform.
 
 ### The Attack
 
-1. AdTech convinces News to give AdTech a package-signing certificate for
-   `news.example`, perhaps by offering to handle the technical complications of
-   signing packages.
-   1. Alternately, News could set up a service that signs packages AdTech sends
-      it.
+1. AdTech convinces News to let them create packages that get signed as
+   `news.example`.
 1. When a user clicks a link from `adtech.example` to
    `https://adtech.example/news.example.sxg`, they send identifying information
    to the `adtech.example` server. This could be cookies or a user ID encoded in
