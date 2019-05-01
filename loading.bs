@@ -706,6 +706,8 @@ reporting to a [=signed exchange report=] |report|, returns a
     :: "`none`"
     : [=request/mode=]
     :: "`cors`"
+    : [=request/credentials mode=]
+    :: "`omit`"
 1. Let |certResponse| be the result of [=fetching=] |certRequest|.
 1. Append the IP address of the server from which the user agent received the
     |certResponse| to |report|'s [=signed exchange report/cert server IP list=],
