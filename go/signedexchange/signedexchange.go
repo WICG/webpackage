@@ -3,13 +3,16 @@ package signedexchange
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
 	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
@@ -503,4 +506,41 @@ func (e *Exchange) PrettyPrintHeaders(w io.Writer) {
 func (e *Exchange) PrettyPrintPayload(w io.Writer) {
 	fmt.Fprintf(w, "payload [%d bytes]:\n", len(e.Payload))
 	w.Write(e.Payload)
+}
+
+func (e *Exchange) JSONPrint(w io.Writer) {
+	verificationTime := time.Now()
+	certFetcher := DefaultCertFetcher
+	payload, ok := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0))
+	// f is a copy of e except with Payload as a string, instead of a []byte (to
+	// better serialize to JSON).
+	f := struct {
+		Valid   bool
+		Version version.Version
+
+		// Request
+		RequestURI     string
+		RequestMethod  string
+		RequestHeaders http.Header
+
+		// Response
+		ResponseStatus       int
+		ResponseHeaders      http.Header
+		SignatureHeaderValue string
+
+		// Payload
+		Payload string
+	}{
+		ok,
+		e.Version,
+		e.RequestURI,
+		e.RequestMethod,
+		e.RequestHeaders,
+		e.ResponseStatus,
+		e.ResponseHeaders,
+		e.SignatureHeaderValue,
+		fmt.Sprintf("%s", payload),
+	}
+	s, _ := json.MarshalIndent(f, "", "  ")
+	w.Write(s)
 }

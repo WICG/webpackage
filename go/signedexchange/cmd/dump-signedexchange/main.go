@@ -16,6 +16,7 @@ var (
 	flagSignature = flag.Bool("signature", false, "Print only signature value")
 	flagVerify    = flag.Bool("verify", false, "Perform signature verification")
 	flagCert      = flag.String("cert", "", "Certificate CBOR file. If specified, used instead of fetching from signature's cert-url")
+	flagJSON      = flag.Bool("json", false, "Print output as JSON")
 )
 
 func run() error {
@@ -32,6 +33,11 @@ func run() error {
 	e, err := signedexchange.ReadExchange(in)
 	if err != nil {
 		return err
+	}
+
+	if *flagJSON {
+		e.JSONPrint(os.Stdout)
+		return nil
 	}
 
 	if *flagSignature {
@@ -57,12 +63,12 @@ func verify(e *signedexchange.Exchange) error {
 	if *flagCert != "" {
 		f, err := os.Open(*flagCert)
 		if err != nil {
-			return fmt.Errorf("could not open %s: %v\n", *flagCert, err)
+			return fmt.Errorf("could not open %s: %v", *flagCert, err)
 		}
 		defer f.Close()
 		certBytes, err := ioutil.ReadAll(f)
 		if err != nil {
-			return fmt.Errorf("Could not read %s: %v\n", *flagCert, err)
+			return fmt.Errorf("could not read %s: %v", *flagCert, err)
 		}
 		certFetcher = func(_ string) ([]byte, error) {
 			return certBytes, nil
