@@ -64,7 +64,7 @@ func extractSignatureFields(pi structuredheader.ParameterisedIdentifier) (*Signa
 	return sig, nil
 }
 
-// CertFetcher takes certificat URL and returns certificate bytes in
+// CertFetcher takes certificate URL and returns certificate bytes in
 // application/cert-chain+cbor format.
 type CertFetcher = func(url string) ([]byte, error)
 

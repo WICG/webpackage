@@ -148,11 +148,50 @@ You can dump the content of your sxg file by `dump-signedexchange`. If you want 
 dump-signedexchange -i example.org.hello.sxg
 ```
 
-If `-verify` command-line flag is specified, `dump-signedexchange` checks if the signed exchange is valid.
+If the `-json` flag is passed, the output will be in JSON.
+
+```
+dump-signedexchange -i example.org.hello.sxg -json
+```
+
+You can also dump the content of a signed exchange from a URI. If you want to see the content of the signed exchange you're hosting at https://example.org/hello.html, run this command. By default this will request the latest version.
+
+```
+dump-signedexchange -uri https://example.org/hello.html
+```
+
+If the specified URI requires a special header to serve a signed exchange, you can pass request headers via the `-requestHeader` flag. The header key and value should be separated by a `:`.
+
+```
+dump-signedexchange -uri https://example.org/hello.html -requestHeader AMP-Cache-Transform:any -requestHeader "foo:bar"
+```
+
+When the `-uri` flag is passed to `dump-signedexchange`, you can specify the sxg version to request by passing a `-version` flag. For instance, if you wanted to request a `1b2` signed exchange, you would run the following command. By default, the version is `1b3`.
+
+```
+dump-signedexchange -uri https://example.org/hello.html -version=1b2
+```
+
+`dump-signedexchange` can also operate on piped input. For instance, you could run the following command to retrieve a b3 signed exchange.
+
+```
+curl -H "AMP-Cache-Transform:any" -H "Accept:application/signed-exchange;v=b3" https://example.org/hello.html | dump-signedexchange
+```
+
+`dump-signedexchange` can print the information you want about your signed exchange. By default, both the headers and the payload are printed, but they can be suppressed by passing `-headers=false` and `-payload=false`.
+
+If you would like only the signature to be printed, pass the `-signature` flag.
+
+```
+dump-signedexchange -i example.org.hello.sxg -signature
+```
+
+If the `-verify` command-line flag is specified, `dump-signedexchange` checks if the signed exchange is valid.
 
 By default, `dump-signedexchange` fetches certificate chain from network (from the URL you specified as `-certUrl` parameter of `gen-signedexchange`). But if `-cert filename` flag is given, `dump-signedexchange` reads certificates from `filename`.
 
 For example, If you want to verify `example.org.hello.sxg` using certificates in `cert.cbor`, run this command.
+
 ```
 dump-signedexchange -i example.org.hello.sxg -verify -cert cert.cbor
 ```

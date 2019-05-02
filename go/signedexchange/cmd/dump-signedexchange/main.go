@@ -1,40 +1,101 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/WICG/webpackage/go/signedexchange/structuredheader"
 
 	"github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/signedexchange/version"
 )
+
+type headerArgs []string
+
+func (h *headerArgs) String() string {
+	return fmt.Sprintf("%v", *h)
+}
+
+func (h *headerArgs) Set(value string) error {
+	*h = append(*h, value)
+	return nil
+}
+
+var latestVersion = string(version.AllVersions[len(version.AllVersions)-1])
 
 var (
-	flagInput     = flag.String("i", "", "Signed-exchange input file")
-	flagSignature = flag.Bool("signature", false, "Print only signature value")
-	flagVerify    = flag.Bool("verify", false, "Perform signature verification")
 	flagCert      = flag.String("cert", "", "Certificate CBOR file. If specified, used instead of fetching from signature's cert-url")
+	flagHeaders   = flag.Bool("headers", true, "Print headers")
+	flagFilename  = flag.String("i", "", "Signed-exchange input file")
 	flagJSON      = flag.Bool("json", false, "Print output as JSON")
+	flagPayload   = flag.Bool("payload", true, "Print payload")
+	flagSignature = flag.Bool("signature", false, "Print only signature value")
+	flagURI       = flag.String("uri", "", "Signed-exchange uri")
+	flagVerify    = flag.Bool("verify", false, "Perform signature verification")
+	flagVersion   = flag.String("version", latestVersion, "Signed exchange version")
+
+	flagRequestHeader = headerArgs{}
 )
 
+func init() {
+	flag.Var(&flagRequestHeader, "requestHeader", "Request header arguments")
+}
+
 func run() error {
-	in := os.Stdin
-	if *flagInput != "" {
-		var err error
-		in, err = os.Open(*flagInput)
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		return err
+	}
+	var e *signedexchange.Exchange
+	var in io.Reader = nil
+	if *flagFilename != "" { // read sxg from filename
+		f, err := os.Open(*flagFilename)
 		if err != nil {
 			return err
 		}
-		defer in.Close()
+		defer f.Close()
+		in = f
+	} else if *flagURI != "" { // read sxg from network
+		client := http.DefaultClient
+		req, err := http.NewRequest("GET", *flagURI, nil)
+		if err != nil {
+			return err
+		}
+		ver, ok := version.Parse(*flagVersion)
+		if !ok {
+			return fmt.Errorf("failed to parse version %q", *flagVersion)
+		}
+		mimeType := ver.MimeType()
+		req.Header.Add("Accept", mimeType)
+		for _, h := range flagRequestHeader {
+			chunks := strings.SplitN(h, ":", 2)
+			req.Header.Add(strings.TrimSpace(chunks[0]), strings.TrimSpace(chunks[1]))
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		in = resp.Body
+		defer resp.Body.Close()
+	} else if (fi.Mode() & os.ModeCharDevice) == 0 { // read sxg from pipe
+		in = os.Stdin
 	}
 
-	e, err := signedexchange.ReadExchange(in)
+	if in == nil {
+		flag.PrintDefaults()
+		return nil
+	}
+
+	e, err = signedexchange.ReadExchange(in)
 	if err != nil {
 		return err
 	}
@@ -51,18 +112,22 @@ func run() error {
 
 	if *flagSignature {
 		fmt.Println(e.SignatureHeaderValue)
-		return nil
-	}
-
-	if *flagVerify {
-		if err := verify(e, certFetcher, verificationTime); err != nil {
-			return err
+	} else {
+		if *flagHeaders {
+			e.PrettyPrintHeaders(os.Stdout)
 		}
-		fmt.Println()
-	}
 
-	e.PrettyPrintHeaders(os.Stdout)
-	e.PrettyPrintPayload(os.Stdout)
+		if *flagPayload {
+			e.PrettyPrintPayload(os.Stdout)
+		}
+
+		if *flagVerify {
+			fmt.Println()
+			if err := verify(e, certFetcher, verificationTime); err != nil {
+				return err
+			}
+		}
+	}
 
 	return nil
 }
@@ -116,8 +181,14 @@ func jsonPrintHeaders(e *signedexchange.Exchange, certFetcher signedexchange.Cer
 		sigs,
 		e,
 	}
-	s, _ := json.MarshalIndent(f, "", "  ")
-	w.Write(s)
+	buf := new(bytes.Buffer)
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "   ")
+	if err := enc.Encode(&f); err != nil {
+		return err
+	}
+	w.Write(buf.Bytes())
 
 	return nil
 }
