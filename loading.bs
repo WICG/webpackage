@@ -103,7 +103,7 @@ spec: RFC5280; urlPrefix: https://tools.ietf.org/html/rfc5280#
         text: AlgorithmIdentifier; url: section-4.1.1.2
         text: Subject Public Key Info; url: section-4.1.2.7
         text: Certificate Extensions; url: section-4.2
-spec: RFC5480; urlPrefix: https://tools.ietf.org/html/rfc5280#
+spec: RFC5480; urlPrefix: https://tools.ietf.org/html/rfc5480#
     type: dfn
         text: id-ecPublicKey; url: section-2.1.1
         text: secp256r1; url: section-2.1.1.1
