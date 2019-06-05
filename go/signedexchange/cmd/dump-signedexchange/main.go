@@ -40,7 +40,7 @@ func run() error {
 	}
 
 	if *flagJSON {
-		jsonPrintHeaders(e, time.Now(), signedexchange.DefaultCertFetcher, os.Stdout)
+		jsonPrintHeaders(e, time.Now(), os.Stdout)
 		return nil
 	}
 
@@ -62,23 +62,31 @@ func run() error {
 	return nil
 }
 
-func verify(e *signedexchange.Exchange) error {
+func initCertFetcher() (func(url string) ([]byte, error), error) {
 	certFetcher := signedexchange.DefaultCertFetcher
 	if *flagCert != "" {
 		f, err := os.Open(*flagCert)
 		if err != nil {
-			return fmt.Errorf("could not open %s: %v", *flagCert, err)
+			return nil, fmt.Errorf("could not %v", err)
 		}
 		defer f.Close()
 		certBytes, err := ioutil.ReadAll(f)
 		if err != nil {
-			return fmt.Errorf("could not read %s: %v", *flagCert, err)
+			return nil, fmt.Errorf("could not %v", err)
 		}
 		certFetcher = func(_ string) ([]byte, error) {
 			return certBytes, nil
 		}
 	}
+	return certFetcher, nil
+}
 
+func verify(e *signedexchange.Exchange) error {
+	certFetcher, err := initCertFetcher()
+	if err != nil {
+		log.Println(err.Error())
+		return nil
+	}
 	verificationTime := time.Now()
 	if decodedPayload, ok := e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "", 0)); ok {
 		e.Payload = decodedPayload
@@ -87,18 +95,31 @@ func verify(e *signedexchange.Exchange) error {
 	return nil
 }
 
-func jsonPrintHeaders(e *signedexchange.Exchange, verificationTime time.Time, certFetcher func(url string) ([]byte, error), w io.Writer) {
-	_, ok := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0))
-	h, _ := structuredheader.ParseParameterisedList(e.SignatureHeaderValue)
+func jsonPrintHeaders(e *signedexchange.Exchange, verificationTime time.Time, w io.Writer) {
+	certFetcher, err := initCertFetcher()
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	_, valid := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0))
+	shv, ok := structuredheader.ParseParameterisedList(e.SignatureHeaderValue)
+	var sig structuredheader.Parameters
+	if ok == nil && len(shv) > 0 {
+		sig = shv[0].Params
+	} else {
+		sig = structuredheader.Parameters{}
+	}
 	f := struct {
+		Payload              []byte                      `json:",omitempty"`
+		SignatureHeaderValue structuredheader.Parameters `json:",omitempty"`
 		Valid                bool
-		Payload              []byte                      // hides "Payload" in nested signedexchange.Exchange
-		SignatureHeaderValue structuredheader.Parameters // hides "SignatureHeaderValue" in nested signedexchange.Exchange
+		Signature            structuredheader.Parameters
 		*signedexchange.Exchange
 	}{
-		ok,
-		[]byte{}, // make "Payload" "empty" (the tag `json:"-"` is supposed to do this, but doesn't--?)
-		h[0].Params,
+		nil, // omitted via "omitempty"
+		nil, // omitted via "omitempty"
+		valid,
+		sig,
 		e,
 	}
 	s, _ := json.MarshalIndent(f, "", "  ")
