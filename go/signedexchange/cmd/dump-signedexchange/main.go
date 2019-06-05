@@ -1,12 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"time"
+
+	"github.com/WICG/webpackage/go/signedexchange/structuredheader"
 
 	"github.com/WICG/webpackage/go/signedexchange"
 )
@@ -36,7 +40,7 @@ func run() error {
 	}
 
 	if *flagJSON {
-		e.JSONPrint(os.Stdout)
+		jsonPrintHeaders(e, time.Now(), signedexchange.DefaultCertFetcher, os.Stdout)
 		return nil
 	}
 
@@ -81,6 +85,24 @@ func verify(e *signedexchange.Exchange) error {
 		fmt.Println("The exchange has a valid signature.")
 	}
 	return nil
+}
+
+func jsonPrintHeaders(e *signedexchange.Exchange, verificationTime time.Time, certFetcher func(url string) ([]byte, error), w io.Writer) {
+	_, ok := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0))
+	h, _ := structuredheader.ParseParameterisedList(e.SignatureHeaderValue)
+	f := struct {
+		Valid                bool
+		Payload              []byte                      // hides "Payload" in nested signedexchange.Exchange
+		SignatureHeaderValue structuredheader.Parameters // hides "SignatureHeaderValue" in nested signedexchange.Exchange
+		*signedexchange.Exchange
+	}{
+		ok,
+		[]byte{}, // make "Payload" "empty" (the tag `json:"-"` is supposed to do this, but doesn't--?)
+		h[0].Params,
+		e,
+	}
+	s, _ := json.MarshalIndent(f, "", "  ")
+	w.Write(s)
 }
 
 func main() {
