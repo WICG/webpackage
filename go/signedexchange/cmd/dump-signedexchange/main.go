@@ -39,9 +39,14 @@ func run() error {
 		return err
 	}
 
+	certFetcher, err := initCertFetcher()
+	if err != nil {
+		return err
+	}
+	verificationTime := time.Now() // TODO: add a flag to override this
+
 	if *flagJSON {
-		jsonPrintHeaders(e, time.Now(), os.Stdout)
-		return nil
+		return jsonPrintHeaders(e, certFetcher, verificationTime, os.Stdout)
 	}
 
 	if *flagSignature {
@@ -50,7 +55,7 @@ func run() error {
 	}
 
 	if *flagVerify {
-		if err := verify(e); err != nil {
+		if err := verify(e, certFetcher, verificationTime); err != nil {
 			return err
 		}
 		fmt.Println()
@@ -62,7 +67,7 @@ func run() error {
 	return nil
 }
 
-func initCertFetcher() (func(url string) ([]byte, error), error) {
+func initCertFetcher() (signedexchange.CertFetcher, error) {
 	certFetcher := signedexchange.DefaultCertFetcher
 	if *flagCert != "" {
 		f, err := os.Open(*flagCert)
@@ -81,13 +86,7 @@ func initCertFetcher() (func(url string) ([]byte, error), error) {
 	return certFetcher, nil
 }
 
-func verify(e *signedexchange.Exchange) error {
-	certFetcher, err := initCertFetcher()
-	if err != nil {
-		log.Println(err.Error())
-		return nil
-	}
-	verificationTime := time.Now()
+func verify(e *signedexchange.Exchange, certFetcher signedexchange.CertFetcher, verificationTime time.Time) error {
 	if decodedPayload, ok := e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "", 0)); ok {
 		e.Payload = decodedPayload
 		fmt.Println("The exchange has a valid signature.")
@@ -95,35 +94,32 @@ func verify(e *signedexchange.Exchange) error {
 	return nil
 }
 
-func jsonPrintHeaders(e *signedexchange.Exchange, verificationTime time.Time, w io.Writer) {
-	certFetcher, err := initCertFetcher()
-	if err != nil {
-		log.Println(err.Error())
-		return
-	}
+func jsonPrintHeaders(e *signedexchange.Exchange, certFetcher signedexchange.CertFetcher, verificationTime time.Time, w io.Writer) error {
+	// TODO: Add verification error messages to the output.
 	_, valid := e.Verify(verificationTime, certFetcher, log.New(ioutil.Discard, "", 0))
-	shv, ok := structuredheader.ParseParameterisedList(e.SignatureHeaderValue)
-	var sig structuredheader.Parameters
-	if ok == nil && len(shv) > 0 {
-		sig = shv[0].Params
-	} else {
-		sig = structuredheader.Parameters{}
+
+	sigs, err := structuredheader.ParseParameterisedList(e.SignatureHeaderValue)
+	if err != nil {
+		return err
 	}
+
 	f := struct {
-		Payload              []byte                      `json:",omitempty"`
-		SignatureHeaderValue structuredheader.Parameters `json:",omitempty"`
+		Payload              []byte `json:",omitempty"` // hides Payload in nested signedexchange.Exchange
+		SignatureHeaderValue []byte `json:",omitempty"` // hides SignatureHeaderValue in nested signedexchange.Exchange
 		Valid                bool
-		Signature            structuredheader.Parameters
+		Signatures           structuredheader.ParameterisedList
 		*signedexchange.Exchange
 	}{
 		nil, // omitted via "omitempty"
 		nil, // omitted via "omitempty"
 		valid,
-		sig,
+		sigs,
 		e,
 	}
 	s, _ := json.MarshalIndent(f, "", "  ")
 	w.Write(s)
+
+	return nil
 }
 
 func main() {
