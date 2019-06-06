@@ -156,7 +156,7 @@ func (p *parser) parseParameterisedList() (ParameterisedList, error) {
 			return items, nil
 		}
 		if !p.consumeChar(',') {
-			return nil, fmt.Errorf("structuredheader: ',' expacted, got '%c'", p.input[0])
+			return nil, fmt.Errorf("structuredheader: ',' expected, got '%c'", p.input[0])
 		}
 		p.discardLeadingOWS()
 	}
