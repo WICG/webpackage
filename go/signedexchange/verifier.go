@@ -131,7 +131,7 @@ func (e *Exchange) Verify(verificationTime time.Time, certFetcher CertFetcher, l
 		//         return a certificate chain, return "invalid"."
 		_, decodedPayload, err := verifySignature(e, verificationTime, certFetcher, signature)
 		if err != nil {
-			l.Printf("Verification of sinature %q failed: %v", signature.Label, err)
+			l.Printf("Verification of signature %q failed: %v", signature.Label, err)
 			continue
 		}
 
