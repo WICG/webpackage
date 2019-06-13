@@ -236,7 +236,7 @@ func (e *Exchange) decodeExchangeHeaders(dec *cbor.Decoder) error {
 			return fmt.Errorf("signedexchange: failed to decode top-level array header: %v", err)
 		}
 		if n != 2 {
-			return fmt.Errorf("singedexchange: length of header array must be 2 but %d", n)
+			return fmt.Errorf("signedexchange: length of header array must be 2 but %d", n)
 		}
 		if err := e.decodeRequestMap(dec); err != nil {
 			return err

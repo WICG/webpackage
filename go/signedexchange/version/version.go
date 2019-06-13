@@ -15,7 +15,7 @@ const (
 
 const HeaderMagicBytesLen = 8
 
-var AllVersions = []Version {
+var AllVersions = []Version{
 	Version1b1,
 	Version1b2,
 	Version1b3,
@@ -46,6 +46,10 @@ func (v Version) HeaderMagicBytes() []byte {
 	}
 }
 
+func (v Version) MimeType() string {
+	return fmt.Sprintf("application/signed-exchange;v=%s", v[1:])
+}
+
 func FromMagicBytes(bs []byte) (Version, error) {
 	if bytes.Equal(bs, Version1b1.HeaderMagicBytes()) {
 		return Version1b1, nil
@@ -54,6 +58,6 @@ func FromMagicBytes(bs []byte) (Version, error) {
 	} else if bytes.Equal(bs, Version1b3.HeaderMagicBytes()) {
 		return Version1b3, nil
 	} else {
-		return Version(""), fmt.Errorf("singedexchange: unknown magic bytes: %v", bs)
+		return Version(""), fmt.Errorf("signedexchange: unknown magic bytes: %v", bs)
 	}
 }
