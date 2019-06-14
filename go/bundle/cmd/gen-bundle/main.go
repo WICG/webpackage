@@ -136,10 +136,10 @@ func fromHar(harPath string) error {
 func main() {
 	flag.Parse()
 	if *flagHar != "" {
-		if *flagBaseURL == "" {
+		if *flagBaseURL != "" {
 			fmt.Fprintln(os.Stderr, "Warning: -baseURL is ignored when input is HAR.")
 		}
-		if *flagStartURL == "" {
+		if *flagStartURL != "" {
 			fmt.Fprintln(os.Stderr, "Warning: -startURL is ignored when input is HAR.")
 		}
 		if err := fromHar(*flagHar); err != nil {
