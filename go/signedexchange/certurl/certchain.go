@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
 )
@@ -154,7 +155,7 @@ func (chain CertChain) PrettyPrint(w io.Writer) {
 		prettyPrintSCTFromCert(w, item.Cert)
 
 		if i == 0 {
-			// Check that the main certificate has canSignHttpExchangesDraft extension.
+			// Check if the main certificate meets the requirements:
 			// https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req
 			oidCanSignHttpExchangesDraft := asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 11129, 2, 1, 22}
 			ext := findExtensionWithOID(item.Cert.Extensions, oidCanSignHttpExchangesDraft)
@@ -164,6 +165,23 @@ func (chain CertChain) PrettyPrint(w io.Writer) {
 				fmt.Fprintln(w, "Error: Value of canSignHttpExchangesDraft extension must be ASN1:NULL. got:", ext.Value)
 			} else {
 				fmt.Fprintln(w, "  Has canSignHttpExchangesDraft extension")
+			}
+
+			validityDuration := item.Cert.NotAfter.Sub(item.Cert.NotBefore)
+			if validityDuration > 90*24*time.Hour {
+				if item.Cert.NotBefore.After(time.Date(2019, 5, 1, 0, 0, 0, 0, time.UTC)) {
+					// - Clients MUST reject certificates with this extension that were issued
+					// after 2019-05-01 and have a Validity Period longer than 90 days.
+					fmt.Fprintln(w, "Error: Signed Exchange's certificate issued after 2019-05-01 must not have a validity period longer than 90 days.")
+				} else {
+					// - After 2019-08-01, clients MUST reject all certificates with this
+					// extension that have a Validity Period longer than 90 days.
+					if time.Now().After(time.Date(2019, 8, 1, 0, 0, 0, 0, time.UTC)) {
+						fmt.Fprintln(w, "Error: After 2019-08-01, Signed Exchange's certificate must not have a validity period longer than 90 days.")
+					} else {
+						fmt.Fprintln(w, "Warning: Signed Exchange's certificate must not have a validity period longer than 90 days. This certificate will be rejected after 2019-08-01.")
+					}
+				}
 			}
 		}
 
