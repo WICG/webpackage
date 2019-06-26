@@ -132,10 +132,17 @@ containing at least keys named:
 
 requests
 
-: A map ({{INFRA}}) whose keys are {{FETCH}} requests for the HTTP exchanges in
-  the bundle, and whose values are opaque metadata that
-  {{semantics-load-response}}{:format="title"} can use to find the matching
-  response.
+: A map ({{INFRA}}) whose keys are URLs and whose values consist of either:
+
+  * A single `ResponseMetadata` value for a non-content-negotiated resource or
+
+  * A set of content-negotiated resources represented by
+    * A `Variants` header field value ({{!I-D.ietf-httpbis-variants}}) and
+
+    * A map ({{INFRA}}) from each of the possible combinations of one
+      available-value for each variant-axis to a `ResponseMetadata` structure.
+      {{semantics-load-response}}{:format="title"} can use the
+      `ResponseMetadata` structures to find the matching response.
 
 manifest
 
@@ -161,8 +168,9 @@ This operation's implementation is in {{from-end}}.
 
 ## Load a response from a bundle {#semantics-load-response}
 
-This takes the sequence of bytes representing the bundle and one request
-returned from {{semantics-load-metadata}} with its metadata, and returns the
+This takes the sequence of bytes representing the bundle and a URL, combination
+of `Variants` available-values ({{!I-D.ietf-httpbis-variants}}), and
+`ResponseMetadata` returned from {{semantics-load-metadata}}, and returns the
 response ({{FETCH}}) matching that request.
 
 This operation can be completed without inspecting bytes other than those that
@@ -320,12 +328,45 @@ steps, taking the `stream` as input.
 ### Parsing the index section {#index-section}
 
 The "index" section defines the set of HTTP requests in the bundle and
-identifies their locations in the "responses" section. It consists of a sequence
-of alternating request headers and response lengths:
+identifies their locations in the "responses" section. It consists of a map from
+URL strings to arrays consisting of a `Variants` header field value
+({{I-D.ietf-httpbis-variants}}) followed by one `location-in-responses` pair for
+each of the possible combinations of available-values within the `Variants`
+value in lexicographic (row-major) order.
+
+For example, given a `variants-value` of "Accept-Encoding;gzip;br,
+Accept-Language;en;fr;ja", the `variantKeys` list will be:
+
+* gzip;en
+* gzip;fr
+* gzip;ja
+* br;en
+* br;fr
+* br;ja
+
+The order of variant-axes is important. If the `variants-value` were
+"Accept-Language;en;fr;ja, Accept-Encoding;gzip;br" instead, the `variantKeys`
+list would be:
+
+* en;gzip
+* en;br
+* fr;gzip
+* fr;br
+* ja;gzip
+* ja;br
+
+As a special case, an empty `variants-value` indicates that there is only one
+resource at the specified URL and that no content negotiation is performed.
 
 ~~~ cddl
-index = [* (headers, length: uint) ]
+index = {* tstr => [ variants-value, +location-in-responses ] }
+variants-value = tstr
+location-in-responses = (offset: uint, length: uint)
 ~~~
+
+A `ResponseMetadata` struct identifies a byte range within the bundle stream,
+defined by an integer offset from the start of the stream and the integer number
+of bytes in the range.
 
 To parse the index section, given its `sectionContents`, the `sectionOffsets`
 map, and the `metadata` map to fill in, the parser MUST do the following:
@@ -334,58 +375,46 @@ map, and the `metadata` map to fill in, the parser MUST do the following:
    matching the `index` rule in the above CDDL ({{parse-cbor}}). If `index` is
    an error, return an error.
 
-1. Check that the responses array has the right number of items:
-   1. Seek to offset `sectionOffsets["responses"].offset` in `stream`. If this
-      fails, return an error.
+1. Let `requests` be an initially-empty map ({{INFRA}}) from URLs to response
+   descriptions, each of which is either a single `location-in-stream` value or a
+   pair of a `Variants` header field value ({{!I-D.ietf-httpbis-variants}}) and
+   a map from that value's possible `Variant-Key`s to `location-in-stream`
+   values, as described in {{semantics-load-metadata}}.
 
-   1. Let (`responsesType`, `numResponses`) be the result of parsing the type
-      and argument of a CBOR item from the stream ({{parse-type-argument}}). If
-      this returns an error, return that error.
+1. Let `MakeRelativeToStream` be a function that takes a `location-in-responses`
+   value (`offset`, `length`) and returns a `ResponseMetadata` struct or error
+   by running the following sub-steps:
+   1. If `offset` + `length` is larger than
+      `sectionOffsets["responses"].length`, return an error.
+   1. Otherwise, return a `ResponseMetadata` struct whose offset is
+      `sectionOffsets["responses"].offset` + `offset` and whose length is
+      `length`.
 
-   1. If `responsesType` is not `4` (a CBOR array) or `numResponses` is not half
-      of the length of `index`, return an error.
-
-1. Let `currentOffset` be the current offset within `stream` minus
-   `sectionOffsets["responses"].offset`. That is, the length of the array header
-   for the responses array. This will track the offset of the current response
-   relative to the start of the responses array.
-
-1. Let `requests` be an initially-empty map ({{INFRA}}) from HTTP requests
-   ({{FETCH}}) to structs ({{INFRA}}) with items named "offset" and "length".
-
-1. For each (`cbor-http-request`, `length`) pair of adjacent elements in
-   `index`:
-   1. Let (`headers`, `pseudos`) be the result of converting `cbor-http-request`
-      to a header list and pseudoheaders using the algorithm in
-      {{cbor-headers}}. If this returns an error, return that error.
-   1. If `pseudos` does not have keys named ':method' and ':url', or its size
-      isn't 2, return an error.
-   1. If `pseudos[':method']` is not 'GET', return an error.
-
-      Note: This could probably support any cacheable (Section 4.2.3) of
-      {{!RFC7231}}) and safe (Section 4.2.1 of {{!RFC7231}}) method, matching
-      PUSH_PROMISE (Section 8.2 of {{?RFC7540}}), but today that's only HEAD and
-      GET, and HEAD can be served as a transformation of GET, so this version of
-      the specification keeps the method simple.
-   1. Let `parsedUrl` be the result of parsing ({{URL}}) `pseudos[':url']` with
+1. For each (`url`, `responses`) entry in the `index` map:
+   1. Let `parsedUrl` be the result of parsing ({{URL}}) `url` with
       no base URL.
    1. If `parsedUrl` is a failure, its fragment is not null, or it includes
       credentials, return an error.
-   1. Let `http-request` be a new request ({{FETCH}}) whose:
-      * method is `pseudos[':method']`,
-      * url is `parsedUrl`,
-      * header list is `headers`, and
-      * client is null.
-
-   1. Let `responseOffset` be `sectionOffsets["responses"].offset +
-      currentOffset`. This is relative to the start of the stream.
-   1. If `currentOffset + length` is greater than
-      `sectionOffsets["responses"].length`, return an error.
-   1. If `requests`\[`http-request`] exists, return an error. That is, duplicate
-      requests are forbidden.
-   1. Set `requests`\[`http-request`] to a struct whose "offset" item is
-      `responseOffset` and whose "length" item is `length`.
-   1. Set `currentOffset` to `currentOffset + length`.
+   1. If the first element of `responses` is the empty string:
+      1. If the length of `responses` is not 3 (i.e. there is more than one
+         `location-in-responses` in responses), return an error.
+      1. Otherwise, assert that `requests`\[`parsedUrl`] does not exist, and set
+         `requests`\[`parsedUrl`] to
+         `MakeRelativeToStream(location-in-responses)`. If that returns an
+         error, return an error.
+   1. Otherwise:
+      1. Let `variants` be the result of parsing the first element of
+         `responses` as the value of the `Variants` HTTP header field (Section 2
+         of {{!I-D.ietf-httpbis-variants}}). If this fails, return an error.
+      1. Let `variantKeys` be the Cartesian product of the lists of available-values
+         for each variant-axis in lexicographic (row-major) order.
+      1. If the length of `responses` is not `2 * len(variantKeys) + 1`, return
+         an error.
+      1. Set `requests`\[`parsedUrl`] to a map from `variantKeys`\[`i`] to the
+         result of calling `MakeRelativeToStream` on the `location-in-responses`
+         at `responses`\[`2*i+1`] and `responses`\[`2*i+2`], for `i` in \[`0`,
+         `len(variantKeys)`). If any `MakeRelativeToStream` call returns an
+         error, return an error.
 
 1. Set `metadata["requests"]` to `requests`.
 
