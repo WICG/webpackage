@@ -33,15 +33,15 @@ func (h *headerArgs) Set(value string) error {
 var latestVersion = string(version.AllVersions[len(version.AllVersions)-1])
 
 var (
-	flagCert            = flag.String("cert", "", "Certificate CBOR file. If specified, used instead of fetching from signature's cert-url")
-	flagHeaders         = flag.Bool("headers", true, "Print headers")
-	flagFilename        = flag.String("i", "", "Signed-exchange input file")
-	flagJSON            = flag.Bool("json", false, "Print output as JSON")
-	flagPayload         = flag.Bool("payload", true, "Print payload")
-	flagSignature       = flag.Bool("signature", false, "Print only signature value")
-	flagURI             = flag.String("uri", "", "Signed-exchange uri")
-	flagVerify          = flag.Bool("verify", false, "Perform signature verification")
-	flagVersion         = flag.String("version", latestVersion, "Signed exchange version")
+	flagCert      = flag.String("cert", "", "Certificate CBOR file. If specified, used instead of fetching from signature's cert-url")
+	flagHeaders   = flag.Bool("headers", true, "Print headers")
+	flagFilename  = flag.String("i", "", "Signed-exchange input file")
+	flagJSON      = flag.Bool("json", false, "Print output as JSON")
+	flagPayload   = flag.Bool("payload", true, "Print payload")
+	flagSignature = flag.Bool("signature", false, "Print only signature value")
+	flagURI       = flag.String("uri", "", "Signed-exchange uri")
+	flagVerify    = flag.Bool("verify", false, "Perform signature verification")
+	flagVersion   = flag.String("version", latestVersion, "Signed exchange version")
 
 	flagRequestHeader = headerArgs{}
 )
@@ -170,7 +170,7 @@ func jsonPrintHeaders(e *signedexchange.Exchange, certFetcher signedexchange.Cer
 	if err != nil {
 		return err
 	}
-	headerIntegrity, err := e.ComputeHeaderIntegrity();
+	headerIntegrity, err := e.ComputeHeaderIntegrity()
 	if err != nil {
 		return err
 	}

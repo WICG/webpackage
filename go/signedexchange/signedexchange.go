@@ -517,7 +517,7 @@ func (e *Exchange) ComputeHeaderIntegrity() (string, error) {
 }
 
 func (e *Exchange) PrettyPrintHeaderIntegrity(w io.Writer) error {
-	headerIntegrity, err := e.ComputeHeaderIntegrity();
+	headerIntegrity, err := e.ComputeHeaderIntegrity()
 	if err != nil {
 		return err
 	}
