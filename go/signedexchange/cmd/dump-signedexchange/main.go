@@ -35,7 +35,6 @@ var latestVersion = string(version.AllVersions[len(version.AllVersions)-1])
 var (
 	flagCert            = flag.String("cert", "", "Certificate CBOR file. If specified, used instead of fetching from signature's cert-url")
 	flagHeaders         = flag.Bool("headers", true, "Print headers")
-	flagHeaderIntegrity = flag.Bool("header-integrity", true, "Print header integrity")
 	flagFilename        = flag.String("i", "", "Signed-exchange input file")
 	flagJSON            = flag.Bool("json", false, "Print output as JSON")
 	flagPayload         = flag.Bool("payload", true, "Print payload")
@@ -116,9 +115,6 @@ func run() error {
 	} else {
 		if *flagHeaders {
 			e.PrettyPrintHeaders(os.Stdout)
-		}
-
-		if *flagHeaderIntegrity {
 			if err = e.PrettyPrintHeaderIntegrity(os.Stdout); err != nil {
 				return err
 			}
