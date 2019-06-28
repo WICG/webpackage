@@ -2,6 +2,8 @@ package signedexchange
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -503,4 +505,22 @@ func (e *Exchange) PrettyPrintHeaders(w io.Writer) {
 func (e *Exchange) PrettyPrintPayload(w io.Writer) {
 	fmt.Fprintf(w, "payload [%d bytes]:\n", len(e.Payload))
 	w.Write(e.Payload)
+}
+
+func (e *Exchange) ComputeHeaderIntegrity() (string, error) {
+	var headerBuf bytes.Buffer
+	if err := e.DumpExchangeHeaders(&headerBuf); err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(headerBuf.Bytes())
+	return "sha256-" + base64.StdEncoding.EncodeToString(sum[:]), nil
+}
+
+func (e *Exchange) PrettyPrintHeaderIntegrity(w io.Writer) error {
+	headerIntegrity, err := e.ComputeHeaderIntegrity();
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(w, "header integrity: %s\n", headerIntegrity)
+	return nil
 }
