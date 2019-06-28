@@ -139,6 +139,10 @@ func (e *Exchange) decodeRequestMap(dec *cbor.Decoder) error {
 		if err != nil {
 			return err
 		}
+		key_str := string(key)
+		if key_str != strings.ToLower(key_str) {
+			return fmt.Errorf("signedexchange: request header key MUST NOT contain uppercase alphabet(s): %s", key)
+		}
 		value, err := dec.DecodeByteString()
 		if err != nil {
 			return err
@@ -157,7 +161,7 @@ func (e *Exchange) decodeRequestMap(dec *cbor.Decoder) error {
 			}
 			return fmt.Errorf("signedexchange: found a deprecated request key %q", keyURL)
 		}
-		e.RequestHeaders.Add(string(key), string(value))
+		e.RequestHeaders.Add(key_str, string(value))
 	}
 	return nil
 }
@@ -194,6 +198,10 @@ func (e *Exchange) decodeResponseMap(dec *cbor.Decoder) error {
 		if err != nil {
 			return err
 		}
+		key_str := string(key)
+		if key_str != strings.ToLower(key_str) {
+			return fmt.Errorf("signedexchange: response header key MUST NOT contain uppercase alphabet(s): %s", key)
+		}
 		value, err := dec.DecodeByteString()
 		if err != nil {
 			return err
@@ -205,7 +213,7 @@ func (e *Exchange) decodeResponseMap(dec *cbor.Decoder) error {
 			}
 			continue
 		}
-		e.ResponseHeaders.Add(string(key), string(value))
+		e.ResponseHeaders.Add(key_str, string(value))
 	}
 	return nil
 }
