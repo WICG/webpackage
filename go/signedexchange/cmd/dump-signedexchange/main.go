@@ -115,6 +115,9 @@ func run() error {
 	} else {
 		if *flagHeaders {
 			e.PrettyPrintHeaders(os.Stdout)
+			if err = e.PrettyPrintHeaderIntegrity(os.Stdout); err != nil {
+				return err
+			}
 		}
 
 		if *flagPayload {
@@ -167,17 +170,23 @@ func jsonPrintHeaders(e *signedexchange.Exchange, certFetcher signedexchange.Cer
 	if err != nil {
 		return err
 	}
+	headerIntegrity, err := e.ComputeHeaderIntegrity()
+	if err != nil {
+		return err
+	}
 
 	f := struct {
 		Payload              []byte `json:",omitempty"` // hides Payload in nested signedexchange.Exchange
 		SignatureHeaderValue []byte `json:",omitempty"` // hides SignatureHeaderValue in nested signedexchange.Exchange
 		Valid                bool
+		HeaderIntegrity      string
 		Signatures           structuredheader.ParameterisedList
 		*signedexchange.Exchange
 	}{
 		nil, // omitted via "omitempty"
 		nil, // omitted via "omitempty"
 		valid,
+		headerIntegrity,
 		sigs,
 		e,
 	}
