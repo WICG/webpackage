@@ -192,6 +192,9 @@ func (e *Exchange) decodeResponseMap(dec *cbor.Decoder) error {
 		if err != nil {
 			return err
 		}
+		if string(key) != strings.ToLower(string(key)) {
+			return fmt.Errorf("signedexchange: response header key MUST NOT contain uppercase alphabet(s): %s", key)
+		}
 		value, err := dec.DecodeByteString()
 		if err != nil {
 			return err
