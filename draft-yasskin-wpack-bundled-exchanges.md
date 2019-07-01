@@ -376,8 +376,8 @@ URL strings to arrays consisting of a `Variants` header field value
 each of the possible combinations of available-values within the `Variants`
 value in lexicographic (row-major) order.
 
-For example, given a `variants-value` of "Accept-Encoding;gzip;br,
-Accept-Language;en;fr;ja", the list of `location-in-responses` pairs will
+For example, given a `variants-value` of `Accept-Encoding;gzip;br,
+Accept-Language;en;fr;ja`, the list of `location-in-responses` pairs will
 correspond to the `VariantKey`s:
 
 * gzip;en
@@ -388,7 +388,7 @@ correspond to the `VariantKey`s:
 * br;ja
 
 The order of variant-axes is important. If the `variants-value` were
-"Accept-Language;en;fr;ja, Accept-Encoding;gzip;br" instead, the
+`Accept-Language;en;fr;ja, Accept-Encoding;gzip;br` instead, the
 `location-in-responses` pairs would instead correspond to:
 
 * en;gzip
@@ -403,7 +403,7 @@ resource at the specified URL and that no content negotiation is performed.
 
 ~~~ cddl
 index = {* whatwg-url => [ variants-value, +location-in-responses ] }
-variants-value = tstr
+variants-value = bstr
 location-in-responses = (offset: uint, length: uint)
 ~~~
 
@@ -877,6 +877,14 @@ at <https://www.iana.org/assignments/media-types>.
 
 * Required parameters: N/A
 
+  * v: A string denoting the version of the file format. ({{!RFC5234}} ABNF:
+    `version = 1*(DIGIT/%x61-7A)`) The version defined in this specification is `1`.
+
+    Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
+    specification MUST NOT use simple integers to describe their versions, and
+    MUST instead define implementation-specific strings to identify which draft
+    is implemented.
+
 * Optional parameters: N/A
 
 * Encoding considerations: binary
@@ -924,12 +932,12 @@ Review Process: Specification Required
 
 Initial Assignments:
 
-| Section Name | Specification | Metadata |
-| "index" | {{index-section}} | Yes |
-| "manifest" | {{manifest-section}} | Yes |
-| "signatures" | {{signatures-section}} | Yes |
-| "critical" | {{critical-section}} | Yes |
-| "responses" | {{responses-section}} | No |
+| Section Name | Specification | Metadata | Metadata Fields |
+| "index" | {{index-section}} | Yes | "requests" |
+| "manifest" | {{manifest-section}} | Yes | "manifest" |
+| "signatures" | {{signatures-section}} | Yes | "authorities", "vouched-subsets" |
+| "critical" | {{critical-section}} | Yes | |
+| "responses" | {{responses-section}} | No | |
 
 Requirements on new assignments:
 
