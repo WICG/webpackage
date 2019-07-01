@@ -335,7 +335,8 @@ each of the possible combinations of available-values within the `Variants`
 value in lexicographic (row-major) order.
 
 For example, given a `variants-value` of "Accept-Encoding;gzip;br,
-Accept-Language;en;fr;ja", the `variantKeys` list will be:
+Accept-Language;en;fr;ja", the list of `location-in-responses` pairs will
+correspond to the `VariantKey`s:
 
 * gzip;en
 * gzip;fr
@@ -345,8 +346,8 @@ Accept-Language;en;fr;ja", the `variantKeys` list will be:
 * br;ja
 
 The order of variant-axes is important. If the `variants-value` were
-"Accept-Language;en;fr;ja, Accept-Encoding;gzip;br" instead, the `variantKeys`
-list would be:
+"Accept-Language;en;fr;ja, Accept-Encoding;gzip;br" instead, the
+`location-in-responses` pairs would instead correspond to:
 
 * en;gzip
 * en;br
@@ -406,8 +407,9 @@ map, and the `metadata` map to fill in, the parser MUST do the following:
       1. Let `variants` be the result of parsing the first element of
          `responses` as the value of the `Variants` HTTP header field (Section 2
          of {{!I-D.ietf-httpbis-variants}}). If this fails, return an error.
-      1. Let `variantKeys` be the Cartesian product of the lists of available-values
-         for each variant-axis in lexicographic (row-major) order.
+      1. Let `variantKeys` be the Cartesian product of the lists of
+         available-values for each variant-axis in lexicographic (row-major)
+         order. See the examples above.
       1. If the length of `responses` is not `2 * len(variantKeys) + 1`, return
          an error.
       1. Set `requests`\[`parsedUrl`] to a map from `variantKeys`\[`i`] to the
