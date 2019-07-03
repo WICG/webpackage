@@ -130,8 +130,13 @@ metadata, and if one matches, load that request's response.
 
 ## Load a bundle's metadata {#semantics-load-metadata}
 
-This takes the bundle's stream and returns a map ({{INFRA}}) of metadata
-containing at least keys named:
+This takes the bundle's stream and returns either an error, an error with a
+fallback URL, or a map ({{INFRA}}) of metadata containing at least keys named:
+
+primaryUrl
+
+: The URL of the main resource in the bundle. If the client can't process the
+bundle for any reason, this is a reasonable URL to try to load instead.
 
 requests
 
@@ -214,6 +219,8 @@ The bundle is a CBOR item ({{?I-D.ietf-cbor-7049bis}}) with the following CDDL
 webbundle = [
   ; 🌐📦 in UTF-8.
   magic: h'F0 9F 8C 90 F0 9F 93 A6',
+  version: bytes .size 4,
+  primary-url: whatwg-url,
   section-lengths: bytes .cbor [* (section-name: tstr, length: uint) ],
   sections: [* any ],
   length: bytes .size 8,  ; Big-endian number of bytes in the bundle.
@@ -224,6 +231,8 @@ $section-name /= "index" / "manifest" / "signatures" / "critical" / "responses"
 $section /= index / manifest / signatures / critical / responses
 
 responses = [*response]
+
+whatwg-url = tstr
 
 ~~~~~
 
@@ -256,25 +265,53 @@ steps, taking the `stream` as input.
    the 4-item array initial byte and 8-byte bytestring initial byte, followed by
    🌐📦 in UTF-8), return an error.
 
+1. Let `version` be the result of reading 5 bytes from `stream`. If this is
+   an error, return that error.
+
+1. Let `urlType` and `urlLength` be the result of reading the type and argument
+   of a CBOR item from `stream` ({{parse-type-argument}}). If this is an error
+   or `urlType` is not 3 (a CBOR text string), return an error.
+
+1. Let `fallbackUrlBytes` be the result of reading `urlLength` bytes from
+   `stream`. If this is an error, return that error.
+
+1. Let `fallbackUrl` be the result of parsing ({{URL}}) the UTF-8 decoding of
+   `fallbackUrlBytes` with no base URL. If either the UTF-8 decoding or parsing
+   fails, return an error.
+
+   Note: From this point forward, errors also include the fallback URL to help
+   clients recover.
+
+1. If `version` does not have the hex encoding "44 31 00 00 00" (the CBOR
+   encoding of a 4-byte byte string holding an ASCII "1" followed by three 0
+   bytes), return an error with `fallbackUrl`.
+
+   Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
+    specification MUST NOT use the version "1" in this byte string, and MUST
+    instead define an implementation-specific string to identify which draft is
+    implemented. This string SHOULD match the version used in the draft's MIME
+    type ({{internet-media-type-registration}}).
+
 1. Let `sectionLengthsLength` be the result of getting the length of the CBOR
    bytestring header from `stream` ({{parse-bytestring}}). If this is an error,
-   return that error.
+   return that error with `fallbackUrl`.
 
-1. If `sectionLengthsLength` is 8192 (8*1024) or greater, return an error.
+1. If `sectionLengthsLength` is 8192 (8*1024) or greater, return an error with
+   `fallbackUrl`.
 
 1. Let `sectionLengthsBytes` be the result of reading `sectionLengthsLength`
-   bytes from `stream`. If `sectionLengthsBytes` is an error, return that error.
+   bytes from `stream`. If `sectionLengthsBytes` is an error, return that error with `fallbackUrl`.
 
 1. Let `sectionLengths` be the result of parsing one CBOR item ({{parse-cbor}})
    from `sectionLengthsBytes`, matching the section-lengths rule in the CDDL
    ({{!I-D.ietf-cbor-cddl}}) above. If `sectionLengths` is an error, return an
-   error.
+   error with `fallbackUrl`.
 
 1. Let (`sectionsType`, `numSections`) be the result of parsing the type and
    argument of a CBOR item from `stream` ({{parse-type-argument}}).
 
 1. If `sectionsType` is not `4` (a CBOR array) or `numSections` is not half of
-   the length of `sectionLengths`, return an error.
+   the length of `sectionLengths`, return an error with `fallbackUrl`.
 
 1. Let `sectionsStart` be the current offset within `stream`.
 
@@ -305,26 +342,28 @@ steps, taking the `stream` as input.
    1. Set `sectionOffsets["name"]` to (`currentOffset`, `length`).
    1. Set `currentOffset` to `currentOffset + length`.
 
-1. If the "responses" section is not last in `sectionLengths`, return an error.
+1. If the "responses" section is not last in `sectionLengths`, return an error with `fallbackUrl`.
    This allows a streaming parser to assume that it'll know the requests by the
    time their responses arrive.
 
-1. Let `metadata` be an empty map ({{INFRA}}).
+1. Let `metadata` be a map ({{INFRA}}) initially containing the single key/value
+   pair `"primaryUrl"`/`fallbackUrl`.
 
 1. For each `"name"` → (`offset`, `length`) triple in `sectionOffsets`:
    1. If `"name"` isn't in `knownSections`, continue to the next triple.
    1. If `"name"`'s Metadata field ({{section-name-registry}}) is "No", continue
       to the next triple.
    1. If `"name"` is in `ignoredSections`, continue to the next triple.
-   1. Seek to offset `offset` in `stream`. If this fails, return an error.
+   1. Seek to offset `offset` in `stream`. If this fails, return an error with `fallbackUrl`.
    1. Let `sectionContents` be the result of reading `length` bytes from
-      `stream`. If `sectionContents` is an error, return that error.
+      `stream`. If `sectionContents` is an error, return that error with
+      `fallbackUrl`.
    1. Follow `"name"`'s specification from `knownSections` to process the
       section, passing `sectionContents`, `stream`, `sectionOffsets`, and
-      `metadata`. If this returns an error, return it.
+      `metadata`. If this returns an error, return it with `fallbackUrl`.
 
-1. If `metadata` doesn't have entries with keys "requests" and "manifest",
-   return an error.
+1. If `metadata` doesn't have entries with keys "primaryUrl", "requests" and
+   "manifest", return an error with `fallbackUrl`.
 
 1. Return `metadata`.
 
@@ -491,7 +530,6 @@ signatures = [
 ]
 authority = augmented-certificate
 index-in-authorities = uint
-whatwg-url = tstr
 
 signed-subset = {
   validity-url: whatwg-url,
