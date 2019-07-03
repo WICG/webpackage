@@ -131,7 +131,8 @@ metadata, and if one matches, load that request's response.
 ## Load a bundle's metadata {#semantics-load-metadata}
 
 This takes the bundle's stream and returns either an error, an error with a
-fallback URL, or a map ({{INFRA}}) of metadata containing at least keys named:
+fallback URL (where an error is a "format error" or a "version error"), or a map
+({{INFRA}}) of metadata containing at least keys named:
 
 primaryUrl
 
@@ -263,28 +264,28 @@ steps, taking the `stream` as input.
 1. If reading 10 bytes from `stream` returns an error or doesn't return the
    bytes with hex encoding "84 48 F0 9F 8C 90 F0 9F 93 A6" (the CBOR encoding of
    the 4-item array initial byte and 8-byte bytestring initial byte, followed by
-   🌐📦 in UTF-8), return an error.
+   🌐📦 in UTF-8), return a "format error".
 
 1. Let `version` be the result of reading 5 bytes from `stream`. If this is
-   an error, return that error.
+   an error, return a "format error".
 
 1. Let `urlType` and `urlLength` be the result of reading the type and argument
    of a CBOR item from `stream` ({{parse-type-argument}}). If this is an error
-   or `urlType` is not 3 (a CBOR text string), return an error.
+   or `urlType` is not 3 (a CBOR text string), return a "format error".
 
 1. Let `fallbackUrlBytes` be the result of reading `urlLength` bytes from
-   `stream`. If this is an error, return that error.
+   `stream`. If this is an error, return a "format error".
 
 1. Let `fallbackUrl` be the result of parsing ({{URL}}) the UTF-8 decoding of
    `fallbackUrlBytes` with no base URL. If either the UTF-8 decoding or parsing
-   fails, return an error.
+   fails, return a "format error".
 
    Note: From this point forward, errors also include the fallback URL to help
    clients recover.
 
 1. If `version` does not have the hex encoding "44 31 00 00 00" (the CBOR
    encoding of a 4-byte byte string holding an ASCII "1" followed by three 0
-   bytes), return an error with `fallbackUrl`.
+   bytes), return a "version error" with `fallbackUrl`.
 
    Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
     specification MUST NOT use the version "1" in this byte string, and MUST
@@ -294,24 +295,25 @@ steps, taking the `stream` as input.
 
 1. Let `sectionLengthsLength` be the result of getting the length of the CBOR
    bytestring header from `stream` ({{parse-bytestring}}). If this is an error,
-   return that error with `fallbackUrl`.
+   return a "format error" with `fallbackUrl`.
 
-1. If `sectionLengthsLength` is 8192 (8*1024) or greater, return an error with
-   `fallbackUrl`.
+1. If `sectionLengthsLength` is 8192 (8*1024) or greater, return  a "format
+   error" with `fallbackUrl`.
 
 1. Let `sectionLengthsBytes` be the result of reading `sectionLengthsLength`
-   bytes from `stream`. If `sectionLengthsBytes` is an error, return that error with `fallbackUrl`.
+   bytes from `stream`. If `sectionLengthsBytes` is an error, return a "format
+   error" with `fallbackUrl`.
 
 1. Let `sectionLengths` be the result of parsing one CBOR item ({{parse-cbor}})
    from `sectionLengthsBytes`, matching the section-lengths rule in the CDDL
-   ({{!I-D.ietf-cbor-cddl}}) above. If `sectionLengths` is an error, return an
-   error with `fallbackUrl`.
+   ({{!I-D.ietf-cbor-cddl}}) above. If `sectionLengths` is an error, return a
+   "format error" with `fallbackUrl`.
 
 1. Let (`sectionsType`, `numSections`) be the result of parsing the type and
    argument of a CBOR item from `stream` ({{parse-type-argument}}).
 
 1. If `sectionsType` is not `4` (a CBOR array) or `numSections` is not half of
-   the length of `sectionLengths`, return an error with `fallbackUrl`.
+   the length of `sectionLengths`, return a "format error" with `fallbackUrl`.
 
 1. Let `sectionsStart` be the current offset within `stream`.
 
@@ -337,14 +339,14 @@ steps, taking the `stream` as input.
       Note: The `ignoredSections` enables sections that supercede other sections
       to be introduced in the future. Implementations that don't implement any
       such sections are free to omit the relevant steps.
-   1. If `sectionOffsets["name"]` exists, return an error. That is, duplicate
-      sections are forbidden.
+   1. If `sectionOffsets["name"]` exists, return a "format error". That is,
+      duplicate sections are forbidden.
    1. Set `sectionOffsets["name"]` to (`currentOffset`, `length`).
    1. Set `currentOffset` to `currentOffset + length`.
 
-1. If the "responses" section is not last in `sectionLengths`, return an error with `fallbackUrl`.
-   This allows a streaming parser to assume that it'll know the requests by the
-   time their responses arrive.
+1. If the "responses" section is not last in `sectionLengths`, return a "format
+   error" with `fallbackUrl`. This allows a streaming parser to assume that
+   it'll know the requests by the time their responses arrive.
 
 1. Let `metadata` be a map ({{INFRA}}) initially containing the single key/value
    pair `"primaryUrl"`/`fallbackUrl`.
@@ -354,16 +356,18 @@ steps, taking the `stream` as input.
    1. If `"name"`'s Metadata field ({{section-name-registry}}) is "No", continue
       to the next triple.
    1. If `"name"` is in `ignoredSections`, continue to the next triple.
-   1. Seek to offset `offset` in `stream`. If this fails, return an error with `fallbackUrl`.
+   1. Seek to offset `offset` in `stream`. If this fails, return a "format
+      error" with `fallbackUrl`.
    1. Let `sectionContents` be the result of reading `length` bytes from
-      `stream`. If `sectionContents` is an error, return that error with
+      `stream`. If `sectionContents` is an error, return a "format error" with
       `fallbackUrl`.
    1. Follow `"name"`'s specification from `knownSections` to process the
       section, passing `sectionContents`, `stream`, `sectionOffsets`, and
-      `metadata`. If this returns an error, return it with `fallbackUrl`.
+      `metadata`. If this returns an error, return a "format error" with
+      `fallbackUrl`.
 
 1. If `metadata` doesn't have entries with keys "primaryUrl", "requests" and
-   "manifest", return an error with `fallbackUrl`.
+   "manifest", return a "format error" with `fallbackUrl`.
 
 1. Return `metadata`.
 
