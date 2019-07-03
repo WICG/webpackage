@@ -635,6 +635,9 @@ signature returns "valid", return "valid". Otherwise, return "invalid".
       `main-certificate` but excluding the root.
    1. Validate that `main-certificate` has the CanSignHttpExchanges extension
       ({{cross-origin-cert-req}}).
+   1. Validate that either `main-certificate` has a Validity Period no longer
+      than 90 days, or that the current date is 2019-08-01 or before and
+      `main-certificate` was issued on 2019-05-01 or before.
    1. Validate that `main-certificate` has an `ocsp` property
       ({{cert-chain-format}}) with a valid OCSP response whose lifetime
       (`nextUpdate - thisUpdate`) is less than 7 days ({{!RFC6960}}). Note that
