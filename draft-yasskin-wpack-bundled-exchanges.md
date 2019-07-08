@@ -693,7 +693,7 @@ as returned by {{semantics-load-metadata}}.
 ## Parsing CBOR items {#parse-cbor}
 
 Parsing a bundle involves parsing many CBOR items. All of these items need to be
-canonically encoded.
+deterministically encoded.
 
 ### Parse a known-length item {#parse-known-length}
 
@@ -704,7 +704,7 @@ from a sequence of bytes, `bytes`, the parser MUST do the following:
 1. If `bytes` does not satisfy the core deterministic encoding requirements from
    Section 4.2.1 of {{CBORbis}}, return an error. This format does not use
    floating point values or tags, so this specification does not add any
-   canonicalization rules for them.
+   deterministic encoding rules for them.
 1. If `bytes` includes extra bytes after the encoding of a CBOR item, return an
    error.
 1. Let `item` be the result of decoding `bytes` as a CBOR item.
@@ -805,9 +805,9 @@ parsers MUST do the following:
 
 # Guidelines for bundle authors {#authoring-guidelines}
 
-Bundles SHOULD consist of a single CBOR item satisfying the core
-canonicalization requirements ({{parse-cbor}}) and matching the `webbundle` CDDL
-rule in {{top-level}}.
+Bundles SHOULD consist of a single CBOR item satisfying the core deterministic
+encoding requirements ({{parse-cbor}}) and matching the `webbundle` CDDL rule in
+{{top-level}}.
 
 # Security Considerations {#security}
 
