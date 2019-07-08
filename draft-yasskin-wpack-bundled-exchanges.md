@@ -181,21 +181,19 @@ This operation's implementation is in {{from-end}}.
 
 ## Load a response from a bundle {#semantics-load-response}
 
-This takes the sequence of bytes representing the bundle and a URL, combination
-of `Variants` available-values ({{!I-D.ietf-httpbis-variants}}), and
-`ResponseMetadata` returned from {{semantics-load-metadata}}, and returns the
-response ({{FETCH}}) matching that request.
+This takes the stream of bytes representing the bundle, a request ({{FETCH}}),
+and the `ResponseMetadata` returned from {{semantics-load-metadata}} for the
+appropriate content-negotiated resource within the request's URL, and returns
+the response ({{FETCH}}) matching that request.
 
 This operation can be completed without inspecting bytes other than those that
 make up the loaded response, although higher-level operations like proving that
 an exchange is correctly signed ({{I-D.yasskin-http-origin-signed-responses}})
 may need to load other responses.
 
-Note that this operation uses the metadata for a particular request returned by
-{{semantics-load-metadata}}, while a client will generally want to load the
-response for a request that the client generated. TODO: Specify how a client
-determines the best available bundled response, if any, for that
-client-generated request, in this or another document.
+A client will generally want to load the response for a request that the client
+generated. For a URL with multiple variants, the client SHOULD use the algorithm
+in Section 4 of {{I-D.ietf-httpbis-variants}} to select the best variant.
 
 This operation's implementation is in {{load-response}}.
 
@@ -632,7 +630,8 @@ To implement {{semantics-load-metadata-from-end}}, taking a sequence of bytes
 
 ## Load a response from a bundle {#load-response}
 
-The result of {{load-metadata}}{:format="title"} maps each request to a
+The result of {{load-metadata}}{:format="title"} maps each URL and Variant-Key
+({{?I-D.ietf-httpbis-variants}}) to a
 response, which consists of headers and a payload. The headers can be loaded
 from the bundle's stream before waiting for the payload, and similarly the
 payload can be streamed to downstream consumers.
@@ -642,10 +641,10 @@ response = [headers: bstr .cbor headers, payload: bstr]
 ~~~~~
 
 To implement {{semantics-load-response}}, the parser MUST run the following
-steps, taking the bundle's `stream` and one `request` and its `requestMetadata`
-as returned by {{semantics-load-metadata}}.
+steps, taking the bundle's `stream`, a `request` ({{FETCH}}), and a
+`responseMetadata` returned by {{semantics-load-metadata}} .
 
-1. Seek to offset `requestMetadata.offset` in `stream`. If this fails, return an
+1. Seek to offset `responseMetadata.offset` in `stream`. If this fails, return an
    error.
 1. Read 1 byte from `stream`. If this is an error or isn't `0x82`, return an
    error.
@@ -674,8 +673,8 @@ as returned by {{semantics-load-metadata}}.
 1. Let `payloadLength` be the result of getting the length of a CBOR bytestring
    header from `stream` ({{parse-bytestring}}). If `payloadLength` is an error,
    return that error.
-1. If `stream.currentOffset + payloadLength != requestMetadata.offset +
-   requestMetadata.length`, return an error.
+1. If `stream.currentOffset + payloadLength != responseMetadata.offset +
+   responseMetadata.length`, return an error.
 
 1. Let `body` be a new body ({{FETCH}}) whose stream is a tee'd copy of `stream`
    starting at the current offset and ending after `payloadLength` bytes.
