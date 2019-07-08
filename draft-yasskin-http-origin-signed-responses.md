@@ -17,6 +17,7 @@ author:
     email: jyasskin@chromium.org
 
 normative:
+  CDDL: RFC8610
   FETCH:
     target: https://fetch.spec.whatwg.org/
     title: Fetch
@@ -195,9 +196,9 @@ Each parameterised identifier in the list MUST have parameters named "sig",
 "integrity", "validity-url", "date", and "expires". Each parameterised identifier
 MUST also have either "cert-url" and "cert-sha256" parameters or an "ed25519key"
 parameter. This specification gives no meaning to the identifier itself, which
-can be used as a human-readable identifier for the signature (see
-{{parameterised-binary}}). The present parameters MUST have the following
-values:
+can be used as a human-readable identifier for the signature (however, this is
+likely to change soon; see {{parameterised-binary}}). The present parameters
+MUST have the following values:
 
 "sig"
 
@@ -309,10 +310,9 @@ grants 4-day signatures, so clients will need to re-validate more often.
 
 ### Open Questions ### {#oq-signature-header}
 
-{{?I-D.ietf-httpbis-header-structure}} provides a way to parameterise
-identifiers but not other supported types like byte sequences. If the
-`Signature` header field is notionally a list of parameterised signatures, maybe
-we should add a "parameterised byte sequence" type.
+The next revision of {{?I-D.ietf-httpbis-header-structure}} will provide a way
+to parameterise byte sequences, at which point the signature itself is likely to
+become the main list item.
 {:#parameterised-binary}
 
 Should the cert-url and validity-url be lists so that intermediates can offer a
@@ -357,7 +357,7 @@ Signed-Headers: "content-type", "digest"
 ~~~
 
 The cbor representation consists of the following item, represented using the
-extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
+extended diagnostic notation from {{CDDL}} appendix G:
 
 ~~~cbor-diag
 {
@@ -605,7 +605,7 @@ Each version of a signed exchange SHOULD have its own validity URLs, since each
 version needs different signatures and becomes obsolete at different times.
 
 The resource at a "validity-url" is "validity data", a CBOR map matching the
-following CDDL ({{!I-D.ietf-cbor-cddl}}):
+following CDDL ({{CDDL}}):
 
 ~~~cddl
 validity = {
@@ -1231,8 +1231,8 @@ payload body to the algorithm in {{cross-origin-trust}}.
 An example `application/signed-exchange` file representing a possible signed
 exchange with <https://example.com/> follows, with lengths represented by
 descriptions in `<>`s, CBOR represented in the extended diagnostic format
-defined in Appendix G of {{?I-D.ietf-cbor-cddl}}, and most of the `Signature`
-header field and payload elided with a ...:
+defined in Appendix G of {{CDDL}}, and most of the `Signature` header field and
+payload elided with a ...:
 
 ~~~
 sxg1\0\0\0\0<2-byte length of the following url string>

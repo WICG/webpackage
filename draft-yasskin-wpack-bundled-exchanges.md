@@ -18,6 +18,8 @@ author:
 
 normative:
   appmanifest: W3C.WD-appmanifest-20180523
+  CBORbis: I-D.ietf-cbor-7049bis
+  CDDL: RFC8610
   FETCH:
     target: https://fetch.spec.whatwg.org/
     title: Fetch
@@ -215,8 +217,8 @@ Future specifications can define new sections with extra data, and if necessary,
 these sections can be marked "critical" ({{critical-section}}) to prevent older
 parsers from using the rest of the bundle incorrectly.
 
-The bundle is a CBOR item ({{?I-D.ietf-cbor-7049bis}}) with the following CDDL
-({{?I-D.ietf-cbor-cddl}}) schema:
+The bundle is a CBOR item ({{CBORbis}}) with the following CDDL ({{CDDL}})
+schema:
 
 ~~~~~ cddl
 webbundle = [
@@ -308,8 +310,8 @@ steps, taking the `stream` as input.
 
 1. Let `sectionLengths` be the result of parsing one CBOR item ({{parse-cbor}})
    from `sectionLengthsBytes`, matching the section-lengths rule in the CDDL
-   ({{!I-D.ietf-cbor-cddl}}) above. If `sectionLengths` is an error, return a
-   "format error" with `fallbackUrl`.
+   ({{CDDL}}) above. If `sectionLengths` is an error, return a "format error"
+   with `fallbackUrl`.
 
 1. Let (`sectionsType`, `numSections`) be the result of parsing the type and
    argument of a CBOR item from `stream` ({{parse-type-argument}}).
@@ -614,8 +616,8 @@ To implement {{semantics-load-metadata-from-end}}, taking a sequence of bytes
 `bytes`, the client MUST:
 
 1. Let `byteStringHeader` be `bytes[bytes.length - 9]`. If `byteStringHeader is
-   not `0x48` (the CBOR ({{?I-D.ietf-cbor-7049bis}}) initial byte for an 8-byte
-   byte string), return an error.
+   not `0x48` (the CBOR ({{CBORbis}}) initial byte for an 8-byte byte string),
+   return an error.
 1. Let `bundleLength` be `[bytes[bytes.length - 8], bytes[bytes.length])` (the
    last 8 bytes) interpreted as a big-endian integer.
 1. If `bundleLength > bytes.length`, return an error.
@@ -695,14 +697,13 @@ canonically encoded.
 
 ### Parse a known-length item {#parse-known-length}
 
-To parse a CBOR item ({{!I-D.ietf-cbor-7049bis}}), optionally matching a CDDL
-rule ({{!I-D.ietf-cbor-cddl}}), from a sequence of bytes, `bytes`, the parser
-MUST do the following:
+To parse a CBOR item ({{CBORbis}}), optionally matching a CDDL rule ({{CDDL}}),
+from a sequence of bytes, `bytes`, the parser MUST do the following:
 
 1. If `bytes` are not a well-formed CBOR item, return an error.
-1. If `bytes` does not satisfy the core canonicalization requirements from
-   Section 4.9 of {{!I-D.ietf-cbor-7049bis}}, return an error. This format does
-   not use floating point values or tags, so this specification does not add any
+1. If `bytes` does not satisfy the core deterministic encoding requirements from
+   Section 4.2.1 of {{CBORbis}}, return an error. This format does not use
+   floating point values or tags, so this specification does not add any
    canonicalization rules for them.
 1. If `bytes` includes extra bytes after the encoding of a CBOR item, return an
    error.
@@ -764,7 +765,7 @@ inclusive, and a 64-bit integral argument for the CBOR item:
 ## Interpreting CBOR HTTP headers {#cbor-headers}
 
 Bundles represent HTTP requests and responses as a list of headers, matching the
-following CDDL ({{!I-D.ietf-cbor-cddl}}):
+following CDDL ({{CDDL}}):
 
 ~~~ cddl
 headers = {* bstr => bstr}
