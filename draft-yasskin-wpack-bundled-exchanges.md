@@ -130,14 +130,16 @@ metadata, and if one matches, load that request's response.
 
 ## Load a bundle's metadata {#semantics-load-metadata}
 
-This takes the bundle's stream and returns either an error, an error with a
-fallback URL (where an error is a "format error" or a "version error"), or a map
-({{INFRA}}) of metadata containing at least keys named:
+This takes the bundle's stream and returns either an error (where an error is a
+"format error" or a "version error"), an error with a fallback URL (which is
+also the primaryUrl when the bundle parses successfully), or a map ({{INFRA}})
+of metadata containing at least keys named:
 
 primaryUrl
 
 : The URL of the main resource in the bundle. If the client can't process the
-bundle for any reason, this is a reasonable URL to try to load instead.
+bundle for any reason, this is also the fallback URL, a reasonable URL to try to
+load instead.
 
 requests
 
@@ -339,8 +341,8 @@ steps, taking the `stream` as input.
       Note: The `ignoredSections` enables sections that supercede other sections
       to be introduced in the future. Implementations that don't implement any
       such sections are free to omit the relevant steps.
-   1. If `sectionOffsets["name"]` exists, return a "format error". That is,
-      duplicate sections are forbidden.
+   1. If `sectionOffsets["name"]` exists, return a "format error" with
+      `fallbackUrl`. That is, duplicate sections are forbidden.
    1. Set `sectionOffsets["name"]` to (`currentOffset`, `length`).
    1. Set `currentOffset` to `currentOffset + length`.
 
@@ -366,8 +368,10 @@ steps, taking the `stream` as input.
       `metadata`. If this returns an error, return a "format error" with
       `fallbackUrl`.
 
-1. If `metadata` doesn't have entries with keys "primaryUrl", "requests" and
-   "manifest", return a "format error" with `fallbackUrl`.
+1. Assert: `metadata` has an entry with the key "primaryUrl".
+
+1. If `metadata` doesn't have entries with keys "requests" and "manifest",
+   return a "format error" with `fallbackUrl`.
 
 1. Return `metadata`.
 
@@ -447,8 +451,9 @@ map, and the `metadata` map to fill in, the parser MUST do the following:
          `location-in-responses` in responses), return an error.
       1. Otherwise, assert that `requests`\[`parsedUrl`] does not exist, and set
          `requests`\[`parsedUrl`] to
-         `MakeRelativeToStream(location-in-responses)`. If that returns an
-         error, return an error.
+         `MakeRelativeToStream(location-in-responses)`, where
+         `location-in-responses` is the second and third elements of
+         `responses`. If that returns an error, return an error.
    1. Otherwise:
       1. Let `variants` be the result of parsing the first element of
          `responses` as the value of the `Variants` HTTP header field (Section 2
@@ -879,7 +884,7 @@ at <https://www.iana.org/assignments/media-types>.
 
 * Subtype name: webbundle
 
-* Required parameters: N/A
+* Required parameters:
 
   * v: A string denoting the version of the file format. ({{!RFC5234}} ABNF:
     `version = 1*(DIGIT/%x61-7A)`) The version defined in this specification is `1`.
