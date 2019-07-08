@@ -970,9 +970,19 @@ RFC EDITOR PLEASE DELETE THIS SECTION.
 
 draft-01
 
-* Order the index in the same order as the responses, and require responses to
-  be sequential without gaps.
-* "manifest" needs to be embedded into the bundle.
+* Include only section lengths in the section index, requiring sections to be
+  listed in order.
+* Have the "index" section map URLs to sets of responses negotiated using the
+  Variants system ({{?I-D.ietf-httpbis-variants}}).
+* Require the "manifest" to be embedded into the bundle.
+* Add a content sniffing security consideration.
+* Add a version string to the format and its mime type.
+* Add a fallback URL in a fixed location in the format, and use that fallback
+  URL as the primary URL of the bundle.
+* Add a "signatures" section to let authorities (like domain-trusted X.509
+  certificates) vouch for subsets of a bundle.
+* Use the CBORbis "deterministic encoding" requirements instead of
+  "canonicalization" requirements.
 
 # Acknowledgements
 
