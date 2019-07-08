@@ -840,6 +840,16 @@ To determine whether to trust a cross-origin exchange stored in an
 value, `fallbackUrl` as the effective request URI, `signedHeaders`, and the
 payload body to the algorithm in {{cross-origin-trust}}.
 
+### Content negotiation {#app-signed-exchange-negotiation}
+
+If the signed response headers include a `Variants-04` header field, the client
+MUST use the cache behavior algorithm in Section 4 of
+{{I-D.ietf-httpbis-variants-05}} to check that the signed response is an
+appropriate representation for the request the client is trying to fulfil. If
+the response is not an appropriate representation, the client MUST treat the
+signature as invalid. Note the mismatch between the name of the header field and
+the version of the Variants draft.
+
 ### Example ## {#example-application-signed-exchange}
 
 An example `application/signed-exchange` file representing a possible signed
