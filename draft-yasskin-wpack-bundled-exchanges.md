@@ -38,6 +38,9 @@ normative:
       org: WHATWG
     date: Living Standard
 
+informative:
+  TLS1.3: RFC8446
+
 --- abstract
 
 Bundled exchanges provide a way to bundle up groups of HTTP request+response
@@ -127,15 +130,30 @@ metadata, and if one matches, load that request's response.
 
 ## Load a bundle's metadata {#semantics-load-metadata}
 
-This takes the bundle's stream and returns a map ({{INFRA}}) of metadata
-containing at least keys named:
+This takes the bundle's stream and returns either an error (where an error is a
+"format error" or a "version error"), an error with a fallback URL (which is
+also the primaryUrl when the bundle parses successfully), or a map ({{INFRA}})
+of metadata containing at least keys named:
+
+primaryUrl
+
+: The URL of the main resource in the bundle. If the client can't process the
+bundle for any reason, this is also the fallback URL, a reasonable URL to try to
+load instead.
 
 requests
 
-: A map ({{INFRA}}) whose keys are {{FETCH}} requests for the HTTP exchanges in
-  the bundle, and whose values are opaque metadata that
-  {{semantics-load-response}}{:format="title"} can use to find the matching
-  response.
+: A map ({{INFRA}}) whose keys are URLs and whose values consist of either:
+
+  * A single `ResponseMetadata` value for a non-content-negotiated resource or
+
+  * A set of content-negotiated resources represented by
+    * A `Variants` header field value ({{!I-D.ietf-httpbis-variants}}) and
+
+    * A map ({{INFRA}}) from each of the possible combinations of one
+      available-value for each variant-axis to a `ResponseMetadata` structure.
+      {{semantics-load-response}}{:format="title"} can use the
+      `ResponseMetadata` structures to find the matching response.
 
 manifest
 
@@ -161,8 +179,9 @@ This operation's implementation is in {{from-end}}.
 
 ## Load a response from a bundle {#semantics-load-response}
 
-This takes the sequence of bytes representing the bundle and one request
-returned from {{semantics-load-metadata}} with its metadata, and returns the
+This takes the sequence of bytes representing the bundle and a URL, combination
+of `Variants` available-values ({{!I-D.ietf-httpbis-variants}}), and
+`ResponseMetadata` returned from {{semantics-load-metadata}}, and returns the
 response ({{FETCH}}) matching that request.
 
 This operation can be completed without inspecting bytes other than those that
@@ -203,16 +222,20 @@ The bundle is a CBOR item ({{?I-D.ietf-cbor-7049bis}}) with the following CDDL
 webbundle = [
   ; 🌐📦 in UTF-8.
   magic: h'F0 9F 8C 90 F0 9F 93 A6',
+  version: bytes .size 4,
+  primary-url: whatwg-url,
   section-lengths: bytes .cbor [* (section-name: tstr, length: uint) ],
   sections: [* any ],
   length: bytes .size 8,  ; Big-endian number of bytes in the bundle.
 ]
 
-$section-name /= "index" / "manifest" / "critical" / "responses"
+$section-name /= "index" / "manifest" / "signatures" / "critical" / "responses"
 
-$section /= index / manifest / critical / responses
+$section /= index / manifest / signatures / critical / responses
 
 responses = [*response]
+
+whatwg-url = tstr
 
 ~~~~~
 
@@ -243,27 +266,56 @@ steps, taking the `stream` as input.
 1. If reading 10 bytes from `stream` returns an error or doesn't return the
    bytes with hex encoding "84 48 F0 9F 8C 90 F0 9F 93 A6" (the CBOR encoding of
    the 4-item array initial byte and 8-byte bytestring initial byte, followed by
-   🌐📦 in UTF-8), return an error.
+   🌐📦 in UTF-8), return a "format error".
+
+1. Let `version` be the result of reading 5 bytes from `stream`. If this is
+   an error, return a "format error".
+
+1. Let `urlType` and `urlLength` be the result of reading the type and argument
+   of a CBOR item from `stream` ({{parse-type-argument}}). If this is an error
+   or `urlType` is not 3 (a CBOR text string), return a "format error".
+
+1. Let `fallbackUrlBytes` be the result of reading `urlLength` bytes from
+   `stream`. If this is an error, return a "format error".
+
+1. Let `fallbackUrl` be the result of parsing ({{URL}}) the UTF-8 decoding of
+   `fallbackUrlBytes` with no base URL. If either the UTF-8 decoding or parsing
+   fails, return a "format error".
+
+   Note: From this point forward, errors also include the fallback URL to help
+   clients recover.
+
+1. If `version` does not have the hex encoding "44 31 00 00 00" (the CBOR
+   encoding of a 4-byte byte string holding an ASCII "1" followed by three 0
+   bytes), return a "version error" with `fallbackUrl`.
+
+   Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
+    specification MUST NOT use the version "1" in this byte string, and MUST
+    instead define an implementation-specific string to identify which draft is
+    implemented. This string SHOULD match the version used in the draft's MIME
+    type ({{internet-media-type-registration}}).
 
 1. Let `sectionLengthsLength` be the result of getting the length of the CBOR
    bytestring header from `stream` ({{parse-bytestring}}). If this is an error,
-   return that error.
+   return a "format error" with `fallbackUrl`.
 
-1. If `sectionLengthsLength` is 8192 (8*1024) or greater, return an error.
+1. If `sectionLengthsLength` is 8192 (8*1024) or greater, return  a "format
+   error" with `fallbackUrl`.
 
 1. Let `sectionLengthsBytes` be the result of reading `sectionLengthsLength`
-   bytes from `stream`. If `sectionLengthsBytes` is an error, return that error.
+   bytes from `stream`. If `sectionLengthsBytes` is an error, return a "format
+   error" with `fallbackUrl`.
 
 1. Let `sectionLengths` be the result of parsing one CBOR item ({{parse-cbor}})
    from `sectionLengthsBytes`, matching the section-lengths rule in the CDDL
-   ({{!I-D.ietf-cbor-cddl}}) above. If `sectionLengths` is an error, return an
-   error.
+   ({{!I-D.ietf-cbor-cddl}}) above. If `sectionLengths` is an error, return a
+   "format error" with `fallbackUrl`.
 
 1. Let (`sectionsType`, `numSections`) be the result of parsing the type and
    argument of a CBOR item from `stream` ({{parse-type-argument}}).
 
 1. If `sectionsType` is not `4` (a CBOR array) or `numSections` is not half of
-   the length of `sectionLengths`, return an error.
+   the length of `sectionLengths`, return a "format error" with `fallbackUrl`.
 
 1. Let `sectionsStart` be the current offset within `stream`.
 
@@ -289,43 +341,83 @@ steps, taking the `stream` as input.
       Note: The `ignoredSections` enables sections that supercede other sections
       to be introduced in the future. Implementations that don't implement any
       such sections are free to omit the relevant steps.
-   1. If `sectionOffsets["name"]` exists, return an error. That is, duplicate
-      sections are forbidden.
+   1. If `sectionOffsets["name"]` exists, return a "format error" with
+      `fallbackUrl`. That is, duplicate sections are forbidden.
    1. Set `sectionOffsets["name"]` to (`currentOffset`, `length`).
    1. Set `currentOffset` to `currentOffset + length`.
 
-1. If the "responses" section is not last in `sectionLengths`, return an error.
-   This allows a streaming parser to assume that it'll know the requests by the
-   time their responses arrive.
+1. If the "responses" section is not last in `sectionLengths`, return a "format
+   error" with `fallbackUrl`. This allows a streaming parser to assume that
+   it'll know the requests by the time their responses arrive.
 
-1. Let `metadata` be an empty map ({{INFRA}}).
+1. Let `metadata` be a map ({{INFRA}}) initially containing the single key/value
+   pair `"primaryUrl"`/`fallbackUrl`.
 
 1. For each `"name"` → (`offset`, `length`) triple in `sectionOffsets`:
    1. If `"name"` isn't in `knownSections`, continue to the next triple.
    1. If `"name"`'s Metadata field ({{section-name-registry}}) is "No", continue
       to the next triple.
    1. If `"name"` is in `ignoredSections`, continue to the next triple.
-   1. Seek to offset `offset` in `stream`. If this fails, return an error.
+   1. Seek to offset `offset` in `stream`. If this fails, return a "format
+      error" with `fallbackUrl`.
    1. Let `sectionContents` be the result of reading `length` bytes from
-      `stream`. If `sectionContents` is an error, return that error.
+      `stream`. If `sectionContents` is an error, return a "format error" with
+      `fallbackUrl`.
    1. Follow `"name"`'s specification from `knownSections` to process the
       section, passing `sectionContents`, `stream`, `sectionOffsets`, and
-      `metadata`. If this returns an error, return it.
+      `metadata`. If this returns an error, return a "format error" with
+      `fallbackUrl`.
+
+1. Assert: `metadata` has an entry with the key "primaryUrl".
 
 1. If `metadata` doesn't have entries with keys "requests" and "manifest",
-   return an error.
+   return a "format error" with `fallbackUrl`.
 
 1. Return `metadata`.
 
 ### Parsing the index section {#index-section}
 
 The "index" section defines the set of HTTP requests in the bundle and
-identifies their locations in the "responses" section. It consists of a sequence
-of alternating request headers and response lengths:
+identifies their locations in the "responses" section. It consists of a map from
+URL strings to arrays consisting of a `Variants` header field value
+({{I-D.ietf-httpbis-variants}}) followed by one `location-in-responses` pair for
+each of the possible combinations of available-values within the `Variants`
+value in lexicographic (row-major) order.
+
+For example, given a `variants-value` of `Accept-Encoding;gzip;br,
+Accept-Language;en;fr;ja`, the list of `location-in-responses` pairs will
+correspond to the `VariantKey`s:
+
+* gzip;en
+* gzip;fr
+* gzip;ja
+* br;en
+* br;fr
+* br;ja
+
+The order of variant-axes is important. If the `variants-value` were
+`Accept-Language;en;fr;ja, Accept-Encoding;gzip;br` instead, the
+`location-in-responses` pairs would instead correspond to:
+
+* en;gzip
+* en;br
+* fr;gzip
+* fr;br
+* ja;gzip
+* ja;br
+
+As a special case, an empty `variants-value` indicates that there is only one
+resource at the specified URL and that no content negotiation is performed.
 
 ~~~ cddl
-index = [* (headers, length: uint) ]
+index = {* whatwg-url => [ variants-value, +location-in-responses ] }
+variants-value = bstr
+location-in-responses = (offset: uint, length: uint)
 ~~~
+
+A `ResponseMetadata` struct identifies a byte range within the bundle stream,
+defined by an integer offset from the start of the stream and the integer number
+of bytes in the range.
 
 To parse the index section, given its `sectionContents`, the `sectionOffsets`
 map, and the `metadata` map to fill in, the parser MUST do the following:
@@ -334,58 +426,48 @@ map, and the `metadata` map to fill in, the parser MUST do the following:
    matching the `index` rule in the above CDDL ({{parse-cbor}}). If `index` is
    an error, return an error.
 
-1. Check that the responses array has the right number of items:
-   1. Seek to offset `sectionOffsets["responses"].offset` in `stream`. If this
-      fails, return an error.
+1. Let `requests` be an initially-empty map ({{INFRA}}) from URLs to response
+   descriptions, each of which is either a single `location-in-stream` value or a
+   pair of a `Variants` header field value ({{!I-D.ietf-httpbis-variants}}) and
+   a map from that value's possible `Variant-Key`s to `location-in-stream`
+   values, as described in {{semantics-load-metadata}}.
 
-   1. Let (`responsesType`, `numResponses`) be the result of parsing the type
-      and argument of a CBOR item from the stream ({{parse-type-argument}}). If
-      this returns an error, return that error.
+1. Let `MakeRelativeToStream` be a function that takes a `location-in-responses`
+   value (`offset`, `length`) and returns a `ResponseMetadata` struct or error
+   by running the following sub-steps:
+   1. If `offset` + `length` is larger than
+      `sectionOffsets["responses"].length`, return an error.
+   1. Otherwise, return a `ResponseMetadata` struct whose offset is
+      `sectionOffsets["responses"].offset` + `offset` and whose length is
+      `length`.
 
-   1. If `responsesType` is not `4` (a CBOR array) or `numResponses` is not half
-      of the length of `index`, return an error.
-
-1. Let `currentOffset` be the current offset within `stream` minus
-   `sectionOffsets["responses"].offset`. That is, the length of the array header
-   for the responses array. This will track the offset of the current response
-   relative to the start of the responses array.
-
-1. Let `requests` be an initially-empty map ({{INFRA}}) from HTTP requests
-   ({{FETCH}}) to structs ({{INFRA}}) with items named "offset" and "length".
-
-1. For each (`cbor-http-request`, `length`) pair of adjacent elements in
-   `index`:
-   1. Let (`headers`, `pseudos`) be the result of converting `cbor-http-request`
-      to a header list and pseudoheaders using the algorithm in
-      {{cbor-headers}}. If this returns an error, return that error.
-   1. If `pseudos` does not have keys named ':method' and ':url', or its size
-      isn't 2, return an error.
-   1. If `pseudos[':method']` is not 'GET', return an error.
-
-      Note: This could probably support any cacheable (Section 4.2.3) of
-      {{!RFC7231}}) and safe (Section 4.2.1 of {{!RFC7231}}) method, matching
-      PUSH_PROMISE (Section 8.2 of {{?RFC7540}}), but today that's only HEAD and
-      GET, and HEAD can be served as a transformation of GET, so this version of
-      the specification keeps the method simple.
-   1. Let `parsedUrl` be the result of parsing ({{URL}}) `pseudos[':url']` with
+1. For each (`url`, `responses`) entry in the `index` map:
+   1. Let `parsedUrl` be the result of parsing ({{URL}}) `url` with
       no base URL.
    1. If `parsedUrl` is a failure, its fragment is not null, or it includes
       credentials, return an error.
-   1. Let `http-request` be a new request ({{FETCH}}) whose:
-      * method is `pseudos[':method']`,
-      * url is `parsedUrl`,
-      * header list is `headers`, and
-      * client is null.
-
-   1. Let `responseOffset` be `sectionOffsets["responses"].offset +
-      currentOffset`. This is relative to the start of the stream.
-   1. If `currentOffset + length` is greater than
-      `sectionOffsets["responses"].length`, return an error.
-   1. If `requests`\[`http-request`] exists, return an error. That is, duplicate
-      requests are forbidden.
-   1. Set `requests`\[`http-request`] to a struct whose "offset" item is
-      `responseOffset` and whose "length" item is `length`.
-   1. Set `currentOffset` to `currentOffset + length`.
+   1. If the first element of `responses` is the empty string:
+      1. If the length of `responses` is not 3 (i.e. there is more than one
+         `location-in-responses` in responses), return an error.
+      1. Otherwise, assert that `requests`\[`parsedUrl`] does not exist, and set
+         `requests`\[`parsedUrl`] to
+         `MakeRelativeToStream(location-in-responses)`, where
+         `location-in-responses` is the second and third elements of
+         `responses`. If that returns an error, return an error.
+   1. Otherwise:
+      1. Let `variants` be the result of parsing the first element of
+         `responses` as the value of the `Variants` HTTP header field (Section 2
+         of {{!I-D.ietf-httpbis-variants}}). If this fails, return an error.
+      1. Let `variantKeys` be the Cartesian product of the lists of
+         available-values for each variant-axis in lexicographic (row-major)
+         order. See the examples above.
+      1. If the length of `responses` is not `2 * len(variantKeys) + 1`, return
+         an error.
+      1. Set `requests`\[`parsedUrl`] to a map from `variantKeys`\[`i`] to the
+         result of calling `MakeRelativeToStream` on the `location-in-responses`
+         at `responses`\[`2*i+1`] and `responses`\[`2*i+2`], for `i` in \[`0`,
+         `len(variantKeys)`). If any `MakeRelativeToStream` call returns an
+         error, return an error.
 
 1. Set `metadata["requests"]` to `requests`.
 
@@ -417,6 +499,71 @@ map to fill in, the parser MUST do the following:
    return an error.
 
 1. Set `metadata["manifest"]` to `url`.
+
+### Parsing the signatures section {#signatures-section}
+
+The "signatures" section vouches for the resources in the bundle.
+
+The section can contain as many signatures as needed, each by some authority,
+and each covering an arbitrary subset of the resources in the bundle.
+Intermediates, including attackers, can remove signatures from the bundle
+without breaking the other signatures.
+
+The bundle parser's client is responsible to determine the validity and meaning
+of each authority's signatures. In particular, the algorithm below does not
+check that signatures are valid. For example, a client might:
+
+* Use the ecdsa_secp256r1_sha256 algorithm defined in Section 4.2.3 of
+  {{TLS1.3}} to check the validity of any signature with an EC public key on the
+  secp256r1 curve.
+* Reject all signatures by an RSA public key.
+* Treat an X.509 certificate with the CanSignHttpExchanges extension (Section
+  4.2 of {{?I-D.yasskin-http-origin-signed-responses}}) and a valid chain to a
+  trusted root as an authority that vouches for the authenticity of resources
+  claimed to come from that certificate's domains.
+* Treat an X.509 certificate with another extension or EKU as vouching that a
+  particular analysis has run over the signed resources without finding
+  malicious behavior.
+
+A client might also choose different behavior for those kinds of authorities and
+keys.
+
+~~~ cddl
+signatures = [
+  authorities: [*authority],
+  vouched-subsets: [*{
+    authority: index-in-authorities,
+    sig: bstr,
+    signed: bstr  ; Expected to hold a signed-subset item.
+  }],
+]
+authority = augmented-certificate
+index-in-authorities = uint
+
+signed-subset = {
+  validity-url: whatwg-url,
+  auth-sha256: bstr,
+  date: uint,
+  expires: uint,
+  subset-hashes: {+
+    whatwg-url => [variants-value, +resource-integrity]
+  },
+  * tstr => any,
+}
+resource-integrity = (header-sha256: bstr, payload-integrity-header: tstr)
+~~~
+
+The `augmented-certificate` CDDL rule comes from Section 3.3 of {{!I-D.yasskin-http-origin-signed-responses}}.
+
+To parse the signatures section, given its `sectionContents`, the `sectionOffsets`
+map, and the `metadata` map to fill in, the parser MUST do the following:
+
+1. Let `signatures` be the result of parsing `sectionContents` as a CBOR item
+   matching the `signatures` rule in the above CDDL ({{parse-cbor}}).
+1. Set `metadata["authorities"]` to the list of authorities in the first element
+   of the `signatures` array.
+1. Set `metadata["vouched-subsets"]` to the second element of the `signatures`
+   array.
 
 ### Parsing the critical section {#critical-section}
 
@@ -737,7 +884,15 @@ at <https://www.iana.org/assignments/media-types>.
 
 * Subtype name: webbundle
 
-* Required parameters: N/A
+* Required parameters:
+
+  * v: A string denoting the version of the file format. ({{!RFC5234}} ABNF:
+    `version = 1*(DIGIT/%x61-7A)`) The version defined in this specification is `1`.
+
+    Note: RFC EDITOR PLEASE DELETE THIS NOTE; Implementations of drafts of this
+    specification MUST NOT use simple integers to describe their versions, and
+    MUST instead define implementation-specific strings to identify which draft
+    is implemented.
 
 * Optional parameters: N/A
 
@@ -786,11 +941,12 @@ Review Process: Specification Required
 
 Initial Assignments:
 
-| Section Name | Specification | Metadata |
-| "index" | {{index-section}} | Yes |
-| "manifest" | {{manifest-section}} | Yes |
-| "critical" | {{critical-section}} | Yes |
-| "responses" | {{responses-section}} | No |
+| Section Name | Specification | Metadata | Metadata Fields |
+| "index" | {{index-section}} | Yes | "requests" |
+| "manifest" | {{manifest-section}} | Yes | "manifest" |
+| "signatures" | {{signatures-section}} | Yes | "authorities", "vouched-subsets" |
+| "critical" | {{critical-section}} | Yes | |
+| "responses" | {{responses-section}} | No | |
 
 Requirements on new assignments:
 

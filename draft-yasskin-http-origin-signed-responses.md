@@ -376,13 +376,14 @@ The resource at a signature's `cert-url` MUST have the
 ~~~cddl
 cert-chain = [
   "📜⛓", ; U+1F4DC U+26D3
-  + {
-    cert: bytes,
-    ? ocsp: bytes,
-    ? sct: bytes,
-    * tstr => any,
-  }
+  + augmented-certificate
 ]
+augmented-certificate = {
+  cert: bytes,
+  ? ocsp: bytes,
+  ? sct: bytes,
+  * tstr => any,
+}
 ~~~
 
 The first map (second item) in the CBOR array is treated as the end-entity
