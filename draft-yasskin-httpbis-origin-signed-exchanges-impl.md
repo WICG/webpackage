@@ -20,6 +20,7 @@ author:
     email: kouhei@chromium.org
 
 normative:
+  CDDL: RFC8610
   FETCH:
     target: https://fetch.spec.whatwg.org/
     title: Fetch
@@ -36,6 +37,7 @@ normative:
       name: IEEE
       value: 1003.1-2008, 2016 Edition
     date: 2016
+  TLS1.3: RFC8446
   URL:
     target: https://url.spec.whatwg.org/
     title: URL
@@ -294,7 +296,7 @@ Signed-Headers: "content-type", "digest"
 ~~~
 
 The cbor representation consists of the following item, represented using the
-extended diagnostic notation from {{?I-D.ietf-cbor-cddl}} appendix G:
+extended diagnostic notation from {{CDDL}} appendix G:
 
 ~~~cbor-diag
   {
@@ -427,13 +429,13 @@ to retrieve an updated OCSP from the original server.
       1. If `publicKey` is an RSA key, return "invalid".
       1. If `publicKey` is a key using the secp256r1 elliptic curve, set
          `signing-alg` to ecdsa_secp256r1_sha256 as defined in Section 4.2.3 of
-         {{!I-D.ietf-tls-tls13}}.
+         {{TLS1.3}}.
       1. Otherwise, return "invalid".
 1. If `expires` is more than 7 days (604800 seconds) after `date`, return
    "invalid".
 1. If the current time is before `date` or after `expires`, return "invalid".
 1. Let `message` be the concatenation of the following byte strings. This
-   matches the {{?RFC8446}} format to avoid cross-protocol attacks if
+   matches the {{TLS1.3}} format to avoid cross-protocol attacks if
    anyone uses the same key in a TLS certificate and an exchange-signing
    certificate.
    1. A string that consists of octet 32 (0x20) repeated 64 times.
@@ -459,7 +461,7 @@ to retrieve an updated OCSP from the original server.
 
    Note that this intentionally differs from TLS 1.3, which signs the entire
    certificate chain in its Certificate Verify (Section 4.4.3 of
-   {{?RFC8446}}), in order to allow updating the stapled OCSP
+   {{TLS1.3}}), in order to allow updating the stapled OCSP
    response without updating signatures at the same time.
 1. If `signature` is not a valid signature of `message` by `publicKey` using
    `signing-alg`, return "invalid".
@@ -508,7 +510,7 @@ Each version of a signed exchange SHOULD have its own validity URLs, since each
 version needs different signatures and becomes obsolete at different times.
 
 The resource at a "validity-url" is "validity data", a CBOR map matching the
-following CDDL ({{!I-D.ietf-cbor-cddl}}):
+following CDDL ({{CDDL}}):
 
 ~~~cddl
 validity = {
@@ -740,7 +742,7 @@ dNSName in the subjectAltName extension of the certificate to be issued:
    present on the property and is equal to "yes"
 
 Clients MUST NOT accept certificates with this extension in TLS connections
-(Section 4.4.2.2 of {{!RFC8446}}).
+(Section 4.4.2.2 of {{TLS1.3}}).
 
 This draft of the specification identifies the CanSignHttpExchanges extension
 with the id-ce-canSignHttpExchangesDraft OID:
@@ -843,8 +845,8 @@ payload body to the algorithm in {{cross-origin-trust}}.
 An example `application/signed-exchange` file representing a possible signed
 exchange with <https://example.com/> follows, with lengths represented by
 descriptions in `<>`s, CBOR represented in the extended diagnostic format
-defined in Appendix G of {{?I-D.ietf-cbor-cddl}}, and most of the `Signature`
-header field and payload elided with a ...:
+defined in Appendix G of {{CDDL}}, and most of the `Signature` header field and
+payload elided with a ...:
 
 ~~~
 sxg1-b3\0<2-byte length of the following url string>
@@ -882,7 +884,7 @@ To prevent network operators other than `o1.com` or `o2.com` from learning which
 exchanges were read, clients SHOULD only load exchanges fetched over a transport
 that's protected from eavesdroppers. This can be difficult to determine when the
 exchange is being loaded from local disk, but when the client itself requested
-the exchange over a network it SHOULD require TLS ({{!RFC8446}}) or a
+the exchange over a network it SHOULD require TLS ({{TLS1.3}}) or a
 successor transport layer, and MUST NOT accept exchanges transferred over plain
 HTTP without TLS.
 
