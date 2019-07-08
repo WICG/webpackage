@@ -32,7 +32,6 @@ normative:
     author:
       org: WHATWG
     date: Living Standard
-  SRI: W3C.REC-SRI-20160623
   URL:
     target: https://url.spec.whatwg.org/
     title: URL
