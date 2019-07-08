@@ -483,7 +483,7 @@ select the one with an `accept` header of `application/manifest+json`
 ({{appmanifest}}) and an `accept-language` header of `es-419`.
 
 ~~~ cddl
-manifest = text
+manifest = whatwg-url
 ~~~
 
 To parse the manifest section, given its `sectionContents` and the `metadata`
