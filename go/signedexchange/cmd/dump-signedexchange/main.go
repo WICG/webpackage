@@ -84,6 +84,10 @@ func run() error {
 		if err != nil {
 			return err
 		}
+		respMimeType := resp.Header.Get("Content-Type")
+		if respMimeType != mimeType {
+			return fmt.Errorf("GET %q responded with unexpected content type %q", *flagURI, respMimeType)
+		}
 		in = resp.Body
 		defer resp.Body.Close()
 	} else if (fi.Mode() & os.ModeCharDevice) == 0 { // read sxg from pipe
