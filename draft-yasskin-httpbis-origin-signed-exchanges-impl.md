@@ -802,8 +802,8 @@ This content type consists of the concatenation of the following items:
 
 1. 8 bytes consisting of the ASCII characters "sxg1-b3" followed by a 0 byte,
    to serve as a file signature. This is redundant with the MIME type, and
-   recipients that receive both MUST check that they match and stop parsing if
-   they don't.
+   recipients that receive both MUST check that they match and, if they don't,
+   either stop parsing or redirect to the `fallbackUrl` in the next two entries.
 
    Note: As this is a snapshot of a draft of
    {{?I-D.yasskin-http-origin-signed-responses}}, it uses a distinct file
@@ -960,6 +960,8 @@ Vs. {{I-D.yasskin-http-origin-signed-responses-05}}:
 * Versioned the Variants header field at draft-ietf-httpbis-variants-05 (but
   spelled Variants-04) and the mi-sha256 digest algorithm at
   draft-thomson-http-mice-03.
+* Allow mismatches between the MIME type and file signature to redirect to the
+  fallback URL.
 
 draft-02
 
