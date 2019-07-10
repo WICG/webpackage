@@ -259,20 +259,20 @@ Signature:
   cert-sha256=*W7uB969dFW3Mb5ZefPS9Tq5ZbH5iSmOILpjv2qEArmI=*;
   date=1511128380; expires=1511733180,
  sig2;
-  sig=*MEQCIGjZRqTRf9iKNkGFyzRMTFgwf/BrY2ZNIP/dykhUV0aYAiBTXg+8wujoT4n/W+cNgb7pGqQvIUGYZ8u8HZJ5YH26Qg=*;
+  sig=*MEQCIGjZRqTRf9iKNkGFyzRMTFgwf/BrY2ZNIP/dykhUV0aYAiBTXg+8wujoT4n/W+cNgb7pGqQvIUGYZ8u8HZJ5YH26Qg==*;
   integrity="digest/mi-sha256";
   validity-url="https://example.com/resource.validity.1511128380";
   cert-url="https://example.com/newcerts";
   cert-sha256=*J/lEm9kNRODdCmINbvitpvdYKNQ+YgBj99DlYp4fEXw=*;
   date=1511128380; expires=1511733180,
  srisig;
-  sig=*lGZVaJJM5f2oGczFlLmBdKTDL+QADza4BgeO494ggACYJOvrof6uh5OJCcwKrk7DK+LBch0jssDYPp5CLc1SDA=*
+  sig=*lGZVaJJM5f2oGczFlLmBdKTDL+QADza4BgeO494ggACYJOvrof6uh5OJCcwKrk7DK+LBch0jssDYPp5CLc1SDA==*;
   integrity="digest/mi-sha256";
   validity-url="https://example.com/resource.validity.1511128380";
   ed25519key=*zsSevyFsxyZHiUluVBDd4eypdRLTqyWRVOJuuKUz+A8=*
   date=1511128380; expires=1511733180,
  thirdpartysig;
-  sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+=*;
+  sig=*MEYCIQCNxJzn6Rh2fNxsobktir8TkiaJYQFhWTuWI1i4PewQaQIhAMs2TVjc4rTshDtXbgQEOwgj2mRXALhfXPztXgPupii+*;
   integrity="digest/mi-sha256";
   validity-url="https://thirdparty.example.com/resource.validity.1511161860";
   cert-url="https://thirdparty.example.com/certs";
