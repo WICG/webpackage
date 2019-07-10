@@ -263,8 +263,8 @@ steps, taking the `stream` as input.
 1. Seek to offset 0 in `stream`. Assert: this operation doesn't fail.
 
 1. If reading 10 bytes from `stream` returns an error or doesn't return the
-   bytes with hex encoding "84 48 F0 9F 8C 90 F0 9F 93 A6" (the CBOR encoding of
-   the 4-item array initial byte and 8-byte bytestring initial byte, followed by
+   bytes with hex encoding "86 48 F0 9F 8C 90 F0 9F 93 A6" (the CBOR encoding of
+   the 6-item array initial byte and 8-byte bytestring initial byte, followed by
    🌐📦 in UTF-8), return a "format error".
 
 1. Let `version` be the result of reading 5 bytes from `stream`. If this is
