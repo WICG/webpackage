@@ -15,10 +15,12 @@ import (
 	"github.com/mrichman/hargo"
 
 	"github.com/WICG/webpackage/go/bundle"
+	"github.com/WICG/webpackage/go/bundle/version"
 	"github.com/WICG/webpackage/go/signedexchange"
 )
 
 var (
+	flagVersion     = flag.String("version", string(version.Unversioned), "The webbundle format version")
 	flagHar         = flag.String("har", "", "HTTP Archive (HAR) input file")
 	flagDir         = flag.String("dir", "", "Input directory")
 	flagBaseURL     = flag.String("baseURL", "", "Base URL")
@@ -68,7 +70,7 @@ func contentToBody(c *hargo.Content) ([]byte, error) {
 	return []byte(c.Text), nil
 }
 
-func fromHar(harPath string) error {
+func fromHar(harPath string, ver version.Version) error {
 	har, err := ReadHarFromFile(harPath)
 	if err != nil {
 		return err
@@ -125,7 +127,7 @@ func fromHar(harPath string) error {
 		es = append(es, e)
 	}
 
-	b := &bundle.Bundle{Exchanges: es}
+	b := &bundle.Bundle{Version: ver, Exchanges: es}
 
 	if _, err := b.WriteTo(fo); err != nil {
 		return fmt.Errorf("Failed to write exchange. err: %v", err)
@@ -135,6 +137,12 @@ func fromHar(harPath string) error {
 
 func main() {
 	flag.Parse()
+
+	ver, ok := version.Parse(*flagVersion)
+	if !ok {
+		log.Fatalf("Error: failed to parse version %q\n", *flagVersion)
+	}
+
 	if *flagHar != "" {
 		if *flagBaseURL != "" {
 			fmt.Fprintln(os.Stderr, "Warning: -baseURL is ignored when input is HAR.")
@@ -142,7 +150,7 @@ func main() {
 		if *flagStartURL != "" {
 			fmt.Fprintln(os.Stderr, "Warning: -startURL is ignored when input is HAR.")
 		}
-		if err := fromHar(*flagHar); err != nil {
+		if err := fromHar(*flagHar, ver); err != nil {
 			log.Fatal(err)
 		}
 	} else if *flagDir != "" {
@@ -151,7 +159,7 @@ func main() {
 			flag.Usage()
 			return
 		}
-		if err := fromDir(*flagDir, *flagBaseURL, *flagStartURL, *flagManifestURL); err != nil {
+		if err := fromDir(*flagDir, ver, *flagBaseURL, *flagStartURL, *flagManifestURL); err != nil {
 			log.Fatal(err)
 		}
 	} else {

@@ -11,9 +11,10 @@ import (
 	"strings"
 
 	"github.com/WICG/webpackage/go/bundle"
+	"github.com/WICG/webpackage/go/bundle/version"
 )
 
-func fromDir(dir string, baseURL string, startURL string, manifestURL string) error {
+func fromDir(dir string, ver version.Version, baseURL string, startURL string, manifestURL string) error {
 	parsedBaseURL, err := url.Parse(baseURL)
 	if err != nil {
 		return fmt.Errorf("Failed to parse base URL. err: %v", err)
@@ -40,7 +41,7 @@ func fromDir(dir string, baseURL string, startURL string, manifestURL string) er
 	if err != nil {
 		return err
 	}
-	b := &bundle.Bundle{Exchanges: es, ManifestURL: parsedManifestURL}
+	b := &bundle.Bundle{Version: ver, Exchanges: es, ManifestURL: parsedManifestURL}
 	// Move the startURL entry to first.
 	for i, e := range b.Exchanges {
 		if e.Request.URL.String() == parsedStartURL.String() {

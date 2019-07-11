@@ -3,7 +3,6 @@ package bundle
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,10 +12,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/WICG/webpackage/go/bundle/version"
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
 )
-
-var HeaderMagicBytes = []byte{0x84, 0x48, 0xf0, 0x9f, 0x8c, 0x90, 0xf0, 0x9f, 0x93, 0xa6}
 
 type Request struct {
 	*url.URL
@@ -118,6 +116,7 @@ func (e *Exchange) Dump(w io.Writer, dumpContentText bool) error {
 }
 
 type Bundle struct {
+	Version     version.Version
 	Exchanges   []*Exchange
 	ManifestURL *url.URL
 }
@@ -374,6 +373,7 @@ func writeFooter(w io.Writer, offset int) error {
 }
 
 type meta struct {
+	version        version.Version
 	sectionOffsets []sectionOffset
 	sectionsStart  uint64
 	manifestURL    *url.URL
@@ -644,12 +644,9 @@ func loadMetadata(bs []byte) (*meta, error) {
 	r := bytes.NewBuffer(bs)
 
 	// Step 2. "If reading 10 bytes from stream returns an error or doesn't return the bytes with hex encoding "84 48 F0 9F 8C 90 F0 9F 93 A6" (the CBOR encoding of the 4-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8), return an error." [spec text]
-	magic := make([]byte, len(HeaderMagicBytes))
-	if _, err := io.ReadFull(r, magic); err != nil {
+	ver, err := version.ParseMagicBytes(r)
+	if err != nil {
 		return nil, err
-	}
-	if bytes.Compare(magic, HeaderMagicBytes) != 0 {
-		return nil, errors.New("bundle: Header magic mismatch.")
 	}
 
 	// Step 3. "Let sectionLengthsLength be the result of getting the length of the CBOR bytestring header from stream (Section 3.4.2). If this is an error, return that error." [spec text]
@@ -707,6 +704,7 @@ func loadMetadata(bs []byte) (*meta, error) {
 	// Step 16. "Let metadata be an empty map" [spec text]
 	// Note: We use a struct rather than a map here.
 	meta := &meta{
+		version:        ver,
 		sectionOffsets: sos,
 		sectionsStart:  sectionsStart,
 	}
@@ -877,7 +875,7 @@ func Read(r io.Reader) (*Bundle, error) {
 		es = append(es, e)
 	}
 
-	b := &Bundle{Exchanges: es, ManifestURL: m.manifestURL}
+	b := &Bundle{Version: m.version, Exchanges: es, ManifestURL: m.manifestURL}
 	return b, nil
 }
 
@@ -907,7 +905,7 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 	}
 	sections = append(sections, rs)
 
-	if _, err := cw.Write(HeaderMagicBytes); err != nil {
+	if _, err := cw.Write(b.Version.HeaderMagicBytes()); err != nil {
 		return cw.Written, err
 	}
 	if err := writeSectionOffsets(cw, sections); err != nil {

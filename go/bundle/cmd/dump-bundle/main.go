@@ -29,6 +29,8 @@ func run() error {
 		return err
 	}
 
+	fmt.Printf("Version: %v\n", b.Version)
+
 	if b.ManifestURL != nil {
 		fmt.Printf("Manifest URL: %v\n", b.ManifestURL)
 	}
