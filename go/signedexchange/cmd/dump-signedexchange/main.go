@@ -120,15 +120,15 @@ func run() error {
 			}
 		}
 
-		if *flagPayload {
-			e.PrettyPrintPayload(os.Stdout)
-		}
-
 		if *flagVerify {
 			fmt.Println()
 			if err := verify(e, certFetcher, verificationTime); err != nil {
 				return err
 			}
+		}
+
+		if *flagPayload {
+			e.PrettyPrintPayload(os.Stdout)
 		}
 	}
 
