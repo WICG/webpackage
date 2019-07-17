@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/WICG/webpackage/go/bundle/version"
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
 )
 
@@ -57,11 +58,12 @@ var _ = io.WriterTo(&Bundle{})
 
 type requestEntry struct {
 	Request
+	Offset uint64 // Offset within the responses section
 	Length uint64
 }
 
 func (r requestEntry) String() string {
-	return fmt.Sprintf("{URL: %v, Header: %v, Length: %d}", r.URL, r.Header, r.Length)
+	return fmt.Sprintf("{URL: %v, Header: %v, Offset: %d, Length: %d}", r.URL, r.Header, r.Offset, r.Length)
 }
 
 type section interface {
@@ -76,65 +78,101 @@ type indexSection struct {
 	bytes []byte
 }
 
-func (is *indexSection) addRequest(r Request, length int) error {
+func (is *indexSection) addRequest(r Request, offset, length int) error {
 	ent := requestEntry{
 		Request: r,
+		Offset:  uint64(offset),
 		Length:  uint64(length),
 	}
 	is.es = append(is.es, ent)
 	return nil
 }
 
-func (is *indexSection) Finalize() error {
+func (is *indexSection) Finalize(ver version.Version) error {
 	if is.bytes != nil {
 		panic("indexSection must be Finalize()-d only once.")
 	}
 
 	var b bytes.Buffer
 	enc := cbor.NewEncoder(&b)
-	if err := enc.EncodeArrayHeader(len(is.es) * 2); err != nil {
-		return err
-	}
 
-	for _, e := range is.es {
-		mes := []*cbor.MapEntryEncoder{
-			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-				if err := keyE.EncodeByteString([]byte(":method")); err != nil {
-					panic(err)
-				}
-				if err := valueE.EncodeByteString([]byte("GET")); err != nil {
-					panic(err)
-				}
-			}),
-			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-				if err := keyE.EncodeByteString([]byte(":url")); err != nil {
-					panic(err)
-				}
-				if err := valueE.EncodeByteString([]byte(e.URL.String())); err != nil {
-					panic(err)
-				}
-			}),
-		}
-		h := e.Header
-		for name, _ := range h {
-			lname := strings.ToLower(name)
-			value := h.Get(name)
+	if ver.HasVariantsSupport() {
+		// CDDL:
+		//   index = {* whatwg-url => [ variants-value, +location-in-responses ] }
+		//   variants-value = bstr
+		//   location-in-responses = (offset: uint, length: uint)
+		mes := []*cbor.MapEntryEncoder{}
+		for _, e := range is.es {
 			me := cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-				if err := keyE.EncodeByteString([]byte(lname)); err != nil {
+				if err := keyE.EncodeTextString(e.URL.String()); err != nil {
 					panic(err)
 				}
-				if err := valueE.EncodeByteString([]byte(value)); err != nil {
+				// Currently, this encoder does not support variants. So, the
+				// map value is always a three-element array ['', offset, length].
+				if err := valueE.EncodeArrayHeader(3); err != nil {
+					panic(err)
+				}
+				if err := valueE.EncodeByteString(nil); err != nil {
+					panic(err)
+				}
+				if err := valueE.EncodeUint(e.Offset); err != nil {
+					panic(err)
+				}
+				if err := valueE.EncodeUint(e.Length); err != nil {
 					panic(err)
 				}
 			})
 			mes = append(mes, me)
 		}
-
 		if err := enc.EncodeMap(mes); err != nil {
 			return err
 		}
-		if err := enc.EncodeUint(uint64(e.Length)); err != nil {
+	} else {
+		// CDDL: index = [* (headers, length: uint) ]
+		if err := enc.EncodeArrayHeader(len(is.es) * 2); err != nil {
 			return err
+		}
+
+		for _, e := range is.es {
+			mes := []*cbor.MapEntryEncoder{
+				cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+					if err := keyE.EncodeByteString([]byte(":method")); err != nil {
+						panic(err)
+					}
+					if err := valueE.EncodeByteString([]byte("GET")); err != nil {
+						panic(err)
+					}
+				}),
+				cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+					if err := keyE.EncodeByteString([]byte(":url")); err != nil {
+						panic(err)
+					}
+					if err := valueE.EncodeByteString([]byte(e.URL.String())); err != nil {
+						panic(err)
+					}
+				}),
+			}
+			h := e.Header
+			for name, _ := range h {
+				lname := strings.ToLower(name)
+				value := h.Get(name)
+				me := cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+					if err := keyE.EncodeByteString([]byte(lname)); err != nil {
+						panic(err)
+					}
+					if err := valueE.EncodeByteString([]byte(value)); err != nil {
+						panic(err)
+					}
+				})
+				mes = append(mes, me)
+			}
+
+			if err := enc.EncodeMap(mes); err != nil {
+				return err
+			}
+			if err := enc.EncodeUint(uint64(e.Length)); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -177,27 +215,27 @@ func newResponsesSection(n int) *responsesSection {
 	return ret
 }
 
-func (rs *responsesSection) addResponse(r Response) (int, error) {
+func (rs *responsesSection) addResponse(r Response) (int, int, error) {
 	offset := rs.buf.Len()
 
 	headerCbor, err := r.EncodeHeader()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	enc := cbor.NewEncoder(&rs.buf)
 	if err := enc.EncodeArrayHeader(2); err != nil {
-		return 0, fmt.Errorf("bundle: failed to encode response array header: %v", err)
+		return 0, 0, fmt.Errorf("bundle: failed to encode response array header: %v", err)
 	}
 	if err := enc.EncodeByteString(headerCbor); err != nil {
-		return 0, fmt.Errorf("bundle: failed to encode response header cbor bytestring: %v", err)
+		return 0, 0, fmt.Errorf("bundle: failed to encode response header cbor bytestring: %v", err)
 	}
 	if err := enc.EncodeByteString(r.Body); err != nil {
-		return 0, fmt.Errorf("bundle: failed to encode response payload bytestring: %v", err)
+		return 0, 0, fmt.Errorf("bundle: failed to encode response payload bytestring: %v", err)
 	}
 
 	length := rs.buf.Len() - offset
-	return length, nil
+	return offset, length, nil
 }
 
 func (rs *responsesSection) Name() string { return "responses" }
@@ -222,12 +260,12 @@ func newManifestSection(url *url.URL) (*manifestSection, error) {
 }
 
 func addExchange(is *indexSection, rs *responsesSection, e *Exchange) error {
-	length, err := rs.addResponse(e.Response)
+	offset, length, err := rs.addResponse(e.Response)
 	if err != nil {
 		return err
 	}
 
-	if err := is.addRequest(e.Request, length); err != nil {
+	if err := is.addRequest(e.Request, offset, length); err != nil {
 		return err
 	}
 	return nil
@@ -298,7 +336,7 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 			return cw.Written, err
 		}
 	}
-	if err := is.Finalize(); err != nil {
+	if err := is.Finalize(b.Version); err != nil {
 		return cw.Written, err
 	}
 

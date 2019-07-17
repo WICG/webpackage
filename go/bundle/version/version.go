@@ -72,3 +72,7 @@ func ParseMagicBytes(r io.Reader) (Version, error) {
 func (v Version) HasPrimaryURLField() bool {
 	return v != Unversioned
 }
+
+func (v Version) HasVariantsSupport() bool {
+	return v != Unversioned
+}
