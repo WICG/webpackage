@@ -68,3 +68,7 @@ func ParseMagicBytes(r io.Reader) (Version, error) {
 	}
 	return "", errors.New("bundle: unrecognized version magic")
 }
+
+func (v Version) HasPrimaryURLField() bool {
+	return v != Unversioned
+}

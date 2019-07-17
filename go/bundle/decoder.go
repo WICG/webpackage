@@ -39,6 +39,7 @@ func FindSection(sos []sectionOffset, name string) (sectionOffset, uint64, bool)
 
 type meta struct {
 	version        version.Version
+	primaryURL     *url.URL
 	sectionOffsets []sectionOffset
 	sectionsStart  uint64
 	manifestURL    *url.URL
@@ -314,11 +315,23 @@ func loadMetadata(bs []byte) (*meta, error) {
 		return nil, err
 	}
 
+	var parsedPrimaryURL *url.URL
+	dec := cbor.NewDecoder(r)
+	if ver.HasPrimaryURLField() {
+		primaryURL, err := dec.DecodeTextString()
+		if err != nil {
+			return nil, fmt.Errorf("bundle: Failed to read primaryURL string: %v", err)
+		}
+		parsedPrimaryURL, err = url.Parse(primaryURL)
+		if err != nil {
+			return nil, fmt.Errorf("bundle: Failed to parse primaryURL: %v", err)
+		}
+	}
+
 	// Step 3. "Let sectionLengthsLength be the result of getting the length of the CBOR bytestring header from stream (Section 3.4.2). If this is an error, return that error." [spec text]
 	// Step 4. "If sectionLengthsLength is TBD or greater, return an error." [spec text]
 	// TODO(kouhei): Not Implemented
 	// Step 5. "Let sectionLengthsBytes be the result of reading sectionLengthsLength bytes from stream. If sectionLengthsBytes is an error, return that error." [spec text]
-	dec := cbor.NewDecoder(r)
 	slbytes, err := dec.DecodeByteString()
 	if err != nil {
 		return nil, fmt.Errorf("bundle: Failed to read sectionLengths byte string: %v", err)
@@ -370,6 +383,7 @@ func loadMetadata(bs []byte) (*meta, error) {
 	// Note: We use a struct rather than a map here.
 	meta := &meta{
 		version:        ver,
+		primaryURL:     parsedPrimaryURL,
 		sectionOffsets: sos,
 		sectionsStart:  sectionsStart,
 	}
@@ -540,6 +554,6 @@ func Read(r io.Reader) (*Bundle, error) {
 		es = append(es, e)
 	}
 
-	b := &Bundle{Version: m.version, Exchanges: es, ManifestURL: m.manifestURL}
+	b := &Bundle{Version: m.version, PrimaryURL: m.primaryURL, Exchanges: es, ManifestURL: m.manifestURL}
 	return b, nil
 }

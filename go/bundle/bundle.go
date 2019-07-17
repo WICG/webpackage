@@ -70,6 +70,7 @@ func (e *Exchange) Dump(w io.Writer, dumpContentText bool) error {
 
 type Bundle struct {
 	Version     version.Version
+	PrimaryURL  *url.URL
 	Exchanges   []*Exchange
 	ManifestURL *url.URL
 }
