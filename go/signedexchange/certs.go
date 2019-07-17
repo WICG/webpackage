@@ -49,10 +49,7 @@ func ParsePrivateKey(text []byte) (crypto.PrivateKey, error) {
 }
 
 func parsePrivateKeyBlock(derKey []byte) (crypto.PrivateKey, error) {
-	// Try each of 3 key formats and take the first one that successfully parses.
-	if key, err := x509.ParsePKCS1PrivateKey(derKey); err == nil {
-		return key, nil
-	}
+	// Try each of 2 key formats and take the first one that successfully parses.
 	if keyInterface, err := x509.ParsePKCS8PrivateKey(derKey); err == nil {
 		switch typedKey := keyInterface.(type) {
 		case *ecdsa.PrivateKey:
