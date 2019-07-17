@@ -13,6 +13,11 @@ const (
 	VersionB1 Version = "b1"
 )
 
+var AllVersions = []Version{
+	Unversioned,
+	VersionB1,
+}
+
 // The CBOR encoding of the 4-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8.
 var HeaderMagicBytesUnversioned = []byte{0x84, 0x48, 0xf0, 0x9f, 0x8c, 0x90, 0xf0, 0x9f, 0x93, 0xa6}
 // The CBOR encoding of the 6-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8.
