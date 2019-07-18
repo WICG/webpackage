@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	. "github.com/WICG/webpackage/go/bundle"
+	"github.com/WICG/webpackage/go/bundle/version"
 )
 
 func urlMustParse(rawurl string) *url.URL {
@@ -18,8 +19,9 @@ func urlMustParse(rawurl string) *url.URL {
 	return u
 }
 
-func createTestBundle() *Bundle {
+func createTestBundle(version version.Version) *Bundle {
 	return &Bundle{
+		Version: version,
 		Exchanges: []*Exchange{
 			&Exchange{
 				Request{
@@ -37,22 +39,24 @@ func createTestBundle() *Bundle {
 }
 
 func TestWriteAndRead(t *testing.T) {
-	bundle := createTestBundle()
+	for _, ver := range version.AllVersions {
+		bundle := createTestBundle(ver)
 
-	var buf bytes.Buffer
-	n, err := bundle.WriteTo(&buf)
-	if err != nil {
-		t.Errorf("Bundle.WriteTo unexpectedly failed: %v", err)
-	}
-	if n != int64(buf.Len()) {
-		t.Errorf("Bundle.WriteTo returned %d, but wrote %d bytes", n, buf.Len())
-	}
+		var buf bytes.Buffer
+		n, err := bundle.WriteTo(&buf)
+		if err != nil {
+			t.Errorf("Bundle.WriteTo unexpectedly failed: %v", err)
+		}
+		if n != int64(buf.Len()) {
+			t.Errorf("Bundle.WriteTo returned %d, but wrote %d bytes", n, buf.Len())
+		}
 
-	deserialized, err := Read(&buf)
-	if err != nil {
-		t.Errorf("Bundle.Read unexpectedly failed: %v", err)
-	}
-	if !reflect.DeepEqual(deserialized, bundle) {
-		t.Errorf("got: %v\nwant: %v", deserialized, bundle)
+		deserialized, err := Read(&buf)
+		if err != nil {
+			t.Errorf("Bundle.Read unexpectedly failed: %v", err)
+		}
+		if !reflect.DeepEqual(deserialized, bundle) {
+			t.Errorf("got: %v\nwant: %v", deserialized, bundle)
+		}
 	}
 }
