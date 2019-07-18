@@ -304,147 +304,158 @@ var knownSections = map[string]struct{}{
 }
 
 // https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html#load-metadata
-func loadMetadata(bs []byte) (*meta, error) {
+func loadMetadata(bs []byte) (*meta, error, *url.URL) {
 	// Step 1. "Seek to offset 0 in stream. Assert: this operation doesn't fail." [spec text]
 
 	r := bytes.NewBuffer(bs)
 
-	// Step 2. "If reading 10 bytes from stream returns an error or doesn't return the bytes with hex encoding "84 48 F0 9F 8C 90 F0 9F 93 A6" (the CBOR encoding of the 4-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8), return an error." [spec text]
+	// Step 2. "If reading 10 bytes from stream returns an error or doesn't return the bytes with hex encoding "84 48 F0 9F 8C 90 F0 9F 93 A6" (the CBOR encoding of the 4-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8), return a "format error"." [spec text]
+	// Step 3. "Let version be the result of reading 5 bytes from stream. If this is an error, return a "format error"." [spec text]
 	ver, err := version.ParseMagicBytes(r)
+	// TODO(ksakamoto): Continue and fail after parsing fallbackUrl.
 	if err != nil {
-		return nil, err
+		return nil, err, nil
 	}
 
-	var parsedPrimaryURL *url.URL
+	var fallbackURL *url.URL
 	dec := cbor.NewDecoder(r)
 	if ver.HasPrimaryURLField() {
-		primaryURL, err := dec.DecodeTextString()
+		// Step 4. "Let urlType and urlLength be the result of reading the type and argument of a CBOR item from stream (Section 3.5.3). If this is an error or urlType is not 3 (a CBOR text string), return a "format error"." [spec text]
+		// Step 5. "Let fallbackUrlBytes be the result of reading urlLength bytes from stream. If this is an error, return a "format error"." [spec text]
+		fallbackURLBytes, err := dec.DecodeTextString()
 		if err != nil {
-			return nil, fmt.Errorf("bundle: Failed to read primaryURL string: %v", err)
+			return nil, fmt.Errorf("bundle: Failed to read fallbackURL string: %v", err), nil
 		}
-		parsedPrimaryURL, err = url.Parse(primaryURL)
+		// Step 6. "Let fallbackUrl be the result of parsing ([URL]) the UTF-8 decoding of fallbackUrlBytes with no base URL. If either the UTF-8 decoding or parsing fails, return a "format error". " [spec text]
+		fallbackURL, err = url.Parse(fallbackURLBytes)
 		if err != nil {
-			return nil, fmt.Errorf("bundle: Failed to parse primaryURL: %v", err)
+			return nil, fmt.Errorf("bundle: Failed to parse fallbackURL: %v", err), nil
 		}
 	}
 
-	// Step 3. "Let sectionLengthsLength be the result of getting the length of the CBOR bytestring header from stream (Section 3.4.2). If this is an error, return that error." [spec text]
-	// Step 4. "If sectionLengthsLength is TBD or greater, return an error." [spec text]
-	// TODO(kouhei): Not Implemented
-	// Step 5. "Let sectionLengthsBytes be the result of reading sectionLengthsLength bytes from stream. If sectionLengthsBytes is an error, return that error." [spec text]
+	// Step 7. "If version does not have the hex encoding "44 31 00 00 00" (the CBOR encoding of a 4-byte byte string holding an ASCII "1" followed by three 0 bytes), return a "version error" with fallbackUrl. " [spec text]
+	// This is checked inside version.ParseMagicBytes(r) above.
+
+	// Step 8. "Let sectionLengthsLength be the result of getting the length of the CBOR bytestring header from stream (Section 3.5.2). If this is an error, return a "format error" with fallbackUrl." [spec text]
+	// Step 9. "If sectionLengthsLength is 8192 (8*1024) or greater, return a "format error" with fallbackUrl." [spec text]
+	// Step 10. "Let sectionLengthsBytes be the result of reading sectionLengthsLength bytes from stream. If sectionLengthsBytes is an error, return a "format error" with fallbackUrl." [spec text]
 	slbytes, err := dec.DecodeByteString()
 	if err != nil {
-		return nil, fmt.Errorf("bundle: Failed to read sectionLengths byte string: %v", err)
+		return nil, fmt.Errorf("bundle: Failed to read sectionLengths byte string: %v", err), fallbackURL
+	}
+	if len(slbytes) >= 8192 {
+		return nil, fmt.Errorf("bundle: sectionLengthsLength is too long (%d bytes)", slbytes), fallbackURL
 	}
 
-	// Step 6. "Let sectionLengths be the result of parsing one CBOR item (Section 3.4) from sectionLengthsBytes, matching the section-lengths rule in the CDDL ([I-D.ietf-cbor-cddl]) above. If sectionLengths is an error, return an error." [spec text]
+	// Step 11. "Let sectionLengths be the result of parsing one CBOR item (Section 3.5) from sectionLengthsBytes, matching the section-lengths rule in the CDDL ([CDDL]) above. If sectionLengths is an error, return a "format error" with fallbackUrl." [spec text]
 	sos, err := decodeSectionLengthsCBOR(slbytes)
 	if err != nil {
-		return nil, err
+		return nil, err, fallbackURL
 	}
 
-	// Step 7. "Let (sectionsType, numSections) be the result of parsing the type and argument of a CBOR item from stream." [spec text]
+	// Step 12. "Let (sectionsType, numSections) be the result of parsing the type and argument of a CBOR item from stream." [spec text]
 	numSections, err := dec.DecodeArrayHeader()
-	// Step 8. "If sectionsType is not 4 (a CBOR array) or..." [spec text]
+	// Step 13. "If sectionsType is not 4 (a CBOR array) or..." [spec text]
 	if err != nil {
-		return nil, fmt.Errorf("bundle: Failed to read section header.")
+		return nil, fmt.Errorf("bundle: Failed to read section header."), fallbackURL
 	}
-	// "numSections is not half of the length of sectionLengths, return an error." [spec text]
+	// "numSections is not half of the length of sectionLengths, return a "format error" with fallbackUrl." [spec text]
 	if numSections != uint64(len(sos)) {
-		return nil, fmt.Errorf("bundle: Expected %d sections, got %d sections", len(sos), numSections)
+		return nil, fmt.Errorf("bundle: Expected %d sections, got %d sections", len(sos), numSections), fallbackURL
 	}
 
-	// Step 9. "Let sectionsStart be the current offset within stream" [spec text]
+	// Step 14. "Let sectionsStart be the current offset within stream" [spec text]
 	sectionsStart := uint64(len(bs) - r.Len())
 
-	// Step 10. "Let knownSections be the subset of the Section 6.2 that this client has implemented." [spec text]
-	// Step 11. "Let ignoredSections be an empty set." [spec text]
+	// Step 15. "Let knownSections be the subset of the Section 6.2 that this client has implemented." [spec text]
+	// Step 16. "Let ignoredSections be an empty set." [spec text]
 
-	// Step 12. "Let sectionOffsets be an empty map from section names to (offset, length) pairs. These offsets are relative to the start of stream." [spec text]
+	// Step 17. "Let sectionOffsets be an empty map from section names to (offset, length) pairs. These offsets are relative to the start of stream." [spec text]
 	// Note: We store this on "sos"
 
-	// Step 13. "Let currentOffset be sectionsStart"
+	// Step 18. "Let currentOffset be sectionsStart"
 	// currentOffset := sectionsStart
 
-	// Step 14. "For each ("name", length) pair of adjacent elements in sectionLengths:" [spec text]
+	// Step 19. "For each ("name", length) pair of adjacent elements in sectionLengths:" [spec text]
 	// for _, so := range sos {
-	// Step 14.1 "If "name"'s specification in knownSections says not to process other sections, add those sections' names to ignoredSections." [spec text]
+	// Step 19.1 "If "name"'s specification in knownSections says not to process other sections, add those sections' names to ignoredSections." [spec text]
 	// Not implemented
 
-	// Step 14.2-14.4 implemented inside decodeSectionLengthsCBOR()
+	// Step 19.2-19.4 implemented inside decodeSectionLengthsCBOR()
 	// }
 
-	// Step 15. "If responses section is not last in sectionLengths, return an error." [spec text]
+	// Step 20. "If the "responses" section is not last in sectionLengths, return a "format error" with fallbackUrl." [spec text]
 	if len(sos) == 0 || sos[len(sos)-1].Name != "responses" {
-		return nil, fmt.Errorf("bundle: Last section is not \"responses\"")
+		return nil, fmt.Errorf("bundle: Last section is not \"responses\""), fallbackURL
 	}
 
-	// Step 16. "Let metadata be an empty map" [spec text]
+	// Step 21. "Let metadata be a map ([INFRA]) initially containing the single key/value pair "primaryUrl"/fallbackUrl." [spec text]
 	// Note: We use a struct rather than a map here.
 	meta := &meta{
 		version:        ver,
-		primaryURL:     parsedPrimaryURL,
+		primaryURL:     fallbackURL,
 		sectionOffsets: sos,
 		sectionsStart:  sectionsStart,
 	}
 
 	offset := sectionsStart
 
-	// Step 17. "For each "name" -> (offset, length) triple in sectionOffsets:" [spec text]
+	// Step 22. "For each "name" -> (offset, length) triple in sectionOffsets:" [spec text]
 	for _, so := range sos {
-		// Step 17.1. "If "name" isn't in knownSections, continue to the next triple." [spec text]
+		// Step 22.1. "If "name" isn't in knownSections, continue to the next triple." [spec text]
 		if _, exists := knownSections[so.Name]; !exists {
 			continue
 		}
-		// Step 17.2. "If "name"'s Metadata field is "No", continue to the next triple." [spec text]
+		// Step 22.2. "If "name"'s Metadata field is "No", continue to the next triple." [spec text]
 		// Note: the "responses" section is currently the only section with its Metadata field "No".
 		if so.Name == "responses" {
 			continue
 		}
-		// Step 17.3. "If "name" is in ignoredSections, continue to the next triple." [spec text]
+		// Step 22.3. "If "name" is in ignoredSections, continue to the next triple." [spec text]
 		// Note: Per discussion in #218, the step 12.3 is not implemented since it is no-op as of now.
 
-		// Step 17.4. "Seek to offset offset in stream. If this fails, return an error." [spec text]
+		// Step 22.4. "Seek to offset offset in stream. If this fails, return a "format error" with fallbackUrl." [spec text]
 		if uint64(len(bs)) <= offset {
-			return nil, fmt.Errorf("bundle: section %q's computed offset %q out-of-range.", so.Name, offset)
+			return nil, fmt.Errorf("bundle: section %q's computed offset %q out-of-range.", so.Name, offset), fallbackURL
 		}
 		end := offset + so.Length
 		if uint64(len(bs)) <= end {
-			return nil, fmt.Errorf("bundle: section %q's end %q out-of-range.", so.Name, end)
+			return nil, fmt.Errorf("bundle: section %q's end %q out-of-range.", so.Name, end), fallbackURL
 		}
 
-		// Step 17.5. "Let sectionContents be the result of reading length bytes from stream. If sectionContents is an error, return that error."
+		// Step 22.5. "Let sectionContents be the result of reading length bytes from stream. If sectionContents is an error, return a "format error" with fallbackUrl."
 		sectionContents := bs[offset:end]
 		//log.Printf("Section[%q] stream offset %x end %x", so.Name, offset, end)
 
-		// Step 17.6. "Follow "name"'s specification from knownSections to process the section, passing sectionContents, stream, sectionOffsets, and metadata. If this returns an error, return it." [spec text]
+		// Step 22.6. "Follow "name"'s specification from knownSections to process the section, passing sectionContents, stream, sectionOffsets, and metadata. If this returns an error, return a "format error" with fallbackUrl." [spec text]
 		switch so.Name {
 		case "index":
 			requests, err := parseIndexSection(sectionContents, sectionsStart, sos, bs)
 			if err != nil {
-				return nil, err
+				return nil, err, fallbackURL
 			}
 			meta.requests = requests
 		case "manifest":
 			manifestURL, err := parseManifestSection(sectionContents)
 			if err != nil {
-				return nil, err
+				return nil, err, fallbackURL
 			}
 			meta.manifestURL = manifestURL
 		case "responses":
 			continue
 		default:
-			return nil, fmt.Errorf("bundle: unknown section: %q", so.Name)
+			return nil, fmt.Errorf("bundle: unknown section: %q", so.Name), fallbackURL
 		}
 
 		offset = end
 	}
 
-	// Step 18. If metadata doesn't have entries with keys "requests" and "manifest", return an error.
+	// Step 23. "Assert: metadata has an entry with the key "primaryUrl"." [spec text]
+	// Step 24. "If metadata doesn't have entries with keys "requests" and "manifest", return a "format error" with fallbackUrl." [spec text]
 	// FIXME
 
-	// Step 19. Return metadata.
-	return meta, nil
+	// Step 25. Return metadata.
+	return meta, nil, nil
 }
 
 var reStatus = regexp.MustCompile("^\\d\\d\\d$")
@@ -533,7 +544,7 @@ func Read(r io.Reader) (*Bundle, error) {
 		return nil, err
 	}
 
-	m, err := loadMetadata(bs)
+	m, err, _ := loadMetadata(bs)
 	if err != nil {
 		return nil, err
 	}
