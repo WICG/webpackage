@@ -18,12 +18,12 @@ var AllVersions = []Version{
 	VersionB1,
 }
 
-// The CBOR encoding of the 4-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8.
+// HeaderMagicBytesUnversioned is the CBOR encoding of the 4-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8.
 var HeaderMagicBytesUnversioned = []byte{0x84, 0x48, 0xf0, 0x9f, 0x8c, 0x90, 0xf0, 0x9f, 0x93, 0xa6}
-// The CBOR encoding of the 6-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8.
+// HeaderMagicBytes is the CBOR encoding of the 6-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8.
 var HeaderMagicBytes = []byte{0x86, 0x48, 0xf0, 0x9f, 0x8c, 0x90, 0xf0, 0x9f, 0x93, 0xa6}
 
-// The CBOR encoding of a 4-byte byte string holding an ASCII "b1" followed by two 0 bytes
+// VersionMagicBytesB1 is the CBOR encoding of a 4-byte byte string holding an ASCII "b1" followed by two 0 bytes
 var VersionMagicBytesB1 = []byte{0x44, 0x62, 0x31, 0x00, 0x00}
 
 func Parse(str string) (Version, bool) {
