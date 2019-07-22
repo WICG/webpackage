@@ -911,7 +911,7 @@ at <https://www.iana.org/assignments/media-types>.
 * Additional information:
 
   * Deprecated alias names for this type: N/A
-  * Magic number(s): 84 48 F0 9F 8C 90 F0 9F 93 A6
+  * Magic number(s): 86 48 F0 9F 8C 90 F0 9F 93 A6
   * File extension(s): .wbn
   * Macintosh file type code(s): N/A
 
