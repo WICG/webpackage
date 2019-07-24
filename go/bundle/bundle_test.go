@@ -20,7 +20,7 @@ func urlMustParse(rawurl string) *url.URL {
 }
 
 func createTestBundle(version version.Version) *Bundle {
-	return &Bundle{
+	bundle := &Bundle{
 		Version: version,
 		Exchanges: []*Exchange{
 			&Exchange{
@@ -36,6 +36,10 @@ func createTestBundle(version version.Version) *Bundle {
 			},
 		},
 	}
+	if version.HasPrimaryURLField() {
+		bundle.PrimaryURL = urlMustParse("https://bundle.example.com/")
+	}
+	return bundle
 }
 
 func TestWriteAndRead(t *testing.T) {

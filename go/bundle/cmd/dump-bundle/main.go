@@ -31,6 +31,9 @@ func run() error {
 
 	fmt.Printf("Version: %v\n", b.Version)
 
+	if b.Version.HasPrimaryURLField() {
+		fmt.Printf("Primary URL: %v\n", b.PrimaryURL)
+	}
 	if b.ManifestURL != nil {
 		fmt.Printf("Manifest URL: %v\n", b.ManifestURL)
 	}

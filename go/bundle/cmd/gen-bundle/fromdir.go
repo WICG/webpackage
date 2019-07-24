@@ -41,7 +41,7 @@ func fromDir(dir string, ver version.Version, baseURL string, startURL string, m
 	if err != nil {
 		return err
 	}
-	b := &bundle.Bundle{Version: ver, Exchanges: es, ManifestURL: parsedManifestURL}
+	b := &bundle.Bundle{Version: ver, PrimaryURL: parsedStartURL, Exchanges: es, ManifestURL: parsedManifestURL}
 	// Move the startURL entry to first.
 	for i, e := range b.Exchanges {
 		if e.Request.URL.String() == parsedStartURL.String() {

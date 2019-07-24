@@ -233,6 +233,11 @@ func addExchange(is *indexSection, rs *responsesSection, e *Exchange) error {
 	return nil
 }
 
+func writePrimaryURL(w io.Writer, url *url.URL) error {
+	enc := cbor.NewEncoder(w)
+	return enc.EncodeTextString(url.String())
+}
+
 // https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html#load-metadata
 // Steps 3-7.
 func writeSectionOffsets(w io.Writer, sections []section) error {
@@ -310,6 +315,11 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 
 	if _, err := cw.Write(b.Version.HeaderMagicBytes()); err != nil {
 		return cw.Written, err
+	}
+	if b.Version.HasPrimaryURLField() {
+		if err := writePrimaryURL(cw, b.PrimaryURL); err != nil {
+			return cw.Written, err
+		}
 	}
 	if err := writeSectionOffsets(cw, sections); err != nil {
 		return cw.Written, err
