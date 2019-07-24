@@ -15,9 +15,9 @@ author:
     name: Jeffrey Yasskin
     organization: Google
     email: jyasskin@chromium.org
- -  name: Kouhei Ueno
+ -  name: Kunihiko Sakamoto
     organization: Google
-    email: kouhei@chromium.org
+    email: ksakamoto@chromium.org
 
 normative:
   CDDL: RFC8610
