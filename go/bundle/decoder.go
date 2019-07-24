@@ -303,8 +303,20 @@ var knownSections = map[string]struct{}{
 	"responses": struct{}{},
 }
 
+type MetadataErrorType int
+const (
+	FormatError MetadataErrorType = iota
+	VersionError
+)
+
+type LoadMetadataError struct {
+	error
+	Type MetadataErrorType
+	FallbackURL *url.URL
+}
+
 // https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html#load-metadata
-func loadMetadata(bs []byte) (*meta, error, *url.URL) {
+func loadMetadata(bs []byte) (*meta, error) {
 	// Step 1. "Seek to offset 0 in stream. Assert: this operation doesn't fail." [spec text]
 
 	r := bytes.NewBuffer(bs)
@@ -312,9 +324,9 @@ func loadMetadata(bs []byte) (*meta, error, *url.URL) {
 	// Step 2. "If reading 10 bytes from stream returns an error or doesn't return the bytes with hex encoding "84 48 F0 9F 8C 90 F0 9F 93 A6" (the CBOR encoding of the 4-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8), return a "format error"." [spec text]
 	// Step 3. "Let version be the result of reading 5 bytes from stream. If this is an error, return a "format error"." [spec text]
 	ver, err := version.ParseMagicBytes(r)
-	// TODO(ksakamoto): Continue and fail after parsing fallbackUrl.
+	// TODO(ksakamoto): Continue and return VersionError after parsing fallbackUrl.
 	if err != nil {
-		return nil, err, nil
+		return nil, &LoadMetadataError{err, FormatError, nil}
 	}
 
 	var fallbackURL *url.URL
@@ -324,12 +336,12 @@ func loadMetadata(bs []byte) (*meta, error, *url.URL) {
 		// Step 5. "Let fallbackUrlBytes be the result of reading urlLength bytes from stream. If this is an error, return a "format error"." [spec text]
 		fallbackURLBytes, err := dec.DecodeTextString()
 		if err != nil {
-			return nil, fmt.Errorf("bundle: Failed to read fallbackURL string: %v", err), nil
+			return nil, &LoadMetadataError{fmt.Errorf("bundle: Failed to read fallbackURL string: %v", err), FormatError, nil}
 		}
 		// Step 6. "Let fallbackUrl be the result of parsing ([URL]) the UTF-8 decoding of fallbackUrlBytes with no base URL. If either the UTF-8 decoding or parsing fails, return a "format error". " [spec text]
 		fallbackURL, err = url.Parse(fallbackURLBytes)
 		if err != nil {
-			return nil, fmt.Errorf("bundle: Failed to parse fallbackURL: %v", err), nil
+			return nil, &LoadMetadataError{fmt.Errorf("bundle: Failed to parse fallbackURL: %v", err), FormatError, nil}
 		}
 	}
 
@@ -341,27 +353,27 @@ func loadMetadata(bs []byte) (*meta, error, *url.URL) {
 	// Step 10. "Let sectionLengthsBytes be the result of reading sectionLengthsLength bytes from stream. If sectionLengthsBytes is an error, return a "format error" with fallbackUrl." [spec text]
 	slbytes, err := dec.DecodeByteString()
 	if err != nil {
-		return nil, fmt.Errorf("bundle: Failed to read sectionLengths byte string: %v", err), fallbackURL
+		return nil, &LoadMetadataError{fmt.Errorf("bundle: Failed to read sectionLengths byte string: %v", err), FormatError, fallbackURL}
 	}
 	if len(slbytes) >= 8192 {
-		return nil, fmt.Errorf("bundle: sectionLengthsLength is too long (%d bytes)", slbytes), fallbackURL
+		return nil, &LoadMetadataError{fmt.Errorf("bundle: sectionLengthsLength is too long (%d bytes)", slbytes), FormatError, fallbackURL}
 	}
 
 	// Step 11. "Let sectionLengths be the result of parsing one CBOR item (Section 3.5) from sectionLengthsBytes, matching the section-lengths rule in the CDDL ([CDDL]) above. If sectionLengths is an error, return a "format error" with fallbackUrl." [spec text]
 	sos, err := decodeSectionLengthsCBOR(slbytes)
 	if err != nil {
-		return nil, err, fallbackURL
+		return nil, &LoadMetadataError{err, FormatError, fallbackURL}
 	}
 
 	// Step 12. "Let (sectionsType, numSections) be the result of parsing the type and argument of a CBOR item from stream." [spec text]
 	numSections, err := dec.DecodeArrayHeader()
 	// Step 13. "If sectionsType is not 4 (a CBOR array) or..." [spec text]
 	if err != nil {
-		return nil, fmt.Errorf("bundle: Failed to read section header."), fallbackURL
+		return nil, &LoadMetadataError{fmt.Errorf("bundle: Failed to read section header."), FormatError, fallbackURL}
 	}
 	// "numSections is not half of the length of sectionLengths, return a "format error" with fallbackUrl." [spec text]
 	if numSections != uint64(len(sos)) {
-		return nil, fmt.Errorf("bundle: Expected %d sections, got %d sections", len(sos), numSections), fallbackURL
+		return nil, &LoadMetadataError{fmt.Errorf("bundle: Expected %d sections, got %d sections", len(sos), numSections), FormatError, fallbackURL}
 	}
 
 	// Step 14. "Let sectionsStart be the current offset within stream" [spec text]
@@ -386,7 +398,7 @@ func loadMetadata(bs []byte) (*meta, error, *url.URL) {
 
 	// Step 20. "If the "responses" section is not last in sectionLengths, return a "format error" with fallbackUrl." [spec text]
 	if len(sos) == 0 || sos[len(sos)-1].Name != "responses" {
-		return nil, fmt.Errorf("bundle: Last section is not \"responses\""), fallbackURL
+		return nil, &LoadMetadataError{fmt.Errorf("bundle: Last section is not \"responses\""), FormatError, fallbackURL}
 	}
 
 	// Step 21. "Let metadata be a map ([INFRA]) initially containing the single key/value pair "primaryUrl"/fallbackUrl." [spec text]
@@ -416,11 +428,11 @@ func loadMetadata(bs []byte) (*meta, error, *url.URL) {
 
 		// Step 22.4. "Seek to offset offset in stream. If this fails, return a "format error" with fallbackUrl." [spec text]
 		if uint64(len(bs)) <= offset {
-			return nil, fmt.Errorf("bundle: section %q's computed offset %q out-of-range.", so.Name, offset), fallbackURL
+			return nil, &LoadMetadataError{fmt.Errorf("bundle: section %q's computed offset %q out-of-range.", so.Name, offset), FormatError, fallbackURL}
 		}
 		end := offset + so.Length
 		if uint64(len(bs)) <= end {
-			return nil, fmt.Errorf("bundle: section %q's end %q out-of-range.", so.Name, end), fallbackURL
+			return nil, &LoadMetadataError{fmt.Errorf("bundle: section %q's end %q out-of-range.", so.Name, end), FormatError, fallbackURL}
 		}
 
 		// Step 22.5. "Let sectionContents be the result of reading length bytes from stream. If sectionContents is an error, return a "format error" with fallbackUrl."
@@ -432,19 +444,19 @@ func loadMetadata(bs []byte) (*meta, error, *url.URL) {
 		case "index":
 			requests, err := parseIndexSection(sectionContents, sectionsStart, sos, bs)
 			if err != nil {
-				return nil, err, fallbackURL
+				return nil, &LoadMetadataError{err, FormatError, fallbackURL}
 			}
 			meta.requests = requests
 		case "manifest":
 			manifestURL, err := parseManifestSection(sectionContents)
 			if err != nil {
-				return nil, err, fallbackURL
+				return nil, &LoadMetadataError{err, FormatError, fallbackURL}
 			}
 			meta.manifestURL = manifestURL
 		case "responses":
 			continue
 		default:
-			return nil, fmt.Errorf("bundle: unknown section: %q", so.Name), fallbackURL
+			return nil, &LoadMetadataError{fmt.Errorf("bundle: unknown section: %q", so.Name), FormatError, fallbackURL}
 		}
 
 		offset = end
@@ -455,7 +467,7 @@ func loadMetadata(bs []byte) (*meta, error, *url.URL) {
 	// FIXME
 
 	// Step 25. Return metadata.
-	return meta, nil, nil
+	return meta, nil
 }
 
 var reStatus = regexp.MustCompile("^\\d\\d\\d$")
@@ -544,7 +556,7 @@ func Read(r io.Reader) (*Bundle, error) {
 		return nil, err
 	}
 
-	m, err, _ := loadMetadata(bs)
+	m, err := loadMetadata(bs)
 	if err != nil {
 		return nil, err
 	}
