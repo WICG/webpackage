@@ -40,7 +40,7 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
     openssl req -new -sha256 -key priv.key -out cert.csr \
       -subj '/CN=example.org/O=Test/C=US'
     # Self-sign the certificate with "CanSignHttpExchanges" extension.
-    openssl x509 -req -days 360 -in cert.csr -signkey priv.key -out cert.pem \
+    openssl x509 -req -days 90 -in cert.csr -signkey priv.key -out cert.pem \
       -extfile <(echo -e "1.3.6.1.4.1.11129.2.1.22 = ASN1:NULL\nsubjectAltName=DNS:example.org")
     ```
 
