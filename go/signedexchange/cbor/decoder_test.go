@@ -40,11 +40,11 @@ func TestDecodeByteString(t *testing.T) {
 		e := NewDecoder(bytes.NewReader(test.in))
 		got, err := e.DecodeByteString()
 		if err != nil {
-			t.Errorf("Encode. err: %v", err)
+			t.Errorf("Decode. err: %v", err)
 		}
 
 		if !bytes.Equal(test.out, got) {
-			t.Errorf("%v expected to encode to %v, actual %v", test.in, test.out, got)
+			t.Errorf("%v expected to decode to %v, actual %v", test.in, test.out, got)
 		}
 	}
 }
