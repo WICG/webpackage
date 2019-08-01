@@ -1,6 +1,7 @@
 package cbor
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"unicode/utf8"
@@ -95,11 +96,11 @@ func (d *Decoder) decodeBytesOfType(expected Type) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	bs := make([]byte, n)
-	if _, err := io.ReadFull(d.r, bs); err != nil {
+	bs := new(bytes.Buffer)
+	if _, err := io.CopyN(bs, d.r, int64(n)); err != nil {
 		return nil, err
 	}
-	return bs, nil
+	return bs.Bytes(), nil
 }
 
 func (d *Decoder) DecodeTextString() (string, error) {
