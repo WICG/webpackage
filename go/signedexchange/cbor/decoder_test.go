@@ -48,3 +48,12 @@ func TestDecodeByteString(t *testing.T) {
 		}
 	}
 }
+
+func TestDecodeByteStringNotCrashing(t *testing.T) {
+	var in = []byte{0x5b, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	e := NewDecoder(bytes.NewReader(in))
+	_, err := e.DecodeByteString()
+	if err == nil {
+		t.Error("got success, want error")
+	}
+}
