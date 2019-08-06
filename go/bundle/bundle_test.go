@@ -19,14 +19,13 @@ func urlMustParse(rawurl string) *url.URL {
 	return u
 }
 
-func createTestBundle(version version.Version) *Bundle {
+func createTestBundle(ver version.Version) *Bundle {
 	bundle := &Bundle{
-		Version: version,
+		Version: ver,
 		Exchanges: []*Exchange{
 			&Exchange{
 				Request{
-					URL:    urlMustParse("https://bundle.example.com/"),
-					Header: make(http.Header),
+					URL: urlMustParse("https://bundle.example.com/"),
 				},
 				Response{
 					Status: 200,
@@ -36,7 +35,10 @@ func createTestBundle(version version.Version) *Bundle {
 			},
 		},
 	}
-	if version.HasPrimaryURLField() {
+	if ver == version.Unversioned {
+		bundle.Exchanges[0].Request.Header = make(http.Header)
+	}
+	if ver.HasPrimaryURLField() {
 		bundle.PrimaryURL = urlMustParse("https://bundle.example.com/")
 	}
 	return bundle

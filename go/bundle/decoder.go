@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,7 +19,7 @@ import (
 type requestEntryWithOffset struct {
 	Request
 	Length uint64
-	Offset uint64
+	Offset uint64 // Offset within the bundle stream
 }
 
 type sectionOffset struct {
@@ -156,7 +157,7 @@ func decodeCborHeaders(dec *cbor.Decoder) (http.Header, map[string]string, error
 
 // https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html#index-section
 // "To parse the index section, given its sectionContents, the sectionsStart offset, the sectionOffsets CBOR item, and the metadata map to fill in, the parser MUST do the following:" [spec text]
-func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []sectionOffset, bs []byte) ([]requestEntryWithOffset, error) {
+func parseIndexSectionUnversioned(sectionContents []byte, sectionsStart uint64, sos []sectionOffset, bs []byte) ([]requestEntryWithOffset, error) {
 	// Step 1. "Let index be the result of parsing sectionContents as a CBOR item matching the index rule in the above CDDL (Section 3.4). If index is an error, return nil, an error." [spec text]
 	idxdec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
 	nidx, err := idxdec.DecodeArrayHeader()
@@ -275,6 +276,91 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []secti
 	return requests, nil
 }
 
+// https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#index-section
+func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []sectionOffset) ([]requestEntryWithOffset, error) {
+	// Step 1. "Let index be the result of parsing sectionContents as a CBOR item matching the index rule in the above CDDL (Section 3.5). If index is an error, return an error." [spec text]
+	dec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
+	numUrls, err := dec.DecodeMapHeader()
+	if err != nil {
+		return nil, fmt.Errorf("bundle.index: failed to decode index section map header: %v", err)
+	}
+	// Step 2. "Let requests be an initially-empty map ([INFRA]) from URLs to response descriptions, each of which is either a single location-in-stream value or a pair of a Variants header field value ([I-D.ietf-httpbis-variants]) and a map from that value's possible Variant-Keys to location-in-stream values, as described in Section 2.2." [spec text]
+	requests := []requestEntryWithOffset{}
+
+	// Step 3. "Let MakeRelativeToStream be a function that takes a location-in-responses value (offset, length) and returns a ResponseMetadata struct or error by running the following sub-steps:" [spec text]
+	respso, respSectionRelOffset, found := FindSection(sos, "responses")
+	if !found {
+		return nil, fmt.Errorf("bundle.index: \"responses\" section not found")
+	}
+	respSectionOffset := sectionsStart + respSectionRelOffset
+	makeRelativeToStream := func(offset, length uint64) (uint64, uint64, error) {
+		// Step 3.1. "If offset + length is larger than sectionOffsets["responses"].length, return an error." [spec text]
+		if offset+length > respso.Length {
+			return 0, 0, errors.New("bundle.index: response length out-of-range")
+		}
+		// Step 3.2. "Otherwise, return a ResponseMetadata struct whose offset is sectionOffsets["responses"].offset + offset and whose length is length." [spec text]
+		return respSectionOffset + offset, length, nil
+	}
+
+	// Step 4. "For each (url, responses) entry in the index map:" [spec text]
+	for i := uint64(0); i < numUrls; i++ {
+		// Step 4.1. "Let parsedUrl be the result of parsing ([URL]) url with no base URL." [spec text]
+		rawUrl, err := dec.DecodeTextString()
+		if err != nil {
+			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode map key: %v", i, err)
+		}
+		parsedUrl, err := url.Parse(rawUrl)
+		// Step 4.2. "If parsedUrl is a failure, its fragment is not null, or it includes credentials, return an error." [spec text]
+		if err != nil {
+			return nil, fmt.Errorf("bundle.index[%d]: Failed to parse URL: %v", i, err)
+		}
+		if parsedUrl.Fragment != "" {
+			return nil, fmt.Errorf("bundle.index[%d]: URL contains fragment: %q", i, rawUrl)
+		}
+		if parsedUrl.User != nil {
+			return nil, fmt.Errorf("bundle.index[%d]: URL contains credentials: %q", i, rawUrl)
+		}
+
+		// Step 4.3. "If the first element of responses is the empty string:" [spec text]
+		numItems, err := dec.DecodeArrayHeader()
+		if err != nil {
+			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode value array header: %v", i, err)
+		}
+		if numItems == 0 {
+			return nil, fmt.Errorf("bundle.index[%d]: value array must not be empty.", i)
+		}
+		variants_value, err := dec.DecodeByteString()
+		if err != nil {
+			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode variants-value: %v", i, err)
+		}
+		if len(variants_value) == 0 {
+			// Step 4.3.1. "If the length of responses is not 3 (i.e. there is more than one location-in-responses in responses), return an error." [spec text]
+			if numItems != 3 {
+				return nil, fmt.Errorf("bundle.index[%d]: The size of value array must be 3", i)
+			}
+			// Step 4.3.2. "Otherwise, assert that requests[parsedUrl] does not exist, and set requests[parsedUrl] to MakeRelativeToStream(location-in-responses), where location-in-responses is the second and third elements of responses. If that returns an error, return an error." [spec text]
+			offset, err := dec.DecodeUint()
+			if err != nil {
+				return nil, fmt.Errorf("bundle.index[%d]: Failed to decode offset: %v", i, err)
+			}
+			length, err := dec.DecodeUint()
+			if err != nil {
+				return nil, fmt.Errorf("bundle.index[%d]: Failed to decode length: %v", i, err)
+			}
+			offset, length, err = makeRelativeToStream(offset, length)
+			if err != nil {
+				return nil, fmt.Errorf("bundle.index[%d]: %v", i, err)
+			}
+			requests = append(requests, requestEntryWithOffset{Request: Request{URL: parsedUrl}, Offset: offset, Length: length})
+		} else {
+			// Step 4.4. "Otherwise:" [spec text]
+			// TODO: implement.
+			return nil, fmt.Errorf("bundle.index[%d]: non-empty variants-value is not supported.", i)
+		}
+	}
+	return requests, nil
+}
+
 // https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#manifest-section
 // "To parse the manifest section, given its sectionContents and the metadata map to fill in, the parser MUST do the following:" [spec text]
 func parseManifestSection(sectionContents []byte) (*url.URL, error) {
@@ -304,6 +390,7 @@ var knownSections = map[string]struct{}{
 }
 
 type MetadataErrorType int
+
 const (
 	FormatError MetadataErrorType = iota
 	VersionError
@@ -311,7 +398,7 @@ const (
 
 type LoadMetadataError struct {
 	error
-	Type MetadataErrorType
+	Type        MetadataErrorType
 	FallbackURL *url.URL
 }
 
@@ -442,11 +529,19 @@ func loadMetadata(bs []byte) (*meta, error) {
 		// Step 22.6. "Follow "name"'s specification from knownSections to process the section, passing sectionContents, stream, sectionOffsets, and metadata. If this returns an error, return a "format error" with fallbackUrl." [spec text]
 		switch so.Name {
 		case "index":
-			requests, err := parseIndexSection(sectionContents, sectionsStart, sos, bs)
-			if err != nil {
-				return nil, &LoadMetadataError{err, FormatError, fallbackURL}
+			if ver.HasVariantsSupport() {
+				requests, err := parseIndexSection(sectionContents, sectionsStart, sos)
+				if err != nil {
+					return nil, &LoadMetadataError{err, FormatError, fallbackURL}
+				}
+				meta.requests = requests
+			} else {
+				requests, err := parseIndexSectionUnversioned(sectionContents, sectionsStart, sos, bs)
+				if err != nil {
+					return nil, &LoadMetadataError{err, FormatError, fallbackURL}
+				}
+				meta.requests = requests
 			}
-			meta.requests = requests
 		case "manifest":
 			manifestURL, err := parseManifestSection(sectionContents)
 			if err != nil {
