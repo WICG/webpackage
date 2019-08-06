@@ -282,7 +282,7 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []secti
 	dec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
 	numUrls, err := dec.DecodeMapHeader()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to decode index section map header: %v", err)
+		return nil, fmt.Errorf("bundle.index: failed to decode index section map header: %v", err)
 	}
 	// Step 2. "Let requests be an initially-empty map ([INFRA]) from URLs to response descriptions, each of which is either a single location-in-stream value or a pair of a Variants header field value ([I-D.ietf-httpbis-variants]) and a map from that value's possible Variant-Keys to location-in-stream values, as described in Section 2.2." [spec text]
 	requests := []requestEntryWithOffset{}
@@ -296,7 +296,7 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []secti
 	makeRelativeToStream := func(offset, length uint64) (uint64, uint64, error) {
 		// Step 3.1. "If offset + length is larger than sectionOffsets["responses"].length, return an error." [spec text]
 		if offset+length > respso.Length {
-			return 0, 0, errors.New("response length out-of-range")
+			return 0, 0, errors.New("bundle.index: response length out-of-range")
 		}
 		// Step 3.2. "Otherwise, return a ResponseMetadata struct whose offset is sectionOffsets["responses"].offset + offset and whose length is length." [spec text]
 		return respSectionOffset + offset, length, nil
