@@ -122,6 +122,25 @@ func TestEncodeTextString(t *testing.T) {
 	}
 }
 
+func TestEncodeMapWithDuplicatedKeys(t *testing.T) {
+	entries := []*MapEntryEncoder{
+		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
+			keyE.EncodeTextString("key")
+			valueE.EncodeTextString("value1")
+		}),
+		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {
+			keyE.EncodeTextString("key")
+			valueE.EncodeTextString("value2")
+		}),
+	}
+
+	var b bytes.Buffer
+	e := NewEncoder(&b)
+	if err := e.EncodeMap(entries); err == nil {
+		t.Error("Expected an error for duplicated map key")
+	}
+}
+
 func TestMapEncoder(t *testing.T) {
 	entries := []*MapEntryEncoder{
 		GenerateMapEntry(func(keyE *Encoder, valueE *Encoder) {

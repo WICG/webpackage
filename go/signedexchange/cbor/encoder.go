@@ -10,6 +10,7 @@ import (
 
 var (
 	ErrInvalidUTF8 = errors.New("Cannot encode invalid UTF-8.")
+	ErrDuplicatedKey = errors.New("Duplicated map key.")
 )
 
 type Encoder struct {
@@ -227,7 +228,13 @@ func (e *Encoder) EncodeMap(mes []*MapEntryEncoder) error {
 		return bytes.Compare(entries[i].KeyBytes(), entries[j].KeyBytes()) < 0
 	})
 
+	var lastKeyBytes []byte
 	for _, entry := range entries {
+		if lastKeyBytes != nil && bytes.Equal(lastKeyBytes, entry.KeyBytes()) {
+			return ErrDuplicatedKey
+		}
+		lastKeyBytes = entry.KeyBytes()
+
 		if _, err := io.Copy(e.w, &entry.keyBuf); err != nil {
 			return err
 		}
