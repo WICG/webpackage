@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	flagVersion     = flag.String("version", string(version.Unversioned), "The webbundle format version")
+	flagVersion     = flag.String("version", string(version.VersionB1), "The webbundle format version")
 	flagHar         = flag.String("har", "", "HTTP Archive (HAR) input file")
 	flagDir         = flag.String("dir", "", "Input directory")
 	flagBaseURL     = flag.String("baseURL", "", "Base URL (used with -dir)")
