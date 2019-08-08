@@ -65,6 +65,7 @@ func fromHar(harPath string) ([]*bundle.Exchange, error) {
 	}
 
 	es := []*bundle.Exchange{}
+	seen := make(map[string]struct{})
 
 	for _, e := range har.Log.Entries {
 		log.Printf("Processing entry: %q", e.Request.URL)
@@ -94,6 +95,12 @@ func fromHar(harPath string) ([]*bundle.Exchange, error) {
 			log.Printf("Dropping the entry: invalid response status (%d)", e.Response.Status)
 			continue
 		}
+
+		if _, ok := seen[parsedUrl.String()]; ok {
+			log.Printf("Dropping the entry: exchange for this URL already exists")
+			continue
+		}
+		seen[parsedUrl.String()] = struct{}{}
 
 		e := &bundle.Exchange{
 			Request: bundle.Request{
