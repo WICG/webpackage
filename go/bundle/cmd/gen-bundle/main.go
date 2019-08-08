@@ -51,9 +51,6 @@ func main() {
 		if *flagBaseURL != "" {
 			fmt.Fprintln(os.Stderr, "Warning: -baseURL is ignored when input is HAR.")
 		}
-		if *flagPrimaryURL != "" {
-			fmt.Fprintln(os.Stderr, "Warning: -primaryURL is ignored when input is HAR.")
-		}
 		es, err := fromHar(*flagHar)
 		if err != nil {
 			log.Fatal(err)
