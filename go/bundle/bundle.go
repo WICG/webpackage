@@ -1,6 +1,8 @@
 package bundle
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -86,4 +88,27 @@ type Bundle struct {
 	Exchanges   []*Exchange
 	ManifestURL *url.URL
 	Signatures  *Signatures
+}
+
+// AddPayloadIntegrity encodes the exchange's payload with Merkle Integrity
+// content encoding, and adds `Content-Encoding` and `Digest` response headers.
+// It returns an identifier for the "payload-integrity-header" field of the
+// "resource-integrity" structure. [1]
+//
+// [1] https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#signatures-section
+func (e *Exchange) AddPayloadIntegrity(ver version.Version, recordSize int) (string, error) {
+	if e.Response.Header.Get("Digest") != "" {
+		return "", errors.New("bundle: the exchange already has the Digest: header")
+	}
+
+	encoding := ver.MiceEncoding()
+	var buf bytes.Buffer
+	digest, err := encoding.Encode(&buf, e.Response.Body, recordSize)
+	if err != nil {
+		return "", err
+	}
+	e.Response.Body = buf.Bytes()
+	e.Response.Header.Add("Content-Encoding", encoding.ContentEncoding())
+	e.Response.Header.Add("Digest", digest)
+	return encoding.IntegrityIdentifier(), nil
 }

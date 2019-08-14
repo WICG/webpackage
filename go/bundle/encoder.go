@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -52,6 +53,15 @@ func (r Response) EncodeHeader() ([]byte, error) {
 		return nil, fmt.Errorf("bundle: Failed to encode response header: %v", err)
 	}
 	return b.Bytes(), nil
+}
+
+func (r Response) HeaderSha256() ([]byte, error) {
+	headerBytes, err := r.EncodeHeader()
+	if err != nil {
+		return nil, err
+	}
+	sum := sha256.Sum256(headerBytes)
+	return sum[:], nil
 }
 
 var _ = io.WriterTo(&Bundle{})
