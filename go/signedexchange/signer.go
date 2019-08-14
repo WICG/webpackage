@@ -11,9 +11,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/WICG/webpackage/go/internal/signingalgorithm"
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
 	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
-	"github.com/WICG/webpackage/go/signedexchange/internal/signingalgorithm"
 	"github.com/WICG/webpackage/go/signedexchange/structuredheader"
 	"github.com/WICG/webpackage/go/signedexchange/version"
 )
