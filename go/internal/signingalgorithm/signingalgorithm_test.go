@@ -6,7 +6,7 @@ import (
 	"crypto/elliptic"
 	"testing"
 
-	. "github.com/WICG/webpackage/go/signedexchange/internal/signingalgorithm"
+	. "github.com/WICG/webpackage/go/internal/signingalgorithm"
 )
 
 func TestSignVerify_ECDSA_P256_SHA256(t *testing.T) {
