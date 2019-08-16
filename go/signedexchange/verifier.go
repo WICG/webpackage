@@ -2,7 +2,6 @@ package signedexchange
 
 import (
 	"bytes"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -294,8 +293,8 @@ func verifySignature(e *Exchange, verificationTime time.Time, fetch CertFetcher,
 	if err != nil {
 		return nil, nil, fmt.Errorf("verify: could not parse certificate CBOR: %v", err)
 	}
-	mainCert := certs[0].Cert
-	verifier, err := signingalgorithm.VerifierForPublicKey(mainCert.PublicKey)
+	mainCert := certs[0]
+	verifier, err := signingalgorithm.VerifierForPublicKey(mainCert.Cert.PublicKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("verify: unsupported main certificate public key: %v", err)
 	}
@@ -305,10 +304,7 @@ func verifySignature(e *Exchange, verificationTime time.Time, fetch CertFetcher,
 		return nil, nil, err
 	}
 	// Step 5: Reconstruct the signing message
-	certSha256 := calculateCertSha256([]*x509.Certificate{mainCert})
-	if certSha256 == nil {
-		return nil, nil, errors.New("verify: cannot calculate certificate fingerprint")
-	}
+	certSha256 := mainCert.CertSha256()
 	msg, err := serializeSignedMessage(e, certSha256, signature.ValidityUrl, signature.Date, signature.Expires)
 	if err != nil {
 		return nil, nil, errors.New("verify: cannot reconstruct signed message")
