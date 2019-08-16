@@ -15,6 +15,8 @@ import (
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
 )
 
+// AugmentedCertificate represents an augmented-certificate CBOR structure.
+// https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cert-chain-format
 type AugmentedCertificate struct {
 	Cert         *x509.Certificate // A parsed X.509 certificate.
 	OCSPResponse []byte            // DER-encoded OCSP response for Cert.
