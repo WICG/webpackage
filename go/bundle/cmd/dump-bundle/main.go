@@ -38,7 +38,19 @@ func run() error {
 		fmt.Printf("Manifest URL: %v\n", b.ManifestURL)
 	}
 
+	if b.Signatures != nil {
+		fmt.Println("Signatures:")
+		for i, ac := range b.Signatures.Authorities {
+			fmt.Printf("  Certificate #%d:\n", i)
+			fmt.Println("    Subject:", ac.Cert.Subject.CommonName)
+			fmt.Println("    Valid from:", ac.Cert.NotBefore)
+			fmt.Println("    Valid until:", ac.Cert.NotAfter)
+			fmt.Println("    Issuer:", ac.Cert.Issuer.CommonName)
+		}
+	}
+
 	for _, e := range b.Exchanges {
+		fmt.Println()
 		if err := e.Dump(os.Stdout, *flagDumpContentText); err != nil {
 			return err
 		}

@@ -76,3 +76,7 @@ func (v Version) HasPrimaryURLField() bool {
 func (v Version) HasVariantsSupport() bool {
 	return v != Unversioned
 }
+
+func (v Version) HasSignaturesSupport() bool {
+	return v != Unversioned
+}

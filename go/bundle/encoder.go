@@ -259,6 +259,49 @@ func newManifestSection(url *url.URL) (*manifestSection, error) {
 	return &ms, nil
 }
 
+type signaturesSection struct {
+	bytes.Buffer
+}
+
+func (rs *signaturesSection) Name() string { return "signatures" }
+
+func newSignaturesSection(sigs *Signatures) (*signaturesSection, error) {
+	var ss signaturesSection
+	enc := cbor.NewEncoder(&ss)
+
+	enc.EncodeArrayHeader(2)
+
+	enc.EncodeArrayHeader(len(sigs.Authorities))
+	for _, auth := range sigs.Authorities {
+		if err := auth.EncodeTo(enc); err != nil {
+			return nil, err
+		}
+	}
+
+	enc.EncodeArrayHeader(len(sigs.VouchedSubsets))
+	for _, vs := range sigs.VouchedSubsets {
+		mes := []*cbor.MapEntryEncoder{
+			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				keyE.EncodeTextString("authority")
+				valueE.EncodeUint(vs.Authority)
+			}),
+			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				keyE.EncodeTextString("sig")
+				valueE.EncodeByteString(vs.Sig)
+			}),
+			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				keyE.EncodeTextString("signed")
+				valueE.EncodeByteString(vs.Signed)
+			}),
+		}
+		if err := enc.EncodeMap(mes); err != nil {
+			return nil, err
+		}
+	}
+
+	return &ss, nil
+}
+
 func addExchange(is *indexSection, rs *responsesSection, e *Exchange) error {
 	offset, length, err := rs.addResponse(e.Response)
 	if err != nil {
@@ -349,7 +392,14 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 		}
 		sections = append(sections, ms)
 	}
-	sections = append(sections, rs)
+	if b.Signatures != nil && b.Version.HasSignaturesSupport() {
+		ss, err := newSignaturesSection(b.Signatures)
+		if err != nil {
+			return cw.Written, err
+		}
+		sections = append(sections, ss)
+	}
+	sections = append(sections, rs) // resources section must be the last.
 
 	if _, err := cw.Write(b.Version.HeaderMagicBytes()); err != nil {
 		return cw.Written, err
