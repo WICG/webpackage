@@ -14,7 +14,6 @@ import (
 
 	"github.com/WICG/webpackage/go/internal/signingalgorithm"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
-	"github.com/WICG/webpackage/go/signedexchange/mice"
 	"github.com/WICG/webpackage/go/signedexchange/structuredheader"
 	"github.com/WICG/webpackage/go/signedexchange/version"
 )
@@ -353,18 +352,8 @@ func verifyTimestamps(sig *Signature, verificationTime time.Time) error {
 }
 
 func verifyPayload(e *Exchange, signature *Signature) ([]byte, error) {
-	var integrityStr string
-	var enc mice.Encoding
-	switch e.Version {
-	case version.Version1b1:
-		enc = mice.Draft02Encoding
-		integrityStr = "mi-draft2"
-	case version.Version1b2, version.Version1b3:
-		enc = mice.Draft03Encoding
-		integrityStr = "digest/" + enc.ContentEncoding()
-	default:
-		panic("not reached")
-	}
+	enc := e.Version.MiceEncoding()
+	integrityStr := enc.IntegrityIdentifier()
 	if signature.Integrity != integrityStr {
 		return nil, fmt.Errorf("verify: unsupported integrity scheme %q", signature.Integrity)
 	}

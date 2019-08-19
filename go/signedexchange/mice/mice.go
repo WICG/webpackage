@@ -39,6 +39,19 @@ func (enc Encoding) DigestHeaderName() string {
 	return "Digest"
 }
 
+// IntegrityIdentifier returns an identifier for Signed Exchange signature's
+// "integrity" parameter when the exchange's payload is guarded by this encoding.
+func (enc Encoding) IntegrityIdentifier() string {
+	switch enc {
+	case Draft02Encoding:
+		return "mi-draft2"
+	case Draft03Encoding:
+		return "digest/mi-sha256-03"
+	default:
+		panic("not reached")
+	}
+}
+
 func (enc Encoding) FormatDigestHeader(topLevelProof []byte) string {
 	return enc.ContentEncoding() + "=" + enc.base64Encoding().EncodeToString(topLevelProof)
 }
