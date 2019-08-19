@@ -15,7 +15,6 @@ import (
 
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
 	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
-	"github.com/WICG/webpackage/go/signedexchange/mice"
 	"github.com/WICG/webpackage/go/signedexchange/version"
 )
 
@@ -55,15 +54,7 @@ func NewExchange(ver version.Version, uri string, method string, requestHeaders 
 }
 
 func (e *Exchange) MiEncodePayload(recordSize int) error {
-	var enc mice.Encoding
-	switch e.Version {
-	case version.Version1b1:
-		enc = mice.Draft02Encoding
-	case version.Version1b2, version.Version1b3:
-		enc = mice.Draft03Encoding
-	default:
-		panic("not reached")
-	}
+	enc := e.Version.MiceEncoding()
 
 	if e.ResponseHeaders.Get(enc.DigestHeaderName()) != "" {
 		return fmt.Errorf("signedexchange: response already has %q header", enc.DigestHeaderName())

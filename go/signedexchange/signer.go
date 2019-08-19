@@ -209,22 +209,12 @@ func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
 		return "", err
 	}
 
-	integrityStr := ""
-	switch e.Version {
-	case version.Version1b1:
-		integrityStr = "mi-draft2"
-	case version.Version1b2, version.Version1b3:
-		integrityStr = "digest/mi-sha256-03"
-	default:
-		panic("not reached")
-	}
-
 	pi := structuredheader.ParameterisedIdentifier{
 		Label: "label",
 		Params: structuredheader.Parameters{
 			"sig": sig,
 			"validity-url": s.ValidityUrl.String(),
-			"integrity": integrityStr,
+			"integrity": e.Version.MiceEncoding().IntegrityIdentifier(),
 			"cert-url": s.CertUrl.String(),
 			"cert-sha256": calculateCertSha256(s.Certs),
 			"date": s.Date.Unix(),

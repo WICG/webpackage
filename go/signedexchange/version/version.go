@@ -3,6 +3,8 @@ package version
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/WICG/webpackage/go/signedexchange/mice"
 )
 
 type Version string
@@ -59,5 +61,16 @@ func FromMagicBytes(bs []byte) (Version, error) {
 		return Version1b3, nil
 	} else {
 		return Version(""), fmt.Errorf("signedexchange: unknown magic bytes: %v", bs)
+	}
+}
+
+func (v Version) MiceEncoding() mice.Encoding {
+	switch v {
+	case Version1b1:
+		return mice.Draft02Encoding
+	case Version1b2, Version1b3:
+		return mice.Draft03Encoding
+	default:
+		panic("not reached")
 	}
 }
