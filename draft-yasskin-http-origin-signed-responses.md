@@ -1582,6 +1582,9 @@ Specification: This document
 
 ## Internet Media Type application/signed-exchange
 
+IANA is requested to register the MIME media type ({{!IANA.media-types}}) for
+signed exchanges, application/signed-exchange, as follows:
+
 Type name:  application
 
 Subtype name:  signed-exchange
@@ -1638,7 +1641,12 @@ Author:  See Authors' Addresses section.
 
 Change controller:  IESG
 
+Provisional registration? Yes
+
 ## Internet Media Type application/cert-chain+cbor
+
+IANA is requested to register the MIME media type ({{!IANA.media-types}}) for
+CBOR-format certificate chains, application/cert-chain+cbor, as follows:
 
 Type name:  application
 
@@ -1680,6 +1688,8 @@ Restrictions on usage:  N/A
 Author:  See Authors' Addresses section.
 
 Change controller:  IESG
+
+Provisional registration? Yes
 
 ## The cansignhttpexchanges CAA Parameter {#iana-caa-cansignhttpexchanges}
 
