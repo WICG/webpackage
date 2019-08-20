@@ -9,7 +9,22 @@ import (
 
 	. "github.com/WICG/webpackage/go/bundle"
 	"github.com/WICG/webpackage/go/bundle/version"
+	"github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
+
+const pemCerts = `-----BEGIN CERTIFICATE-----
+MIIBhjCCAS2gAwIBAgIJAOhR3xtYd5QsMAoGCCqGSM49BAMCMDIxFDASBgNVBAMM
+C2V4YW1wbGUub3JnMQ0wCwYDVQQKDARUZXN0MQswCQYDVQQGEwJVUzAeFw0xODEx
+MDUwOTA5MjJaFw0xOTEwMzEwOTA5MjJaMDIxFDASBgNVBAMMC2V4YW1wbGUub3Jn
+MQ0wCwYDVQQKDARUZXN0MQswCQYDVQQGEwJVUzBZMBMGByqGSM49AgEGCCqGSM49
+AwEHA0IABH1E6odXRm3+r7dMYmkJRmftx5IYHAsqgA7zjsFfCvPqL/fM4Uvi8EFu
+JVQM/oKEZw3foCZ1KBjo/6Tenkoj/wCjLDAqMBAGCisGAQQB1nkCARYEAgUAMBYG
+A1UdEQQPMA2CC2V4YW1wbGUub3JnMAoGCCqGSM49BAMCA0cAMEQCIEbxRKhlQYlw
+Ja+O9h7misjLil82Q82nhOtl4j96awZgAiB6xrvRZIlMtWYKdi41BTb5fX22gL9M
+L/twWg8eWpYeJA==
+-----END CERTIFICATE-----
+`
 
 func urlMustParse(rawurl string) *url.URL {
 	u, err := url.Parse(rawurl)
@@ -19,7 +34,7 @@ func urlMustParse(rawurl string) *url.URL {
 	return u
 }
 
-func createTestBundle(ver version.Version) *Bundle {
+func createTestBundle(t *testing.T, ver version.Version) *Bundle {
 	bundle := &Bundle{
 		Version: ver,
 		Exchanges: []*Exchange{
@@ -34,9 +49,16 @@ func createTestBundle(ver version.Version) *Bundle {
 				},
 			},
 		},
+		Signatures: &Signatures{
+			Authorities: createTestCerts(t),
+			VouchedSubsets: []*VouchedSubset{
+				&VouchedSubset{Authority: 0, Sig: []byte("sig"), Signed: []byte("sig")},
+			},
+		},
 	}
 	if ver == version.Unversioned {
 		bundle.Exchanges[0].Request.Header = make(http.Header)
+		bundle.Signatures = nil // Unversioned bundle cannot have signatures.
 	}
 	if ver.HasPrimaryURLField() {
 		bundle.PrimaryURL = urlMustParse("https://bundle.example.com/")
@@ -44,9 +66,21 @@ func createTestBundle(ver version.Version) *Bundle {
 	return bundle
 }
 
+func createTestCerts(t *testing.T) []*certurl.AugmentedCertificate {
+	certs, err := signedexchange.ParseCertificates([]byte(pemCerts))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var acs []*certurl.AugmentedCertificate
+	for _, c := range certs {
+		acs = append(acs, &certurl.AugmentedCertificate{Cert: c})
+	}
+	return acs
+}
+
 func TestWriteAndRead(t *testing.T) {
 	for _, ver := range version.AllVersions {
-		bundle := createTestBundle(ver)
+		bundle := createTestBundle(t, ver)
 
 		var buf bytes.Buffer
 		n, err := bundle.WriteTo(&buf)

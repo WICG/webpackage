@@ -14,6 +14,7 @@ import (
 
 	"github.com/WICG/webpackage/go/bundle/version"
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
+	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
 type requestEntryWithOffset struct {
@@ -44,6 +45,7 @@ type meta struct {
 	sectionOffsets []sectionOffset
 	sectionsStart  uint64
 	manifestURL    *url.URL
+	signatures     *Signatures
 	requests       []requestEntryWithOffset
 }
 
@@ -383,10 +385,91 @@ func parseManifestSection(sectionContents []byte) (*url.URL, error) {
 	return manifestURL, nil
 }
 
+// https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#signatures-section
+func parseSignaturesSection(sectionContents []byte) (*Signatures, error) {
+	// signatures = [
+	//   authorities: [*authority],
+	//   vouched-subsets: [*{
+	//     authority: index-in-authorities,
+	//     sig: bstr,
+	//     signed: bstr  ; Expected to hold a signed-subset item.
+	//   }],
+	// ]
+	dec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
+	signaturesLength, err := dec.DecodeArrayHeader()
+	if err != nil {
+		return nil, fmt.Errorf("bundle.signatures: failed to decode array header: %v", err)
+	}
+	if signaturesLength != 2 {
+		return nil, fmt.Errorf("bundle.signatures: unexpected array length: %d", signaturesLength)
+	}
+
+	authoritiesLength, err := dec.DecodeArrayHeader()
+	if err != nil {
+		return nil, fmt.Errorf("bundle.signatures: failed to decode array header: %v", err)
+	}
+	var authorities []*certurl.AugmentedCertificate
+	for i := uint64(0); i < authoritiesLength; i++ {
+		a, err := certurl.DecodeAugmentedCertificateFrom(dec)
+		if err != nil {
+			return nil, fmt.Errorf("bundle.signatures: cannot parse certificate: %v", err)
+		}
+		authorities = append(authorities, a)
+	}
+
+	vouchedSubsetsLength, err := dec.DecodeArrayHeader()
+	if err != nil {
+		return nil, fmt.Errorf("bundle.signatures: failed to decode array header: %v", err)
+	}
+	var vouchedSubsets []*VouchedSubset
+	for i := uint64(0); i < vouchedSubsetsLength; i++ {
+		n, err := dec.DecodeMapHeader()
+		if err != nil {
+			return nil, fmt.Errorf("bundle.signatures: cannot decode map header: %v", err)
+		}
+		if n != 3 {
+			return nil, fmt.Errorf("bundle.signatures: unexpected map size: %d", n)
+		}
+
+		vs := &VouchedSubset{}
+		for i := uint64(0); i < n; i++ {
+			label, err := dec.DecodeTextString()
+			if err != nil {
+				return nil, fmt.Errorf("bundle.signatures: cannot decode map key: %v", err)
+			}
+			switch label {
+			case "authority":
+				vs.Authority, err = dec.DecodeUint()
+				if err != nil {
+					return nil, fmt.Errorf("bundle.signatures: cannot decode authority: %v", err)
+				}
+			case "sig":
+				vs.Sig, err = dec.DecodeByteString()
+				if err != nil {
+					return nil, fmt.Errorf("bundle.signatures: cannot decode sig: %v", err)
+				}
+			case "signed":
+				vs.Signed, err = dec.DecodeByteString()
+				if err != nil {
+					return nil, fmt.Errorf("bundle.signatures: cannot decode signed: %v", err)
+				}
+			default:
+				return nil, fmt.Errorf("bundle.signatures: unexpected map key %q", label)
+			}
+		}
+		vouchedSubsets = append(vouchedSubsets, vs)
+	}
+	return &Signatures{
+		Authorities:    authorities,
+		VouchedSubsets: vouchedSubsets,
+	}, nil
+}
+
 var knownSections = map[string]struct{}{
-	"index":     struct{}{},
-	"manifest":  struct{}{},
-	"responses": struct{}{},
+	"index":      {},
+	"manifest":   {},
+	"signatures": {},
+	"responses":  {},
 }
 
 type MetadataErrorType int
@@ -548,6 +631,16 @@ func loadMetadata(bs []byte) (*meta, error) {
 				return nil, &LoadMetadataError{err, FormatError, fallbackURL}
 			}
 			meta.manifestURL = manifestURL
+		case "signatures":
+			if ver.HasSignaturesSupport() {
+				signatures, err := parseSignaturesSection(sectionContents)
+				if err != nil {
+					return nil, &LoadMetadataError{err, FormatError, fallbackURL}
+				}
+				meta.signatures = signatures
+			} else {
+				return nil, &LoadMetadataError{errors.New("bundle: signatures section not allowed in this version of bundle"), FormatError, fallbackURL}
+			}
 		case "responses":
 			continue
 		default:
@@ -672,6 +765,6 @@ func Read(r io.Reader) (*Bundle, error) {
 		es = append(es, e)
 	}
 
-	b := &Bundle{Version: m.version, PrimaryURL: m.primaryURL, Exchanges: es, ManifestURL: m.manifestURL}
+	b := &Bundle{Version: m.version, PrimaryURL: m.primaryURL, Exchanges: es, ManifestURL: m.manifestURL, Signatures: m.signatures}
 	return b, nil
 }

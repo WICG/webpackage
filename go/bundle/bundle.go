@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/WICG/webpackage/go/bundle/version"
+	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
 type Request struct {
@@ -28,6 +29,17 @@ func (r Response) String() string {
 type Exchange struct {
 	Request
 	Response
+}
+
+type Signatures struct {
+	Authorities    []*certurl.AugmentedCertificate
+	VouchedSubsets []*VouchedSubset
+}
+
+type VouchedSubset struct {
+	Authority uint64 // index in Authorities
+	Sig       []byte
+	Signed    []byte
 }
 
 func (e *Exchange) Dump(w io.Writer, dumpContentText bool) error {
@@ -73,4 +85,5 @@ type Bundle struct {
 	PrimaryURL  *url.URL
 	Exchanges   []*Exchange
 	ManifestURL *url.URL
+	Signatures  *Signatures
 }
