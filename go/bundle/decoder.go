@@ -466,10 +466,10 @@ func parseSignaturesSection(sectionContents []byte) (*Signatures, error) {
 }
 
 var knownSections = map[string]struct{}{
-	"index":      struct{}{},
-	"manifest":   struct{}{},
-	"signatures": struct{}{},
-	"responses":  struct{}{},
+	"index":      {},
+	"manifest":   {},
+	"signatures": {},
+	"responses":  {},
 }
 
 type MetadataErrorType int

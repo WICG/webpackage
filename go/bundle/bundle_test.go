@@ -58,7 +58,7 @@ func createTestBundle(t *testing.T, ver version.Version) *Bundle {
 	}
 	if ver == version.Unversioned {
 		bundle.Exchanges[0].Request.Header = make(http.Header)
-		bundle.Signatures = nil  // Unversioned bundle cannot have signatures.
+		bundle.Signatures = nil // Unversioned bundle cannot have signatures.
 	}
 	if ver.HasPrimaryURLField() {
 		bundle.PrimaryURL = urlMustParse("https://bundle.example.com/")

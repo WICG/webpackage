@@ -10,7 +10,7 @@ type Version string
 
 const (
 	Unversioned Version = "unversioned"
-	VersionB1 Version = "b1"
+	VersionB1   Version = "b1"
 )
 
 var AllVersions = []Version{
@@ -20,6 +20,7 @@ var AllVersions = []Version{
 
 // HeaderMagicBytesUnversioned is the CBOR encoding of the 4-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8.
 var HeaderMagicBytesUnversioned = []byte{0x84, 0x48, 0xf0, 0x9f, 0x8c, 0x90, 0xf0, 0x9f, 0x93, 0xa6}
+
 // HeaderMagicBytes is the CBOR encoding of the 6-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8.
 var HeaderMagicBytes = []byte{0x86, 0x48, 0xf0, 0x9f, 0x8c, 0x90, 0xf0, 0x9f, 0x93, 0xa6}
 
