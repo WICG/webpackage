@@ -59,8 +59,16 @@ $ make
 This requires that you have software installed as described in
 https://github.com/martinthomson/i-d-template/blob/master/doc/SETUP.md.
 
-### Packaging tool.
+### Packaging tools
 
-Install this with `go install github.com/WICG/webpackage/go/signedexchange/cmd/gen-signedexchange`.
+#### Signed HTTP Exchanges
+
+Install this with `go install github.com/WICG/webpackage/go/signedexchange/cmd/...`.
 
 See [go/signedexchange](go/signedexchange) for the usage of the tool.
+
+#### Bundled HTTP Exchanges
+
+Install this with `go install github.com/WICG/webpackage/go/bundle/cmd/...`.
+
+See [go/bundle](go/bundle) for the usage of the tool.
