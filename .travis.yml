@@ -1,16 +1,12 @@
-stages:
-  - go
-  - spec
-
 jobs:
   include:
-    - stage: go
+    - name: "Go"
       language: go
       env:
         - GO111MODULE=on
       script: go test -v ./go/...
 
-    - stage: spec
+    - name: "Specifications"
       language: python
       sudo: false
       dist: trusty
