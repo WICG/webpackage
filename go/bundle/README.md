@@ -46,7 +46,7 @@ You can use `-startURL` command-line flag to specify the entry point of the bund
 ### sign-bundle
 `sign-bundle` updates a bundle attaching a cryptographic signature of its exchanges. To use this tool, you need a pair of a private key and a certificate in the `application/cert-chain+cbor` format. See [go/signedexchange](../signedexchange/README.md) for more information on how to create a key and certificate pair.
 
-Assuming you have a key and certificate pair for `example.org`, thils command will sign all exchanges in `unsigned.wbn` whose URL's hostname is `example.org`, and writes a new bundle to `signed.wbn`.
+Assuming you have a key and certificate pair for `example.org`, this command will sign all exchanges in `unsigned.wbn` whose URL's hostname is `example.org`, and writes a new bundle to `signed.wbn`.
 
 ```
 sign-bundle \

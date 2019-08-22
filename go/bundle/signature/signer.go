@@ -24,7 +24,7 @@ type Signer struct {
 	SignedSubset
 }
 
-// SignedSubset represents the "sisnged-subset" structure.
+// SignedSubset represents a "signed-subset" structure.
 // https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#signatures-section
 type SignedSubset struct {
 	ValidityUrl  *url.URL
