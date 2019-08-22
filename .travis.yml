@@ -1,39 +1,52 @@
-language: python
-sudo: false
-dist: trusty
+stages:
+  - go
+  - spec
 
-python:
-  - "2.7"
+jobs:
+  include:
+    - stage: go
+      language: go
+      env:
+        - GO111MODULE=on
+      script: go test -v ./go/...
 
-addons:
-  apt:
-    packages:
-     - python-pip
-     - xsltproc
+    - stage: spec
+      language: python
+      sudo: false
+      dist: trusty
 
-env:
-  global:
-   - GOPATH="${TRAVIS_BUILD_DIR}/.go_workspace"
-   - mmark_src=github.com/miekg/mmark/mmark
-   - mmark=./mmark
+      python:
+        - "2.7"
 
-install:
- - git clone --depth=1 https://github.com/tabatkins/bikeshed.git
- - pip install --editable bikeshed
- - bikeshed update
- - pip install xml2rfc!=2.15.0
- - if head -1 -q *.md | grep '^\-\-\-' >/dev/null 2>&1; then gem install --no-doc kramdown-rfc2629; fi
- - if head -1 -q *.md | grep '^%%%' >/dev/null 2>&1; then go get "$mmark_src" && go build "$mmark_src"; fi
+      addons:
+        apt:
+          packages:
+           - python-pip
+           - xsltproc
 
-script:
- - bikeshed --die-on=warning spec loading.bs
- - make
- - make issues || make issues DISABLE_ISSUE_FETCH=true && make gh-issues
- - make gh-pages
+      env:
+        global:
+         - GOPATH="${TRAVIS_BUILD_DIR}/.go_workspace"
+         - mmark_src=github.com/miekg/mmark/mmark
+         - mmark=./mmark
 
-deploy:
-  provider: script
-  script: make upload
-  skip_cleanup: true
-  on:
-    tags: true
+      install:
+       - git clone --depth=1 https://github.com/tabatkins/bikeshed.git
+       - pip install --editable bikeshed
+       - bikeshed update
+       - pip install xml2rfc!=2.15.0
+       - if head -1 -q *.md | grep '^\-\-\-' >/dev/null 2>&1; then gem install --no-doc kramdown-rfc2629; fi
+       - if head -1 -q *.md | grep '^%%%' >/dev/null 2>&1; then go get "$mmark_src" && go build "$mmark_src"; fi
+
+      script:
+       - bikeshed --die-on=warning spec loading.bs
+       - make
+       - make issues || make issues DISABLE_ISSUE_FETCH=true && make gh-issues
+       - make gh-pages
+
+      deploy:
+        provider: script
+        script: make upload
+        skip_cleanup: true
+        on:
+          tags: true
