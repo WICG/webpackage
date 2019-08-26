@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"io"
+
+	"github.com/WICG/webpackage/go/signedexchange/mice"
 )
 
 type Version string
@@ -68,6 +70,24 @@ func ParseMagicBytes(r io.Reader) (Version, error) {
 		return VersionB1, nil
 	}
 	return "", errors.New("bundle: unrecognized version magic")
+}
+
+func (v Version) MiceEncoding() mice.Encoding {
+	switch v {
+	case VersionB1:
+		return mice.Draft03Encoding
+	default:
+		panic("not reached")
+	}
+}
+
+func (v Version) SignatureContextString() string {
+	switch v {
+	case VersionB1:
+		return "Web Package 1 b1"
+	default:
+		panic("not reached")
+	}
 }
 
 func (v Version) HasPrimaryURLField() bool {
