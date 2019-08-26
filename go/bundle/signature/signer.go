@@ -147,6 +147,7 @@ func (s *Signer) UpdateSignatures(signatures *bundle.Signatures) (*bundle.Signat
 	}
 
 	authorityIndex := len(signatures.Authorities)
+	// TODO: Deduplicate intermediate certificates.
 	signatures.Authorities = append(signatures.Authorities, s.Certs...)
 	signedSubsetBytes, err := s.SignedSubset.Encode()
 	if err != nil {

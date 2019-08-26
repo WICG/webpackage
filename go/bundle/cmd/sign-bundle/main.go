@@ -3,6 +3,7 @@ package main
 import (
 	"crypto"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -84,22 +85,20 @@ func addSignature(b *bundle.Bundle, signer *signature.Signer) error {
 	return nil
 }
 
-func main() {
-	flag.Parse()
-
+func run() error {
 	certs, err := readCertChainFromFile(*flagCertificate)
 	if err != nil {
-		log.Fatalf("%s: %v", *flagCertificate, err)
+		return fmt.Errorf("%s: %v", *flagCertificate, err)
 	}
 
 	privKey, err := readPrivateKeyFromFile(*flagPrivateKey)
 	if err != nil {
-		log.Fatalf("%s: %v", *flagPrivateKey, err)
+		return fmt.Errorf("%s: %v", *flagPrivateKey, err)
 	}
 
 	validityUrl, err := url.Parse(*flagValidityUrl)
 	if err != nil {
-		log.Fatalf("failed to parse validity URL %q: %v", *flagValidityUrl, err)
+		return fmt.Errorf("failed to parse validity URL %q: %v", *flagValidityUrl, err)
 	}
 
 	var date time.Time
@@ -109,25 +108,33 @@ func main() {
 		var err error
 		date, err = time.Parse(time.RFC3339, *flagDate)
 		if err != nil {
-			log.Fatalf("failed to parse date %q: %v", *flagDate, err)
+			return fmt.Errorf("failed to parse date %q: %v", *flagDate, err)
 		}
 	}
 
 	b, err := readBundleFromFile(*flagInput)
 	if err != nil {
-		log.Fatalf("%s: %v", *flagInput, err)
+		return fmt.Errorf("%s: %v", *flagInput, err)
 	}
 
 	signer, err := signature.NewSigner(b.Version, certs, privKey, validityUrl, date, *flagExpire)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if err := addSignature(b, signer); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if err := writeBundleToFile(b, *flagOutput); err != nil {
-		log.Fatalf("%s: %v", *flagOutput, err)
+		return fmt.Errorf("%s: %v", *flagOutput, err)
+	}
+	return nil
+}
+
+func main() {
+	flag.Parse()
+	if err := run(); err != nil {
+		log.Fatal(err)
 	}
 }
