@@ -61,7 +61,7 @@ func (v *Verifier) VerifyExchange(e *bundle.Exchange) (*VerifyExchangeResult, er
 	if rhs == nil || auth == nil {
 		return nil, nil
 	}
-	if rhs.VariantsValue != "" || len(rhs.Hashes) != 1 {
+	if len(rhs.VariantsValue) != 0 || len(rhs.Hashes) != 1 {
 		return nil, errors.New("signature: signature with variants-value is not supported")
 	}
 	rh := rhs.Hashes[0]
@@ -225,7 +225,7 @@ func decodeSubsetHashes(dec *cbor.Decoder) (map[string]*ResponseHashes, error) {
 			return nil, fmt.Errorf("signature: unexpected length of subset-hashes value array: %d", m)
 		}
 		rhs := &ResponseHashes{}
-		rhs.VariantsValue, err = dec.DecodeTextString()
+		rhs.VariantsValue, err = dec.DecodeByteString()
 		if err != nil {
 			return nil, err
 		}
