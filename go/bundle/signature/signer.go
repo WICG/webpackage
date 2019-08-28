@@ -35,7 +35,7 @@ type SignedSubset struct {
 }
 
 type ResponseHashes struct {
-	VariantsValue string
+	VariantsValue []byte
 	Hashes        []*ResourceIntegrity
 }
 
@@ -71,7 +71,7 @@ func (s *SignedSubset) Encode() ([]byte, error) {
 					cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 						keyE.EncodeTextString(url)
 						valueE.EncodeArrayHeader(1 + len(rh.Hashes)*2)
-						valueE.EncodeTextString(rh.VariantsValue)
+						valueE.EncodeByteString(rh.VariantsValue)
 						for _, ri := range rh.Hashes {
 							valueE.EncodeByteString(ri.HeaderSha256)
 							valueE.EncodeTextString(ri.PayloadIntegrityHeader)
@@ -133,7 +133,7 @@ func (s *Signer) AddExchange(e *bundle.Exchange, payloadIntegrityHeader string) 
 	}
 
 	s.SubsetHashes[e.Request.URL.String()] = &ResponseHashes{
-		VariantsValue: "",
+		VariantsValue: nil,
 		Hashes:        []*ResourceIntegrity{ri},
 	}
 	return nil
