@@ -50,7 +50,7 @@ gen-bundle -har foo.har -o foo.wbn
 `gen-bundle` also accepts `-URLList FILE` flag. `FILE` is a plain text file with one URL on each line. `gen-bundle` fetches these URLs and put the responses into the bundle. For example, you could create `urls.txt` with:
 
 ```
-# This is a comment.
+# A line starting with '#' is a comment.
 https://example.com/
 https://example.com/manifest.webmanifest
 https://example.com/style.css
