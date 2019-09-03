@@ -19,6 +19,7 @@ var (
 	flagPrimaryURL  = flag.String("primaryURL", "", "Primary URL")
 	flagManifestURL = flag.String("manifestURL", "", "Manifest URL")
 	flagOutput      = flag.String("o", "out.wbn", "Webbundle output file")
+	flagURLList     = flag.String("URLList", "", "URL list file")
 )
 
 func main() {
@@ -71,8 +72,14 @@ func main() {
 			log.Fatal(err)
 		}
 		b.Exchanges = es
+	} else if *flagURLList != "" {
+		es, err := fromURLList(*flagURLList)
+		if err != nil {
+			log.Fatal(err)
+		}
+		b.Exchanges = es
 	} else {
-		fmt.Fprintln(os.Stderr, "Please specify -har or -dir.")
+		fmt.Fprintln(os.Stderr, "Please specify one of -har, -dir, or -URLList.")
 		flag.Usage()
 		return
 	}
