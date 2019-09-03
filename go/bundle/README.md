@@ -4,7 +4,7 @@ This directory contains a reference implementation of [Bundled HTTP Exchanges](h
 ## Overview
 We currently provide three command-line tools: `gen-bundle`, `sign-bundle` and `dump-bundle`.
 
-`gen-bundle` command is a bundle generator tool. `gen-bundle` consumes a set of http exchanges (currently in the form of [HAR format](https://w3c.github.io/web-performance/specs/HAR/Overview.html) or static files in a local directory), and emits a bundled exchange file.
+`gen-bundle` command is a bundle generator tool. `gen-bundle` consumes a set of http exchanges (currently in the form of [HAR format](https://w3c.github.io/web-performance/specs/HAR/Overview.html), URL list file, or static files in a local directory), and emits a bundled exchange file.
 
 `sign-bundle` command attaches a signature to a bundle. `sign-bundle` takes an existing bundle file, a certificate and a private key, and emits a new bundle file with cryptographic signature for the bundled exchanges added.
 
@@ -27,7 +27,15 @@ go get -u github.com/WICG/webpackage/go/bundle/cmd/...
 ## Usage
 
 ### gen-bundle
-`gen-bundle` generates a bundled exchange file from a HAR file.
+`gen-bundle` generates a bundled exchange file. There are three ways to provide a set of exchanges to bundle; by a HAR file, by a URL list, and by a local directory.
+
+These command-line flags are common to all the three options:
+
+- `-primaryURL` specifies the bundle's main resource URL. This URL is also used as the fallback destination when browser cannot process the bundle.
+- `-manifestURL` specifies the bundle's [manifest](https://www.w3.org/TR/appmanifest/) URL.
+- `-o` specifies name of the output bundle file.
+
+#### From a HAR file
 
 One convenient way to generate HAR file is via Chrome Devtools. Navigate to "Network" panel, and right-click on any resource and select "Save as HAR with content".
 ![generating har with devtools](https://raw.githubusercontent.com/WICG/webpackage/master/go/bundle/har-devtools.png)
@@ -37,11 +45,33 @@ Once you have the har file, generate the bundled exchange file via:
 gen-bundle -har foo.har -o foo.wbn
 ```
 
+#### From a URL list
+
+`gen-bundle` also accepts `-URLList FILE` flag. `FILE` is a plain text file with one URL on each line. `gen-bundle` fetches these URLs and put the responses into the bundle. For example, you could create `urls.txt` with:
+
+```
+# This is a comment.
+https://example.com/
+https://example.com/manifest.webmanifest
+https://example.com/style.css
+https://example.com/script.js
+```
+then run:
+```
+gen-bundle -URLList urls.txt \
+           -primaryURL https://example.com/ \
+           -manifestURL https://example.com/manifest.webmanifest \
+           -o example_com.wbn
+```
+
+Note that `gen-bundle` does not automatically discover subresources; you have to enumerate all the necessary subresources in the URL list file.
+
+#### From a local directory
+
 You can also create a bundle from a local directory. For example, if you have the necessary files for the site `https://www.example.com/` in `static/` directory, run:
 ```
 gen-bundle -dir static -baseURL https://www.example.com/ -o foo.wbn
 ```
-You can use `-startURL` command-line flag to specify the entry point of the bundle, as a relative URL from `-baseURL`. Currently, this just makes the exchange for `-startURL` the first entry in the bundled exchange file.
 
 ### sign-bundle
 `sign-bundle` updates a bundle attaching a cryptographic signature of its exchanges. To use this tool, you need a pair of a private key and a certificate in the `application/cert-chain+cbor` format. See [go/signedexchange](../signedexchange/README.md) for more information on how to create a key and certificate pair.
@@ -58,7 +88,7 @@ sign-bundle \
 ```
 
 ### dump-bundle
-`dump-bundle` dumps the content of a bundled exchange in a human readable form. To display content of a har file, invoke:
+`dump-bundle` dumps the content of a bundled exchange in a human readable form. To display content of a bundle file, invoke:
 ```
-dump-bundle -i foo.har
+dump-bundle -i foo.wbn
 ```
