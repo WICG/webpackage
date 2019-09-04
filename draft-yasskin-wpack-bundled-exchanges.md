@@ -878,8 +878,8 @@ field, clients SHOULD reject bundles served without it.
 
 ## Internet Media Type Registration
 
-IANA maintains the registry of Internet Media Types {{?RFC6838}}
-at <https://www.iana.org/assignments/media-types>.
+IANA is requested to register the MIME media type ({{!IANA.media-types}}) for
+bundled exchanges, application/webbundle, as follows:
 
 * Type name: application
 
@@ -930,7 +930,7 @@ at <https://www.iana.org/assignments/media-types>.
 * Change controller:
   The IESG <iesg@ietf.org>
 
-* Provisional registration? (standards tree only): Not yet.
+* Provisional registration? Yes.
 
 ## Web Bundle Section Name Registry {#section-name-registry}
 
