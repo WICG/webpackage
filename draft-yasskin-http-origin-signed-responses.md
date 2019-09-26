@@ -2082,6 +2082,11 @@ exchange argues for embedding a signature's lifetime into the signature.
 
 RFC EDITOR PLEASE DELETE THIS SECTION.
 
+draft-07
+
+* Provisionally register application/signed-exchange and
+  application/cert-chain+cbor.
+
 draft-06
 
 * Add a security consideration for future-dated OCSP responses and for stolen
