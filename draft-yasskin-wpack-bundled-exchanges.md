@@ -969,6 +969,12 @@ section is not processed.
 
 RFC EDITOR PLEASE DELETE THIS SECTION.
 
+draft-02
+
+* Fix the initial bytes of the format.
+* Allow empty responses to omit their content type.
+* Provisionally register application/webbundle.
+
 draft-01
 
 * Include only section lengths in the section index, requiring sections to be
