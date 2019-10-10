@@ -384,16 +384,19 @@ internet connection. Thereafter, the application should use the normal Service
 Worker update mechanism to stay up to date.
 
 One way to accomplish this would be to pre-create a browser profile in the
-device's default browser, and navigate it to each of the pre-installed apps
-before recording the device image. However, this doesn't help users who change
-their default browser.
+device's default browser and navigate it to each of the pre-installed apps
+before recording the device image. However, this means end-users miss the
+browser's initial setup flow and possibly that any "unique" cookies the sites
+set are now shared across everyone who bought the device. It also doesn't help
+users who change their default browser.
 
 If multiple browsers supported an unsigned web package format, with an option to
-trust it as if it were signed if it's in a particular read-only section of the
-filesystem, and if registering a Service Worker from a page inside a package
-passed the full package contents to the Service Worker's `install` event, the
-device manufacturer could provide web packages for each pre-installed
-application that would work in the user's chosen browser.
+trust it as if it were signed if it's in a particular section of the filesystem
+that's as protected as the browser's executable, and if registering a Service
+Worker from a page inside a package passed the full package contents to the
+Service Worker's `install` event, the device manufacturer could provide web
+packages for each pre-installed application that would work in the user's chosen
+browser.
 
 Associated requirements:
 
