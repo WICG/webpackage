@@ -10,10 +10,11 @@ out.
 
 In countries with expensive and/or unreliable mobile data, there is an
 established practice of sharing content and native applications peer-to-peer
-using SD cards, WiFi Direct, and similar transmission channels. With the web's
-move to HTTPS, it became impossible to share web apps over these channels, so a
-team within Google Chrome began adding an index and origin-trusted signatures to
-the TAG's packaging format.
+using SD cards, WiFi Direct, and similar transmission channels. Untrusted web
+content could already be shared, albeit awkwardly, using existing formats.
+However, with the web's move to HTTPS, it became impossible to share web apps
+over these channels, so a team within Google Chrome began adding an index and
+origin-trusted signatures to the TAG's packaging format.
 
 The AMP project realized that this new format could solve the problem that pages
 served by the AMP cache got the wrong URLs. This eventually led to Google Chrome
@@ -27,6 +28,10 @@ that efficiently bundles multiple HTTP resources. It will also specify a way to
 optionally sign these resources such that a user agent can trust that they came
 from their claimed web origins. Key goals for WPACK are:
 
+* Efficiently storing a few or many, small or large resources, whose URLs are
+  from one to many origins. Three examples of the sets of resources that should
+  be supported are: a client-generated snapshot of a complete web page, a web
+  page's tree of JavaScript modules, and El Paquete Semanal from Cuba.
 * Allowing web apps to be safely installed after having been retrieved from a
   peer.
 * Minimizing the latency to load a subresource from a package, whether the
