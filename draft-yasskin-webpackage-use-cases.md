@@ -420,11 +420,18 @@ mechanism. Even in an app store, if a user is directed to the wrong application
 with a confusing name, they can get stuck on a hostile version. Thus, a Trust On
 First Use approach seems reasonable for the web as well.
 
-Both HTTP Strict Transport Security ({{?RFC6797}}) and HTTP Public Key Pinning
-({{?RFC7469}}) have established ways to pin assertions about a site's security
+Both HTTP Strict Transport Security (HSTS, {{?RFC6797}}) and HTTP Public Key Pinning
+(HPKP, {{?RFC7469}}) have established ways to pin assertions about a site's security
 for a bounded time after the first visit to a site. We could do the same with a
 web app's signing key, if we had a way to convey the signatures of the resources
 in the application. Web Packaging should provide such a way.
+
+Note that HPKP [has been turned off in
+Chromium](https://groups.google.com/a/chromium.org/d/topic/blink-dev/he9tr7p3rZ8/discussion)
+because it was difficult to use and dangerous. There's some hope that pinning to
+one or more keys that are entirely under the control of the website could be
+easier to use, but it will still carry the risk of blocking access to the site.
+Only sites with particularly stringent security needs should use this.
 
 One can think of a CDN as a potentially-compromised frontend and use this
 mechanism to limit the damage it can cause. However, this isn't a complete
