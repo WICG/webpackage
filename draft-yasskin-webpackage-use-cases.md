@@ -28,7 +28,11 @@ informative:
     target: "https://docs.oracle.com/javase/7/docs/technotes/guides/jar/jar.html"
     title: "JAR File Specification"
   MHTML: RFC2557
-  ServiceWorkers: W3C.WD-service-workers-1-20161011
+  ServiceWorkers:
+    target: https://w3c.github.io/ServiceWorker/
+    title: "Service Workers Nightly"
+    seriesinfo:
+      W3C: "ED"
   ZIP:
     date: 2014-10-01
     target: "https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT"
@@ -372,6 +376,33 @@ Associated requirements:
   origin.
 * {{transfer-compression}}{:format="title"}
 
+### Pre-installed applications {#preinstall}
+
+Device manufacturers would like to ship their devices with some web applications
+pre-installed and usable even if the application is first used without an
+internet connection. Thereafter, the application should use the normal Service
+Worker update mechanism to stay up to date.
+
+One way to accomplish this would be to pre-create a browser profile in the
+device's default browser and navigate it to each of the pre-installed apps
+before recording the device image. However, this means end-users miss the
+browser's initial setup flow and possibly that any "unique" cookies the sites
+set are now shared across everyone who bought the device. It also doesn't help
+users who change their default browser.
+
+If multiple browsers supported an unsigned web package format, with an option to
+trust it as if it were signed if it's in a particular section of the filesystem
+that's as protected as the browser's executable, and if registering a Service
+Worker from a page inside a package passed the full package contents to the
+Service Worker's `install` event, the device manufacturer could provide web
+packages for each pre-installed application that would work in the user's chosen
+browser.
+
+Associated requirements:
+
+* {{service-worker-integration}}{:format="title"}: To pass the package into the
+  `install` event and from there get its contents into a `Cache`.
+
 ### Installation from a self-extracting executable {#self-extracting}
 
 The Node and Electron communities would like to install packages using
@@ -642,6 +673,13 @@ In some unsigned packages, Javascript time-telling functions should return the
 timestamp of the package, rather than the true current time.
 
 We should explore if this has security implications.
+
+### Service Worker integration {#service-worker-integration}
+
+When a web page inside a package registers a Service Worker, that Service
+Worker's `install` event should receive a reference to the full package, with a
+way to copy the package's contents into a `Cache` object.
+({{ServiceWorkers}})
 
 # Non-goals
 
