@@ -369,8 +369,8 @@ steps, taking the `stream` as input.
 
 1. Assert: `metadata` has an entry with the key "primaryUrl".
 
-1. If `metadata` doesn't have entries with keys "requests" and "manifest",
-   return a "format error" with `fallbackUrl`.
+1. If `metadata` doesn't have entries with keys "requests", return a
+   "format error" with `fallbackUrl`.
 
 1. Return `metadata`.
 
