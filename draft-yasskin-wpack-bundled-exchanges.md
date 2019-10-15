@@ -46,8 +46,9 @@ informative:
 
 Bundled exchanges provide a way to bundle up groups of HTTP request+response
 pairs to transmit or store them together. They can include multiple top-level
-resources with one identified as the default by a manifest, provide random
-access to their component exchanges, and efficiently store 8-bit resources.
+resources with one identified as the default by a primaryUrl metadata, provide
+random access to their component exchanges, and efficiently store 8-bit
+resources.
 
 --- note_Note_to_Readers
 
@@ -92,8 +93,8 @@ Standard ({{INFRA}}).
 
 # Semantics {#semantics}
 
-A bundle is logically a set of HTTP exchanges, with a URL identifying the
-manifest(s) of the bundle itself.
+A bundle is logically a set of HTTP exchanges, with a primary URL in the bundle
+and an optional URL identifying the manifest(s) of the bundle itself.
 
 While the order of the exchanges is not semantically meaningful, it can
 significantly affect performance when the bundle is loaded from a network
@@ -134,7 +135,7 @@ metadata, and if one matches, load that request's response.
 This takes the bundle's stream and returns either an error (where an error is a
 "format error" or a "version error"), an error with a fallback URL (which is
 also the primaryUrl when the bundle parses successfully), or a map ({{INFRA}})
-of metadata containing at least keys named:
+of metadata containing keys named:
 
 primaryUrl
 
@@ -162,7 +163,8 @@ manifest
   multiple different manifests, where the client uses content negotiation to
   select the most appropriate one.
 
-The map may include other items added by sections defined in the
+The map must include keys named primaryUrl and requests. The map may include
+manifest and other items added by sections defined in the
 {{section-name-registry}}{:format="title"}.
 
 This operation only waits for a prefix of the stream that, if the bundle is
