@@ -93,8 +93,8 @@ Standard ({{INFRA}}).
 
 # Semantics {#semantics}
 
-A bundle is logically a set of HTTP exchanges, with a primary URL in the bundle
-and an optional URL identifying the manifest(s) of the bundle itself.
+A bundle is logically a set of HTTP exchanges, with a URL identifying the
+primary resource of the bundle.
 
 While the order of the exchanges is not semantically meaningful, it can
 significantly affect performance when the bundle is loaded from a network
@@ -135,7 +135,7 @@ metadata, and if one matches, load that request's response.
 This takes the bundle's stream and returns either an error (where an error is a
 "format error" or a "version error"), an error with a fallback URL (which is
 also the primaryUrl when the bundle parses successfully), or a map ({{INFRA}})
-of metadata containing keys named:
+of metadata containing at least keys named:
 
 primaryUrl
 
@@ -157,14 +157,7 @@ requests
       {{semantics-load-response}}{:format="title"} can use the
       `ResponseMetadata` structures to find the matching response.
 
-manifest
-
-: The URL of the bundle's manifest(s). This is a URL to support bundles with
-  multiple different manifests, where the client uses content negotiation to
-  select the most appropriate one.
-
-The map must include keys named primaryUrl and requests. The map may include
-manifest and other items added by sections defined in the
+The map may include other items added by sections defined in the
 {{section-name-registry}}{:format="title"}.
 
 This operation only waits for a prefix of the stream that, if the bundle is
@@ -371,7 +364,7 @@ steps, taking the `stream` as input.
 
 1. Assert: `metadata` has an entry with the key "primaryUrl".
 
-1. If `metadata` doesn't have entries with keys "requests", return a
+1. If `metadata` doesn't have entries with key "requests", return a
    "format error" with `fallbackUrl`.
 
 1. Return `metadata`.
