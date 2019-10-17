@@ -408,42 +408,41 @@ Associated requirements:
 If an attacker gains control over a frontend server, any user who visits that
 server while they have control can have their web app upgraded to a hostile
 version. On the other hand, native applications either control their own update
-process or delegate it to an app store that can enforce that upgrades are signed
-by the same certificate as the original application. This means that to upgrade
-users to a hostile version of a native app (that follows best practices),
-attackers will usually have to compromise a build system instead of just a
-frontend, which is usually much more difficult. This gives security-sensitive
-applications an incentive to build native apps instead of web apps.
+process or delegate it to an app store, which allows them to protect users by
+requiring that updates are signed by a trusted key. This protection isn't
+perfect---it's a Trust-On-First-Use mechanism that doesn't protect users who
+first install the application while the attacker controls the server they get it
+from, and attackers can bypass it by compromising the app's build system---but
+since both of those risks also apply to web apps, it does make the attack
+surface for native applications smaller than for web apps.
 
-The initial installation of a native application isn't protected by this
-mechanism. Even in an app store, if a user is directed to the wrong application
-with a confusing name, they can get stuck on a hostile version. Thus, a Trust On
-First Use approach seems reasonable for the web as well.
+Not all application developers should choose to require signed updates, since
+doing so adds the risk of losing the signing key, but having this option gives
+security-sensitive applications an incentive to build native apps instead of web
+apps.
 
-Both HTTP Strict Transport Security (HSTS, {{?RFC6797}}) and HTTP Public Key Pinning
-(HPKP, {{?RFC7469}}) have established ways to pin assertions about a site's security
-for a bounded time after the first visit to a site. We could do the same with a
-web app's signing key, if we had a way to convey the signatures of the resources
-in the application. Web Packaging should provide such a way.
+It has been difficult to add a signature requirement for web app upgrades
+because we haven't had a way to sign web resources. Web Packaging is expected to
+provide that, so we'll be able to consider the best way to do it.
+
+Both HTTP Strict Transport Security (HSTS, {{?RFC6797}}) and HTTP Public Key
+Pinning (HPKP, {{?RFC7469}}) have established ways to pin assertions about a
+site's security for a bounded time after a visit. We could do the same with a
+web app's signing key.
 
 Note that HPKP [has been turned off in
 Chromium](https://groups.google.com/a/chromium.org/d/topic/blink-dev/he9tr7p3rZ8/discussion)
-because it was difficult to use and dangerous. There's some hope that pinning to
-one or more keys that are entirely under the control of the website could be
-easier to use, but it will still carry the risk of blocking access to the site.
-Only sites with particularly stringent security needs should use this.
+because it was difficult to use and made it too easy to "brick" a website.
+Update-key pins could avoid the uncertainty about which CA keys to pin, although
+it was also possible to pin leaf certificates with HPKP. The design could also
+require an active Service Worker before enforcing the key pins, to reduce the
+chance that a site completely stops working if it loses its keys. Users would
+still have to be told to take manual action to make the site start updating
+again. Again, not all application developers should opt into this.
 
 One can think of a CDN as a potentially-compromised frontend and use this
-mechanism to limit the damage it can cause. However, this isn't a complete
-solution for an untrustworthy CDN.
-
-A related IETF proposal is Delegated Credentials for TLS
-({{?I-D.ietf-tls-subcerts}}), but that proposal solves a different use case where
-a CDN or server needs the authority to serve abitrary or altered content. Given
-that need, the proposal merely limits the intervals and ciphers used by the
-deputized CDN/servers. In contrast, Web Packaging could allow content
-distribution without fully deputizing the servers performing distribution (at
-the cost of not supporting the same extent of use cases).
+mechanism to limit the damage it can cause. However, this doesn't make it safe
+to use an untrustworthy CDN because of the risk to first-time users.
 
 Associated requirements:
 
