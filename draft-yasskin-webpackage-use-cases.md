@@ -418,8 +418,8 @@ surface for native applications smaller than for web apps.
 
 Not all application developers should choose to require signed updates, since
 doing so adds the risk of losing the signing key, but having this option gives
-security-sensitive applications an incentive to build native apps instead of web
-apps.
+security-sensitive applications like [Dashlane](https://app.dashlane.com/) an
+incentive to build native apps instead of web apps.
 
 It has been difficult to add a signature requirement for web app upgrades
 because we haven't had a way to sign web resources. Web Packaging is expected to
