@@ -1,0 +1,30 @@
+{
+  "name": "webbundle",
+  "version": "0.0.1",
+  "description": "Generator for the application/webbundle format, defined in draft-yasskin-wpack-bundled-exchanges-01.",
+  "main": "./lib/webbundle.js",
+  "types": "./lib/webbundle.d.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WICG/webpackage.git",
+    "directory": "js/bundle"
+  },
+  "keywords": [
+    "webpackage",
+    "bundled exchanges"
+  ],
+  "author": "Kunihiko Sakamoto <ksakamoto@chromium.org>",
+  "license": "W3C-20150513",
+  "dependencies": {
+    "cbor": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/cbor": "^2.0.0",
+    "@types/node": "^12.7.11",
+    "typescript": "^3.6.3"
+  }
+}

@@ -1,0 +1,29 @@
+# js/bundle
+This directory contains a JavaScript library for serializing (and parsing, in the future) the `application/webbundle` format defined in the [Bundled HTTP Exchanges](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html) draft spec.
+
+## Installation
+Using npm:
+```bash
+npm install webbundle
+```
+
+## Usage
+Please be aware that the API is not yet stable and is subject to change any time.
+
+Example:
+```javascript
+const webbundle = require('webbundle');
+const fs = require("fs");
+
+const primaryURL = 'https://example.com/';
+let builder = new webbundle.BundleBuilder(primaryURL);
+builder.setManifestURL('https://example.com/manifest.json');
+builder.addExchange(
+    primaryURL,                          // URL
+    200,                                 // response code
+    {'Content-Type': 'text/html'},       // response headers
+    '<html>Hello, Web Bundle!</html>');  // response body (string or Uint8Array)
+// Have as many builder.addExchange() for resource URLs as needed for the package.
+
+fs.writeFileSync('out.wbn', builder.createBundle());
+```
