@@ -119,9 +119,15 @@ class HeaderMap extends Map<string, string> {
     }
 }
 
-// Throws an error if `urlString` is not a valid exchange URL.
+// Throws an error if `urlString` is not a valid exchange URL, i.e. it must:
+// - be absolute,
+// - have http: or https: protocol, and
+// - have no credentials (user:password@) or hash (#fragment).
 function validateExchangeURL(urlString: string): void {
     let url = new URL(urlString);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        throw new Error("Exchange URL's protocol must be http(s): " + urlString);
+    }
     if (url.username !== '' || url.password !== '') {
         throw new Error('Exchange URL must not have credentials: ' + urlString);
     }
