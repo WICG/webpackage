@@ -34,6 +34,7 @@ These command-line flags are common to all the three options:
 - `-primaryURL` specifies the bundle's main resource URL. This URL is also used as the fallback destination when browser cannot process the bundle.
 - `-manifestURL` specifies the bundle's [manifest](https://www.w3.org/TR/appmanifest/) URL.
 - `-o` specifies name of the output bundle file.
+- `-headerOverride` adds additional response header to all bundled responses. Existing values of the header are overwritten.
 
 #### From a HAR file
 
