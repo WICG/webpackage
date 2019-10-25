@@ -6,7 +6,7 @@ Currently this library doesn't support origin-signed exchanges, but bundles gene
 ## Installation
 Using npm:
 ```bash
-npm install wicg-webbundle
+npm install wbn
 ```
 
 ## Usage
@@ -14,11 +14,11 @@ Please be aware that the API is not yet stable and is subject to change any time
 
 Example:
 ```javascript
-const webbundle = require('wicg-webbundle');
+const wbn = require('wbn');
 const fs = require("fs");
 
 const primaryURL = 'https://example.com/';
-let builder = new webbundle.BundleBuilder(primaryURL);
+let builder = new wbn.BundleBuilder(primaryURL);
 builder.setManifestURL('https://example.com/manifest.json');
 builder.addExchange(
     primaryURL,                          // URL

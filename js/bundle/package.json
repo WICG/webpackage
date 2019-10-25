@@ -1,9 +1,9 @@
 {
-  "name": "wicg-webbundle",
+  "name": "wbn",
   "version": "0.0.1",
   "description": "Generator for the application/webbundle format, defined in draft-yasskin-wpack-bundled-exchanges-01.",
-  "main": "./lib/webbundle.js",
-  "types": "./lib/webbundle.d.js",
+  "main": "./lib/wbn.js",
+  "types": "./lib/wbn.d.js",
   "scripts": {
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
