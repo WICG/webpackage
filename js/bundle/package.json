@@ -1,5 +1,5 @@
 {
-  "name": "webbundle",
+  "name": "wicg-webbundle",
   "version": "0.0.1",
   "description": "Generator for the application/webbundle format, defined in draft-yasskin-wpack-bundled-exchanges-01.",
   "main": "./lib/webbundle.js",
