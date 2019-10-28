@@ -12,7 +12,7 @@ npm install wbn
 ## Usage
 Please be aware that the API is not yet stable and is subject to change any time.
 
-Example:
+Creating a Bundle:
 ```javascript
 const wbn = require('wbn');
 const fs = require("fs");
@@ -28,4 +28,29 @@ builder.addExchange(
 // Have as many builder.addExchange() for resource URLs as needed for the package.
 
 fs.writeFileSync('out.wbn', builder.createBundle());
+```
+
+Reading a Bundle:
+```javascript
+const wbn = require('wbn');
+const fs = require("fs");
+
+const buf = fs.readFileSync('out.wbn');
+let bundle = new wbn.Bundle(buf);
+let exchanges = [];
+for (let url of bundle.urls) {
+    let resp = bundle.getResponse(url);
+    exchanges.push({
+        url,
+        status: resp.status,
+        headers: resp.headers,
+        body: resp.body.toString('utf-8')
+    });
+}
+console.log(JSON.stringify({
+    version: bundle.version,  // format version
+    primaryURL: bundle.primaryURL,
+    manifestURL: bundle.manifestURL,
+    exchanges
+}, null, 2));
 ```
