@@ -93,3 +93,8 @@ sign-bundle \
 ```
 dump-bundle -i foo.wbn
 ```
+
+## Using Bundles
+Bundles generated with `gen-bundle` can be opened with web browsers supporting web bundles.
+
+Chrome (79+) experimentally supports Web Bundles with some limitations. See [this document](https://chromium.googlesource.com/chromium/src/+/refs/heads/master/content/browser/web_package/using_web_bundles.md) for more details.
