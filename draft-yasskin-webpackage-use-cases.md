@@ -432,17 +432,17 @@ web app's signing key.
 
 Note that HPKP [has been turned off in
 Chromium](https://groups.google.com/a/chromium.org/d/topic/blink-dev/he9tr7p3rZ8/discussion)
-because it was difficult to use and made it too easy to "brick" a website.
-Update-key pins could avoid the uncertainty about which CA keys to pin, although
-it was also possible to pin leaf certificates with HPKP. The design could also
-require an active Service Worker before enforcing the key pins, to reduce the
-chance that a site completely stops working if it loses its keys. Users would
-still have to be told to take manual action to make the site start updating
-again. Again, not all application developers should opt into this.
+because it was difficult to use and made it too easy to "brick" a website. To
+reduce the chance of bricking the website, this key pinning design could require
+an active Service Worker before enforcing the pins. It could also allow a new
+key to be used if it's seen consistently for a particular amount of time,
+instead of waiting for the whole pin to expire, to prevent users from needing to
+take manual action. However, these mitigations don't guarantee that browsers
+would find the tradeoffs more acceptable than they did for HPKP.
 
 One can think of a CDN as a potentially-compromised frontend and use this
 mechanism to limit the damage it can cause. However, this doesn't make it safe
-to use an untrustworthy CDN because of the risk to first-time users.
+to use a wholly-untrustworthy CDN because of the risk to first-time users.
 
 Associated requirements:
 
