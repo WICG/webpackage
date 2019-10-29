@@ -72,3 +72,21 @@ func (e *Exchange) AddPayloadIntegrity(ver version.Version, recordSize int) (str
 	e.Response.Header.Add("Digest", digest)
 	return encoding.IntegrityIdentifier(), nil
 }
+
+// Validate performs basic sanity checks on the bundle.
+func (b *Bundle) Validate() error {
+	if b.Version.HasPrimaryURLField() {
+		hasExchangeForPrimaryURL := false
+		primaryURLString := b.PrimaryURL.String()
+		for _, e := range b.Exchanges {
+			if e.Request.URL.String() == primaryURLString {
+				hasExchangeForPrimaryURL = true
+				break
+			}
+		}
+		if !hasExchangeForPrimaryURL {
+			return fmt.Errorf("bundle: No exchange for primary URL %v", b.PrimaryURL)
+		}
+	}
+	return nil
+}
