@@ -43,7 +43,7 @@ One convenient way to generate HAR file is via Chrome Devtools. Navigate to "Net
 
 Once you have the har file, generate the bundled exchange file via:
 ```
-gen-bundle -har foo.har -o foo.wbn
+gen-bundle -har foo.har -o foo.wbn -primaryURL https://example.com/
 ```
 
 #### From a URL list
@@ -71,7 +71,7 @@ Note that `gen-bundle` does not automatically discover subresources; you have to
 
 You can also create a bundle from a local directory. For example, if you have the necessary files for the site `https://www.example.com/` in `static/` directory, run:
 ```
-gen-bundle -dir static -baseURL https://www.example.com/ -o foo.wbn
+gen-bundle -dir static -baseURL https://example.com/ -o foo.wbn -primaryURL https://example.com/
 ```
 
 ### sign-bundle
