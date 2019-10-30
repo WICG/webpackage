@@ -62,7 +62,7 @@ in <https://github.com/WICG/webpackage>.
 
 # Introduction
 
-To satisfy the use cases in {{?I-D.yasskin-webpackage-use-cases}}, this document
+To satisfy the use cases in {{?I-D.yasskin-wpack-use-cases}}, this document
 proposes a new bundling format to group HTTP resources. Several of the use cases
 require the resources to be signed: that's provided by bundling signed exchanges
 ({{?I-D.yasskin-http-origin-signed-responses}}) rather than natively in this

@@ -61,9 +61,9 @@ has been superseded by the following documents and specifications:
 
 ### List of use cases
 
-[draft-yasskin-webpackage-use-cases](https://wicg.github.io/webpackage/#go.draft-yasskin-webpackage-use-cases.html)
+[draft-yasskin-wpack-use-cases](https://wicg.github.io/webpackage/#go.draft-yasskin-wpack-use-cases.html)
 ([IETF
-draft](https://tools.ietf.org/html/draft-yasskin-webpackage-use-cases)) contains
+draft](https://tools.ietf.org/html/draft-yasskin-wpack-use-cases)) contains
 a full list of use cases and resulting requirements.
 
 ### Signed HTTP exchanges
@@ -130,11 +130,11 @@ The [Web Package Loading specification](https://wicg.github.io/webpackage/loadin
 
 ## Use cases
 
-This section describes how to achieve several of the [use cases](https://wicg.github.io/webpackage/#go.draft-yasskin-webpackage-use-cases.html) using the above specifications.
+This section describes how to achieve several of the [use cases](https://wicg.github.io/webpackage/#go.draft-yasskin-wpack-use-cases.html) using the above specifications.
 
 ### Offline installation
 
-[Use case](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html#offline-installation)
+[Use case](https://wicg.github.io/webpackage/draft-yasskin-wpack-use-cases.html#offline-installation)
 
 Peer-to-peer sharing is quite popular, especially in emerging Markets, due to
 cost and limitations on cellular data and relatively spotty WiFi availability.
@@ -166,7 +166,7 @@ peers.
 
 ### Save and share a web page
 
-[Use case](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html#snapshot)
+[Use case](https://wicg.github.io/webpackage/draft-yasskin-wpack-use-cases.html#snapshot)
 
 Any client can snapshot the page or website they're currently reading by
 building a bundle of exchanges without signing them. A client could do part of
@@ -184,7 +184,7 @@ each of these options has significant downsides:
 
 ### Privacy-preserving prefetch
 
-[Use case](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html#private-prefetch)
+[Use case](https://wicg.github.io/webpackage/draft-yasskin-wpack-use-cases.html#private-prefetch)
 
 1. A publisher signs a page that they'd like a source website to be able to
    prefetch and serves it with an appropriate [`Signature`
@@ -216,7 +216,7 @@ them.
 
 ### Packaged Web Publications
 
-[Use case](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html#uc-web-pub)
+[Use case](https://wicg.github.io/webpackage/draft-yasskin-wpack-use-cases.html#uc-web-pub)
 
 A [packaged web publication](https://w3c.github.io/pwpub/) will probably use the
 [Bundling](#bundled-exchanges) specification to represent a collection of web
@@ -235,7 +235,7 @@ Publications may be signed in a couple ways:
 
 ### Third-party security review
 
-[Use case](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html#security-review)
+[Use case](https://wicg.github.io/webpackage/draft-yasskin-wpack-use-cases.html#security-review)
 
 If a third-party reviews a package for security in some way, which could be as
 complex as the static analysis used to guard the Apple App Store, or as simple

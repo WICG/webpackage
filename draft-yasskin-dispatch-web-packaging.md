@@ -52,7 +52,7 @@ details can be found in that repository.
 Use Cases    {#use-cases}
 ---------
 
-See {{?I-D.yasskin-webpackage-use-cases}}.
+See {{?I-D.yasskin-wpack-use-cases}}.
 
 Why not ZIP?   {#not-zip}
 ------------

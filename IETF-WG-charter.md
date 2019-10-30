@@ -81,7 +81,7 @@ The following potential goals are out of scope under this charter:
 Note that consensus is required both for changes to the current protocol
 mechanisms and retention of current mechanisms. In particular, because something
 is in the initial document set (consisting of
-draft-yasskin-webpackage-use-cases, draft-yasskin-wpack-bundled-exchanges, and
+draft-yasskin-wpack-use-cases, draft-yasskin-wpack-bundled-exchanges, and
 draft-yasskin-http-origin-signed-responses) does not imply that there is
 consensus around the feature or around how it is specified.
 

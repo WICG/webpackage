@@ -107,7 +107,7 @@ ways:
   appears in a transparency log or that static analysis indicates that it omits
   certain attacks. See {{uc-transparency}} and {{uc-static-analysis}}.
 
-Subsequent work toward the use cases in {{?I-D.yasskin-webpackage-use-cases}}
+Subsequent work toward the use cases in {{?I-D.yasskin-wpack-use-cases}}
 will provide a way to group signed exchanges into bundles that can be
 transmitted and stored together, but single signed exchanges are useful enough
 to standardize on their own.

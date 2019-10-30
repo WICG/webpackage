@@ -7,9 +7,9 @@ Draft](https://w3ctag.github.io/packaging-on-the-web/)~~ and will allow people
 to bundle together the resources that make up a website, so they can be shared
 offline, either with or without a proof that they came from the original
 website. A full list of use cases and resulting requirements is available in
-[draft-yasskin-webpackage-use-cases](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html)
+[draft-yasskin-wpack-use-cases](https://wicg.github.io/webpackage/draft-yasskin-wpack-use-cases.html)
 ([IETF
-draft](https://tools.ietf.org/html/draft-yasskin-webpackage-use-cases)).
+draft](https://tools.ietf.org/html/draft-yasskin-wpack-use-cases)).
 The [explainer](explainer.md) walks through how to use these specs to
 achieve the use cases.
 
