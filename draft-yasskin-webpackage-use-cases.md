@@ -434,11 +434,12 @@ Note that HPKP [has been turned off in
 Chromium](https://groups.google.com/a/chromium.org/d/topic/blink-dev/he9tr7p3rZ8/discussion)
 because it was difficult to use and made it too easy to "brick" a website. To
 reduce the chance of bricking the website, this key pinning design could require
-an active Service Worker before enforcing the pins. It could also allow a new
-key to be used if it's seen consistently for a particular amount of time,
-instead of waiting for the whole pin to expire, to prevent users from needing to
-take manual action. However, these mitigations don't guarantee that browsers
-would find the tradeoffs more acceptable than they did for HPKP.
+an active Service Worker before enforcing the pins. It could also avoid the need
+for users to take manual action to recover from a lost signing key by allowing a
+new key to be used if it's seen consistently for a site-chosen amount of time,
+instead of waiting for the whole pin to expire. However, these mitigations don't
+guarantee that browsers would find the tradeoffs more acceptable than they did
+for HPKP.
 
 One can think of a CDN as a potentially-compromised frontend and use this
 mechanism to limit the damage it can cause. However, this doesn't make it safe
