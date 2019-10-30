@@ -46,7 +46,7 @@ This scope will always be same-origin with the **distributorUrl** and controls w
 The UA makes an internal redirect (needs definition, see [fetch/issues/576](https://github.com/whatwg/fetch/issues/576)) to the Bundle's **primaryUrl** during [process a navigate fetch](https://html.spec.whatwg.org/multipage/browsing-the-web.html#process-a-navigate-fetch). If the **distributorUrl** is [potentially trustworthy](https://w3c.github.io/webappsec-secure-contexts/#is-url-trustworthy), it also stashes the bundle and its unsigned scope in the request.
 
 While loading the **primaryUrl**, if any of the following is true:
-* The primaryUrl is within the **unsigned scope* (e.g. `https://example.com/~foo/article.wbn` cannot serve a Bundle for `https://example.com/~bar/`, but only for the resources under `https://example.com/~foo/`),
+* The primaryUrl is within the **unsigned scope** (e.g. `https://example.com/~foo/article.wbn` cannot serve a Bundle for `https://example.com/~bar/`, but only for the resources under `https://example.com/~foo/`),
 * The Bundle has a [valid signature](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#signatures-section) for the primaryUrl, or
 * Loaded from an a priori trusted location. (E.g. loaded from a special pre-install location)
 
