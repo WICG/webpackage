@@ -77,9 +77,7 @@ If a request is a navigation request or a worker request and if the response was
 When a Bundle without a valid signature is loaded from a unique origin (e.g. a local file), following URL conversion must be performed:
 
 * Set the document’s URL to the unique URL of the Bundle package's one. 
-   * See @jyasskin's [Origins for Resources in Unsigned Packages](https://docs.google.com/document/d/1BYQEi8xkXDAg9lxm3PaoMzEutuQAZi1r8Y0pLaFJQoo/edit#heading=h.1fej4450b9k9) to see what's being proposed.
+   * See [@jyasskin](https://github.com/jyasskin)'s [Origins for Resources in Unsigned Packages](https://docs.google.com/document/d/1BYQEi8xkXDAg9lxm3PaoMzEutuQAZi1r8Y0pLaFJQoo/edit#heading=h.1fej4450b9k9) to see what's being proposed.
    * Chrome Canary 80 has an [experimental implementation of this feature](https://chromium.googlesource.com/chromium/src/+/refs/heads/master/content/browser/web_package/using_web_bundles.md), and it creates a URL for a local Bundle by concatenation of the location (URL) of the Bundle, `?` and the primaryUrl of the Bundle (that must be properly URL-encoded). (e.g. if the primaryUrl is `https://bar.com/article.html`, the document’s URL would be shown as `file:///foo/bar.wbn?https://bar.com/article.html`.)
    * TODO: also look at what TAG did in the original packaging spec: https://www.w3.org/TR/2015/WD-web-packaging-20150115/#fragment-identifiers
 * Set the document’s base URL to the primaryUrl of the Bundle.  This allows the fetch with Bundles work for relative URLs, while the security origin of the document should be just remained as unique (and therefore should not be a source of XSS)
-
-
