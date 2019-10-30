@@ -2,7 +2,7 @@
 coding: utf-8
 
 title: Use Cases and Requirements for Web Packages
-docname: draft-yasskin-webpackage-use-cases-latest
+docname: draft-yasskin-wpack-use-cases-latest
 category: info
 
 ipr: trust200902
