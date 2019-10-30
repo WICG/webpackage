@@ -403,6 +403,56 @@ Associated requirements:
 * {{service-worker-integration}}{:format="title"}: To pass the package into the
   `install` event and from there get its contents into a `Cache`.
 
+### Protecting Users from a Compromised Frontend {#compromised-frontend}
+
+If an attacker gains control over a frontend server, any user who visits that
+server while they have control can have their web app upgraded to a hostile
+version. On the other hand, native applications either control their own update
+process or delegate it to an app store, which allows them to protect users by
+requiring that updates are signed by a trusted key. This protection isn't
+perfect---it's a Trust-On-First-Use mechanism that doesn't protect users who
+first install the application while the attacker controls the server they get it
+from, and attackers can bypass it by compromising the app's build system---but
+since both of those risks also apply to web apps, it does make the attack
+surface for native applications smaller than for web apps.
+
+Not all application developers should choose to require signed updates, since
+doing so adds the risk of losing the signing key, but having this option gives
+security-sensitive applications like [Dashlane](https://app.dashlane.com/) an
+incentive to build native apps instead of web apps.
+
+It has been difficult to add a signature requirement for web app upgrades
+because we haven't had a way to sign web resources. Web Packaging is expected to
+provide that, so we'll be able to consider the best way to do it.
+
+Both HTTP Strict Transport Security (HSTS, {{?RFC6797}}) and HTTP Public Key
+Pinning (HPKP, {{?RFC7469}}) have established ways to pin assertions about a
+site's security for a bounded time after a visit. We could do the same with a
+web app's signing key.
+
+Note that HPKP [has been turned off in
+Chromium](https://groups.google.com/a/chromium.org/d/topic/blink-dev/he9tr7p3rZ8/discussion)
+because it was difficult to use and made it too easy to "brick" a website. To
+reduce the chance of bricking the website, this key pinning design could require
+an active Service Worker before enforcing the pins. It could also allow a new
+key to be used if it's seen consistently for a particular amount of time,
+instead of waiting for the whole pin to expire, to prevent users from needing to
+take manual action. However, these mitigations don't guarantee that browsers
+would find the tradeoffs more acceptable than they did for HPKP.
+
+One can think of a CDN as a potentially-compromised frontend and use this
+mechanism to limit the damage it can cause. However, this doesn't make it safe
+to use a wholly-untrustworthy CDN because of the risk to first-time users.
+
+Associated requirements:
+
+* {{non-origin-signatures}}{:format="title"}: To let a backend system vouch for
+  the content. This would likely be augmented with origin trust by receiving the
+  signed content over TLS.
+* {{streamed-loading}}{:format="title"}: To get optimal performance, the browser
+  should be able to start loading early parts of a resource before the
+  server finishes sending the whole resource.
+
 ### Installation from a self-extracting executable {#self-extracting}
 
 The Node and Electron communities would like to install packages using
@@ -523,9 +573,6 @@ This requires an extension to {{ZIP}}: we'd need something like {{JAR}}'s
 Resources within a package are provably from an entity with the ability to serve
 HTTPS requests for those resources' origin {{?RFC6454}}.
 
-Resources within a package are provably from an entity with the ability to serve
-HTTPS requests for those resources' origin {{?RFC6454}}.
-
 Note that previous attempts to sign HTTP messages
 ({{?I-D.thomson-http-content-signature}}, {{?I-D.burke-content-signature}}, and
 {{?I-D.cavage-http-signatures}}) omit a description of how a client should use a
@@ -605,6 +652,12 @@ implement incorrectly. For example:
 The browser can load a package as it downloads.
 
 This conflicts with ZIP, since ZIP's index is at the end.
+
+### Signing without origin trust {#non-origin-signatures}
+
+It's possible to sign a resource with a key that has some effect on trust other
+than asserting that the origin's owner vouches for it. These keys could be
+expressed as raw public keys or as certificates with other key usages.
 
 ### Additional signatures {#additional-signatures}
 
