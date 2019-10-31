@@ -1,13 +1,13 @@
 {
   "name": "wbn",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Generator for the application/webbundle format, defined in draft-yasskin-wpack-bundled-exchanges-01.",
   "homepage": "https://github.com/WICG/webpackage/tree/master/js/bundle",
   "main": "./lib/wbn.js",
   "types": "./lib/wbn.d.js",
   "scripts": {
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jasmine tests/*.js"
   },
   "repository": {
     "type": "git",
@@ -27,6 +27,7 @@
   "devDependencies": {
     "@types/cbor": "^2.0.0",
     "@types/node": "^12.7.11",
+    "jasmine": "^3.5.0",
     "typescript": "^3.6.3"
   }
 }
