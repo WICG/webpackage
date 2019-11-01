@@ -10,7 +10,7 @@ A [demo video](https://www.youtube.com/watch?v=rs-3R0ji6dA) that tries to show o
 <img src="https://img.youtube.com/vi/rs-3R0ji6dA/0.jpg">
 </a>
 
-Today, loading a website basically means retrieving multiple resources from one or multiple web servers. This gives web a great strength of linkable, indexable, composable and ephemeral, but it is also making it difficult for a website to:
+Today, loading a website basically means retrieving multiple resources from one or multiple web servers. This gives the web the great strengths of being linkable, indexable, composable and ephemeral, but it also makes it difficult for a website to:
 
 * be shared and loaded in a self-contained way, similar to what packaged apps and other portable data representation formats provide,
 * be composed as a distributable, installable application, or
