@@ -1,8 +1,6 @@
 # Explainer: Navigation with Web Bundles<br>(a.k.a. Bundled HTTP Exchanges)
 
-Last updated: Oct 29, 2019
-
-(This explainer was originally written and published as: https://docs.google.com/document/d/1KFmtiE3DHgKfQH5-nKtLiacMrXsoKIXQZ-VIMGHMje0/edit?pli=1#)
+Last updated: Oct 31, 2019
 
 A [demo video](https://www.youtube.com/watch?v=rs-3R0ji6dA) that tries to show one of the use-case scenarios of Web Bundles (a.k.a. Bundled HTTP Exchanges):
 
