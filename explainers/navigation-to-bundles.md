@@ -20,7 +20,7 @@ Instead, imagine if we could bundle up a full website in a single resource file,
 
 The **Web Bundles** proposal tries to achieve this. It’s a format that can represent a collection of HTTP resources, and therefore can represent one or multiple web pages in a single file, including their subresources like scripts, images and styles.  It’s a part of the [Web Packaging](https://github.com/WICG/webpackage) project and is also known as "**Bundled HTTP Exchanges**" ([spec proposal](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html)).
 
-This document explains how a Web Bundle can be a navigation target, so that a user can open a given Web Bundle in browsers (UAs) and navigate into the website represented by the Bundle.
+This document explains how a browser can navigate to a Web Bundle so that a user can open one.
 
 ## Example Scenarios: Save and browse an unsigned content
 UA can provide **‘Save as bundle’** feature that will dynamically generate an unsigned bundle of the page that a user is currently browsing.  Then anyone can use the feature to get a bundled representation of the current page, which can be browsed later by the same user, or can be shared with a nearby friend via some person-to-person sharing mechanism.
