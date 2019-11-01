@@ -25,7 +25,7 @@ This document explains how a browser can navigate to a Web Bundle so that a user
 ## Example Scenarios: Save and browse unsigned content
 A UA can provide a **'Save as bundle'** feature that dynamically generates an unsigned bundle of the page that its user is currently browsing.  Then anyone can create a bundled representation of the current page, and they can browse it later themself or share it with a nearby friend via one of several native file-sharing apps.
 
-When someone else browses the unsigned bundle, they see some notation in their URL bar that isn’t the URL of the original URL, but they can still browse around and see the JS executing.  Note that in this case the page coming from the unsigned bundle is not given any access to the cookie/storage of the original site.
+When someone else browses the unsigned bundle, they can browse around and see the site, including the results of its JavaScript executing.  Note that in this case the page inside the unsigned bundle is not given any access to the cookies or storage of the original site.
 
 
 ## Example Scenarios: Publishing signed content
