@@ -29,7 +29,7 @@ When someone else browses the unsigned bundle, they see some notation in their U
 
 
 ## Example Scenarios: Publishing signed content
-The author of a site creates a bundle for one or a few pages of the site, signs the bundle with the site’s certificate, and then publish the bundle in the way that interested users can find it.
+The author of a site creates a bundle for part or all of their site, signs the bundle with the site’s certificate, and then publishes the bundle in a way that interested users can find it. Users can then share this bundle peer-to-peer until its expiration time.
 
 Later, when a user receives the bundle, maybe by opening it from an SD card or by navigating to the distribution URL where the bundle is published, they can open it with their UA.  The UA parses and verifies the bundle’s signature, and then opens the pages inside the bundle, without actually connecting to the site's server, but with assurance that it's safe to show the real site in the URL bar and use the site's local storage.  If the bundle represents multiple pages for the site, the user can browse those pages without worrying about connectivity.
 
