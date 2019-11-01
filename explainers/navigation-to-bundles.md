@@ -22,7 +22,7 @@ The **Web Bundles** proposal tries to achieve this. It’s a format that can rep
 
 This document explains how a browser can navigate to a Web Bundle so that a user can open one.
 
-## Example Scenarios: Save and browse an unsigned content
+## Example Scenarios: Save and browse unsigned content
 UA can provide **‘Save as bundle’** feature that will dynamically generate an unsigned bundle of the page that a user is currently browsing.  Then anyone can use the feature to get a bundled representation of the current page, which can be browsed later by the same user, or can be shared with a nearby friend via some person-to-person sharing mechanism.
 
 When someone else browses the unsigned bundle, they see some notation in their URL bar that isn’t the URL of the original URL, but they can still browse around and see the JS executing.  Note that in this case the page coming from the unsigned bundle is not given any access to the cookie/storage of the original site.
