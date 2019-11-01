@@ -33,7 +33,7 @@ The author of a site creates a bundle for one or a few pages of the site, signs 
 
 Later, when a user finds the bundle, they can navigate their UA client to the bundle, maybe by opening it as a local file copied over SD card or by navigating to the distribution URL where the bundle is published.  The UA should be able to parse and verify the bundle’s signature, and then to navigate to the website represented by the bundle, without actually connecting to the site as all the necessary subresources could be served by the bundle.  If the bundle represents multiple pages for the site, the user should also be able to browser those pages without worrying about the connectivity.
 
-# Navigation
+# Details of how the browser handles navigation
 
 When UA [navigates](https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate) to a WBN resource, i.e. a resource that's in [Web Bundle format](https://jyasskin.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html), the UA parses the data and extracts **primaryUrl** from the [Bundle’s metadata](https://jyasskin.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#rfc.section.2.2).  This document refers to the URL where the WBN is served at as **distributorUrl** in the later sections.
 
