@@ -16,7 +16,7 @@ Today, loading a website basically means retrieving multiple resources from one 
 * be composed as a distributable, installable application, or
 * load reliably and quickly even when a site consists of a large number of subresources, and even when the internet access is limited.
 
-Instead, imagine if we could bundle up a “full” website in a single resource file, so that the website could be shared via a SD card or over some p2p protocol, or could be retrieved from a fast cache or a nearby proxy. It would open up various interesting use cases.
+Instead, imagine if we could bundle up a full website in a single resource file, so that the website could be shared via a SD card or over some p2p protocol, or could be retrieved from a fast cache or a nearby proxy. It would open up several interesting use cases.
 
 **Web Bundle** is a proposal that tries to achieve it. It’s a format that can represent a collection of HTTP resources, and therefore can represent one or multiple web pages (which typically consist of multiple resources, e.g. HTML, javascripts, images and styles) in a single file.  It’s a part of [Web Packaging](https://github.com/WICG/webpackage) proposal and is also known as "**Bundled HTTP Exchanges** ([spec proposal](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html))."
 
