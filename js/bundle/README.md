@@ -21,10 +21,10 @@ const primaryURL = 'https://example.com/';
 const builder = new wbn.BundleBuilder(primaryURL);
 builder.setManifestURL('https://example.com/manifest.json');
 builder.addExchange(
-    primaryURL,                          // URL
-    200,                                 // response code
-    {'Content-Type': 'text/html'},       // response headers
-    '<html>Hello, Web Bundle!</html>');  // response body (string or Uint8Array)
+  primaryURL,                          // URL
+  200,                                 // response code
+  {'Content-Type': 'text/html'},       // response headers
+  '<html>Hello, Web Bundle!</html>');  // response body (string or Uint8Array)
 // Have as many builder.addExchange() for resource URLs as needed for the package.
 
 fs.writeFileSync('out.wbn', builder.createBundle());
@@ -39,18 +39,18 @@ const buf = fs.readFileSync('out.wbn');
 const bundle = new wbn.Bundle(buf);
 const exchanges = [];
 for (const url of bundle.urls) {
-    const resp = bundle.getResponse(url);
-    exchanges.push({
-        url,
-        status: resp.status,
-        headers: resp.headers,
-        body: resp.body.toString('utf-8')
-    });
+  const resp = bundle.getResponse(url);
+  exchanges.push({
+    url,
+    status: resp.status,
+    headers: resp.headers,
+    body: resp.body.toString('utf-8')
+  });
 }
 console.log(JSON.stringify({
-    version: bundle.version,  // format version
-    primaryURL: bundle.primaryURL,
-    manifestURL: bundle.manifestURL,
-    exchanges
+  version: bundle.version,  // format version
+  primaryURL: bundle.primaryURL,
+  manifestURL: bundle.manifestURL,
+  exchanges
 }, null, 2));
 ```
