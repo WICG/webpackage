@@ -28,7 +28,7 @@ UA can provide **‘Save as bundle’** feature that will dynamically generate a
 When someone else browses the unsigned bundle, they see some notation in their URL bar that isn’t the URL of the original URL, but they can still browse around and see the JS executing.  Note that in this case the page coming from the unsigned bundle is not given any access to the cookie/storage of the original site.
 
 
-## Example Scenarios: Publishing a signed content
+## Example Scenarios: Publishing signed content
 The author of a site creates a bundle for one or a few pages of the site, signs the bundle with the site’s certificate, and then publish the bundle in the way that interested users can find it.
 
 Later, when a user finds the bundle, they can navigate their UA client to the bundle, maybe by opening it as a local file copied over SD card or by navigating to the distribution URL where the bundle is published.  The UA should be able to parse and verify the bundle’s signature, and then to navigate to the website represented by the bundle, without actually connecting to the site as all the necessary subresources could be served by the bundle.  If the bundle represents multiple pages for the site, the user should also be able to browser those pages without worrying about the connectivity.
