@@ -18,7 +18,7 @@ const wbn = require('wbn');
 const fs = require("fs");
 
 const primaryURL = 'https://example.com/';
-let builder = new wbn.BundleBuilder(primaryURL);
+const builder = new wbn.BundleBuilder(primaryURL);
 builder.setManifestURL('https://example.com/manifest.json');
 builder.addExchange(
     primaryURL,                          // URL
@@ -36,10 +36,10 @@ const wbn = require('wbn');
 const fs = require("fs");
 
 const buf = fs.readFileSync('out.wbn');
-let bundle = new wbn.Bundle(buf);
-let exchanges = [];
-for (let url of bundle.urls) {
-    let resp = bundle.getResponse(url);
+const bundle = new wbn.Bundle(buf);
+const exchanges = [];
+for (const url of bundle.urls) {
+    const resp = bundle.getResponse(url);
     exchanges.push({
         url,
         status: resp.status,

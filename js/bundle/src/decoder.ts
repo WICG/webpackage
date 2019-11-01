@@ -1,23 +1,24 @@
 import * as CBOR from 'cbor';
 
+/** This class represents parsed Web Bundle. */
 export class Bundle {
-    private version_: Uint8Array;
-    private primaryURL_: string;
+    version: string;
+    primaryURL: string;
     private sections: {[key:string]: unknown} = {};
     private responses: {[key:number]: Response} = {};  // Offset-in-responses -> resp
 
     constructor(buffer: Buffer) {
         const wbn = asArray(CBOR.decode(buffer));
-        if (wbn.length != 6) {
+        if (wbn.length !== 6) {
             throw new Error('Wrong toplevel structure');
         }
         const [magic, version, primaryURL, sectionLengthsCBOR, sections, length] = wbn;
         if (bytestringToString(magic) !== '🌐📦') {
             throw new Error('Wrong magic');
         }
-        this.version_ = asBytestring(version);
-        this.primaryURL_ = asString(primaryURL);
-        const sectionLengths = asArray(CBOR.decode(asBytestring(sectionLengthsCBOR)))
+        this.version = bytestringToString(version).replace(/\0+$/, '');  // Strip off the '\0' paddings.
+        this.primaryURL = asString(primaryURL);
+        const sectionLengths = asArray(CBOR.decode(asBytestring(sectionLengthsCBOR)));
         const sectionsArray = asArray(sections);
         if (sectionLengths.length !== sectionsArray.length * 2) {
             throw new Error("Number of elements in section-lengths and in sections don't match");
@@ -30,19 +31,10 @@ export class Bundle {
         // offset and length of each response here. This is inefficient, but works.
         const responses = asArray(this.sections['responses']);
         let offsetInResponses = encodedLength(responses.length);
-        for (let resp of responses) {
+        for (const resp of responses) {
             this.responses[offsetInResponses] = new Response(asArray(resp));
             offsetInResponses += encodedLength(resp);
         }
-    }
-
-    get version(): string {
-        // Strip off the '\0' paddings.
-        return bytestringToString(this.version_).replace(/\0+$/, '');
-    }
-
-    get primaryURL(): string {
-        return this.primaryURL_;
     }
 
     get manifestURL(): string|null {
@@ -57,18 +49,18 @@ export class Bundle {
     }
 
     getResponse(url: string): Response {
-        let indexEntry = asArray(this.indexSection[url]);
+        const indexEntry = asArray(this.indexSection[url]);
         if (!indexEntry) {
             throw new Error('No entry for ' + url);
         }
-        let [variants, offset, length] = indexEntry;
+        const [variants, offset, length] = indexEntry;
         if (asBytestring(variants).length !== 0) {
             throw new Error('Variants are not supported');
         }
         if (indexEntry.length !== 3) {
             throw new Error('Unexpected length of index entry for ' + url);
         }
-        let resp = this.responses[asNumber(offset)];
+        const resp = this.responses[asNumber(offset)];
         if (!resp) {
             throw new Error(`Response for ${url} is not found (broken index)`);
         }
@@ -78,18 +70,19 @@ export class Bundle {
     private get indexSection(): {[key:string]: unknown} {
         return asMap(this.sections['index']);
     }
-};
+}
 
+/** This class represents an HTTP resource in Web Bundle. */
 export class Response {
-    public status: number;
-    public headers: {[key:string]: string};
-    public body: Buffer;
+    status: number;
+    headers: {[key:string]: string};
+    body: Buffer;
 
     constructor(responsesSectionItem: unknown[]) {
-        if (responsesSectionItem.length != 2) {
+        if (responsesSectionItem.length !== 2) {
             throw new Error('Wrong response structure');
         }
-        let {status, headers} = decodeResponseMap(asBytestring(responsesSectionItem[0]));
+        const {status, headers} = decodeResponseMap(asBytestring(responsesSectionItem[0]));
         this.status = status;
         this.headers = headers;
         this.body = asBytestring(responsesSectionItem[1]);
@@ -101,17 +94,17 @@ function encodedLength(value: any): number {
 }
 
 function decodeResponseMap(cbor: Buffer): {status: number, headers: {[key:string]: string}} {
-    let decoded = CBOR.decode(cbor);
+    const decoded = CBOR.decode(cbor);
     if (!(decoded instanceof Map)) {
         throw new Error('Wrong header map structure');
     }
     let status: number | null = null;
-    let headers: {[key:string]: string} = {};
+    const headers: {[key:string]: string} = {};
     for (let [key, val] of decoded.entries()) {
         key = bytestringToString(key);
         val = bytestringToString(val);
         if (key === ':status') {
-            status = parseInt(val);
+            status = Number(val);
         } else if (key.startsWith(':')) {
             throw new Error('Unknown psuedo header ' + key);
         } else {
