@@ -31,7 +31,7 @@ When someone else browses the unsigned bundle, they see some notation in their U
 ## Example Scenarios: Publishing signed content
 The author of a site creates a bundle for one or a few pages of the site, signs the bundle with the site’s certificate, and then publish the bundle in the way that interested users can find it.
 
-Later, when a user finds the bundle, they can navigate their UA client to the bundle, maybe by opening it as a local file copied over SD card or by navigating to the distribution URL where the bundle is published.  The UA should be able to parse and verify the bundle’s signature, and then to navigate to the website represented by the bundle, without actually connecting to the site as all the necessary subresources could be served by the bundle.  If the bundle represents multiple pages for the site, the user should also be able to browser those pages without worrying about the connectivity.
+Later, when a user receives the bundle, maybe by opening it from an SD card or by navigating to the distribution URL where the bundle is published, they can open it with their UA.  The UA parses and verifies the bundle’s signature, and then opens the pages inside the bundle, without actually connecting to the site's server, but with assurance that it's safe to show the real site in the URL bar and use the site's local storage.  If the bundle represents multiple pages for the site, the user can browse those pages without worrying about connectivity.
 
 # Details of how the browser handles navigation
 
