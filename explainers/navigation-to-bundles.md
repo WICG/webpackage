@@ -2,10 +2,10 @@
 
 Last updated: Oct 31, 2019
 
-A [demo video](https://www.youtube.com/watch?v=rs-3R0ji6dA) that tries to show one of the use-case scenarios of Web Bundles (a.k.a. Bundled HTTP Exchanges):
+A [demo video](https://youtu.be/xAujz66la3Y) that tries to show one of the use-case scenarios of Web Bundles (a.k.a. Bundled HTTP Exchanges):
 
-<a href="https://www.youtube.com/watch?v=rs-3R0ji6dA">
-<img src="https://img.youtube.com/vi/rs-3R0ji6dA/0.jpg">
+<a href="https://www.youtube.com/watch?v=xAujz66la3Y">
+<img src="https://img.youtube.com/vi/xAujz66la3Y/0.jpg">
 </a>
 
 Today, loading a website basically means retrieving multiple resources from one or multiple web servers. This gives the web the great strengths of being linkable, indexable, composable and ephemeral, but it also makes it difficult for a website to:
