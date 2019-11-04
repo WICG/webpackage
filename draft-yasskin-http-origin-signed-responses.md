@@ -1481,28 +1481,64 @@ field, clients SHOULD reject signed exchanges served without it.
 
 # Privacy considerations
 
-Normally, when a client fetches `https://o1.com/resource.js`,
-`o1.com` learns that the client is interested in the resource. If
-`o1.com` signs `resource.js`, `o2.com` serves it as
-`https://o2.com/o1resource.js`, and the client fetches it from there,
-then `o2.com` learns that the client is interested, and if the client
-executes the Javascript, that could also report the client's interest back to
-`o1.com`.
+## Visibility of resource requests
 
-Often, `o2.com` already knew about the client's interest, because it's the
-entity that directed the client to `o1resource.js`, but there may be cases where
-this leaks extra information.
+Normally, when a client follows a link from https://source.example/page.html to
+`https://publisher.example/page.html`, `publisher.example` learns that the
+client is interested in the resource. `source.example` also has several ways of
+discovering that the client has clicked the link, including the use of
+Javascript to record the click or having the link point to a URL that serves a
+302 redirect to the real target.
+
+If `publisher.example` signs `page.html` into `page.sxg`, `distributor.example`
+serves it as `https://distributor.example/publisher/page.sxg`, and the client
+fetches it from there, then `distributor.example` learns that the client is
+interested, and if the client executes some Javascript on the page or makes
+subresource requests, that could also report the client's interest back to
+`publisher.example`.
+
+To prevent network operators other than `distributor.example` or
+`publisher.example` from learning which exchanges were read, clients SHOULD only
+load exchanges fetched over a transport that's protected from eavesdroppers.
+This can be difficult to determine when the exchange is being loaded from local
+disk, but when the client itself requested the exchange over a network it SHOULD
+require TLS ({{!RFC8446}}) or a successor transport layer, and MUST NOT accept
+exchanges transferred over plain HTTP without TLS.
+
+If `source.example` and `distributor.example` are controlled by the same entity,
+no extra information escapes here. If they are run by different entities, a
+similar amount of information escapes as if `source.example` had implemented its
+click tracking by outsourcing to a service like <https://bit.ly/>.
+
+There has been discussion of allowing a publisher to restrict the set of
+distributors that can host its signed content. If that's added, then the privacy
+situation becomes more similar to the situation with CDNs, where a publisher
+chooses a CDN to serve their content, and the CDN learns about all requests for
+that content. Here the publisher would choose one or more distributors, and the
+distributor(s) would learn about requests for the content.
 
 For non-executable resource types, a signed response can improve the privacy
 situation by hiding the client's interest from the original publisher.
 
-To prevent network operators other than `o1.com` or `o2.com` from learning which
-exchanges were read, clients SHOULD only load exchanges fetched over a transport
-that's protected from eavesdroppers. This can be difficult to determine when the
-exchange is being loaded from local disk, but when the client itself requested
-the exchange over a network it SHOULD require TLS ({{!RFC8446}}) or a
-successor transport layer, and MUST NOT accept exchanges transferred over plain
-HTTP without TLS.
+## User ID transfer
+
+If a request for `https://distributor.example/publisher/page.sxg` comes with the
+source's or distributor's user ID for the user, either because it's sent with
+the distributor's cookies or because the source stashes an encoded user ID into
+either the request's path or a subdomain, the distributor has a few ways to
+pass that user ID on to the publisher that signed the page:
+
+1. If the distributor has the publisher's signing keys, it can sign a new page
+   with its user ID directly embedded.
+1. Otherwise, the publisher can sign lots of copies of their package, and the
+   distributor can choose a particular copy to send a subset of the bits in its
+   user ID to the publisher on each click, which will eventually transfer the
+   whole thing.
+
+To prevent this, the request for a signed exchange needs to omit credentials and
+block them from appearing in the URL in the same way it would block them from
+appearing in a cross-origin URL. We're exploring ways the link can mark the
+request so user agents can take the right counter-measures.
 
 # IANA considerations
 
@@ -2082,6 +2118,10 @@ exchange argues for embedding a signature's lifetime into the signature.
 
 RFC EDITOR PLEASE DELETE THIS SECTION.
 
+draft-08
+
+* Improve the privacy considerations.
+
 draft-07
 
 * Provisionally register application/signed-exchange and
@@ -2169,6 +2209,6 @@ draft-02
 
 # Acknowledgements
 
-Thanks to Andrew Ayer, Devin Mullins, Ilari Liusvaara, Justin Schuh, Mark
-Nottingham, Mike Bishop, Ryan Sleevi, and Yoav Weiss for comments that improved
-this draft.
+Thanks to Andrew Ayer, Devin Mullins, Ilari Liusvaara, John Wilander, Justin
+Schuh, Mark Nottingham, Mike Bishop, Ryan Sleevi, and Yoav Weiss for comments
+that improved this draft.
