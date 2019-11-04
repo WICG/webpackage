@@ -1537,9 +1537,8 @@ pass that user ID on to the publisher that signed the page:
 
 To prevent this, the request for a signed exchange needs to omit credentials and
 block them from appearing in the URL in the same way it would block them from
-appearing in a cross-origin URL. We're exploring using a new scheme, e.g.
-`package:` to mark the request so user agents can take the right
-counter-measures.
+appearing in a cross-origin URL. We're exploring ways the link can mark the
+request so user agents can take the right counter-measures.
 
 # IANA considerations
 
