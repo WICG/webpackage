@@ -1,4 +1,6 @@
 const wbn = require('../lib/wbn');
+const fs = require('fs');
+const path = require('path');
 
 describe('Bundle', () => {
   const bundleBuffer = (() => {
@@ -48,5 +50,19 @@ describe('Bundle', () => {
         b.getResponse('https://example.com/nonexistent')
       ).toThrowError();
     });
+  });
+
+  it('parses pregenerated bundle', () => {
+    const buf = fs.readFileSync(path.resolve(__dirname, 'testdata/hello.wbn'));
+    const b = new wbn.Bundle(buf);
+    expect(b.primaryURL).toBe('https://example.com/hello.html');
+    expect(b.manifestURL).toBe(null);
+    expect(b.urls).toEqual(['https://example.com/hello.html']);
+    const resp = b.getResponse('https://example.com/hello.html');
+    expect(resp.status).toBe(200);
+    expect(resp.headers['content-type']).toBe('text/html; charset=utf-8');
+    expect(resp.body.toString('utf-8')).toBe(
+      '<html>Hello, Web Bundle!</html>\n'
+    );
   });
 });
