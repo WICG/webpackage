@@ -31,9 +31,9 @@ go get -u github.com/WICG/webpackage/go/bundle/cmd/...
 
 These command-line flags are common to all the three options:
 
-- `-primaryURL` specifies the bundle's main resource URL. This URL is also used as the fallback destination when browser cannot process the bundle.
-- `-manifestURL` specifies the bundle's [manifest](https://www.w3.org/TR/appmanifest/) URL.
-- `-o` specifies name of the output bundle file.
+- `-primaryURL` specifies the bundle's main resource URL. This URL is also used as the fallback destination when browser cannot process the bundle. This option is required.
+- `-manifestURL` specifies the bundle's [manifest](https://www.w3.org/TR/appmanifest/) URL. This option is optional and can be omitted.
+- `-o` specifies name of the output bundle file. Default file name if unspecified is `out.wbn`.
 - `-headerOverride` adds additional response header to all bundled responses. Existing values of the header are overwritten.
 
 #### From a HAR file
