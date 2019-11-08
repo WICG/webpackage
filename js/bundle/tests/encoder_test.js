@@ -62,4 +62,12 @@ describe('Bundle Builder', () => {
       ).toThrowError();
     });
   });
+
+  it('builds large bundle', () => {
+    const builder = new wbn.BundleBuilder(primaryURL);
+    builder.addExchange(primaryURL, 200, defaultHeaders, new Uint8Array(1024*1024));
+    const buf = builder.createBundle();
+    // Just checks the result is a valid CBOR array.
+    expect(CBOR.decode(buf)).toBeInstanceOf(Array);
+  });
 });
