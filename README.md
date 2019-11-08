@@ -67,7 +67,7 @@ Install this with `go install github.com/WICG/webpackage/go/signedexchange/cmd/.
 
 See [go/signedexchange](go/signedexchange) for the usage of the tool.
 
-#### Bundled HTTP Exchanges
+#### Web Bundles
 
 Install this with `go install github.com/WICG/webpackage/go/bundle/cmd/...`.
 
