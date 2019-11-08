@@ -1,7 +1,7 @@
 ---
 coding: utf-8
 
-title: Bundled HTTP Exchanges
+title: Web Bundles
 docname: draft-yasskin-wpack-bundled-exchanges-latest
 category: std
 
@@ -44,11 +44,11 @@ informative:
 
 --- abstract
 
-Bundled exchanges provide a way to bundle up groups of HTTP request+response
-pairs to transmit or store them together. They can include multiple top-level
-resources with one identified as the default by a primaryUrl metadata, provide
-random access to their component exchanges, and efficiently store 8-bit
-resources.
+Web bundles provide a way to bundle up groups of HTTP responses, with the URLs
+and request URLs that produced them, to transmit or store them together. They
+can include multiple top-level resources with one identified as the default by a
+primaryUrl metadata, provide random access to their component exchanges, and
+efficiently store 8-bit resources.
 
 --- note_Note_to_Readers
 
@@ -874,7 +874,7 @@ field, clients SHOULD reject bundles served without it.
 ## Internet Media Type Registration
 
 IANA is requested to register the MIME media type ({{!IANA.media-types}}) for
-bundled exchanges, application/webbundle, as follows:
+web bundles, application/webbundle, as follows:
 
 * Type name: application
 

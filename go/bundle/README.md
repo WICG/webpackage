@@ -1,14 +1,16 @@
 # go/bundle
-This directory contains a reference implementation of [Bundled HTTP Exchanges](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html) spec.
+This directory contains a reference implementation of the [Web
+Bundles](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html)
+spec.
 
 ## Overview
 We currently provide three command-line tools: `gen-bundle`, `sign-bundle` and `dump-bundle`.
 
-`gen-bundle` command is a bundle generator tool. `gen-bundle` consumes a set of http exchanges (currently in the form of [HAR format](https://w3c.github.io/web-performance/specs/HAR/Overview.html), URL list file, or static files in a local directory), and emits a bundled exchange file.
+`gen-bundle` command is a bundle generator tool. `gen-bundle` consumes a set of http exchanges (currently in the form of [HAR format](https://w3c.github.io/web-performance/specs/HAR/Overview.html), URL list file, or static files in a local directory), and emits a web bundle.
 
-`sign-bundle` command attaches a signature to a bundle. `sign-bundle` takes an existing bundle file, a certificate and a private key, and emits a new bundle file with cryptographic signature for the bundled exchanges added.
+`sign-bundle` command attaches a signature to a bundle. `sign-bundle` takes an existing bundle file, a certificate and a private key, and emits a new bundle file with cryptographic signature for the bundled resources added.
 
-`dump-bundle` command is a bundle inspector tool. `dump-bundle` dumps the enclosed http exchanges of a given bundled exchange file in a human readable form.
+`dump-bundle` command is a bundle inspector tool. `dump-bundle` dumps the enclosed http exchanges of a given web bundle file in a human readable form.
 
 You are also welcome to use the code as golang lib (e.g. `import "github.com/WICG/webpackage/go/bundle"`), but please be aware that the API is not yet stable and is subject to change any time.
 
@@ -27,7 +29,7 @@ go get -u github.com/WICG/webpackage/go/bundle/cmd/...
 ## Usage
 
 ### gen-bundle
-`gen-bundle` generates a bundled exchange file. There are three ways to provide a set of exchanges to bundle; by a HAR file, by a URL list, and by a local directory.
+`gen-bundle` generates a web bundle. There are three ways to provide a set of exchanges to bundle; by a HAR file, by a URL list, and by a local directory.
 
 These command-line flags are common to all the three options:
 
@@ -41,7 +43,7 @@ These command-line flags are common to all the three options:
 One convenient way to generate HAR file is via Chrome Devtools. Navigate to "Network" panel, and right-click on any resource and select "Save as HAR with content".
 ![generating har with devtools](https://raw.githubusercontent.com/WICG/webpackage/master/go/bundle/har-devtools.png)
 
-Once you have the har file, generate the bundled exchange file via:
+Once you have the har file, generate the web bundle via:
 ```
 gen-bundle -har foo.har -o foo.wbn -primaryURL https://example.com/
 ```
@@ -89,7 +91,8 @@ sign-bundle \
 ```
 
 ### dump-bundle
-`dump-bundle` dumps the content of a bundled exchange in a human readable form. To display content of a bundle file, invoke:
+`dump-bundle` dumps the content of a web bundle in a human readable form. To
+display content of a bundle file, invoke:
 ```
 dump-bundle -i foo.wbn
 ```

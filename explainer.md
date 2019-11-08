@@ -12,7 +12,7 @@ TAG's Web Packaging Draft](https://w3ctag.github.io/packaging-on-the-web/)~~.
 - [Component documents](#component-documents)
   - [List of use cases](#list-of-use-cases)
   - [Signed HTTP exchanges](#signed-http-exchanges)
-  - [Bundled exchanges](#bundled-exchanges)
+  - [Web bundles](#web-bundles)
   - [Loading specification](#loading-specification)
 - [Use cases](#use-cases)
   - [Offline installation](#offline-installation)
@@ -101,7 +101,7 @@ We publish [periodic snapshots of this
 draft](https://tools.ietf.org/html/draft-yasskin-httpbis-origin-signed-exchanges-impl)
 so that test implementations can interoperate.
 
-### Bundled exchanges
+### Web bundles
 
 We're defining a [new Zip-like archive
 format](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html)
@@ -126,7 +126,7 @@ the publishing URLs of their contained exchanges.
 <a id="loading"></a>
 ### Loading specification
 
-The [Web Package Loading specification](https://wicg.github.io/webpackage/loading.html) specifies how browsers load signed exchanges, and will eventually also describe how to load bundled exchanges.
+The [Web Package Loading specification](https://wicg.github.io/webpackage/loading.html) specifies how browsers load signed exchanges, and will eventually also describe how to load web bundles.
 
 ## Use cases
 
