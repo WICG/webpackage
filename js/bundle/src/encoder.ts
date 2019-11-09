@@ -71,12 +71,16 @@ export class BundleBuilder {
   }
 
   private addSection(name: string, content: CBORValue) {
-    if (this.sectionLengths.find(s => s.name === name)) {
+    if (this.sectionLengths.some(s => s.name === name)) {
       throw new Error('Duplicated section: ' + name);
     }
     let length: number;
     if (name === 'responses') {
-      // The responses section can be large, so avoid using encodedLength().
+      // The responses section can be large, so avoid using encodedLength()
+      // with the entire section's content.
+      // Here, this.currentResponsesOffset holds the sum of all response
+      // lengths. Adding encodedLength(this.responses.length) to this gives
+      // the same result as encodedLength(content).
       length =
         this.currentResponsesOffset + encodedLength(this.responses.length);
     } else {
