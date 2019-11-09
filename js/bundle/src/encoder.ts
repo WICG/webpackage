@@ -1,4 +1,5 @@
 import * as CBOR from 'cbor';
+import {URL} from 'url';
 
 declare module 'cbor' {
   // TODO: upstream this to @types/cbor
