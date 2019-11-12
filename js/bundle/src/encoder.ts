@@ -2,8 +2,12 @@ import * as CBOR from 'cbor';
 import {URL} from 'url';
 
 declare module 'cbor' {
-  // TODO: upstream this to @types/cbor
-  export function encodeCanonical(input: CBORValue): Buffer;
+  // TODO: upstream these to @types/cbor
+  interface DecoderOptions {
+    canonical?: boolean;
+    highWaterMark?: number;
+  }
+  export function encodeOne(obj: CBORValue, opts?: DecoderOptions): Buffer;
 }
 
 type CBORValue = unknown;
@@ -12,7 +16,7 @@ interface Headers {
 }
 
 export class BundleBuilder {
-  private sectionLengths: Array<string | number> = [];
+  private sectionLengths: Array<{ name: string; length: number }> = [];
   private sections: CBORValue[] = [];
   private responses: Uint8Array[][] = [];
   private index: Map<string, [Uint8Array, number, number]> = new Map();
@@ -22,6 +26,7 @@ export class BundleBuilder {
     validateExchangeURL(primaryURL);
   }
 
+  // TODO: Provide async version of this.
   createBundle(): Buffer {
     if (!this.index.has(this.primaryURL)) {
       throw new Error(
@@ -31,7 +36,13 @@ export class BundleBuilder {
 
     this.addSection('index', this.fixupIndex());
     this.addSection('responses', this.responses);
-    const wbn = CBOR.encodeCanonical(this.createTopLevel());
+
+    const estimatedBundleSize = this.sectionLengths.reduce(
+      (size, s) => size + s.length,
+      16384 // For headers (including primary URL)
+    );
+    const wbn = encodeCanonical(this.createTopLevel(), estimatedBundleSize);
+
     // Fill in the length field.
     const view = new DataView(wbn.buffer, wbn.byteOffset + wbn.length - 8);
     view.setUint32(0, Math.floor(wbn.length / 0x100000000));
@@ -61,22 +72,39 @@ export class BundleBuilder {
   }
 
   private addSection(name: string, content: CBORValue) {
-    if (this.sectionLengths.includes(name)) {
+    if (this.sectionLengths.some(s => s.name === name)) {
       throw new Error('Duplicated section: ' + name);
     }
-    this.sectionLengths.push(name);
-    this.sectionLengths.push(encodedLength(content));
+    let length: number;
+    if (name === 'responses') {
+      // The responses section can be large, so avoid using encodedLength()
+      // with the entire section's content.
+      // Here, this.currentResponsesOffset holds the sum of all response
+      // lengths. Adding encodedLength(this.responses.length) to this gives
+      // the same result as encodedLength(content).
+      length =
+        this.currentResponsesOffset + encodedLength(this.responses.length);
+    } else {
+      length = encodedLength(content);
+    }
+    this.sectionLengths.push({ name, length });
     this.sections.push(content);
   }
 
+  // Adds a response to `this.response`, and returns its length in the
+  // responses section.
   private addResponse(headerMap: HeaderMap, payload: Uint8Array): number {
     if (payload.length > 0 && !headerMap.has('content-type')) {
       throw new Error('Non-empty exchange must have Content-Type header');
     }
 
-    const response = [new Uint8Array(CBOR.encodeCanonical(headerMap)), payload];
+    const response = [new Uint8Array(encodeCanonical(headerMap)), payload];
     this.responses.push(response);
-    return encodedLength(response);
+    // This should be the same as encodedLength(response).
+    return response.reduce(
+      (len, buf) => len + encodedLength(buf.length) + buf.length,
+      1
+    );
   }
 
   private addIndexEntry(url: string, responseLength: number) {
@@ -98,11 +126,15 @@ export class BundleBuilder {
   }
 
   private createTopLevel(): CBORValue {
+    const sectionLengths: Array<string | number> = [];
+    for (const s of this.sectionLengths) {
+      sectionLengths.push(s.name, s.length);
+    }
     return [
       byteString('🌐📦'),
       byteString('b1\0\0'),
       this.primaryURL,
-      new Uint8Array(CBOR.encodeCanonical(this.sectionLengths)),
+      new Uint8Array(encodeCanonical(sectionLengths)),
       this.sections,
       new Uint8Array(8), // Length (to be filled in later)
     ];
@@ -151,10 +183,28 @@ function validateExchangeURL(urlString: string): void {
   }
 }
 
+// Encodes `value` in canonical CBOR. Throws an error if the result is larger
+// than `bufferSize`, because the CBOR encoder silently ignores write errors
+// to its internal stream and returns broken data.
+function encodeCanonical(value: CBORValue, bufferSize = 1024 * 1024): Buffer {
+  const buf = CBOR.encodeOne(value, {
+    canonical: true,
+    highWaterMark: bufferSize,
+  });
+  if (buf.length >= bufferSize) {
+    throw new Error('CBOR encode error: insufficient buffer size');
+  }
+  return buf;
+}
+
 // Returns the length of `value` when CBOR-encoded.
-function encodedLength(value: CBORValue): number {
+function encodedLength(value: CBORValue, bufferSize = 1024 * 1024): number {
   // We don't need to use canonical encoding here.
-  return CBOR.encode(value).byteLength;
+  const len = CBOR.encodeOne(value, { highWaterMark: bufferSize }).byteLength;
+  if (len >= bufferSize) {
+    throw new Error('CBOR encode error: insufficient buffer size');
+  }
+  return len;
 }
 
 function byteString(s: string): Uint8Array {
