@@ -33,19 +33,9 @@ from their claimed web origins. Key goals for WPACK are:
 * A low likelihood that the new format increases centralization or
   power imbalances on the web.
 
-The packaging format will also aim to achieve the following secondary goals as long as
-they don't compromise or delay the above properties.
-
-* Support more-efficient signing of a single, possibly same-origin HTTP
-  resource.
-* Support signed statements about subresources beyond just assertions that
-  they're accurate representations of particular URLs.
-* Address the threat model of a website compromised after a user first uses the site.
-* Support books being published in the format.
-* Support long-lived archival storage.
-* Optimize transport of large numbers of small same-origin resources.
-* Allow the format to be used in self-extracting executables.
-* Allow publishers to efficiently combine sub-packages from other publishers.
+The packaging format will also aim to achieve the secondary goals described in
+draft-yasskin-wpack-use-cases as long as they don't compromise or delay the
+above properties.
 
 The following potential goals are out of scope under this charter:
 
