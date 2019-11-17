@@ -1,15 +1,15 @@
 # Background
 Webpages sometimes group multiple subresources into a single
-combined resource to allow cross-resource compression and to reduce the overhead 
-of HTTP/1 requests. The W3C TAG (Technical Architecture Group) has proposed a web 
-packaging format based on multipart/* , to give web browsers visibility into 
+combined resource to allow cross-resource compression and to reduce the overhead
+of HTTP/1 requests. The W3C TAG (Technical Architecture Group) proposed a web
+packaging format based on multipart/* , to give web browsers visibility into
 the substructure of these combined resources. That has not seen deployment
-and HTTP/2 did make these bundles unnecessary as was once expected.
+and HTTP/2 did not make these bundles unnecessary as was once expected.
 
-These bundles are still needed.  In countries with expensive and/or unreliable 
-mobile data, there is an established practice of sharing content and native 
-applications peer-to-peer. Untrusted web content can generally be shared but
-with the web's move to HTTPS, it is not longer possible to share web apps
+These bundles are still needed.  In countries with expensive and/or unreliable
+mobile data, there is an established practice of sharing content and native
+applications peer-to-peer. Untrusted web content can generally be shared, but
+with the web's move to HTTPS, it is no longer possible to share web apps
 over these channels
 
 # WPACK
@@ -19,18 +19,18 @@ that efficiently bundles multiple HTTP resources. It will also specify a way to
 optionally sign these resources such that a user agent can trust that they came
 from their claimed web origins. Key goals for WPACK are:
 
-* Efficient storage across a range of resource combingations. Three examples to
+* Efficient storage across a range of resource combinations. Three examples to
   be supported are: a client-generated snapshot of a complete web page, a web
   page's tree of JavaScript modules, and El Paquete Semanal from Cuba.
-* Allowing web apps to be safely installed after having been retrieved from a
-  peer.
-* Minimizing the latency to load a subresource from a package, whether the
+* Safe web app installation after having been retrieved from a peer.
+* Low latency to load a subresource from a package, whether the
   package is signed or unsigned, and whether the package is streamed or loaded
   from random-access storage.
-* Changing the security and privacy properties of using bundles as little as practical 
-  from TLS 1.3 transport of the same resources.  Where they do change documenting exactly 
-  what changed and how content authors can compensate. 
-* Minimizing the likelihood that the new format increases centralization or
+* Being extensible, including to avoid cryptography that becomes obsolete.
+* Security and privacy properties of using bundles as close as practical to TLS
+  1.3 transport of the same resources.  Where properties do change, the group
+  will document exactly what changed and how content authors can compensate.
+* A low likelihood that the new format increases centralization or
   power imbalances on the web.
 
 The packaging format will also aim to achieve the following secondary goals as long as
@@ -39,7 +39,7 @@ they don't compromise or delay the above properties.
 * Support more-efficient signing of a single, possibly same-origin HTTP
   resource.
 * Support signed statements about subresources beyond just assertions that
-  they're accurate representations of particular URLs. 
+  they're accurate representations of particular URLs.
 * Address the threat model of a website compromised after a user first uses the site.
 * Support books being published in the format.
 * Support long-lived archival storage.
@@ -55,10 +55,10 @@ The following potential goals are out of scope under this charter:
   to distribute individual emails without a direct connection to Gmail's origin
   server.
 * Defining the details of how web browsers load the formats and interact with
-  any protocols we define here. 
-* A way to automatically discover the URL for accessible package that
+  any protocols we define here.
+* A way to automatically discover the URL for an accessible package that
   includes specific content.
-  
+
 Note that consensus is required both for changes to the current protocol
 mechanisms and retention of current mechanisms. In particular, because something
 is in the initial document set (consisting of
