@@ -158,7 +158,7 @@ requests
       `ResponseMetadata` structures to find the matching response.
 
 The map may include other items added by sections defined in the
-{{section-name-registry}}{:format="title"}.
+{{bundle-section-name-registry}}{:format="title"}.
 
 This operation only waits for a prefix of the stream that, if the bundle is
 encoded with the "responses" section last, ends before the first response.
@@ -218,12 +218,14 @@ webbundle = [
   magic: h'F0 9F 8C 90 F0 9F 93 A6',
   version: bytes .size 4,
   primary-url: whatwg-url,
-  section-lengths: bytes .cbor [* (section-name: tstr, length: uint) ],
+  section-lengths: bytes
+    .cbor [* (section-name: tstr, length: uint) ],
   sections: [* any ],
   length: bytes .size 8,  ; Big-endian number of bytes in the bundle.
 ]
 
-$section-name /= "index" / "manifest" / "signatures" / "critical" / "responses"
+$section-name /=
+  "index" / "manifest" / "signatures" / "critical" / "responses"
 
 $section /= index / manifest / signatures / critical / responses
 
@@ -318,7 +320,7 @@ steps, taking the `stream` as input.
    2-byte bytestring header to describe a 52-byte bytestring + 52 bytes of
    section lengths + a 1-byte array header for the 2 sections).
 
-1. Let `knownSections` be the subset of the {{section-name-registry}} that this
+1. Let `knownSections` be the subset of the {{bundle-section-name-registry}} that this
    client has implemented.
 
 1. Let `ignoredSections` be an empty set.
@@ -349,7 +351,7 @@ steps, taking the `stream` as input.
 
 1. For each `"name"` → (`offset`, `length`) triple in `sectionOffsets`:
    1. If `"name"` isn't in `knownSections`, continue to the next triple.
-   1. If `"name"`'s Metadata field ({{section-name-registry}}) is "No", continue
+   1. If `"name"`'s Metadata field ({{bundle-section-name-registry}}) is "No", continue
       to the next triple.
    1. If `"name"` is in `ignoredSections`, continue to the next triple.
    1. Seek to offset `offset` in `stream`. If this fails, return a "format
@@ -544,7 +546,10 @@ signed-subset = {
   },
   * tstr => any,
 }
-resource-integrity = (header-sha256: bstr, payload-integrity-header: tstr)
+resource-integrity = (
+  header-sha256: bstr,
+  payload-integrity-header: tstr
+)
 ~~~
 
 The `augmented-certificate` CDDL rule comes from Section 3.3 of {{!I-D.yasskin-http-origin-signed-responses}}.
@@ -927,7 +932,7 @@ web bundles, application/webbundle, as follows:
 
 * Provisional registration? Yes.
 
-## Web Bundle Section Name Registry {#section-name-registry}
+## Web Bundle Section Name Registry {#bundle-section-name-registry}
 
 IANA is directed to create a new registry with the following attributes:
 

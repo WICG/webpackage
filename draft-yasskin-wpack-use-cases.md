@@ -31,6 +31,7 @@ informative:
   ServiceWorkers:
     target: https://w3c.github.io/ServiceWorker/
     title: "Service Workers Nightly"
+    date: false
     seriesinfo:
       W3C: "ED"
   ZIP:
