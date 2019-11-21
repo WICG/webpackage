@@ -24,14 +24,15 @@ func (h *headerArgs) Set(value string) error {
 }
 
 var (
-	flagVersion     = flag.String("version", string(version.VersionB1), "The webbundle format version")
-	flagHar         = flag.String("har", "", "HTTP Archive (HAR) input file")
-	flagDir         = flag.String("dir", "", "Input directory")
-	flagBaseURL     = flag.String("baseURL", "", "Base URL (used with -dir)")
-	flagPrimaryURL  = flag.String("primaryURL", "", "Primary URL")
-	flagManifestURL = flag.String("manifestURL", "", "Manifest URL")
-	flagOutput      = flag.String("o", "out.wbn", "Webbundle output file")
-	flagURLList     = flag.String("URLList", "", "URL list file")
+	flagVersion      = flag.String("version", string(version.VersionB1), "The webbundle format version")
+	flagHar          = flag.String("har", "", "HTTP Archive (HAR) input file")
+	flagDir          = flag.String("dir", "", "Input directory")
+	flagBaseURL      = flag.String("baseURL", "", "Base URL (used with -dir)")
+	flagPrimaryURL   = flag.String("primaryURL", "", "Primary URL")
+	flagManifestURL  = flag.String("manifestURL", "", "Manifest URL")
+	flagOutput       = flag.String("o", "out.wbn", "Webbundle output file")
+	flagURLList      = flag.String("URLList", "", "URL list file")
+	flagIgnoreErrors = flag.Bool("ignoreErrors", false, "Do not reject invalid input arguments")
 
 	flagHeaderOverride = headerArgs{}
 )
@@ -106,6 +107,12 @@ func main() {
 		chunks := strings.SplitN(h, ":", 2)
 		for _, e := range b.Exchanges {
 			e.Response.Header.Set(chunks[0], strings.TrimSpace(chunks[1]))
+		}
+	}
+
+	if !*flagIgnoreErrors {
+		if err := b.Validate(); err != nil {
+			log.Fatal(err)
 		}
 	}
 
