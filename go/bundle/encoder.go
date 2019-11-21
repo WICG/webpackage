@@ -379,10 +379,6 @@ func writeFooter(w io.Writer, offset int) error {
 }
 
 func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
-	if err := b.Validate(); err != nil {
-		return 0, err
-	}
-
 	cw := NewCountingWriter(w)
 
 	is := &indexSection{}
