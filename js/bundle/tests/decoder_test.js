@@ -65,4 +65,36 @@ describe('Bundle', () => {
       '<html>Hello, Web Bundle!</html>\n'
     );
   });
+
+  it('throws if an unknown section is marked as critical', () => {
+    const builder = new wbn.BundleBuilder('https://example.com/');
+    builder.addExchange(
+      'https://example.com/',
+      200,
+      { 'Content-Type': 'text/plain' },
+      'Hello, world!'
+    );
+    builder.addSection('critical', ['unknown']);
+    const buf = builder.createBundle();
+    expect(() => new wbn.Bundle(buf)).toThrowError();
+  });
+
+  it('does not throw if all names in the critical section are known', () => {
+    const builder = new wbn.BundleBuilder('https://example.com/');
+    builder.addExchange(
+      'https://example.com/',
+      200,
+      { 'Content-Type': 'text/plain' },
+      'Hello, world!'
+    );
+    builder.addSection('critical', [
+      'critical',
+      'index',
+      'manifest',
+      'responses',
+      'signatures',
+    ]);
+    const buf = builder.createBundle();
+    expect(() => new wbn.Bundle(buf)).not.toThrowError();
+  });
 });
