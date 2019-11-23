@@ -22,6 +22,10 @@
           {
             "key": "Content-Type",
             "value": "application/signed-exchange;v=b3"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
           }
         ]
       }
