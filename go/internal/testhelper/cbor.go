@@ -37,6 +37,8 @@ func readableString(v interface{}) string {
 		return "map[" + strings.Join(vals, " ") + "]"
 	case string, []byte:
 		return fmt.Sprintf("%q", v)
+	case uint64:
+		return fmt.Sprintf("%d", v)
 	default:
 		panic(fmt.Sprintf("not supported type: %T", v))
 	}

@@ -4,15 +4,20 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/WICG/webpackage/go/bundle/version"
 	"github.com/WICG/webpackage/go/signedexchange/cbor"
+	"github.com/WICG/webpackage/go/signedexchange/structuredheader"
 )
+
+const maxNumVariantsForSingleURL = 10000
 
 func normalizeHeaderValues(values []string) string {
 	// RFC 2616 - Hypertext Transfer Protocol -- HTTP/1.1
@@ -66,13 +71,15 @@ func (r Response) HeaderSha256() ([]byte, error) {
 
 var _ = io.WriterTo(&Bundle{})
 
-type requestEntry struct {
+type indexEntry struct {
 	Request
-	Offset uint64 // Offset within the responses section
-	Length uint64
+	Variants   string
+	VariantKey string
+	Offset     uint64 // Offset within the responses section
+	Length     uint64
 }
 
-func (r requestEntry) String() string {
+func (r indexEntry) String() string {
 	return fmt.Sprintf("{URL: %v, Header: %v, Offset: %d, Length: %d}", r.URL, r.Header, r.Offset, r.Length)
 }
 
@@ -84,15 +91,19 @@ type section interface {
 
 // staging area for writing index section
 type indexSection struct {
-	es    []requestEntry
+	es    []*indexEntry
 	bytes []byte
 }
 
-func (is *indexSection) addRequest(r Request, offset, length int) error {
-	ent := requestEntry{
-		Request: r,
-		Offset:  uint64(offset),
-		Length:  uint64(length),
+func (is *indexSection) addExchange(e *Exchange, offset, length int) error {
+	variants := normalizeHeaderValues(e.Response.Header[http.CanonicalHeaderKey("variants")])
+	variantKey := normalizeHeaderValues(e.Response.Header[http.CanonicalHeaderKey("variant-key")])
+	ent := &indexEntry{
+		Request:    e.Request,
+		Variants:   variants,
+		VariantKey: variantKey,
+		Offset:     uint64(offset),
+		Length:     uint64(length),
 	}
 	is.es = append(is.es, ent)
 	return nil
@@ -111,25 +122,42 @@ func (is *indexSection) Finalize(ver version.Version) error {
 		//   index = {* whatwg-url => [ variants-value, +location-in-responses ] }
 		//   variants-value = bstr
 		//   location-in-responses = (offset: uint, length: uint)
-		mes := []*cbor.MapEntryEncoder{}
+		m := make(map[string][]*indexEntry)
 		for _, e := range is.es {
+			url := e.URL.String()
+			m[url] = append(m[url], e)
+		}
+
+		mes := []*cbor.MapEntryEncoder{}
+		for url, es := range m {
+			var variantsValue []byte
+			if len(es) > 1 {
+				variantsValue = []byte(es[0].Variants)
+				var err error
+				es, err = entriesInPossibleKeyOrder(es)
+				if err != nil {
+					return fmt.Errorf("bundle: cannot construct index entry for %s: %v", url, err)
+				}
+			}
+
 			me := cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-				if err := keyE.EncodeTextString(e.URL.String()); err != nil {
+				if err := keyE.EncodeTextString(url); err != nil {
 					panic(err)
 				}
-				// Currently, this encoder does not support variants. So, the
-				// map value is always a three-element array ['', offset, length].
-				if err := valueE.EncodeArrayHeader(3); err != nil {
+
+				if err := valueE.EncodeArrayHeader(1 + len(es)*2); err != nil {
 					panic(err)
 				}
-				if err := valueE.EncodeByteString(nil); err != nil {
+				if err := valueE.EncodeByteString(variantsValue); err != nil {
 					panic(err)
 				}
-				if err := valueE.EncodeUint(e.Offset); err != nil {
-					panic(err)
-				}
-				if err := valueE.EncodeUint(e.Length); err != nil {
-					panic(err)
+				for _, e := range es {
+					if err := valueE.EncodeUint(e.Offset); err != nil {
+						panic(err)
+					}
+					if err := valueE.EncodeUint(e.Length); err != nil {
+						panic(err)
+					}
 				}
 			})
 			mes = append(mes, me)
@@ -188,6 +216,155 @@ func (is *indexSection) Finalize(ver version.Version) error {
 
 	is.bytes = b.Bytes()
 	return nil
+}
+
+// entriesInPossibleKeyOrder reorders es by VariantKey, in the order they should
+// appear in the index section; the row-major order of possible keys for
+// Variants. All entries in es must have the same Variants value.
+//
+// For example, if the Variants value is
+// "Accept-Language;en;fr, Accept-Encoding:gzip;br", the result would satisfy
+// this:
+//   result[0].VariantKey == "en;gzip"
+//   result[1].VariantKey == "en;br"
+//   result[2].VariantKey == "fr;gzip"
+//   result[3].VariantKey == "fr;br"
+//
+// Note that VariantKey can have multiple keys (e.g. "en;gzip, fr;gzip"). Such
+// entrys will appear multiple times in the result. e.g.:
+//   result[0].VariantKey == "en;gzip, fr;gzip"
+//   result[1].VariantKey == "en;br"
+//   result[2] == result[0]
+//   result[3].VariantKey == "fr;br"
+//
+// If entries in es do not cover all combination of possible keys or two entries
+// have overwrapping possible keys, this returns an error.
+func entriesInPossibleKeyOrder(es []*indexEntry) ([]*indexEntry, error) {
+	if es[0].Variants == "" {
+		return nil, errors.New("no Variants header")
+	}
+	variants, err := parseVariants(es[0].Variants)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse Variants header value %q: %v", es[0].Variants, err)
+	}
+	numPossibleKeys, err := variants.numberOfPossibleKeys()
+	if err != nil {
+		return nil, fmt.Errorf("invalid Variants header value %q: %v", es[0].Variants, err)
+	}
+
+	result := make([]*indexEntry, numPossibleKeys)
+	for _, e := range es {
+		// TODO: Compare Variants values as lists
+		// (e.g. "Accept;foo;bar" == "Accept; foo; bar").
+		if e.Variants != es[0].Variants {
+			return nil, fmt.Errorf("inconsistent Variants value. %q != %q", e.Variants, es[0].Variants)
+		}
+		vks, err := parseListOfStringLists(e.VariantKey)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse Variant-Key header %q: %v", e.VariantKey, err)
+		}
+		for _, vk := range vks {
+			i := variants.indexInPossibleKeys(vk)
+			if i == -1 {
+				return nil, fmt.Errorf("Variant-Key %q is not covered by variants %q", e.VariantKey, e.Variants)
+			}
+			if result[i] != nil {
+				return nil, fmt.Errorf("duplicated entries with Variant-Key %q", vk)
+			}
+			result[i] = e
+		}
+	}
+	for i, e := range result {
+		if e == nil {
+			return nil, fmt.Errorf("no entry for Variant-Key %v", variants.possibleKeyAt(i))
+		}
+	}
+	return result, nil
+}
+
+func parseListOfStringLists(s string) ([][]string, error) {
+	ll, err := structuredheader.ParseListOfLists(s)
+	if err != nil {
+		return nil, err
+	}
+	// Convert [][]structuredheader.Item to [][]string.
+	var result [][]string
+	for _, l := range ll {
+		var sl []string
+		for _, item := range l {
+			switch v := item.(type) {
+			case string:
+				sl = append(sl, v)
+			case structuredheader.Token:
+				sl = append(sl, string(v))
+			default:
+				return nil, fmt.Errorf("unexpected value of type %T", v)
+			}
+		}
+		result = append(result, sl)
+	}
+	return result, nil
+}
+
+// Variants represents a Variants: header value.
+type Variants [][]string
+
+func parseVariants(s string) (Variants, error) {
+	vs, err := parseListOfStringLists(s)
+	return Variants(vs), err
+}
+
+func (v Variants) numberOfPossibleKeys() (int, error) {
+	n := 1
+	for _, vals := range v {
+		// vals is [header-name, possible-value1, possible-value2, ...]
+		if len(vals) <= 1 {
+			return 0, errors.New("no possible key")
+		}
+		n *= len(vals) - 1
+		if n > maxNumVariantsForSingleURL {
+			return 0, errors.New("too many possible keys")
+		}
+	}
+	return n, nil
+}
+
+// indexInPossibleKeys returns the index of variantKey within the all possible
+// key combinations for v. If variantKey is not a possible key for v, this
+// returns -1.
+func (v Variants) indexInPossibleKeys(variantKey []string) int {
+	if len(v) != len(variantKey) {
+		return -1
+	}
+
+	index := 0
+OuterLoop:
+	for i, vals := range v {
+		vals = vals[1:] // Drop header-name
+		for indexInAxis, val := range vals {
+			if val == variantKey[i] {
+				index = index*len(vals) + indexInAxis
+				continue OuterLoop
+			}
+		}
+		return -1
+	}
+	return index
+}
+
+// possibleKeyAt returns a variant key at given index within the all possible
+// key combinations for v, or nil if index is out of range.
+func (v Variants) possibleKeyAt(index int) []string {
+	keys := make([]string, len(v))
+	for i := len(v) - 1; i >= 0; i-- {
+		vals := v[i][1:] // Drop header-name
+		keys[i] = vals[index%len(vals)]
+		index /= len(vals)
+	}
+	if index != 0 {
+		return nil // index out of range
+	}
+	return keys
 }
 
 func (is *indexSection) Name() string {
@@ -318,7 +495,7 @@ func addExchange(is *indexSection, rs *responsesSection, e *Exchange) error {
 		return err
 	}
 
-	if err := is.addRequest(e.Request, offset, length); err != nil {
+	if err := is.addExchange(e, offset, length); err != nil {
 		return err
 	}
 	return nil

@@ -5,9 +5,9 @@ import (
 	"io/ioutil"
 	"testing"
 
-	. "github.com/WICG/webpackage/go/signedexchange/certurl"
+	"github.com/WICG/webpackage/go/internal/testhelper"
 	"github.com/WICG/webpackage/go/signedexchange"
-	"github.com/WICG/webpackage/go/signedexchange/internal/testhelper"
+	. "github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
 func createCertChain(t *testing.T) CertChain {
