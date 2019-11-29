@@ -117,7 +117,7 @@ func (is *indexSection) Finalize(ver version.Version) error {
 	var b bytes.Buffer
 	enc := cbor.NewEncoder(&b)
 
-	if ver.HasVariantsSupport() {
+	if ver.SupportsVariants() {
 		// CDDL:
 		//   index = {* whatwg-url => [ variants-value, +location-in-responses ] }
 		//   variants-value = bstr
@@ -579,7 +579,7 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 		}
 		sections = append(sections, ms)
 	}
-	if b.Signatures != nil && b.Version.HasSignaturesSupport() {
+	if b.Signatures != nil && b.Version.SupportsSignatures() {
 		ss, err := newSignaturesSection(b.Signatures)
 		if err != nil {
 			return cw.Written, err

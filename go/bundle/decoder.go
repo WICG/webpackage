@@ -356,8 +356,38 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []secti
 			requests = append(requests, requestEntryWithOffset{Request: Request{URL: parsedUrl}, Offset: offset, Length: length})
 		} else {
 			// Step 4.4. "Otherwise:" [spec text]
-			// TODO: implement.
-			return nil, fmt.Errorf("bundle.index[%d]: non-empty variants-value is not supported.", i)
+			// Step 4.4.1. "Let variants be the result of parsing the first element of responses as the value of the Variants HTTP header field (Section 2 of [I-D.ietf-httpbis-variants]). If this fails, return an error." [spec text]
+			variants, err := parseVariants(string(variants_value))
+			if err != nil {
+				return nil, fmt.Errorf("bundle.index[%d]: Cannot parse variants value %q: %v", i, string(variants_value), err)
+			}
+			// Step 4.4.2. "Let variantKeys be the Cartesian product of the lists of available-values for each variant-axis in lexicographic (row-major) order. See the examples above." [spec text]
+			numVariantKeys, err := variants.numberOfPossibleKeys()
+			if err != nil {
+				return nil, fmt.Errorf("bundle.index[%d]: Invalid variants value %q: %v", i, string(variants_value), err)
+			}
+			// Step 4.4.3. "If the length of responses is not 2 * len(variantKeys) + 1, return an error." [spec text]
+			if numItems != 2*uint64(numVariantKeys)+1 {
+				return nil, fmt.Errorf("bundle.index[%d]: Unexpected size of value array: %d", i, numItems)
+			}
+			// Step 4.4.4. "Set requests[parsedUrl] to a map from variantKeys[i] to the result of calling MakeRelativeToStream on the location-in-responses at responses[2*i+1] and responses[2*i+2], for i in [0, len(variantKeys)). If any MakeRelativeToStream call returns an error, return an error." [spec text]
+			// Currently this implementation just appends all entries to `requests`.
+			// TODO: Preserve the map structure from variant-key to location-in-stream.
+			for j := 0; j < numVariantKeys; j++ {
+				offset, err := dec.DecodeUint()
+				if err != nil {
+					return nil, fmt.Errorf("bundle.index[%d][%d]: Failed to decode offset: %v", i, j, err)
+				}
+				length, err := dec.DecodeUint()
+				if err != nil {
+					return nil, fmt.Errorf("bundle.index[%d][%d]: Failed to decode length: %v", i, j, err)
+				}
+				offset, length, err = makeRelativeToStream(offset, length)
+				if err != nil {
+					return nil, fmt.Errorf("bundle.index[%d][%d]: %v", i, j, err)
+				}
+				requests = append(requests, requestEntryWithOffset{Request: Request{URL: parsedUrl}, Offset: offset, Length: length})
+			}
 		}
 	}
 	return requests, nil
@@ -612,7 +642,7 @@ func loadMetadata(bs []byte) (*meta, error) {
 		// Step 22.6. "Follow "name"'s specification from knownSections to process the section, passing sectionContents, stream, sectionOffsets, and metadata. If this returns an error, return a "format error" with fallbackUrl." [spec text]
 		switch so.Name {
 		case "index":
-			if ver.HasVariantsSupport() {
+			if ver.SupportsVariants() {
 				requests, err := parseIndexSection(sectionContents, sectionsStart, sos)
 				if err != nil {
 					return nil, &LoadMetadataError{err, FormatError, fallbackURL}
@@ -632,7 +662,7 @@ func loadMetadata(bs []byte) (*meta, error) {
 			}
 			meta.manifestURL = manifestURL
 		case "signatures":
-			if ver.HasSignaturesSupport() {
+			if ver.SupportsSignatures() {
 				signatures, err := parseSignaturesSection(sectionContents)
 				if err != nil {
 					return nil, &LoadMetadataError{err, FormatError, fallbackURL}

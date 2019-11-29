@@ -66,6 +66,40 @@ func createTestBundle(t *testing.T, ver version.Version) *Bundle {
 	return bundle
 }
 
+func createTestBundleWithVariants(ver version.Version) *Bundle {
+	primaryURL := urlMustParse("https://variants.example.com/")
+	return &Bundle{
+		Version:    ver,
+		PrimaryURL: primaryURL,
+		Exchanges: []*Exchange{
+			&Exchange{
+				Request{URL: primaryURL},
+				Response{
+					Status: 200,
+					Header: http.Header{
+						"Content-Type": []string{"text/plain"},
+						"Variants":     []string{"Accept-Language;en;ja"},
+						"Variant-Key":  []string{"en"},
+					},
+					Body: []byte("Hello, world!"),
+				},
+			},
+			&Exchange{
+				Request{URL: primaryURL},
+				Response{
+					Status: 200,
+					Header: http.Header{
+						"Content-Type": []string{"text/plain"},
+						"Variants":     []string{"Accept-Language;en;ja"},
+						"Variant-Key":  []string{"ja"},
+					},
+					Body: []byte("こんにちは世界"),
+				},
+			},
+		},
+	}
+}
+
 func createTestCerts(t *testing.T) []*certurl.AugmentedCertificate {
 	certs, err := signedexchange.ParseCertificates([]byte(pemCerts))
 	if err != nil {
@@ -91,6 +125,27 @@ func TestWriteAndRead(t *testing.T) {
 			t.Errorf("Bundle.WriteTo returned %d, but wrote %d bytes", n, buf.Len())
 		}
 
+		deserialized, err := Read(&buf)
+		if err != nil {
+			t.Errorf("Bundle.Read unexpectedly failed: %v", err)
+		}
+		if !reflect.DeepEqual(deserialized, bundle) {
+			t.Errorf("got: %v\nwant: %v", deserialized, bundle)
+		}
+	}
+}
+
+func TestWriteAndReadWithVariants(t *testing.T) {
+	for _, ver := range version.AllVersions {
+		if !ver.SupportsVariants() {
+			continue
+		}
+		bundle := createTestBundleWithVariants(ver)
+
+		var buf bytes.Buffer
+		if _, err := bundle.WriteTo(&buf); err != nil {
+			t.Errorf("Bundle.WriteTo unexpectedly failed: %v", err)
+		}
 		deserialized, err := Read(&buf)
 		if err != nil {
 			t.Errorf("Bundle.Read unexpectedly failed: %v", err)
