@@ -642,7 +642,7 @@ func loadMetadata(bs []byte) (*meta, error) {
 		// Step 22.6. "Follow "name"'s specification from knownSections to process the section, passing sectionContents, stream, sectionOffsets, and metadata. If this returns an error, return a "format error" with fallbackUrl." [spec text]
 		switch so.Name {
 		case "index":
-			if ver.HasVariantsSupport() {
+			if ver.SupportsVariants() {
 				requests, err := parseIndexSection(sectionContents, sectionsStart, sos)
 				if err != nil {
 					return nil, &LoadMetadataError{err, FormatError, fallbackURL}
@@ -662,7 +662,7 @@ func loadMetadata(bs []byte) (*meta, error) {
 			}
 			meta.manifestURL = manifestURL
 		case "signatures":
-			if ver.HasSignaturesSupport() {
+			if ver.SupportsSignatures() {
 				signatures, err := parseSignaturesSection(sectionContents)
 				if err != nil {
 					return nil, &LoadMetadataError{err, FormatError, fallbackURL}

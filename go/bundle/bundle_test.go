@@ -137,7 +137,7 @@ func TestWriteAndRead(t *testing.T) {
 
 func TestWriteAndReadWithVariants(t *testing.T) {
 	for _, ver := range version.AllVersions {
-		if !ver.HasVariantsSupport() {
+		if !ver.SupportsVariants() {
 			continue
 		}
 		bundle := createTestBundleWithVariants(ver)

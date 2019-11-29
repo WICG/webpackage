@@ -94,10 +94,10 @@ func (v Version) HasPrimaryURLField() bool {
 	return v != Unversioned
 }
 
-func (v Version) HasVariantsSupport() bool {
+func (v Version) SupportsVariants() bool {
 	return v != Unversioned
 }
 
-func (v Version) HasSignaturesSupport() bool {
+func (v Version) SupportsSignatures() bool {
 	return v != Unversioned
 }
