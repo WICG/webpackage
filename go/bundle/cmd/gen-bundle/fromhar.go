@@ -65,7 +65,7 @@ func fromHar(harPath string) ([]*bundle.Exchange, error) {
 	}
 
 	es := []*bundle.Exchange{}
-	seen := make(map[string]struct{})
+	hasVariants := make(map[string]bool)
 
 	for _, e := range har.Log.Entries {
 		log.Printf("Processing entry: %q", e.Request.URL)
@@ -96,11 +96,15 @@ func fromHar(harPath string) ([]*bundle.Exchange, error) {
 			continue
 		}
 
-		if _, ok := seen[parsedUrl.String()]; ok {
-			log.Printf("Dropping the entry: exchange for this URL already exists")
+		// Allow multiple entries for single URL only if all responses have
+		// Variants: header.
+		_, thisHasVariants := resh["Variants"]
+		othersHaveVariants, hasMultipleEntries := hasVariants[parsedUrl.String()]
+		if hasMultipleEntries && (!thisHasVariants || !othersHaveVariants) {
+			log.Printf("Dropping the entry: exchange for this URL already exists, and has no Variants header")
 			continue
 		}
-		seen[parsedUrl.String()] = struct{}{}
+		hasVariants[parsedUrl.String()] = thisHasVariants
 
 		e := &bundle.Exchange{
 			Request: bundle.Request{
