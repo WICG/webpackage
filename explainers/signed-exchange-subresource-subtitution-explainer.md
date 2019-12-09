@@ -2,10 +2,9 @@
 
 ## Introduction
 
-We want to introduce a new **rel=allowed-alt-sxg** link HTTP header which will
-be used along with rel=preload link HTTP header. By using this header, content
-publishers can declare that the UA can load the specific subresources from
-cached signed exchanges which were prefetched in the referrer page.
+We want to allow content publishers to declare that the UA can load the specific
+subresources from cached signed exchanges which were prefetched in the referrer
+page. So we propose a new **rel=allowed-alt-sxg** link HTTP header.
 
 ## Use Cases
 
@@ -20,55 +19,47 @@ article.
 If the feed site knows that the article is depending on the JS file, the site
 can insert a link element (`<link rel="prefetch"
 href="https://cdn.publisher.example/lib.js" as="script">`) to prefetch the JS
-file while the user is browsing the feed site. But this is problematic from the
-privacy point of view. And also this doesn’t work if the UA is using
-[origin isolated HTTPCache mechanism](http://sirdarckcat.blogspot.com/2019/03/http-cache-cross-site-leaks.html).
+file while the user is browsing the feed site. But this leaks that the user's
+feed pages include a page using this JS library before the user has
+consented by clicking on the link.
 
-Signed Exchange has solved this
-[privacy-preserving prefetching](https://wicg.github.io/webpackage/draft-yasskin-webpackage-use-cases.html#private-prefetch)
-problem for main resources. If the publisher is providing the article in signed
-exchange format (article.html.sxg), the UA can prefetch the signed exchange from
-the feed site’s own server while the user is browsing the feed site. But there
-is no way to prefetch subresources in a privacy-preserving manner yet.
+There is an ongoing
+[spec discussion](https://github.com/w3c/resource-hints/issues/82) to make
+cross-origin navigation prefetch work with double key caching which is proposed
+to protect against
+[HTTP Cache Cross-Site Leaks](http://sirdarckcat.blogspot.com/2019/03/http-cache-cross-site-leaks.html). But as long as the UA needs to fetch the
+resource from the publisher's server, this
+[privacy leak problem](https://wicg.github.io/webpackage/draft-yasskin-wpack-use-cases.html#private-prefetch)
+ can't be solved.
 
-Our proposal can solve this problem:
-1. The publisher provides the script file in signed exchange format (lib.js.sxg)
-along with its [header integrity value](#header-integrity-of-signed-exchange).
+Signed Exchange solve this privacy-preserving prefetching problem for main
+resources. If the publisher is providing the article in signed exchange format
+(article.html.sxg), the UA can prefetch the signed exchange from the feed site’s
+own server while the user is browsing the feed site. But there is no way to
+prefetch subresources in a privacy-preserving manner yet.
+
+Our proposal can solve this problem for subresources:
+1. The publisher provides the script file in signed exchange format
+(lib.js.sxg).
 1. The UA prefetches the signed exchange of the script from the feed site’s own
 server while the user is browsing the feed site.
-1. The HTTP response of the article from the publisher's server (https://publisher.example/article.html) has an allowed-alt-sxg link header to declare
-that the UA can load the script from the prefetched signed exchange.
+1. The HTTP response of the article from the publisher's server
+(https://publisher.example/article.html) has an `allowed-alt-sxg` link header to
+declare exactly what version of the subresource is compatible with this main
+resource.
    ```
    Link: <https://cdn.publisher.example/lib.js>;
          rel="allowed-alt-sxg";
          header-integrity="sha256-..."
    ```
-   So, the UA can load the JS file from the prefetched signed exchange. If the
-   publisher is providing the article in signed exchange format
-   (article.html.sxg), the allowed-alt-sxg link header is in the inner response
-   headers of the signed exchange.
-
-### Reading article while offline
-If the publisher is providing the main resource and necessary subresources in
-signed exchange format, the user of the news feed site can read the article even
-while offline. This can be done using Service Worker.
-1. The Service Worker of the news feed site fetches the main resource signed
-exchange and subresources signed exchanges (maybe using
-[Background Fetch](https://wicg.github.io/background-fetch/)) while online, and
-stores them to the CacheStorage of the feed site origin.
-1. While the user is browsing the feed site, the site inserts prefetch link
-elements to prefetch the signed exchanges. The service worker responds to the
-fetch events of the prefetch with the signed exchanges in the CacheStorage.
-1. When the user clicks a link to the article’s signed exchange, the content and
-all necessary subresources are loaded from the cached signed exchange. So the
-user can read the article while offline.
-
 
 # Proposal
 
-1. Introduce SignedExchangeCache and PrefetchedSignedExchangeCache which are
-attached to a Document. SignedExchangeCache keeps the signed exchanges which are
-prefetched from the Document. PrefetchedSignedExchangeCache keeps the signed
+1. Introduce two new cache mechanism SignedExchangeCache and
+PrefetchedSignedExchangeCache in a Document.
+   - SignedExchangeCache keeps the signed exchanges which are
+prefetched from the Document.
+   - PrefetchedSignedExchangeCache keeps the signed
 exchanges which were passed from the referrer Document which triggered the
 navigation to the current Document.
 1. While processing
@@ -106,15 +97,16 @@ rel="preload"; as="script"):
 
 # Detailed design discussion
 ## Header integrity of signed exchange
-We use the SHA256 hash value of *signedHeaders* in
+The `header-integrity` parameter of the `allowed-alt-sxg` link is the SHA256
+hash value of the *signedHeaders* value from the
 [application/signed-exchange format](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#application-signed-exchange)
 for integrity checking. This signedHeaders is *"the canonical serialization of
 the CBOR representation of the response headers of the exchange represented by
 the application/signed-exchange resource, excluding the Signature header
 field"*. So this value doesn’t change even if the publisher signs the content
-again or changes the signing key. This header-integrity value can verify the
-integrity of both the response header and the content body, because signed
-exchange’s response header must have digest header.
+again or changes the signing key. This header-integrity value also guarantees
+the content body hasn't changed, because the signed headers are required to
+include a `Digest` header with a hash of the content body.
 
 The UA needs to check that this value of the prefetched subresource signed
 exchange is same as the header-integrity attribute of allowed-alt-sxg link
@@ -123,8 +115,8 @@ distributor from encoding a tracking ID into the subresource signed exchange.
 
 We can’t use the
 [SRI’s integrity](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity)
-for this purpose, because SRI’s integrity can be used only for verifying the
-integrity of the content body. So if the UA use the SRI’s integrity value in
+for this purpose, because SRI’s integrity only covers the content body and not
+any of the headers. So if the UA use the SRI’s integrity value in
 allowed-alt-sxg link header, we can use the subresource signed exchanges to
 track the users by changing content-type and detecting the image loading
 failure.
@@ -133,10 +125,12 @@ failure.
 If there are multiple matching subresource signed exchanges (example:
 script.js.sxg and image.jpg.sxg), the UA must check that there is no error in
 the all signed exchanges (eg: sig matching, URL matching, Merkle Integrity
-error) before processing the content of the signed exchanges. This is intended
-to prevent the distributor from encoding a tracking ID into the set of
-subresources it prefetches. this means that the UA can use the subresource
-signed exchanges only when they are defined in the header.
+error) before processing the content of the signed exchanges. This means that
+the UA can use the subresource signed exchanges only when they are defined in
+the header. This is intended to prevent the distributor from encoding a tracking
+ID into the set of subresources it prefetches. And to prevent the distributor
+from selecting a version of the subresource that isn't compatible with the
+selected version of the main resource, which might introduce a security hole.
 
 ## Can’t we have a global SignedExchangeCache?
 If we can have a global SignedExchangeCache, we can use the all signed exchanges

@@ -2,22 +2,21 @@
 ## Introduction
 We want to allow the publisher of a resource to declare that a signed exchange
 is available holding the content of either that resource or one of its
-subresources. We expect aggregator sites (social networks, News site, search
-engine..) to use this to cache the signed version of a resource in order to
+subresources. We expect aggregator sites (social networks, news sites, search
+engines, etc.) to use this to cache the signed version of a resource in order to
 serve it to their users. We expect UAs to use this to allow users to save the
-page in signed exchange format. When the publisher identifies a same-origin
-signed exchange for a cross-origin subresource, the UA can use that information
-to recursively prefetch the subresource without exposing its speculative
-activity across origins.
+page in signed exchange format so they can share it with their peers. When the
+publisher identifies a same-origin signed exchange for a cross-origin
+subresource, the UA can use that information to recursively prefetch the
+subresource without exposing its speculative activity across origins.
 
 [`<link rel="alternate" type="application/signed-exchange" href=...>`](https://html.spec.whatwg.org/multipage/links.html#rel-alternate)
 and the equivalent `Link` header are already defined to declare that the
 referenced document is a reformulation of the current document as a signed
 exchange. To offer signed exchanges for subresources, we propose to use the
 [`anchor` parameter](https://tools.ietf.org/html/rfc8288#section-3.2) to
-identify the replaced subresource. This may be the first use of the `anchor`
+identify the replaceable subresource. This may be the first use of the `anchor`
 parameter in the web platform.
-
 
 ## Use Cases
 ### Recursive subresource signed exchange prefetch
@@ -31,10 +30,8 @@ to a signed exchange version of that article.
 When the UA prefetches the signed exchange (article.html.sxg), the aggregator
 server includes a declaration that one of `article.html`'s subresources
 (https://cdn.publisher.example/lib.js) is also available from the same
-aggregator.
-
-The response from the server has an alternate link of subresource signed
-exchange:
+aggregator. The aggregator server expresses this by serving `article.html.sxg`
+with a `Link` header identifying the subresource's alternate form:
 
 ```
 Link: <https://feed.example/sxg.publisher.example/lib.js.sxg>;
@@ -70,17 +67,19 @@ article and the script subresource are loaded from the prefetched signed
 exchanges.
 
 ## Proposal
-While prefetching a HTML resource in signed exchange format:
+While prefetching an HTML resource in signed exchange format:
 
-1. Whent the UA detects a "preload" link HTTP header in the inner response,
-check whether matching “allowed-alt-sxg” link HTTP header in the inner response
-exists or not. (Note that if the allowed-alt-sxg link HTTP header has variants
-and variant-key attributes, the UA must execute the algorithm written in
+1. When the UA detects a "preload" link HTTP header in the inner response, check
+whether a matching “allowed-alt-sxg” link HTTP header in the inner response
+exists or not. (Note that multiple `allowed-alt-sxg` links can be present for
+the same preload if they include `variants` and `variant-key` attributes. In
+that case, the UA uses the algorithm written in
 [HTTP Representation Variants](https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html)
 spec to find the matching header.)
-1. If exists, check whether matching “alternate” link HTTP header in the outer
-response exists or not.
-1. If exists, prefetches the matching signed exchange instead of prefetching the
+1. If an `allowed-alt-sxg` link exists, check whether the signed exchange was
+served with a matching “alternate” link HTTP header.
+1. If the outer signed exchange did identify an alternate version of the
+subresource, prefetch the subresource signed exchange instead of prefetching the
 original resource URL.
 1. The prefetched signed exchange will be stored to the SignedExchangeCache of
 the Document. And it will be passed to the next Document and used while
@@ -147,14 +146,21 @@ personally-identifiable information or information derived thereof?
    - Signed Exchange should not include personal information.
 1. How does this specification deal with sensitive information?
    - Signed Exchange should not include sensitive information.
+   - The state of the cache for another origin is potentially sensitive, and
+   this specification avoids exposing it by making the decision to fetch an
+   alternative not depend on the presence or absence of the subresource in its
+   cache.
 1. Does this specification introduce new state for an origin that persists
 across browsing sessions?
-   - No. The prefetched signed exchange is stored to HTTPCache. But this is the
-   existing behavior when directly prefetching the signed exchange using
-   `<link rel=prelfetch>`.
+   - Prefetched resources, including signed exchanges, are stored to the HTTP
+   cache as normal, but the association of a signed exchange with its contained
+   resource is not persisted. Right now, the contained resource is not
+   independently stored in the HTTP cache, although that decision may be
+   revisited.
 1. What information from the underlying platform, e.g. configuration data, is
 exposed by this specification to an origin?
-   - This exposes whether the UA support this feature or not.
+   - The use of Variants exposes the UA's content negotiation preferences to the
+   aggregator's origin, but that's already exposed by the UA's Accept headers.
 1. Does this specification allow an origin access to sensors on a user’s device
    - No
 1. What data does this specification expose to an origin? Please also document
@@ -164,7 +170,8 @@ different contexts.
    - But this is the same as the existing behavior when directly prefetching the
    signed exchange using `<link rel=prelfetch>`.
 1. Does this specification enable new script execution/loading mechanisms?
-   - No
+   - Loading a script from a signed exchange is different from loading it over
+   TLS. We think it's not significantly different.
 1. Does this specification allow an origin to access other devices?
    - No
 1. Does this specification allow an origin some measure of control over a user
@@ -172,7 +179,7 @@ agent’s native UI?
    - No
 1. What temporary identifiers might this this specification create or expose to
 the web?
-   - No
+   - None
 1. How does this specification distinguish between behavior in first-party and
 third-party contexts?
    - This feature should work well with third-party signed exchange.
@@ -186,4 +193,6 @@ Browsing or "incognito" mode?
 Considerations" section?
    - Yes
 1. Does this specification allow downgrading default security characteristics?
-   - No
+   - There's active discussion about how signed exchanges are a downgrade
+   compared to TLS, and this particular specification allows recursive use of
+   signed exchanges.
