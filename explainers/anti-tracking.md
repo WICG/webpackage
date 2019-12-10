@@ -57,6 +57,11 @@ There are lots of possible spellings for a navigation that omits credentials:
 
 ### Possible spellings
 
+The first two options say generically that the referrer can choose whether to
+enter a link target with or without credentials. The rest attempt to avoid
+changing the semantics of top-level navigations while still getting package
+fetches to omit credentials.
+
 <a id="credentials-omit"></a>
 
 #### An attribute to set [credentials-mode](https://fetch.spec.whatwg.org/#concept-request-credentials-mode) to "omit"
@@ -222,13 +227,16 @@ logs instead.
 
 There are worries that uncredentialed navigation could be used in an attack on
 the target site, since the main request won't send or save cookies, but
-subrequests will. We don't actually know a concrete attack that's enabled by
-uncredentialed navigations, but we'd like to prevent surprises anyway.
+subrequests will. The only concrete attacks we know of involve surprising users
+instead of stealing data or executing malicious code, but we'd like to prevent
+those surprises anyway.
 
 Similar worries came up in the discussion of cross-origin prefetch, which led to
 the new `"prenavigate"` operation, for which the target site opts in using an
 [`Allow-Uncredentialed-Navigation`
 header](https://github.com/w3c/resource-hints/issues/82#issuecomment-529951528).
+
+We think the act of creating a signed exchange is an equivalent opt-in.
 
 ### Behavior on an unexpected response
 
