@@ -3,11 +3,13 @@ package certurl
 import (
 	"bytes"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"golang.org/x/crypto/ocsp"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
 
 func CreateOCSPRequest(certs []*x509.Certificate) (*http.Request, error) {
@@ -18,20 +20,39 @@ func CreateOCSPRequest(certs []*x509.Certificate) (*http.Request, error) {
 	if len(cert.OCSPServer) == 0 {
 		return nil, fmt.Errorf("Could not fetch OCSP response: No OCSP responder field")
 	}
-	ocspUrl := cert.OCSPServer[0]
+	ocspUrl, err := url.Parse(cert.OCSPServer[0])
+	if err != nil {
+		return nil, fmt.Errorf("Could not fetch OCSP respones: Invalid OCSP responder URL: %s", err)
+	}
 	issuer := certs[1]
 
 	ocspRequest, err := ocsp.CreateRequest(cert, issuer, &ocsp.RequestOptions{})
 	if err != nil {
 		return nil, err
 	}
-	request, err := http.NewRequest("POST", ocspUrl, bytes.NewReader(ocspRequest))
-	if err != nil {
-		return nil, err
+
+	// Use GET for small requests per https://tools.ietf.org/html/rfc5019#section-5.
+
+	// Use QueryEscape here instead of PathEscape to escape not only '/' but also '+' and '='
+	// to align with the exmaple in https://tools.ietf.org/html/rfc5019#section-5.
+	// Note that the string to be escaped doesn't contain other symbols as it is base64 encoded.
+	getUrl, err := ocspUrl.Parse(url.QueryEscape(base64.StdEncoding.EncodeToString(ocspRequest)))
+	if err != nil || len(getUrl.String()) > 255 {
+		request, err := http.NewRequest("POST", ocspUrl.String(), bytes.NewReader(ocspRequest))
+		if err != nil {
+			return nil, err
+		}
+		request.Header.Add("Content-Type", "application/ocsp-request")
+		request.Header.Add("Accept", "application/ocsp-response")
+		return request, nil
+	} else {
+		request, err := http.NewRequest("GET", getUrl.String(), nil)
+		if err != nil {
+			return nil, err
+		}
+		request.Header.Add("Accept", "application/ocsp-response")
+		return request, nil
 	}
-	request.Header.Add("Content-Type", "application/ocsp-request")
-	request.Header.Add("Accept", "application/ocsp-response")
-	return request, nil
 }
 
 func FetchOCSPResponse(certs []*x509.Certificate) ([]byte, error) {
