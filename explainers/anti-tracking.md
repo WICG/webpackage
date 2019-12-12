@@ -46,7 +46,9 @@ These are tackled individually in the following sections.
 The navigation to a signed package (or exchange) must be done without
 credentials. This is roughly [credentials
 mode](https://fetch.spec.whatwg.org/#concept-request-credentials-mode) ==
-`"omit"`, with changes to Fetch to make it work for navigations.
+`"omit"`, with changes to Fetch to make it work for navigations, but it may need
+additional changes to segregate the connection from other uncredentialed
+requests that might have included identifying information.
 
 There are [security concerns](#security-concerns) for allowing an attacker to
 load an arbitrary site without credentials, so if the target of an
