@@ -12,7 +12,7 @@ import (
 	"net/url"
 )
 
-func CreateOCSPRequest(certs []*x509.Certificate) (*http.Request, error) {
+func CreateOCSPRequest(certs []*x509.Certificate, preferGET bool) (*http.Request, error) {
 	if len(certs) < 2 {
 		return nil, fmt.Errorf("Could not fetch OCSP response: Issuer certificate not found")
 	}
@@ -37,7 +37,15 @@ func CreateOCSPRequest(certs []*x509.Certificate) (*http.Request, error) {
 	// to align with the exmaple in https://tools.ietf.org/html/rfc5019#section-5.
 	// Note that the string to be escaped doesn't contain other symbols as it is base64 encoded.
 	getUrl, err := ocspUrl.Parse(url.QueryEscape(base64.StdEncoding.EncodeToString(ocspRequest)))
-	if err != nil || len(getUrl.String()) > 255 {
+	if preferGET && err == nil && len(getUrl.String()) <= 255 {
+		request, err := http.NewRequest("GET", getUrl.String(), nil)
+		if err != nil {
+			return nil, err
+		}
+		request.Header.Add("Accept", "application/ocsp-response")
+		return request, nil
+	} else {
+		// Fallback to "POST" if the Parse above fails.
 		request, err := http.NewRequest("POST", ocspUrl.String(), bytes.NewReader(ocspRequest))
 		if err != nil {
 			return nil, err
@@ -45,18 +53,11 @@ func CreateOCSPRequest(certs []*x509.Certificate) (*http.Request, error) {
 		request.Header.Add("Content-Type", "application/ocsp-request")
 		request.Header.Add("Accept", "application/ocsp-response")
 		return request, nil
-	} else {
-		request, err := http.NewRequest("GET", getUrl.String(), nil)
-		if err != nil {
-			return nil, err
-		}
-		request.Header.Add("Accept", "application/ocsp-response")
-		return request, nil
 	}
 }
 
 func FetchOCSPResponse(certs []*x509.Certificate) ([]byte, error) {
-	request, err := CreateOCSPRequest(certs)
+	request, err := CreateOCSPRequest(certs, true)
 	if err != nil {
 		return nil, err
 	}

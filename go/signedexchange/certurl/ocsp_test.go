@@ -20,7 +20,7 @@ func TestCreateOCSPRequestSamll(t *testing.T) {
 		t.Fatalf("Cannot parse test-cert.pem: %v", err)
 	}
 
-	req, err := CreateOCSPRequest(certs)
+	req, err := CreateOCSPRequest(certs, true)
 	if err != nil {
 		t.Fatalf("CreateOCSPRequest failed: %v", err)
 	}
@@ -51,7 +51,7 @@ func TestCreateOCSPRequestLarge(t *testing.T) {
 		t.Fatalf("Cannot parse test-cert-long.pem: %v", err)
 	}
 
-	req, err := CreateOCSPRequest(certs)
+	req, err := CreateOCSPRequest(certs, true)
 	if err != nil {
 		t.Fatalf("CreateOCSPRequest failed: %v", err)
 	}
