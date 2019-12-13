@@ -17,6 +17,7 @@ import (
 var (
 	pemFilepath  = flag.String("pem", "", "PEM filepath")
 	ocspFilepath = flag.String("ocsp", "", "DER-encoded OCSP response file. If omitted, fetched from network")
+	preferGET    = flag.Bool("preferGET", false, "Use GET if possible when fetching OCSP response from network")
 	sctDirpath   = flag.String("sctDir", "", "Directory containing .sct files")
 )
 
@@ -35,7 +36,7 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 
 	var ocspDer []byte
 	if *ocspFilepath == "" {
-		ocspDer, err = certurl.FetchOCSPResponse(certs)
+		ocspDer, err = certurl.FetchOCSPResponse(certs, *preferGET)
 		if err != nil {
 			return err
 		}

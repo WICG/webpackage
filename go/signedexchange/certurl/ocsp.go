@@ -69,8 +69,8 @@ func CreateOCSPRequest(certs []*x509.Certificate, preferGET bool) (*http.Request
 	}
 }
 
-func FetchOCSPResponse(certs []*x509.Certificate) ([]byte, error) {
-	request, err := CreateOCSPRequest(certs, true)
+func FetchOCSPResponse(certs []*x509.Certificate, preferGET bool) ([]byte, error) {
+	request, err := CreateOCSPRequest(certs, preferGET)
 	if err != nil {
 		return nil, err
 	}
