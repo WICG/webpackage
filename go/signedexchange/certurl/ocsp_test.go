@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestCreateOCSPRequestSamll(t *testing.T) {
+func TestCreateOCSPRequestSmall(t *testing.T) {
 	expectedRequestURL := "http://ocsp.digicert.com/MFEwTzBNMEswSTAJBgUrDgMCGgUABBTPJvUY%2Bsl%2Bj4yzQuAcL2oQno5fCgQUUWj%2FkK8CB3U8zNllZGKiErhZcjsCEA5kxfvCNq3hSxcq60HHjLA%3D"
 
 	pem, err := ioutil.ReadFile("test-cert.pem")

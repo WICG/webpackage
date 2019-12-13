@@ -10,7 +10,24 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 )
+
+func createGetURL(responderURL, escapedData string) string {
+	// GET URL is constructed as follows:
+	//   {url}/{url-encoding of base-64 encoding of the DER encoding of the OCSPRequest}
+	// Code below is for avoiding duplicated slashes, except for existing ones in {url}.
+	// Common ways to do this with "path" or "net/url" don't work as
+	// - base64 encoded data may include slashes literally and
+	// - even if url-escaped beforehand it may result in double-escaping by url.URL methods
+	// unless we take extra care with url.Path and url.RawPath.
+	// We want to keep {url} as it is rather than path.Clean it, so we stick to a basic string manipulation.
+	if strings.HasSuffix(responderURL, "/") {
+		return responderURL + escapedData
+	} else {
+		return responderURL + "/" + escapedData
+	}
+}
 
 func CreateOCSPRequest(certs []*x509.Certificate, preferGET bool) (*http.Request, error) {
 	if len(certs) < 2 {
@@ -20,10 +37,7 @@ func CreateOCSPRequest(certs []*x509.Certificate, preferGET bool) (*http.Request
 	if len(cert.OCSPServer) == 0 {
 		return nil, fmt.Errorf("Could not fetch OCSP response: No OCSP responder field")
 	}
-	ocspUrl, err := url.Parse(cert.OCSPServer[0])
-	if err != nil {
-		return nil, fmt.Errorf("Could not fetch OCSP respones: Invalid OCSP responder URL: %s", err)
-	}
+	ocspURL := cert.OCSPServer[0]
 	issuer := certs[1]
 
 	ocspRequest, err := ocsp.CreateRequest(cert, issuer, &ocsp.RequestOptions{})
@@ -36,17 +50,16 @@ func CreateOCSPRequest(certs []*x509.Certificate, preferGET bool) (*http.Request
 	// Use QueryEscape here instead of PathEscape to escape not only '/' but also '+' and '='
 	// to align with the exmaple in https://tools.ietf.org/html/rfc5019#section-5.
 	// Note that the string to be escaped doesn't contain other symbols as it is base64 encoded.
-	getUrl, err := ocspUrl.Parse(url.QueryEscape(base64.StdEncoding.EncodeToString(ocspRequest)))
-	if preferGET && err == nil && len(getUrl.String()) <= 255 {
-		request, err := http.NewRequest("GET", getUrl.String(), nil)
+	getURL := createGetURL(ocspURL, url.QueryEscape(base64.StdEncoding.EncodeToString(ocspRequest)))
+	if preferGET && len(getURL) <= 255 {
+		request, err := http.NewRequest("GET", getURL, nil)
 		if err != nil {
 			return nil, err
 		}
 		request.Header.Add("Accept", "application/ocsp-response")
 		return request, nil
 	} else {
-		// Fallback to "POST" if the Parse above fails.
-		request, err := http.NewRequest("POST", ocspUrl.String(), bytes.NewReader(ocspRequest))
+		request, err := http.NewRequest("POST", ocspURL, bytes.NewReader(ocspRequest))
 		if err != nil {
 			return nil, err
 		}
