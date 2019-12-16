@@ -37,8 +37,13 @@ func TestCreateOCSPRequestSmall(t *testing.T) {
 }
 
 func TestCreateOCSPRequestLarge(t *testing.T) {
-	// TODO(tomokinat): create an appropriate test cert and remove the line below.
-	t.SkipNow()
+	// $ openssl genrsa -out ca.key 2048
+	// $ openssl req -x509 -new -nodes -sha256 -key ca.key -out ca.pem -subj '/CN=example.com/O=Test/C=US'
+	// $ openssl ecparam -out test-cert-long.key -name prime256v1 -genkey
+	// $ openssl req -new -sha256 -key test-cert-long.key -out test-cert-long.csr -subj /CN=example.com
+	// $ openssl x509 -req -in test-cert-long.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out test-cert-long-leaf.pem \
+	//     -extfile <(echo -e "1.3.6.1.4.1.11129.2.1.22 = ASN1:NULL\nsubjectAltName=DNS:example.com\nauthorityInfoAccess=OCSP;URI:http://very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-long-ocsp.example.com")
+	// $ openssl test-cert-long-leaf.pem ca.pem > test-cert-long.pem
 
 	expectedResponderURL := "http://very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-long-ocsp.example.com"
 
