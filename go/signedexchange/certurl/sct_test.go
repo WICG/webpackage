@@ -7,7 +7,7 @@ import (
 	. "github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
-func TestCreateOCSPRequest(t *testing.T) {
+func TestSerializeSCTList(t *testing.T) {
 	expected := []byte{
 		0x00, 0x0a, // length
 		0x00, 0x03, 0x01, 0x02, 0x03, // length + first SCT
@@ -15,15 +15,14 @@ func TestCreateOCSPRequest(t *testing.T) {
 	}
 	serialized, err := SerializeSCTList([][]byte{{1, 2, 3}, {4, 5, 6}})
 	if err != nil {
-		t.Errorf("SerializeSCTList failed: %v", err)
-		return
+		t.Fatalf("SerializeSCTList failed: %v", err)
 	}
 	if !bytes.Equal(expected, serialized) {
 		t.Errorf("The SCTs expected to serialize to %v, actual %v", expected, serialized)
 	}
 }
 
-func TestCreateOCSPRequestTooLarge(t *testing.T) {
+func TestSerializeSCTListTooLarge(t *testing.T) {
 	_, err := SerializeSCTList([][]byte{make([]byte, 65536)})
 	if err == nil {
 		t.Errorf("SerializeSCTList didn't fail with too large SCT")
