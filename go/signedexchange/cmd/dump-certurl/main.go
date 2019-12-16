@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	flagInput = flag.String("i", "", "Cerrt-chain CBOR input file")
+	flagInput = flag.String("i", "", "Cert-chain CBOR input file")
 )
 
 func run() error {
