@@ -58,6 +58,17 @@ console.log(JSON.stringify({
 }, null, 2));
 ```
 
+## CLI
+This package also includes `gen-webbundle` command which lets you build a web bundle from a local directory. For example, if you have all the necessary files for `https://example.com/` in `static/` directory, run the following command:
+```sh
+$ gen-webbundle --dir static \
+                --baseURL https://example.com/ \
+                --output out.wbn
+```
+Run `gen-webbundle --help` for full options.
+
+Note: currently this CLI only covers a subset of the functionality offered by [`gen-bundle`](https://github.com/WICG/webpackage/tree/master/go/bundle#gen-bundle) Go tool.
+
 ## Using Bundles
 Generated bundles can be opened with web browsers supporting web bundles.
 
