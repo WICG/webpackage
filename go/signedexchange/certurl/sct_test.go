@@ -15,8 +15,7 @@ func TestSerializeSCTList(t *testing.T) {
 	}
 	serialized, err := SerializeSCTList([][]byte{{1, 2, 3}, {4, 5, 6}})
 	if err != nil {
-		t.Errorf("SerializeSCTList failed: %v", err)
-		return
+		t.Fatalf("SerializeSCTList failed: %v", err)
 	}
 	if !bytes.Equal(expected, serialized) {
 		t.Errorf("The SCTs expected to serialize to %v, actual %v", expected, serialized)
