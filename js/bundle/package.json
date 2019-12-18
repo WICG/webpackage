@@ -10,7 +10,7 @@
     "test": "jasmine tests/*.js"
   },
   "bin": {
-    "gen-webbundle": "./bin/gen-webbundle"
+    "wbn": "./bin/wbn"
   },
   "repository": {
     "type": "git",
