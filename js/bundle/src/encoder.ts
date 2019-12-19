@@ -1,4 +1,7 @@
 import * as CBOR from 'cbor';
+import * as fs from 'fs';
+import * as mime from 'mime';
+import * as path from 'path';
 import {URL} from 'url';
 
 declare module 'cbor' {
@@ -64,6 +67,35 @@ export class BundleBuilder {
       url,
       this.addResponse(new HeaderMap(status, headers), payload)
     );
+  }
+
+  addFile(url: string, file: string) {
+    const headers = {
+      'Content-Type': mime.getType(file) || 'application/octet-stream',
+    };
+    this.addExchange(url, 200, headers, fs.readFileSync(file));
+  }
+
+  addFilesRecursively(baseURL: string, dir: string) {
+    if (!baseURL.endsWith('/')) {
+      throw new Error("baseURL must end with '/'.");
+    }
+    const files = fs.readdirSync(dir);
+    files.sort(); // Sort entries for reproducibility.
+    for (const file of files) {
+      const filePath = path.join(dir, file);
+      if (fs.statSync(filePath).isDirectory()) {
+        this.addFilesRecursively(baseURL + file + '/', filePath);
+      } else if (file === 'index.html') {
+        // If the file name is 'index.html', create an entry for baseURL itself
+        // and another entry for baseURL/index.html which redirects to baseURL.
+        // This matches the behavior of gen-bundle.
+        this.addFile(baseURL, filePath);
+        this.addExchange(baseURL + file, 301, { Location: './' }, '');
+      } else {
+        this.addFile(baseURL + file, filePath);
+      }
+    }
   }
 
   setManifestURL(url: string) {

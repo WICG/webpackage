@@ -9,6 +9,9 @@
     "build": "tsc",
     "test": "jasmine tests/*.js"
   },
+  "bin": {
+    "wbn": "./bin/wbn"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/WICG/webpackage.git",
@@ -22,10 +25,13 @@
   "author": "Kunihiko Sakamoto <ksakamoto@chromium.org>",
   "license": "W3C-20150513",
   "dependencies": {
-    "cbor": "^5.0.1"
+    "cbor": "^5.0.1",
+    "commander": "^4.0.1",
+    "mime": "^2.4.4"
   },
   "devDependencies": {
     "@types/cbor": "^2.0.0",
+    "@types/mime": "^2.0.1",
     "@types/node": "^12.7.11",
     "jasmine": "^3.5.0",
     "typescript": "^3.6.3"
