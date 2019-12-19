@@ -30,6 +30,13 @@ describe('Bundle Builder', () => {
   });
 
   describe('addExchange', () => {
+    it('returns the builder itself', () => {
+      const builder = new wbn.BundleBuilder(primaryURL);
+      expect(
+        builder.addExchange(primaryURL, 200, defaultHeaders, defaultContent)
+      ).toBe(builder);
+    });
+
     it('rejects invalid URLs', () => {
       const builder = new wbn.BundleBuilder(primaryURL);
       invalidURLs.forEach(url => {
@@ -49,9 +56,14 @@ describe('Bundle Builder', () => {
   });
 
   describe('addFile', () => {
+    it('returns the builder itself', () => {
+      const file = path.resolve(__dirname, 'testdata/encoder_test/index.html');
+      const builder = new wbn.BundleBuilder(primaryURL);
+      expect(builder.addFile(primaryURL, file)).toBe(builder);
+    });
+
     it('adds an exchange as expected', () => {
       const file = path.resolve(__dirname, 'testdata/encoder_test/index.html');
-
       const builder = new wbn.BundleBuilder(primaryURL);
       builder.addFile(primaryURL, file);
       const generated = builder.createBundle();
@@ -76,6 +88,12 @@ describe('Bundle Builder', () => {
   });
 
   describe('addFilesRecursively', () => {
+    it('returns the builder itself', () => {
+      const dir = path.resolve(__dirname, 'testdata/encoder_test');
+      const builder = new wbn.BundleBuilder(primaryURL);
+      expect(builder.addFilesRecursively(primaryURL, dir)).toBe(builder);
+    });
+
     it('adds exchanges as expected', () => {
       const dir = path.resolve(__dirname, 'testdata/encoder_test');
       const baseURL = 'https://example.com/';
@@ -117,10 +135,15 @@ describe('Bundle Builder', () => {
   });
 
   describe('setManifestURL', () => {
+    it('returns the builder itself', () => {
+      const builder = new wbn.BundleBuilder(primaryURL);
+      expect(builder.setManifestURL(primaryURL)).toBe(builder);
+    });
+
     it('rejects invalid URLs', () => {
       const builder = new wbn.BundleBuilder(primaryURL);
       invalidURLs.forEach(url => {
-        expect(() => builder.addManifestURL(url)).toThrowError();
+        expect(() => builder.setManifestURL(url)).toThrowError();
       });
     });
 
