@@ -69,14 +69,14 @@ export class BundleBuilder {
     );
   }
 
-  addFile(file: string, url: string) {
+  addFile(url: string, file: string) {
     const headers = {
       'Content-Type': mime.getType(file) || 'application/octet-stream',
     };
     this.addExchange(url, 200, headers, fs.readFileSync(file));
   }
 
-  addFilesRecursively(dir: string, baseURL: string) {
+  addFilesRecursively(baseURL: string, dir: string) {
     if (!baseURL.endsWith('/')) {
       throw new Error("baseURL must end with '/'.");
     }
@@ -85,15 +85,15 @@ export class BundleBuilder {
     for (const file of files) {
       const filePath = path.join(dir, file);
       if (fs.statSync(filePath).isDirectory()) {
-        this.addFilesRecursively(filePath, baseURL + file + '/');
+        this.addFilesRecursively(baseURL + file + '/', filePath);
       } else if (file === 'index.html') {
         // If the file name is 'index.html', create an entry for baseURL itself
         // and another entry for baseURL/index.html which redirects to baseURL.
         // This matches the behavior of gen-bundle.
-        this.addFile(filePath, baseURL);
+        this.addFile(baseURL, filePath);
         this.addExchange(baseURL + file, 301, { Location: './' }, '');
       } else {
-        this.addFile(filePath, baseURL + file);
+        this.addFile(baseURL + file, filePath);
       }
     }
   }

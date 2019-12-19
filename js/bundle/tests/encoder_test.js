@@ -53,7 +53,7 @@ describe('Bundle Builder', () => {
       const file = path.resolve(__dirname, 'testdata/encoder_test/index.html');
 
       const builder = new wbn.BundleBuilder(primaryURL);
-      builder.addFile(file, primaryURL);
+      builder.addFile(primaryURL, file);
       const generated = builder.createBundle();
 
       const refBuilder = new wbn.BundleBuilder(primaryURL);
@@ -71,7 +71,7 @@ describe('Bundle Builder', () => {
     it('throws on nonexistent file', () => {
       const file = path.resolve(__dirname, 'testdata/hello/nonexistent.html');
       const builder = new wbn.BundleBuilder(primaryURL);
-      expect(() => builder.addFile(file, primaryURL)).toThrowError();
+      expect(() => builder.addFile(primaryURL, file)).toThrowError();
     });
   });
 
@@ -81,7 +81,7 @@ describe('Bundle Builder', () => {
       const baseURL = 'https://example.com/';
 
       const builder = new wbn.BundleBuilder(baseURL);
-      builder.addFilesRecursively(dir, baseURL);
+      builder.addFilesRecursively(baseURL, dir);
       const generated = builder.createBundle();
 
       const refBuilder = new wbn.BundleBuilder(baseURL);
@@ -112,7 +112,7 @@ describe('Bundle Builder', () => {
       const dir = path.resolve(__dirname, 'testdata/hello');
       const url = 'https://example.com/hello.html';
       const builder = new wbn.BundleBuilder(url);
-      expect(() => builder.addFilesRecursively(dir, url)).toThrowError();
+      expect(() => builder.addFilesRecursively(url, dir)).toThrowError();
     });
   });
 

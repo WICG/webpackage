@@ -20,5 +20,5 @@ const builder = new BundleBuilder(primaryURL);
 if (options.manifestURL) {
   builder.setManifestURL(options.manifestURL);
 }
-builder.addFilesRecursively(options.dir, options.baseURL);
+builder.addFilesRecursively(options.baseURL, options.dir);
 fs.writeFileSync(options.output, builder.createBundle());
