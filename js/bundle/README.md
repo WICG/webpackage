@@ -18,16 +18,16 @@ Please be aware that the API is not yet stable and is subject to change any time
 Creating a Bundle:
 ```javascript
 const wbn = require('wbn');
-const fs = require("fs");
+const fs = require('fs');
 
 const primaryURL = 'https://example.com/';
-const builder = new wbn.BundleBuilder(primaryURL);
-builder.setManifestURL('https://example.com/manifest.json');
-builder.addExchange(
-  primaryURL,                          // URL
-  200,                                 // response code
-  {'Content-Type': 'text/html'},       // response headers
-  '<html>Hello, Web Bundle!</html>');  // response body (string or Uint8Array)
+const builder = (new wbn.BundleBuilder(primaryURL))
+  .setManifestURL('https://example.com/manifest.json')
+  .addExchange(
+    primaryURL,                          // URL
+    200,                                 // response code
+    {'Content-Type': 'text/html'},       // response headers
+    '<html>Hello, Web Bundle!</html>');  // response body (string or Uint8Array)
 // Have as many builder.addExchange() for resource URLs as needed for the package.
 
 fs.writeFileSync('out.wbn', builder.createBundle());
@@ -36,7 +36,7 @@ fs.writeFileSync('out.wbn', builder.createBundle());
 Reading a Bundle:
 ```javascript
 const wbn = require('wbn');
-const fs = require("fs");
+const fs = require('fs');
 
 const buf = fs.readFileSync('out.wbn');
 const bundle = new wbn.Bundle(buf);

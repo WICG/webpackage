@@ -58,7 +58,7 @@ export class BundleBuilder {
     status: number,
     headers: Headers,
     payload: Uint8Array | string
-  ) {
+  ): BundleBuilder {
     validateExchangeURL(url);
     if (typeof payload === 'string') {
       payload = byteString(payload);
@@ -67,16 +67,18 @@ export class BundleBuilder {
       url,
       this.addResponse(new HeaderMap(status, headers), payload)
     );
+    return this;
   }
 
-  addFile(url: string, file: string) {
+  addFile(url: string, file: string): BundleBuilder {
     const headers = {
       'Content-Type': mime.getType(file) || 'application/octet-stream',
     };
     this.addExchange(url, 200, headers, fs.readFileSync(file));
+    return this;
   }
 
-  addFilesRecursively(baseURL: string, dir: string) {
+  addFilesRecursively(baseURL: string, dir: string): BundleBuilder {
     if (!baseURL.endsWith('/')) {
       throw new Error("baseURL must end with '/'.");
     }
@@ -96,11 +98,13 @@ export class BundleBuilder {
         this.addFile(baseURL + file, filePath);
       }
     }
+    return this;
   }
 
-  setManifestURL(url: string) {
+  setManifestURL(url: string): BundleBuilder {
     validateExchangeURL(url);
     this.addSection('manifest', url);
+    return this;
   }
 
   private addSection(name: string, content: CBORValue) {
