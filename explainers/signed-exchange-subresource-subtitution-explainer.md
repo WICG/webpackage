@@ -31,7 +31,9 @@ including a link with `rel=allowed-alt-sxg`.
 While a user is browsing an aggregator site (https://feed.example), the
 aggregator guesses that the user is likely to want to read a particular article
 (https://publisher.example/article.html) and so inserts a prefetch link pointing
-to a signed exchange version of that article.
+to a signed exchange version of that article. (Note: A new rel type
+`prenavigate` for prenavigation is under
+[discussion](https://github.com/w3c/resource-hints/issues/82#issuecomment-532072736).)
 
 ```
 <link rel="prefetch" href="https://feed.example/sxg.publisher.example/article.html.sxg">
@@ -56,10 +58,10 @@ the replacement signed exchange using a `Link: ... rel="allowed-alt-sxg"` with
 the hash of the signed headers (which themselves include a hash of the content).
 
 To prevent a tracker from conveying a user ID in their choice of which
-subresources to prefetch, the inner resource has to preload the same
+subresources to prefetch, the inner resource also has to preload the same
 subresources that the aggregator prefetches.
-And the inner response of the main resource signed exchange (article.html.sxg)
-has a preload header and an allowed-alt-sxg header:
+This means that the inner response of the main resource signed exchange
+(article.html.sxg) has a preload header and an allowed-alt-sxg header:
 
 ```
 Link: <https://cdn.publisher.example/lib.js>;
@@ -76,9 +78,11 @@ If the user navigates to the expected article, both the main resource of the
 article and the script subresource are loaded from the prefetched signed
 exchanges.
 
-# Proposal
+# Algorithm sketch
 
-- While prenavigating an HTML resource in signed exchange format:
+- While
+[prenavigating](https://github.com/w3c/resource-hints/issues/82#issuecomment-532072736)
+ an HTML resource in signed exchange format:
     1. When the UA detects a "preload" link HTTP header in the inner response,
     check whether a matching “allowed-alt-sxg” link HTTP header in the inner
     response exists or not. (Note that multiple `allowed-alt-sxg` links can be
@@ -89,22 +93,16 @@ exchanges.
     1. If an `allowed-alt-sxg` link exists, check whether the signed exchange
     was served with a matching “alternate” link HTTP header.
     1. If the outer signed exchange did identify an alternate version of the
-    subresource, prefetch the subresource signed exchange instead of prefetching
-    the original resource URL.
-    1. If the UA successfully prefetches the signed exchange (including the
-    merkle integrity check of the body), it stores the parsedExchange which is
-    the result of
-    [parsing a signed exchange](https://wicg.github.io/webpackage/loading.html#parsing-a-signed-exchange)
-    (= inner request URL and inner response) to a new cache mechanism which is
-    attached to the Document.
+    subresource, prefetch the subresource signed exchange.
+    1. If the resulting signed exchange is valid and matches the allowed-alt-sxg
+    link, attach it to the top-level prefetch.
 - While
 [navigating across documents](https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigating-across-documents),
-the UA copies the parsedExchanges in the cache of the source document to the
-target document except for the one that serves the navigation itself.
-    - This is intended to provide a way to transfer the cached signed exchange
-    across origins even if the UA is using origin isolated HTTPCache mechanism.
-    (Note that [header integrity check](#header-integrity-of-signed-exchange)
-    prohibits the distributor from passing a tracking ID to the publisher.)
+the UA copies the signed exchanges that were prefetched above to the target
+document except for the one that serves the navigation itself.
+    - Note that as browsers move toward partitioned HTTP caches, the source
+    document's cache will likely be separate from the target's cache, so we 
+    can't just pass prefetched content through the cache.
 - The navigated-to document has a set of preloads for which it uses the
 allowed-alt-sxg link relation to declare that they can be served by signed
 exchanges. The UA either serves all of them from SXGs prefetched by the previous
@@ -112,23 +110,19 @@ page, or none of them. So while processing
 [preload](https://html.spec.whatwg.org/multipage/links.html#link-type-preload)
 link HTTP headers (eg: Link: <https://cdn.publisher.example/lib.js>;
 rel="preload"; as="script"):
-    1. The UA checks whether matching "allowed-alt-sxg" link HTTP header
-    (`Link: <https://cdn.publisher.example/lib.js>;rel="allowed-alt-sxg";header-integrity="sha256-.."`)
-    exists or not. (Note that if the allowed-alt-sxg link HTTP header has
-    variants and variant-key attributes, the UA must execute the algorithm
-    written in
-    [HTTP Representation Variants spec](https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html)
-    to find the matching header.)
-    1. The UA checks whether all preload links which have matching
-    allowed-alt-sxg link header have matching (url and header-integrity)
-    parsedExchange which was copied from the referrer page.
-    1. If the check passes, in "linked resource fetch setup steps" for all
-    preload links which have matching allowed-alt-sxg link header the UA sets
-    request's stashed exchange to the matching parsedExchange so the resource
-    will be loaded from the cached signed exchange.
+    1. For each preload, use the imagesrcset and imagesizes attributes to pick a
+    single URL to preload.
+    1. Identify the subset _SxgPreloads_ of those preloads with an
+    `allowed-alt-sxg` link for that selected URL.
+    1. If every member of _SxgPreloads_ has a valid signed exchange that was
+    transferred from the referring document, use the signed contents of those
+    resources to satisfy the preloads. Ignore any other prefetched signed
+    exchanges.
+    1. Otherwise, ignore all prefetched signed exchanges and re-fetch the
+    preloads from their original URLs.
 
 # Detailed design discussion
-## Header integrity of signed exchange
+## Identifying exactly one version of a signed exchange
 We propose a new `rel="allowed-alt-sxg"` link header with a `header-integrity`
 parameter. Publishers can declare that the subresource can be served by a signed
 exchange, using this link header in the inner response of the main resource
@@ -147,34 +141,17 @@ for integrity checking. This signedHeaders is *"the canonical serialization of
 the CBOR representation of the response headers of the exchange represented by
 the application/signed-exchange resource, excluding the Signature header
 field"*. So this value doesn’t change even if the publisher signs the content
-again or changes the signing key. This header-integrity value also guarantees
-the content body hasn't changed, because the signed headers are required to
-include a `Digest` header with a hash of the content body.
-
-The UA needs to check that this value of the prefetched subresource signed
-exchange is same as the header-integrity attribute of allowed-alt-sxg link
-header in the response from the publisher. This is intended to prevent the
-distributor from encoding a tracking ID into the subresource signed exchange.
+again or changes the signing key, but it does change if any of the headers or
+body change. (It catches changes to the body because a valid signed exchange's
+headers have to include a `Digest` value that covers the body.)
 
 We can’t use the
-[SRI’s integrity](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity)
-for this purpose, because SRI’s integrity only covers the content body and not
-any of the headers. So if the UA use the SRI’s integrity value in
-allowed-alt-sxg link header, we can use the subresource signed exchanges to
-track the users by changing content-type and detecting the image loading
-failure.
-
-## Multiple subresource signed exchanges
-If there are multiple subresource preloads that are provided by prefetches on
-the previous page in signed exchange format (example: script.js.sxg and
-image.jpg.sxg), the UA must check that there is no error in the any of the
-signed exchanges (eg: sig matching, URL matching, Merkle Integrity error) before
-processing the content of the signed exchanges. This is intended to prevent the
-distributor from encoding a tracking ID into the set of subresources it
-prefetches. And to prevent the distributor from selecting a version of the
-subresource that isn't compatible with the selected version of the main
-resource, which might introduce a security hole.
-
+[SRI `integrity` attribute](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity)
+for this purpose, because SRI’s `integrity` attribute only covers the content
+body and not any of the headers. So if the UA use the SRI’s integrity value in
+`allowed-alt-sxg` link header, a tracker can use signed exchanges that differ in
+headers like their `Content-Type` to transfer a user ID via a pattern of parsing
+failures.
 
 ## Can’t we have a global cache of parsedExchanges?
 If we can have a global cache of parsedExchanges, we can use the all signed
@@ -216,7 +193,7 @@ Link: <https://publisher.example/narrow.jpg>;
 
 ## Lifetime of the entry in SignedExchangeCache
 The UA must check both the
-[signature expire time](https://wicg.github.io/webpackage/loading.html#exchange-signature-expiration-time)
+[signature expiration time](https://wicg.github.io/webpackage/loading.html#exchange-signature-expiration-time)
 of the signed exchange and Cache-Control header of the outer response. The UA
 may discard the entry if it is expired.
 
@@ -285,7 +262,7 @@ attributes to support content negotiation for recursive prefetch.
 If a UA supports WebP, the UA must prefetch **image_webp.sxg** holding a WebP
 image. Otherwise the UA must prefetch **image_jpeg.sxg** holding a JPEG image.
 
-## Security and Privacy Considerations
+# Security and Privacy Considerations
 - The publishers can know whether the referrer page has prefetched the signed
 exchange subresources or not by checking the resource timing information. But
 this only exposes 1 bit information (= yes or no) because UAs can use the cached
@@ -295,27 +272,25 @@ subresource that the main resource preloads, the UA must drop all of the
 subresource prefetches. If the aggregator prefetches a superset of the preloaded
 subresources, the UA must drop the ones that weren't preloaded.
 - The UA can use the prefetched signed exchange subresources, only when they
-were prefetched in the rimmediate eferrer page. This is intended to avoid
+were prefetched in the immediate referrer page. This is intended to avoid
 leaking the prefetching state to succeeding pages.
-- The UA check the header integrity value, so the distributor of the subresource
-signed exchange can’t inject arbitrary resources to the publisher’s page. This
-prevents distributors from sending tracking IDs to the publisher’s page.
+- The UA checks the header integrity value, so the distributor of the
+subresource signed exchange can’t inject arbitrary resources to the publisher’s
+page. This prevents distributors from sending mismatched versions or tracking
+IDs to the publisher’s page.
 - The UA needs to check that the signed
 [request URL](https://wicg.github.io/webpackage/loading.html#exchange-request-url)
 matches the preload link and not just that the header-integrity value matches,
 since the header-integrity hash doesn't cover the request URL.
-- The UA must fetch the signed exchange subresource
-(https://cdn.feed.example/cdn.publisher.example/lib.js.sxg) while processing the
-prefetch link element  (`<link rel="prefetch"
-href="https://cdn.feed.example/cdn.publisher.example/lib.js.sxg" as="script">`)
-even if the HTTP cache already contains the original subresource
-(http://cdn.publisher.example/lib.js). Otherwise it leaks the state of
-publisher’s site to the distributor of the signed exchange.
+- The UA's decision of whether to fetch signed exchange subresources MUST NOT
+depend on whether the HTTP cache already contains the original subresource.
+Otherwise it leaks the state of publisher’s site to the distributor of the
+signed exchange.
 - If a replaced subresource prefetch hasn't completed by the time the UA would
 start fetching it in the course of loading the next page, the UA must cancel
 that prefetch and fetch the resource from its original URL. This prevents the
-distributor from interfering the publisher’s page. (Eg. intentionally block or
-delay the subresource loading.)
+distributor from interfering the publisher’s page. (Eg. intentionally blocking
+or delaying the subresource loading.)
 
 ## [Self-Review Questionnaire: Security and Privacy](https://www.w3.org/TR/security-privacy-questionnaire/)
 1. What information might this feature expose to Web sites or other parties, and
@@ -377,11 +352,12 @@ the web?
     - None
 1. How does this specification distinguish between behavior in first-party and
 third-party contexts?
-    - This feature treats all entities (the distributor of signed exchange, the
-    publisher site, the origin of subresource URL) as third-party origins.
+    - This feature treats the distributor of signed exchange and the origins of
+    cross-origin subresources as third-party origins.
     - To avoid leaking the state of publisher’s site to the distributor of the
-    signed exchange, the UA must fetch the alternate signed exchange subresource
-    even if there is the original subresource in the HTTPCache.
+    signed exchange, the UA's decision of whether to fetch signed exchange
+    subresources MUST NOT depend on whether the HTTP cache already contains the
+    original subresource.
     - To avoid leaking user-specific data in the distributor of signed exchange,
     the prefetch request must not contain credentials. This is covered by the
     "Prefetch and double-key caching"
