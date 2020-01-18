@@ -1,80 +1,385 @@
-# Explainer: Navigation with Web Bundles<br>(a.k.a. Bundled HTTP Exchanges)
+# Explainer: Navigation to Unsigned Web Bundles<br>(a.k.a. Bundled HTTP Exchanges)
 
-Last updated: Oct 31, 2019
+Last updated: Feb 04, 2020
 
-A [demo video](https://youtu.be/xAujz66la3Y) that tries to show one of the use-case scenarios of Web Bundles (a.k.a. Bundled HTTP Exchanges):
+Participate at https://github.com/WICG/webpackage and
+https://datatracker.ietf.org/wg/wpack/about/.
+
+Users want to be able to share content with their friends, even when neither has
+an internet connection. Some websites, for example some books, encyclopedias,
+and games, want to help their users share them in this way. For individual
+images or videos, users have native apps like
+[SHAREit](https://www.ushareit.com/), [Xender](http://www.xender.com/), or
+[Google Files](https://files.google.com/) that can share files.
+
+<!-- TOC -->
+
+- [Proposal](#proposal)
+  - [Relevant structure of a bundle](#relevant-structure-of-a-bundle)
+  - [Process of loading a bundle](#process-of-loading-a-bundle)
+  - [Loading a trusted unsigned bundle.](#loading-a-trusted-unsigned-bundle)
+  - [Loading an untrusted bundle](#loading-an-untrusted-bundle)
+  - [Subsequent loads with an attached bundle](#subsequent-loads-with-an-attached-bundle)
+  - [Service Workers](#service-workers)
+  - [URLs for bundle components](#urls-for-bundle-components)
+- [Open design questions](#open-design-questions)
+  - [Network access](#network-access)
+  - [Non-origin-trusted signatures](#non-origin-trusted-signatures)
+- [Security and privacy considerations](#security-and-privacy-considerations)
+- [Considered alternatives](#considered-alternatives)
+  - [Alternate formats considered](#alternate-formats-considered)
+    - [Save as directory tree](#save-as-directory-tree)
+    - [Save as MHTML](#save-as-mhtml)
+    - [Save as Web Archive](#save-as-web-archive)
+    - [WARC](#warc)
+    - [Mozilla Archive Format](#mozilla-archive-format)
+    - [A bespoke ZIP format](#a-bespoke-zip-format)
+  - [Alternate URL schemes considered](#alternate-url-schemes-considered)
+    - [arcp](#arcp)
+    - [pack](#pack)
+- [Stakeholder feedback](#stakeholder-feedback)
+- [Acknowledgements](#acknowledgements)
+
+<!-- /TOC -->
+
+## Proposal
+
+We propose to use the [Web Bundle
+format](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html),
+without origin-trusted signatures, to give users a format they can create from
+any website they're visiting, share it using existing peer-to-peer sharing apps,
+and then have a peer load it in their browser. The IETF has
+[approved](https://ietf.org/blog/ietf106-highlights/) but not yet created a
+WPACK working group to continue developing this format as of February 2020.
+
+Here's a [demo video](https://youtu.be/xAujz66la3Y) of this use-case for Web
+Bundles (a.k.a. Bundled HTTP Exchanges):
 
 <a href="https://www.youtube.com/watch?v=xAujz66la3Y">
 <img src="https://img.youtube.com/vi/xAujz66la3Y/0.jpg">
 </a>
 
-Today, loading a website basically means retrieving multiple resources from one or multiple web servers. This gives the web the great strengths of being linkable, indexable, composable and ephemeral, but it also makes it difficult for a website to:
+This explainer doesn't currently propose a standard way to identify all the
+resources from a loaded web page that need to be included in a bundle, or to
+identify a pre-packaged bundle that contains the current page. Instead it
+focuses on how to safely load and navigate within a bundle that's already
+created.
 
-* be shared and loaded in a self-contained way, similar to what packaged apps and other portable data representation formats provide,
-* be composed as a distributable, installable application, or
-* load reliably and quickly even when a site consists of a large number of subresources, and even when the internet access is limited.
+### Relevant structure of a bundle
 
-Instead, imagine if we could bundle up a full website in a single resource file, so that the website could be shared via a SD card or over some p2p protocol, or could be retrieved from a fast cache or a nearby proxy. It would open up several interesting use cases.
+A bundle is loaded from a "*bundle URL*", and it contains a set of HTTP *items*,
+each with a "*claimed URL*". The items are serialized in a particular order
+within the bundle, and this will affect the performance of loading the bundle
+when the bundle is loaded from a non-random-access medium (like the network),
+but it doesn't affect the semantics of the bundle.
 
-The **Web Bundles** proposal tries to achieve this. It’s a format that can represent a collection of HTTP resources, and therefore can represent one or multiple web pages in a single file, including their subresources like scripts, images and styles.  It’s a part of the [Web Packaging](https://github.com/WICG/webpackage) project and is also known as "**Bundled HTTP Exchanges**" ([spec proposal](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html)).
+The bundle URL might be a `file://` URL containing private information like the
+user's name, which they might not want exposed to a website they saved for
+offline use.
 
-This document explains how a browser can navigate to a Web Bundle so that a user can open one.
+### Process of loading a bundle
 
-## Example Scenarios: Save and browse unsigned content
-A UA can provide a **'Save as bundle'** feature that dynamically generates an unsigned bundle of the page that its user is currently browsing.  Then anyone can create a bundled representation of the current page, and they can browse it later themself or share it with a nearby friend via one of several native file-sharing apps.
+When the browser navigates to an `application/webbundle;v=___` resource, or
+opens a file that the filesystem identifies as that MIME type, it first parses
+the resource enough to pull out the bundle's [primary
+URL](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#name-load-a-bundles-metadata)
+and a set of flags to control loading (not yet defined in the format). One of
+these flags defines whether the claimed URLs in the bundle are expected to be
+trusted, which for unsigned bundles means the bundle is served from the origin
+that claims it.
 
-When someone else browses the unsigned bundle, they can browse around and see the site, including the results of its JavaScript executing.  Note that in this case the page inside the unsigned bundle is not given any access to the cookies or storage of the original site.
+> An origin could use an "untrusted" bundle with same-origin resources to create
+> a kind of [suborigin](https://w3c.github.io/webappsec-suborigins/).
 
+### Loading a trusted unsigned bundle.
 
-## Example Scenarios: Publishing signed content
-The author of a site creates a bundle for part or all of their site, signs the bundle with the site’s certificate, and then publishes the bundle in a way that interested users can find it. Users can then share this bundle peer-to-peer until its expiration time.
+The browser selects an **unsigned bundle scope** that's based on the bundle's
+URL in the same way the [service worker's scope
+restriction](https://w3c.github.io/ServiceWorker/#path-restriction) is based on
+the URL of the service worker script. If the bundle is served with the
+[`Service-Worker-Allowed`
+header](https://w3c.github.io/ServiceWorker/#service-worker-allowed), that sets
+the unsigned bundle scope to the value of that header. (We are also considering
+using a differently-named header that applies only to bundles.)
 
-Later, when a user receives the bundle, maybe by opening it from an SD card or by navigating to the distribution URL where the bundle is published, they can open it with their UA.  The UA parses and verifies the bundle’s signature, and then opens the pages inside the bundle, without actually connecting to the site's server, but with assurance that it's safe to show the real site in the URL bar and use the site's local storage.  If the bundle represents multiple pages for the site, the user can browse those pages without worrying about connectivity.
+> Browsers might also provide a way for device manufacturers to define an area
+  of the local filesystem that can serve trusted unsigned bundles without any
+  scope restriction. This would make it easier to pre-install applications in a way that has a chance of working across different browsers.
 
-# Details of how the browser handles navigation
+The browser redirects to the bundle's primary URL. If that primary URL is within
+the unsigned bundle scope, it also attaches the bundle itself and its unsigned
+bundle scope to the redirect and the subsequent environment settings object.
+That is, the bundle is treated as just a very expensive redirect if it tries to
+claim URL space it's not allowed to define.
 
-When UA [navigates](https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate) to a WBN resource, i.e. a resource that's in [Web Bundle format](https://jyasskin.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html), the UA parses the data and extracts **primaryUrl** from the [Bundle’s metadata](https://jyasskin.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#rfc.section.2.2).  This document refers to the URL where the WBN is served at as **distributorUrl** in the later sections.
+Subsequent subresource requests will also only be served from the bundle if
+they're inside its scope.
 
-The UA computes a range of URLs that's called **unsigned scope** based on the **distributorUrl** and its path, with a restriction analogous to a [Service Worker's scope restriction](https://w3c.github.io/ServiceWorker/#path-restriction).  The scope may also be explicitly given by the [manifest's scope field](https://w3c.github.io/manifest/#scope-member), where same path restriction applies (i.e. the scope can only narrow the scope but can’t specify upper path).
+### Loading an untrusted bundle
 
-[TBD] We can consider allowing Servers to remove this path restriction by setting a new header that is similar to [Service-Worker-Allowed](https://w3c.github.io/ServiceWorker/#service-worker-allowed).
+The browser redirects to [a URL that refers to the bundle's primary URL *inside
+its bundle*](#urls-for-bundle-components), with the bundle itself attached.
 
-This scope will always be same-origin with the **distributorUrl** and controls which unsigned resources if any are drawn from the bundle.
+Because the user might save a bundle to a file whose path includes private
+information like their username, APIs like
+[`Window.location`](https://developer.mozilla.org/en-US/docs/Web/API/Window/location)
+and
+[`Document.URL`](https://developer.mozilla.org/en-US/docs/Web/API/Document/URL)
+have to return the claimed URL and not the full encoded URL. Avoiding the new
+scheme in these APIs will also probably improve compatibility.
 
-The UA makes an internal redirect (needs definition, see [fetch/issues/576](https://github.com/whatwg/fetch/issues/576)) to the Bundle's **primaryUrl** during [process a navigate fetch](https://html.spec.whatwg.org/multipage/browsing-the-web.html#process-a-navigate-fetch). If the **distributorUrl** is [potentially trustworthy](https://w3c.github.io/webappsec-secure-contexts/#is-url-trustworthy), it also stashes the bundle and its unsigned scope in the request.
+### Subsequent loads with an attached bundle
 
-While loading the **primaryUrl**, if any of the following is true:
-* The primaryUrl is within the **unsigned scope** (e.g. `https://example.com/~foo/article.wbn` cannot serve a Bundle for `https://example.com/~bar/`, but only for the resources under `https://example.com/~foo/`),
-* The Bundle has a [valid signature](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#signatures-section) for the primaryUrl, or
-* Loaded from an a priori trusted location. (E.g. loaded from a special pre-install location)
+The bundle that's attached to the request above will eventually get attached to
+the environment settings object created for the response, from where subsequent
+fetches can use it.
 
+For trusted bundles, any fetch, both navigations and subresources, within the
+bundle's scope checks the bundle for a response before going to the network. If
+a navigation fetch finds a response inside the bundle, the bundle is propagated
+to the environment settings object created for that navigation.
 
-Then the UA performs the fetch using the response that is the result of [load a response from a bundle](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#rfc.section.3.4) for the **primaryUrl**.  The resulting browsingContext will be created as a [Secure Context](https://w3c.github.io/webappsec-secure-contexts/) of the origin of the primaryUrl.
+For untrusted bundles, all fetches should check inside the bundle before going
+to the network. [We need more discussion about whether subresource requests that
+aren't inside the bundle should be able to touch the network at
+all.](#network-access)
 
-Otherwise (the content does not prove its authenticity), the navigation must fail unless the Bundle is loaded from a unique-origin context, e.g. from `file:///`, and the target browsingContext’s origin must be set to that of `file:/// URL`, i.e. a unique origin.
+### Service Workers
 
-Once the navigation succeeds, the Web Bundle (metadata, signature and responses) is attached as **bundledResources** to the browsingContext the UA is navigating to.
+We plan to, but haven't yet, defined an API to expose trusted bundles to that
+origin's service worker. This API should allow the service worker to fill its
+cache with the contents of the bundle.
 
-## Fetch with Bundles
+### URLs for bundle components
 
-If the browsingContext that has a non-null **bundledResources** issues a fetch request that meets the following conditions:
+Each item of the bundle is addressible using a URL, with the new scheme
+`package:`. (See [below](#alternate-URL-schemes-considered) for some details of
+this choice.) This scheme identifies both the URL of the bundle itself (e.g.
+`https://distributor.example/package.wbn?q=query`) and the claimed URL inside
+the bundle (e.g. `https://publisher.example/page.html?q=query`) These are
+encoded so that the [normal algorithm for computing an origin from a
+URL](https://url.spec.whatwg.org/#concept-url-origin) works, by replacing `:`
+with `!`, `/` with `,`, and `?` with `;`, and separating the 2 URLs with `$`.
+Any instance of `!`, `,`, `;`, or `$` in the URLs themselves is %-encoded:
 
-* The request’s method is GET,
-* The request’s URL matches with one of the URLs in the request map in the **bundledResources**, and the [Variants algorithm](https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html#cache) matches the request headers with the Variants header in the bundle,
-* Either of the following is true:
-  * The request is for same-origin and the requesting URL’s path is restricted by the path of the Bundle URL,
-  * The corresponding response that is in the **bundledResources** has a valid (non-expired) signature, or
-  * The initiator origin is not created as a [Secure Context](https://w3c.github.io/webappsec-secure-contexts/). In this last case the resource is loaded as coming from a unique origin.
+```url
+package://https!,,distributor.example,package.wbn;q=query$https!,,publisher.example/page.html?q=query
+```
 
-Then the UA retrieves the corresponding response from the Bundle and attach it to the request as a [stashed exchange](https://wicg.github.io/webpackage/loading.html#request-stashed-exchange) (Note: we might want to stash the whole bundledResources, but we’re not crystal clear on that idea yet).  Note that the exchange is already a **parsedExchange** here, and only be used in [HTTP-network-or-cache](https://wicg.github.io/webpackage/loading.html#mp-http-network-or-cache-fetch) fetch step (but not in [HTTP fetch](https://wicg.github.io/webpackage/loading.html#mp-http-fetch)).
+The origin for that URL is:
 
-## Navigation with Inherited Bundles
-If a request is a navigation request or a worker request and if the response was from the BundledResources, the initiator’s bundledResources are copied to the target browsingContext.
+```url
+package://https!,,distributor.example,package.wbn;q=query$https!,,publisher.example
+```
 
-## Unique-origin Web Bundle Loading
-When a Bundle without a valid signature is loaded from a unique origin (e.g. a local file), following URL conversion must be performed:
+These URLs and origins allow the components of bundles to save data in a way
+that's shared within the same claimed origin within a single bundle, but which
+can't conflict with or attack:
 
-* Set the document’s URL to the unique URL of the Bundle package's one. 
-   * See [@jyasskin](https://github.com/jyasskin)'s [Origins for Resources in Unsigned Packages](https://docs.google.com/document/d/1BYQEi8xkXDAg9lxm3PaoMzEutuQAZi1r8Y0pLaFJQoo/edit#heading=h.1fej4450b9k9) to see what's being proposed.
-   * Chrome Canary 80 has an [experimental implementation of this feature](https://chromium.googlesource.com/chromium/src/+/refs/heads/master/content/browser/web_package/using_web_bundles.md), and it creates a URL for a local Bundle by concatenation of the location (URL) of the Bundle, `?` and the primaryUrl of the Bundle (that must be properly URL-encoded). (e.g. if the primaryUrl is `https://bar.com/article.html`, the document’s URL would be shown as `file:///foo/bar.wbn?https://bar.com/article.html`.)
-* Set the document’s base URL to the primaryUrl of the Bundle.  This allows the fetch with Bundles work for relative URLs, while the security origin of the document should be just remained as unique (and therefore should not be a source of XSS)
+* sites served verifiably from that claimed origin (e.g.
+  `https://publisher.example/page.html?q=query`),
+* other bundles (e.g. `package://https!,,distributor.example,otherpackage.wbn;q=query$https!,,publisher.example/page.html?q=query`), or
+* other origins within the same bundle (e.g. `package://https!,,distributor.example,package.wbn;q=query$https!,,otherpublisher.example/page.html?q=query`).
+
+## Open design questions
+
+* Do we need an "internal redirect" notion for the bundle->primary-URL redirect?
+  See also [whatwg/fetch#576](https://github.com/whatwg/fetch/issues/576).
+
+### Network access
+
+Should untrusted bundles be able to go to the network at all? Should users be
+able to explicitly grant permission?
+
+Under repressive governments, untrusted bundles may be a good way for dissidents
+to share information, but if the government can add their own tracking code to
+the bundles, they may be able to catch people using the banned information.
+
+However, there are also use cases like for sharing book previews, where a
+publisher might want to provide both a free preview and the encrypted rest of
+the book in the same unsigned bundle, while letting users buy a small decryption
+key with an online flow. On the other hand, perhaps that use case should use the
+signed bundles that aren't being proposed in this explainer.
+
+### Non-origin-trusted signatures
+
+While this explainer doesn't propose any particular ways to use any signatures
+in the bundle, there are several options:
+
+* Support [signature-based SRI](https://github.com/mikewest/signature-based-sri).
+* Display a real-world publisher for the content, which is especially useful for
+  books.
+* Allow the application to [pin updates to a particular signing
+  key](https://wicg.github.io/webpackage/draft-yasskin-wpack-use-cases.html#name-protecting-users-from-a-com).
+  (Which has risks.)
+* Grant access to some particularly-powerful API because the signature vouches
+  that a trusted auditor checked the package for malicious behavior.
+
+## Security and privacy considerations
+
+* Unsigned bundles served by one origin can't be trusted to provide content for
+  another origin. The [URL design](#urls-for-bundle-components) and the division
+  between trusted and untrusted bundles are designed to keep separate origins
+  safely separate, but this is more than a trivial amount of complexity, and
+  browsers will need to be careful to actually enforce the boundaries.
+
+* It's straightforward for someone serving an unsigned bundle to include a
+  unique ID in the resources within that bundle. If the bundle can then make
+  [network requests](#network-access), especially credentialed network requests,
+  the author can determine a set of people who are connected to eachother in
+  some way. This is detectable if users have a way to inspect two bundles that
+  are supposed to hold the same content, but since the whole point of sharing
+  bundles is to reduce redundant transfers, it's unlikely many users  will
+  actually check this.
+
+  Sites currently gather information on this kind of link sharing by annotating
+  their URLs with unique or semi-unique IDs. These can usually be removed by
+  removing query parameters, but if a significant number of users cleaned their
+  URLs, the tracking could move to path segments.
+
+## Considered alternatives
+
+### Alternate formats considered
+
+There are several existing ways to serialize a web page or website, but all of
+them have shortcomings for the use cases we're focusing on:
+
+#### Save as directory tree
+
+This is currently supported by Chromium and Firefox using the `Save As...` |
+`Webpage, Complete` dialog. The result is a whole directory, which doesn't match
+the sharing models of the existing apps.
+
+#### Save as MHTML
+
+This is currently supported by Chromium using the `Save As...` | `Webpage,
+Single File` dialog.
+
+MHTML isn't a random-access format, which means that the entire prefix of the
+file needs to be parsed to get to any particular resource. This probably
+wouldn't be an issue for single web pages, but for full websites or bundles of
+multiple websites, it can be slow.
+
+MHTML would need an extension to support content negotiation between multiple
+representations at the same URL.
+
+Although this wouldn't be a good reason to avoid MHTML on its own, we can do
+better nowadays than a text format with boundary strings.
+
+#### Save as Web Archive
+
+This is currently supported by Safari using the `Save As...` | `Web Archive` dialog.
+
+A Web Archive is in the semi-documented binary plist format and doesn't support
+random access or content negotiation either. Web Archives also currently allow
+[UXSS](https://blog.rapid7.com/2013/04/25/abusing-safaris-webarchive-file-format/)
+if a user opens one from an untrustworthy source.
+
+#### WARC
+
+[WARC](https://en.wikipedia.org/wiki/Web_ARChive) was designed for archiving
+websites and is in active use by the [Internet Archive](https://archive.org/)
+and many other web archives. It includes more information about the archival
+process itself than MHTML does. Most of this extra information would probably be
+irrelevant to the use cases in this document, although the archival timestamp
+could be useful.
+
+Like MHTML, WARC is not random access.
+
+#### Mozilla Archive Format
+
+"The [MAFF](http://maf.mozdev.org/maff-specification.html) format is designed to
+work in the same way as when a saved page is opened directly from a local file
+system", which means that response headers can't be encoded at all. MAFF also
+doesn't pick one of its contained pages as the default one, so there's nothing
+to navigate to if a user just opens the MAFF as a whole.
+
+As a ZIP file, each of the subresources of one of the contained pages can be
+accessed randomly, but MAFF doesn't appear to define any way for the pages to
+link to each other.
+
+#### A bespoke ZIP format
+
+ZIP is nicely random access if we encode the resource URL into the path.
+However, URLs aren't quite paths, so we would probably need to encode them.
+
+ZIP holds files, so we would need to encode any content negotiation information and response headers into the stored files.
+
+The ZIP format has some ambiguities in parsing it that have led to
+[vulnerabilities in
+Android](https://nakedsecurity.sophos.com/2013/07/10/anatomy-of-a-security-hole-googles-android-master-key-debacle-explained/).
+
+ZIP files place their index at the end, which allows them to be generated
+incrementally or updated by simply appending new data. However, the trailing
+authoritative index prevents a consumer from processing anything until the
+complete file is received. Streaming isn't particularly useful for the
+peer-to-peer transfer use case, but it allows the same format to be used for
+subresource bundles (which will have a separate explainer).
+
+### Alternate URL schemes considered
+
+A Google doc, [Origins for Resources in Unsigned
+Packages](https://docs.google.com/document/d/1BYQEi8xkXDAg9lxm3PaoMzEutuQAZi1r8Y0pLaFJQoo/edit),
+goes into more detail about why we need a new scheme at all, and discusses the
+2-URL scheme described above and a hash+URL scheme similar to [`arcp://ni,`
+URIs](https://tools.ietf.org/html/draft-soilandreyes-arcp-03#section-4.1).
+
+#### arcp
+
+[draft-soilandreyes-arcp](https://tools.ietf.org/html/draft-soilandreyes-arcp-03),
+from 2018, proposes an `arcp:` scheme that encodes a UUID, hash, or name for an
+archive/package, plus a path within that package. It's designed to be usable
+with several different kinds of archive, listing "application/zip",
+"application/x-7z-compressed", LDP Containers, installed Web Apps, and a BagIt
+folder structure as possible kinds.
+
+By using just a path to identify the thing within the package, `arcp:` isn't
+compatible with the way bundles include resources from several different
+origins. On the other hand, the [`package:` scheme](#urls-for-bundle-components)
+discussed above can work for path-based archives, by either using a `file:` URL
+to identify the element of the package, or perhaps by omitting the part of the
+authority after `$`. Adding a second URL may also be a compatible addition to
+`arcp:`.
+
+`arcp:` doesn't define a way to locate the archive, which prevents an external
+link from pointing directly to one element of the archive, but an external link
+can still point to the archive as a whole. Once a client has seen an archive, it
+can store a mapping from any of the `arcp:` URI forms to the archive itself,
+which allows navigation within the archive. The `arcp://ni,` form, in
+particular, has the benefit of allowing users to move an archive around without
+losing its storage; and the drawback of preventing the user from upgrading the
+archive without losing its storage.
+
+`arcp:`'s flexibility in naming the archive, between random UUIDs, UUIDs based
+on the archive's location, hashes of the archive content, or system-dependent
+archive names, could be useful for varying system requirements, but it also
+introduces implementation complexity. We'd probably want to pick just one of those options for bundles.
+
+#### pack
+
+[draft-shur-pack-uri-scheme](https://tools.ietf.org/html/draft-shur-pack-uri-scheme-05),
+from 2009, defines a `pack:` scheme meant for use with OOXML packages. It
+identifies a package with an encoded URL, which partially inspired the
+[encoding](#urls-for-bundle-components) proposed in this document. Like `arcp:`
+it only expects elements of a package to have paths, which doesn't allow the
+full URLs needed by web bundles.
+
+## Stakeholder feedback
+
+* W3CTAG: ?
+* Browsers:
+  * Safari: ?
+  * Firefox: [In progress](https://github.com/mozilla/standards-positions/issues/264)
+  * Samsung: ?
+  * UC: ?
+  * Opera: ?
+  * Edge: ?
+* Web developers: ?
+
+## Acknowledgements
+
+Many people have helped in the design of web packaging in general. The design of
+the URL scheme was helped in particular by:
+
+* Anne van Kesteren
+* Graham Klyne and the uri-review@ietf.org list
