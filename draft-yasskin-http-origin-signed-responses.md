@@ -1629,7 +1629,7 @@ Required parameters:
 
 * v: A string denoting the version of the file format. ({{!RFC5234}} ABNF:
   `version = DIGIT/%x61-7A`) The version defined in this specification is `1`.
-  When used with the `Accept` header field (Section 5.3.1 of {{!RFC7231}}), this
+  When used with the `Accept` header field (Section 5.3.2 of {{!RFC7231}}), this
   parameter can be a comma (,)-separated list of version strings. ({{!RFC5234}}
   ABNF: `version-list = version *( "," version )`) The server is then expected
   to reply with a resource using a particular version from that list.
