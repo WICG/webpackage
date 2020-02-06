@@ -65,7 +65,7 @@ func DumpExchange(e *bundle.Exchange, b *bundle.Bundle, verifier *signature.Veri
 	}
 	if *flagDumpContentText {
 		ctype := e.Response.Header.Get("content-type")
-		if strings.Contains(ctype, "text") {
+		if isTextType(ctype) {
 			if _, err := fmt.Print(string(payload)); err != nil {
 				return err
 			}
@@ -79,6 +79,10 @@ func DumpExchange(e *bundle.Exchange, b *bundle.Bundle, verifier *signature.Veri
 		}
 	}
 	return nil
+}
+
+func isTextType(mimeType string) bool {
+	return strings.HasPrefix(mimeType, "text/") || strings.HasPrefix(mimeType, "application/javascript")
 }
 
 func run() error {
