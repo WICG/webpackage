@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"mime"
 	"os"
 	"strings"
 	"time"
@@ -82,7 +83,12 @@ func DumpExchange(e *bundle.Exchange, b *bundle.Bundle, verifier *signature.Veri
 }
 
 func isTextType(mimeType string) bool {
-	return strings.HasPrefix(mimeType, "text/") || strings.HasPrefix(mimeType, "application/javascript")
+	m, _, err := mime.ParseMediaType(mimeType)
+	if err != nil {
+		// Since this is a dump tool, we just ignore parse errors.
+		return false
+	}
+	return strings.HasPrefix(m, "text/") || m == "application/javascript"
 }
 
 func run() error {
