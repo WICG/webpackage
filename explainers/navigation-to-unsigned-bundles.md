@@ -740,6 +740,38 @@ full URLs needed by web bundles.
   * Opera: ?
   * Edge: ?
 * Web developers: ?
+* [ESCAPE workshop](https://tools.ietf.org/html/draft-iab-escape-report-00)
+  attendees:
+  * "Several participants reported that in areas where Internet access is
+    expensive, slow, or intermittent, the use of direct peer-to-peer file
+    exchange (e.g., "saving a Web site and sharing it on a USB stick") is
+    commonplace.  Most Web browsers already have some affordances for this, but
+    these are recognized as in need of improvements. … Many participants pointed
+    out that using "unsigned bundles" - that is, Web Packages without Signed
+    Exchanges - could be adequate for this use case, since most users don't need
+    cryptographic proof of the site's identity.  However, some expressed
+    concerns that this might worsen the propagation of falsehood." — [section
+    2.2](https://tools.ietf.org/html/draft-iab-escape-report-00#section-2.2)
+  * [Dave Cramer of
+    Hachette](https://www.iab.org/wp-content/IAB-uploads/2019/06/cramer-position-paper.pdf)
+    expressed "hope for a packaging model", but was concerned by several
+    questions: "How would packaging work with paid content, from paywalls to
+    micropayments to the traditional ebook model of selling content directly?
+    This is our big question. Advertising shouldn’t be the only model for
+    supporting content creation on the web, and the web shouldn’t be designed
+    around only this one model. We have many other questions, of course. How
+    would unsigned exchanges work? What happens when you GET a package? Can
+    packages be used for ad-hoc content distribution? I email you a package; you
+    double-click and it opens in your browser. How can web packaging become as
+    simple as PDF?"
+  * ["From an archival standpoint, the potential for Web content to be provided
+    in a self-contained form was viewed
+    positively."](https://tools.ietf.org/html/draft-iab-escape-report-00#section-2.3.2),
+    but archivists were worried that content producers might not package their
+    content enough to make it fully effective. They also thought packages might
+    improve the "situation for archival replay".
+* Computer vendors: Interest in using bundles to represent pre-installed
+  applications.
 
 ## Acknowledgements
 
