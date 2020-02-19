@@ -237,6 +237,11 @@ in the bundle, there are several options:
   removing query parameters, but if a significant number of users cleaned their
   URLs, the tracking could move to path segments.
 
+* The path of a locally-saved bundle may include private information like a
+  username. As [Loading an untrusted bundle](#loading-an-untrusted-bundle)
+  suggests, the URL of the bundle itself needs to be hidden from web APIs to
+  avoid exposing this.
+
 ## Considered alternatives
 
 ### Alternate formats considered
