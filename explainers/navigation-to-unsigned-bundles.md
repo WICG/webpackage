@@ -12,7 +12,7 @@ images or videos, users have native apps like
 [SHAREit](https://www.ushareit.com/), [Xender](http://www.xender.com/), or
 [Google Files](https://files.google.com/) that can share files.
 
-<!-- TOC -->
+<!-- TOC depthTo:3 -->
 
 - [Proposal](#proposal)
   - [Relevant structure of a bundle](#relevant-structure-of-a-bundle)
@@ -26,17 +26,10 @@ images or videos, users have native apps like
   - [Network access](#network-access)
   - [Non-origin-trusted signatures](#non-origin-trusted-signatures)
 - [Security and privacy considerations](#security-and-privacy-considerations)
+  - [Security/Privacy Questionaire](#securityprivacy-questionaire)
 - [Considered alternatives](#considered-alternatives)
   - [Alternate formats considered](#alternate-formats-considered)
-    - [Save as directory tree](#save-as-directory-tree)
-    - [Save as MHTML](#save-as-mhtml)
-    - [Save as Web Archive](#save-as-web-archive)
-    - [WARC](#warc)
-    - [Mozilla Archive Format](#mozilla-archive-format)
-    - [A bespoke ZIP format](#a-bespoke-zip-format)
   - [Alternate URL schemes considered](#alternate-url-schemes-considered)
-    - [arcp](#arcp)
-    - [pack](#pack)
 - [Stakeholder feedback](#stakeholder-feedback)
 - [Acknowledgements](#acknowledgements)
 
@@ -241,6 +234,110 @@ in the bundle, there are several options:
   username. As [Loading an untrusted bundle](#loading-an-untrusted-bundle)
   suggests, the URL of the bundle itself needs to be hidden from web APIs to
   avoid exposing this.
+
+### Security/Privacy Questionaire
+
+This section contains answers to the [W3C TAG Security and Privacy
+Questionnaire](https://w3ctag.github.io/security-questionnaire/).
+
+#### 1. What information might this feature expose to Web sites or other parties, and for what purposes is that exposure necessary?
+
+This feature should not expose additional information than what the original Web
+sites intended to expose.
+
+#### 2. Is this specification exposing the minimum amount of information necessary to power the feature?
+
+Yes.
+
+#### 3. How does this specification deal with personal information or personally-identifiable information or information derived thereof?
+
+When the content included in the unsigned Web Bundle is loaded as an untrusted
+bundle (e.g: loaded a “untrusted” bundle from a local file), navigation to the
+Bundle will be loaded within its unique origin with package: scheme, which is
+different from the claimed origin or from other bundles, therefore no access to
+the original origin’s storage should be given.
+
+Please also see the [Security and privacy considerations](#security-and-privacy-considerations).
+
+#### 4. How does this specification deal with sensitive information?
+
+(See above) TODO: link.
+
+#### 5. Does this specification introduce a new state for an origin that persists across browsing sessions?
+
+This proposal introduces a [`package:` scheme](#urls-for-bundle-components) that
+defines an origin based on the location or the URL of the bundle itself, and the
+claimed URL inside the bundle. That's a new kind of origin with the same state
+as any other origin (e.g. indexed DB, Local Storage), which can be persisted
+across browsing sessions.
+
+#### 6. What information from the underlying platform, e.g. configuration data, is exposed by this specification to an origin?
+
+None.
+
+#### 7. Does this specification allow an origin access to sensors on a user’s device
+
+No.
+
+#### 8. What data does this specification expose to an origin? Please also document what data is identical to data exposed by other features, in the same or different contexts.
+
+Network requests (e.g. fetch or iframe) from the unsigned bundle could expose IP
+address of the user, in the same way as regular navigation does.  See also this
+section in the explainer about how network requests from untrusted bundles
+should be performed or not.
+
+For “trusted” Web Bundle navigation within the unsigned bundle scope of the
+distributorUrl, it shouldn’t expose more information than the original web site.
+
+#### 9. Does this specification enable new script execution/loading mechanisms?
+
+No.
+
+#### 10. Does this specification allow an origin to access other devices?
+
+No.
+
+#### 11. Does this specification allow an origin some measure of control over a user agent’s native UI?
+
+No.
+
+#### 12. What temporary identifiers might this specification create or expose to the web?
+
+No
+
+#### 13. How does this specification distinguish between behavior in first-party and third-party contexts?
+
+For navigation, this specification itself doesn’t distinguish between behavior
+in first-party (i.e. top-level navigation) and third-party (i.e. iframe or
+nested navigation), while additional constraints might be added or mixed content
+might block the content for the latter case, in the same way as regular nested
+navigations.
+
+For subsequent subresource loading with an attached bundle, again there is no
+particular difference from regular subresource loading, and origins between
+different claimed URLs for each resource is distinguished as different
+third-party origins.
+
+#### 14. How does this specification work in the context of a user agent’s Private Browsing or "incognito" mode?
+
+No difference while the user is browsing sites in Private mode, except that any
+session state will be persisted (in the same way as regular navigation in
+Private mode).
+
+#### 15. Does this specification have a "Security Considerations" and "Privacy Considerations" section?
+
+See the security considerations in the format spec, security and privacy
+considerations in the explainer, and open design questions in the explainer.
+
+#### 16. Does this specification allow downgrading default security characteristics?
+
+Similarly to Service Worker, this specification allows a resource in a “trusted”
+Web Bundle to be served as its claimed URL if the claimed URL matches within the
+scope of “unsigned bundle scope” of the distributor URL, and
+Service-Worker-Allowed response header also allowed the scope to be extended
+beyond the default path of the distributor URL.
+
+#### 17. What should this questionnaire have asked?
 
 ## Considered alternatives
 
