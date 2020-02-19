@@ -253,7 +253,7 @@ Yes.
 
 When the content included in the unsigned Web Bundle is loaded as an untrusted
 bundle (e.g: loaded a “untrusted” bundle from a local file), navigation to the
-Bundle will be loaded within its unique origin with package: scheme, which is
+Bundle will be loaded within its unique origin with [package: scheme](#urls-for-bundle-components), which is
 different from the claimed origin or from other bundles, therefore no access to
 the original origin’s storage should be given.
 
@@ -283,7 +283,7 @@ No.
 
 Network requests (e.g. fetch or iframe) from the unsigned bundle could expose IP
 address of the user, in the same way as regular navigation does.  See also this
-section in the explainer about how network requests from untrusted bundles
+[section](#network-access) in the explainer about how network requests from untrusted bundles
 should be performed or not.
 
 For “trusted” Web Bundle navigation within the unsigned bundle scope of the
