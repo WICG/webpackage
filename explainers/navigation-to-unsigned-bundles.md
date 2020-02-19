@@ -334,7 +334,9 @@ considerations in the explainer, and open design questions in the explainer.
 Similarly to Service Worker, this specification allows a resource in a “trusted”
 Web Bundle to be served as its claimed URL if the claimed URL matches within the
 scope of “unsigned bundle scope” of the distributor URL, and
-Service-Worker-Allowed response header also allowed the scope to be extended
+if `Service-Worker-Allowed` response header is given the default scope can be also extended```
+
+The original text was probably a bit garbled.. (feel free to modify further)
 beyond the default path of the distributor URL.
 
 #### 17. What should this questionnaire have asked?
