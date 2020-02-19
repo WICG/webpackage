@@ -242,8 +242,12 @@ Questionnaire](https://w3ctag.github.io/security-questionnaire/).
 
 #### 1. What information might this feature expose to Web sites or other parties, and for what purposes is that exposure necessary?
 
-This feature should not expose additional information than what the original Web
-sites intended to expose.
+If we allow [network access](#network-access) from untrusted bundles, they could
+be abused to [identify the set of people who have copies of the same
+download](#security-and-privacy-considerations).
+
+We're blocking access to the `package:` URL because for local bundles that would
+include the path of the bundle.
 
 #### 2. Is this specification exposing the minimum amount of information necessary to power the feature?
 
@@ -251,25 +255,18 @@ Yes.
 
 #### 3. How does this specification deal with personal information or personally-identifiable information or information derived thereof?
 
-When the content included in the unsigned Web Bundle is loaded as an untrusted
-bundle (e.g: loaded a “untrusted” bundle from a local file), navigation to the
-Bundle will be loaded within its unique origin with [package: scheme](#urls-for-bundle-components), which is
-different from the claimed origin or from other bundles, therefore no access to
-the original origin’s storage should be given.
-
-Please also see the [Security and privacy considerations](#security-and-privacy-considerations).
+This feature blocks access to local paths, which might otherwise be exposed by the `package:` scheme.
 
 #### 4. How does this specification deal with sensitive information?
 
-(See above) TODO: link.
+See #3.
 
 #### 5. Does this specification introduce a new state for an origin that persists across browsing sessions?
 
-This proposal introduces a [`package:` scheme](#urls-for-bundle-components) that
-defines an origin based on the location or the URL of the bundle itself, and the
-claimed URL inside the bundle. That's a new kind of origin with the same state
-as any other origin (e.g. indexed DB, Local Storage), which can be persisted
-across browsing sessions.
+This proposal introduces a new kind of origin with state that persists across
+browsing sessions. Specifically, the [`package:`
+scheme](#urls-for-bundle-components) defines an origin based on the location or
+the URL of the bundle itself, and the claimed URL inside the bundle.
 
 #### 6. What information from the underlying platform, e.g. configuration data, is exposed by this specification to an origin?
 
@@ -283,11 +280,13 @@ No.
 
 Network requests (e.g. fetch or iframe) from the unsigned bundle could expose IP
 address of the user, in the same way as regular navigation does.  See also this
-[section](#network-access) in the explainer about how network requests from untrusted bundles
+[section](#network-access) about how network requests from untrusted bundles
 should be performed or not.
 
-For “trusted” Web Bundle navigation within the unsigned bundle scope of the
-distributorUrl, it shouldn’t expose more information than the original web site.
+Navigation and subresource requests within the [unsigned bundle
+scope](#loading-a-trusted-unsigned-bundle) of a "trusted" bundle should expose
+strictly less information than loading each contained resource directly from the
+server, since it stops exposing the time that resource was needed.
 
 #### 9. Does this specification enable new script execution/loading mechanisms?
 
@@ -303,15 +302,19 @@ No.
 
 #### 12. What temporary identifiers might this specification create or expose to the web?
 
-No
+This explainer avoids exposing the [new URL scheme for untrusted
+bundles](#urls-for-bundle-components) to the web, as the bundle URL piece of the
+authority can include private information including identifiers.
 
 #### 13. How does this specification distinguish between behavior in first-party and third-party contexts?
 
 For navigation, this specification itself doesn’t distinguish between behavior
 in first-party (i.e. top-level navigation) and third-party (i.e. iframe or
-nested navigation), while additional constraints might be added or mixed content
-might block the content for the latter case, in the same way as regular nested
-navigations.
+nested navigation) and doesn't affect other constraints on navigations.
+
+A first-party bundle (that is, one whose claimed URLs are same-origin with the
+bundle itself) can be trusted, while a third-party one must be untrusted (as
+this explainer doesn't cover signed bundles).
 
 For subsequent subresource loading with an attached bundle, again there is no
 particular difference from regular subresource loading, and origins between
@@ -320,24 +323,28 @@ third-party origins.
 
 #### 14. How does this specification work in the context of a user agent’s Private Browsing or "incognito" mode?
 
-No difference while the user is browsing sites in Private mode, except that any
-session state will be persisted (in the same way as regular navigation in
-Private mode).
+This specification doesn't interact with Private Browsing, although it would be
+plausible to make Private Browsing affect the default state of the [Network
+access](#network-access) open design question.
 
 #### 15. Does this specification have a "Security Considerations" and "Privacy Considerations" section?
 
-See the security considerations in the format spec, security and privacy
-considerations in the explainer, and open design questions in the explainer.
+See the [security considerations in the format
+specification](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#security),
+[security and privacy considerations in this
+explainer](#security-and-privacy-considerations), and the [open design questions
+in this explainer](#open-design-questions).
 
 #### 16. Does this specification allow downgrading default security characteristics?
 
-Similarly to Service Worker, this specification allows a resource in a “trusted”
-Web Bundle to be served as its claimed URL if the claimed URL matches within the
-scope of “unsigned bundle scope” of the distributor URL, and
-if `Service-Worker-Allowed` response header is given the default scope can be also extended```
-
-The original text was probably a bit garbled.. (feel free to modify further)
-beyond the default path of the distributor URL.
+Similarly to Service Workers, this specification allows a resource fetched from
+one path to provide responses for another path within the same origin. For
+Service Workers, that's the Service Worker script itself; here it's the Web
+Bundle. Both are [constrained by default](#loading-a-trusted-unsigned-bundle) to
+only override the subtree of paths rooted at their own directory, and someone
+with control of the server's response headers can loosen the constraint using
+the `Service-Worker-Allowed` response header (or possibly a differently-named
+header for bundles).
 
 #### 17. What should this questionnaire have asked?
 
