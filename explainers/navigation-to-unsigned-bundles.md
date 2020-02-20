@@ -218,12 +218,14 @@ in the bundle, there are several options:
 
 * It's straightforward for someone serving an unsigned bundle to include a
   unique ID in the resources within that bundle. If the bundle can then make
-  [network requests](#network-access), especially credentialed network requests,
-  the author can determine a set of people who are connected to eachother in
-  some way. This is detectable if users have a way to inspect two bundles that
-  are supposed to hold the same content, but since the whole point of sharing
-  bundles is to reduce redundant transfers, it's unlikely many users  will
-  actually check this.
+  [network requests](#network-access), the author can determine a rough number
+  and set of IP addresses who received a copy of the same download. If the
+  author can additionally convince the user to log in or enter other identifying
+  information, they can identify the set of users who are connected. This is
+  detectable if users have a way to inspect two bundles that are supposed to
+  hold the same content, but since the whole point of sharing bundles is to
+  reduce redundant transfers, it's unlikely many users  will actually check
+  this.
 
   Sites currently gather information on this kind of link sharing by annotating
   their URLs with unique or semi-unique IDs. These can usually be removed by
