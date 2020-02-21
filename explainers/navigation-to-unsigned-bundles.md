@@ -149,9 +149,9 @@ Each item of the bundle is addressible using a URL, with the new scheme
 `package:`. (See [below](#alternate-URL-schemes-considered) for some details of
 this choice.) This scheme identifies both the URL of the bundle itself (e.g.
 `https://distributor.example/package.wbn?q=query`) and the claimed URL inside
-the bundle (e.g. `https://publisher.example/page.html?q=query`) These are
-encoded so that the [normal algorithm for computing an origin from a
-URL](https://url.spec.whatwg.org/#concept-url-origin) works, by replacing `:`
+the bundle (e.g. `https://publisher.example/page.html?q=query`). These are
+encoded to minimize the changes needed to the [algorithm for computing an origin
+from a URL](https://url.spec.whatwg.org/#concept-url-origin), by replacing `:`
 with `!`, `/` with `,`, and `?` with `;`, and separating the 2 URLs with `$`.
 Any instance of `!`, `,`, `;`, or `$` in the URLs themselves is %-encoded:
 
