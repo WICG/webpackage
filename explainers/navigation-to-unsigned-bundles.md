@@ -12,7 +12,7 @@ images or videos, users have native apps like
 [SHAREit](https://www.ushareit.com/), [Xender](http://www.xender.com/), or
 [Google Files](https://files.google.com/) that can share files.
 
-<!-- TOC -->
+<!-- TOC depthTo:3 -->
 
 - [Proposal](#proposal)
   - [Relevant structure of a bundle](#relevant-structure-of-a-bundle)
@@ -26,17 +26,10 @@ images or videos, users have native apps like
   - [Network access](#network-access)
   - [Non-origin-trusted signatures](#non-origin-trusted-signatures)
 - [Security and privacy considerations](#security-and-privacy-considerations)
+  - [Security/Privacy Questionaire](#securityprivacy-questionaire)
 - [Considered alternatives](#considered-alternatives)
   - [Alternate formats considered](#alternate-formats-considered)
-    - [Save as directory tree](#save-as-directory-tree)
-    - [Save as MHTML](#save-as-mhtml)
-    - [Save as Web Archive](#save-as-web-archive)
-    - [WARC](#warc)
-    - [Mozilla Archive Format](#mozilla-archive-format)
-    - [A bespoke ZIP format](#a-bespoke-zip-format)
   - [Alternate URL schemes considered](#alternate-url-schemes-considered)
-    - [arcp](#arcp)
-    - [pack](#pack)
 - [Stakeholder feedback](#stakeholder-feedback)
 - [Acknowledgements](#acknowledgements)
 
@@ -225,17 +218,137 @@ in the bundle, there are several options:
 
 * It's straightforward for someone serving an unsigned bundle to include a
   unique ID in the resources within that bundle. If the bundle can then make
-  [network requests](#network-access), especially credentialed network requests,
-  the author can determine a set of people who are connected to eachother in
-  some way. This is detectable if users have a way to inspect two bundles that
-  are supposed to hold the same content, but since the whole point of sharing
-  bundles is to reduce redundant transfers, it's unlikely many users  will
-  actually check this.
+  [network requests](#network-access), the author can determine a rough number
+  and set of IP addresses who received a copy of the same download. If the
+  author can additionally convince the user to log in or enter other identifying
+  information, they can identify the set of users who are connected. This is
+  detectable if users have a way to inspect two bundles that are supposed to
+  hold the same content, but since the whole point of sharing bundles is to
+  reduce redundant transfers, it's unlikely many users  will actually check
+  this.
 
   Sites currently gather information on this kind of link sharing by annotating
   their URLs with unique or semi-unique IDs. These can usually be removed by
   removing query parameters, but if a significant number of users cleaned their
   URLs, the tracking could move to path segments.
+
+* The path of a locally-saved bundle may include private information like a
+  username. As [Loading an untrusted bundle](#loading-an-untrusted-bundle)
+  suggests, the URL of the bundle itself needs to be hidden from web APIs to
+  avoid exposing this.
+
+### Security/Privacy Questionaire
+
+This section contains answers to the [W3C TAG Security and Privacy
+Questionnaire](https://w3ctag.github.io/security-questionnaire/).
+
+#### 1. What information might this feature expose to Web sites or other parties, and for what purposes is that exposure necessary?
+
+If we allow [network access](#network-access) from untrusted bundles, they could
+be abused to [identify the set of people who have copies of the same
+download](#security-and-privacy-considerations).
+
+We're blocking access to the `package:` URL because for local bundles that would
+include the path of the bundle.
+
+#### 2. Is this specification exposing the minimum amount of information necessary to power the feature?
+
+Yes.
+
+#### 3. How does this specification deal with personal information or personally-identifiable information or information derived thereof?
+
+This feature blocks access to local paths, which might otherwise be exposed by the `package:` scheme.
+
+#### 4. How does this specification deal with sensitive information?
+
+See #3.
+
+#### 5. Does this specification introduce a new state for an origin that persists across browsing sessions?
+
+This proposal introduces a new kind of origin with state that persists across
+browsing sessions. Specifically, the [`package:`
+scheme](#urls-for-bundle-components) defines an origin based on the location or
+the URL of the bundle itself, and the claimed URL inside the bundle.
+
+#### 6. What information from the underlying platform, e.g. configuration data, is exposed by this specification to an origin?
+
+None.
+
+#### 7. Does this specification allow an origin access to sensors on a user’s device
+
+No.
+
+#### 8. What data does this specification expose to an origin? Please also document what data is identical to data exposed by other features, in the same or different contexts.
+
+Network requests (e.g. fetch or iframe) from the unsigned bundle could expose IP
+address of the user, in the same way as regular navigation does.  See also this
+[section](#network-access) about how network requests from untrusted bundles
+should be performed or not.
+
+Navigation and subresource requests within the [unsigned bundle
+scope](#loading-a-trusted-unsigned-bundle) of a "trusted" bundle should expose
+strictly less information than loading each contained resource directly from the
+server, since it stops exposing the time that resource was needed.
+
+#### 9. Does this specification enable new script execution/loading mechanisms?
+
+No.
+
+#### 10. Does this specification allow an origin to access other devices?
+
+No.
+
+#### 11. Does this specification allow an origin some measure of control over a user agent’s native UI?
+
+No.
+
+#### 12. What temporary identifiers might this specification create or expose to the web?
+
+This explainer avoids exposing the [new URL scheme for untrusted
+bundles](#urls-for-bundle-components) to the web, as the bundle URL piece of the
+authority can include private information including identifiers.
+
+#### 13. How does this specification distinguish between behavior in first-party and third-party contexts?
+
+For navigation, this specification itself doesn’t distinguish between behavior
+in first-party (i.e. top-level navigation) and third-party (i.e. iframe or
+nested navigation) and doesn't affect other constraints on navigations.
+
+A first-party bundle (that is, one whose claimed URLs are same-origin with the
+bundle itself) can be trusted, while a third-party one must be untrusted (as
+this explainer doesn't cover signed bundles).
+
+For subsequent subresource loading with an attached bundle, again there is no
+particular difference from regular subresource loading, and origins between
+different claimed URLs for each resource is distinguished as different
+third-party origins.
+
+#### 14. How does this specification work in the context of a user agent’s Private Browsing or "incognito" mode?
+
+This specification doesn't interact with Private Browsing, although it would be
+plausible to make Private Browsing affect the default state of the [Network
+access](#network-access) open design question.
+
+#### 15. Does this specification have a "Security Considerations" and "Privacy Considerations" section?
+
+See the [security considerations in the format
+specification](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#security),
+[security and privacy considerations in this
+explainer](#security-and-privacy-considerations), and the [open design questions
+in this explainer](#open-design-questions).
+
+#### 16. Does this specification allow downgrading default security characteristics?
+
+Similarly to Service Workers, this specification allows a resource fetched from
+one path to provide responses for another path within the same origin. For
+Service Workers, that's the Service Worker script itself; here it's the Web
+Bundle. Both are [constrained by default](#loading-a-trusted-unsigned-bundle) to
+only override the subtree of paths rooted at their own directory, and someone
+with control of the server's response headers can loosen the constraint using
+the `Service-Worker-Allowed` response header (or possibly a differently-named
+header for bundles).
+
+#### 17. What should this questionnaire have asked?
 
 ## Considered alternatives
 
