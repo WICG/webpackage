@@ -16,6 +16,7 @@ https://datatracker.ietf.org/wg/wpack/about/.
   - [Subsequent loads with an attached bundle](#subsequent-loads-with-an-attached-bundle)
   - [Service Workers](#service-workers)
   - [URLs for bundle components](#urls-for-bundle-components)
+  - [Rendering bundle component URLs](#rendering-bundle-component-urls)
 - [Open design questions](#open-design-questions)
   - [Do we need an "internal redirect" notion for the bundle->primary-URL redirect?](#do-we-need-an-internal-redirect-notion-for-the-bundle-primary-url-redirect)
   - [Authoritative responses or bundles](#authoritative-responses-or-bundles)
@@ -337,6 +338,24 @@ can't conflict with or attack:
   `https://publisher.example/page.html?q=query`),
 * other bundles (e.g. `package://https!,,distributor.example,otherpackage.wbn;q=query$https!,,publisher.example/page.html?q=query`), or
 * other origins within the same bundle (e.g. `package://https!,,distributor.example,package.wbn;q=query$https!,,otherpublisher.example/page.html?q=query`).
+
+### Rendering bundle component URLs
+
+Since it's a new scheme, we have to think about how browsers should render
+`package:` URLs. The current [rendering advice in the URL
+spec](https://url.spec.whatwg.org/#url-rendering) is probably not appropriate
+for the default display of `package:` URLs, as users won't understand the
+significance of its "host" part,
+`https!,,distributor.example,otherpackage.wbn;q=query$https!,,publisher.example`.
+
+We suggest that, in places the browser would render just a URL's host, it render
+the host of the *bundle's* URL, so just `distributor.example` in the above
+example. When the user opens the full URL for editing, it should expand to the full `package:` URL with encoding.
+
+Browsers can investigate showing a more detailed view, with the two components
+displayed separately, or even a full browser of the possible resource URLs
+within the bundle, but this shouldn't block shipping the first version of the
+feature.
 
 ## Open design questions
 
