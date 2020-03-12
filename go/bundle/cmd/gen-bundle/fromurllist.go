@@ -22,12 +22,19 @@ func fromURLList(urlListFile string) ([]*bundle.Exchange, error) {
 	scanner := bufio.NewScanner(input)
 
 	es := []*bundle.Exchange{}
+	seen := make(map[string]struct{})
 	for scanner.Scan() {
 		rawURL := strings.TrimSpace(scanner.Text())
 		// Skip blank lines and comments.
 		if len(rawURL) == 0 || rawURL[0] == '#' {
 			continue
 		}
+		if _, ok := seen[rawURL]; ok {
+			log.Printf("Skipping duplicated URL %q", rawURL)
+			continue
+		}
+
+		seen[rawURL] = struct{}{}
 		log.Printf("Processing %q", rawURL)
 
 		parsedURL, err := url.Parse(rawURL)
@@ -50,7 +57,7 @@ func fromURLList(urlListFile string) ([]*bundle.Exchange, error) {
 			Response: bundle.Response{
 				Status: resp.StatusCode,
 				Header: resp.Header,
-				Body: body,
+				Body:   body,
 			},
 		}
 		es = append(es, e)
