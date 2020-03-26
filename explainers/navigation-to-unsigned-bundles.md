@@ -84,6 +84,12 @@ that claims it.
 > An origin could use an "untrusted" bundle with same-origin resources to create
 > a kind of [suborigin](https://w3c.github.io/webappsec-suborigins/).
 
+The diagram below shows how signatures, flags, and primary URL of a WebBundle determine the mode in which the bundle is loaded.
+
+<img src="navigation-to-bundles.svg">
+
+The following sections describe how bundles are loaded in each mode.
+
 ### Loading a trusted unsigned bundle.
 
 The browser selects an **unsigned bundle scope** that's based on the bundle's
