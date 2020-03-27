@@ -12,7 +12,7 @@ jobs:
       dist: trusty
 
       python:
-        - "2.7"
+        - "3.7"
 
       addons:
         apt:
