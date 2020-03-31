@@ -8,17 +8,9 @@ jobs:
 
     - name: "Specifications"
       language: python
-      sudo: false
-      dist: trusty
 
       python:
-        - "2.7"
-
-      addons:
-        apt:
-          packages:
-           - python-pip
-           - xsltproc
+        - "3.7"
 
       env:
         global:
@@ -27,10 +19,9 @@ jobs:
          - mmark=./mmark
 
       install:
-       - git clone --depth=1 https://github.com/tabatkins/bikeshed.git
-       - pip install --editable bikeshed
+       - pip install bikeshed
        - bikeshed update
-       - pip install xml2rfc!=2.15.0
+       - pip install xml2rfc python-dateutil
        - if head -1 -q *.md | grep '^\-\-\-' >/dev/null 2>&1; then gem install --no-doc kramdown-rfc2629; fi
        - if head -1 -q *.md | grep '^%%%' >/dev/null 2>&1; then go get "$mmark_src" && go build "$mmark_src"; fi
 
