@@ -12,11 +12,6 @@ jobs:
       python:
         - "3.7"
 
-      addons:
-        apt:
-          packages:
-           - xsltproc
-
       env:
         global:
          - GOPATH="${TRAVIS_BUILD_DIR}/.go_workspace"
