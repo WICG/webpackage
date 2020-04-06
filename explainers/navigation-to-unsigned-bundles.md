@@ -84,6 +84,35 @@ that claims it.
 > An origin could use an "untrusted" bundle with same-origin resources to create
 > a kind of [suborigin](https://w3c.github.io/webappsec-suborigins/).
 
+The diagram below shows how signatures, flags, and primary URL of a WebBundle determine the mode in which the bundle is loaded.
+
+![@startuml
+:Navigation to an application/webbundle resource;
+:Parse primary URL and control flags;
+if (Signed?) then (yes)
+  :Load as a signed bundle
+  (Out of the scope of
+  this document);
+  stop
+else (no)
+  if (The trusted flag is set?) then (yes)
+    if (The primary URL is\nwithin the unsigned\nbundle scope?) then (yes)
+      :Load as a trusted bundle;
+      stop
+    else (no)
+      :Redirect to the primary URL;
+      stop
+    endif
+  else (no)
+    :Load as an
+    untrusted bundle;
+    stop
+  endif
+endif
+@enduml](http://www.plantuml.com/plantuml/svg/POyzRWCX48LxJl7ATPNUMyG7i9B8IJet66OT97POCKCitpuOP2KRDy2Wz_FDJjHcBNCqPljYlyFPQaWCJR0CkomnkFRpTA7JgR2FX4oIIdOqcksRpK9OSfXjlkBpiAyk3vTOSugOeZtBQCA4uJsScVpp1lf5ZE5AiZ70Tf-iXnLOI1EWLnXWU2sADDtq49SMgeD17OF09rTcOjsC1X1DYw4eX87JBVHMzr5Tceie-KQ1wXBI__rtyNg584U-XDh4hRrmPpjoX-iuZr6hTUxbtJ8sGMTjpp-ytNaW7p8vXIReckVHp3vCPXMoAkSs5tvW-0tf4VqqktgNEVu0)
+
+The following sections describe how bundles are loaded in each mode.
+
 ### Loading a trusted unsigned bundle.
 
 The browser selects an **unsigned bundle scope** that's based on the bundle's
