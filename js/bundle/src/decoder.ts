@@ -4,6 +4,14 @@ interface Headers {
   [key: string]: string;
 }
 
+const knownSections = [
+  'critical',
+  'index',
+  'manifest',
+  'responses',
+  'signatures',
+];
+
 /** This class represents parsed Web Bundle. */
 export class Bundle {
   version: string;
@@ -41,6 +49,15 @@ export class Bundle {
     for (let i = 0; i < sectionsArray.length; i++) {
       this.sections[asString(sectionLengths[i * 2])] = sectionsArray[i];
     }
+
+    if (this.sections['critical']) {
+      for (const name of asArray(this.sections['critical'])) {
+        if (!knownSections.includes(asString(name))) {
+          throw new Error(`unknown section ${name} is marked as critical`);
+        }
+      }
+    }
+
     // The index section records (offset, length) of each response, but our
     // CBOR decoder doesn't preserve location information. So, recalculate
     // offset and length of each response here. This is inefficient, but works.
