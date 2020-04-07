@@ -1,19 +1,13 @@
 # Explainer: Navigation to Unsigned Web Bundles<br>(a.k.a. Bundled HTTP Exchanges)
 
-Last updated: Feb 04, 2020
+Last updated: Apr 07, 2020
 
 Participate at https://github.com/WICG/webpackage and
 https://datatracker.ietf.org/wg/wpack/about/.
 
-Users want to be able to share content with their friends, even when neither has
-an internet connection. Some websites, for example some books, encyclopedias,
-and games, want to help their users share them in this way. For individual
-images or videos, users have native apps like
-[SHAREit](https://www.ushareit.com/), [Xender](http://www.xender.com/), or
-[Google Files](https://files.google.com/) that can share files.
-
 <!-- TOC depthTo:3 -->
 
+- [Goals](#goals)
 - [Proposal](#proposal)
   - [Relevant structure of a bundle](#relevant-structure-of-a-bundle)
   - [Process of loading a bundle](#process-of-loading-a-bundle)
@@ -34,6 +28,47 @@ images or videos, users have native apps like
 - [Acknowledgements](#acknowledgements)
 
 <!-- /TOC -->
+
+## Goals
+
+1. Provide a way for users to share web content to other users who may be
+   offline when they try to visit the content. This should work with their
+   existing file-sharing apps, like [SHAREit](https://www.ushareit.com/),
+   [Xender](http://www.xender.com/), or [Google
+   Files](https://files.google.com/), which present the unit of sharing as a
+   single file.
+
+   <details>
+   <summary>
+
+   ![A drawing of a person downloading a site, bundling its content, and passing it to a friend without their own connection to the internet.](http://www.plantuml.com/plantuml/svg/NOonQiD044Jx_Oh91zWVO8nm4KAgj6dIdAILlN2tA_RsS17oxpbZ156wOURDkzH87grachAr6PyyLWd6Dm6BPCQQhdoyHSbR8UNHh7gb7r2QmXolKiDbR8zyFh-tadGOQ5CT3iEEE47DIyeOtUvLkYXvoD9Lk3ylnx7fd9d-lhfaltRFCrJwDtJqpOLr1ga58so5BLjtmeTXCbMUGao_D0nnOuW6ktAyqALZhUHV)
+
+   </summary>
+
+   ```plantuml
+   @startuml
+   cloud Website {
+     file page.html
+     file image.png
+   }
+   actor Distributor <<Human>>
+   Website --> Distributor : normal browsing
+   artifact website.bundle
+   Distributor -> website.bundle : bundles
+   website.bundle -> Friend
+   note top of Friend : No connection\nto the internet!
+   @enduml
+   ```
+
+   </details>
+
+1. Provide a way for sites like https://www.isocfoundation.org/ to package their
+   content so communities can fetch it once over a perhaps-expensive link and
+   then share it internally without each recipient needing to be online when
+   they get it.
+1. Provide a way for sites like https://archive.org/ to distribute archived
+   content without having to rewrite all its internal links.
+
 
 ## Proposal
 
