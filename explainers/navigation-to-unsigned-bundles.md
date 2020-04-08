@@ -142,6 +142,9 @@ https://datatracker.ietf.org/wg/wpack/about/.
 
    </details>
 
+See the [Considered alternatives](#considered-alternatives) section for a
+description of why the many existing bundling and archiving solutions don't work
+well for these use cases.
 
 ## Proposal
 
