@@ -1,19 +1,13 @@
 # Explainer: Navigation to Unsigned Web Bundles<br>(a.k.a. Bundled HTTP Exchanges)
 
-Last updated: Feb 04, 2020
+Last updated: Apr 07, 2020
 
 Participate at https://github.com/WICG/webpackage and
 https://datatracker.ietf.org/wg/wpack/about/.
 
-Users want to be able to share content with their friends, even when neither has
-an internet connection. Some websites, for example some books, encyclopedias,
-and games, want to help their users share them in this way. For individual
-images or videos, users have native apps like
-[SHAREit](https://www.ushareit.com/), [Xender](http://www.xender.com/), or
-[Google Files](https://files.google.com/) that can share files.
-
 <!-- TOC depthTo:3 -->
 
+- [Goals](#goals)
 - [Proposal](#proposal)
   - [Relevant structure of a bundle](#relevant-structure-of-a-bundle)
   - [Process of loading a bundle](#process-of-loading-a-bundle)
@@ -34,6 +28,123 @@ images or videos, users have native apps like
 - [Acknowledgements](#acknowledgements)
 
 <!-- /TOC -->
+
+## Goals
+
+1. Provide a way for users to share web content to other users who may be
+   offline when they try to visit the content. This should work with their
+   existing file-sharing apps, like [SHAREit](https://www.ushareit.com/),
+   [Xender](http://www.xender.com/), or [Google
+   Files](https://files.google.com/), which present the unit of sharing as a
+   single file.
+
+   <details>
+   <summary>
+
+   ![A drawing of a person downloading a site, bundling its content, and passing it to a friend without their own connection to the internet.](https://www.plantuml.com/plantuml/svg/NOonQiD044Jx_Oh91zWVO8nm4KAgj6dIdAILlN2tA_RsS17oxpbZ156wOURDkzH87grachAr6PyyLWd6Dm6BPCQQhdoyHSbR8UNHh7gb7r2QmXolKiDbR8zyFh-tadGOQ5CT3iEEE47DIyeOtUvLkYXvoD9Lk3ylnx7fd9d-lhfaltRFCrJwDtJqpOLr1ga58so5BLjtmeTXCbMUGao_D0nnOuW6ktAyqALZhUHV)
+
+   </summary>
+
+   ```plantuml
+   @startuml
+   cloud Website {
+     file page.html
+     file image.png
+   }
+   actor Distributor <<Human>>
+   Website --> Distributor : normal browsing
+   artifact website.bundle
+   Distributor -> website.bundle : bundles
+   website.bundle -> Friend
+   note top of Friend : No connection\nto the internet!
+   @enduml
+   ```
+
+   </details>
+
+1. Provide a way for sites like https://www.isocfoundation.org/ to package their
+   content so communities can fetch it once over a perhaps-expensive, slow, or
+   otherwise sometimes-unavailable link and then share it internally without
+   each recipient needing to be online when they get it.
+
+   <details>
+   <summary>
+
+   ![A drawing of a website bundling its own content, which it provides over an expensive, slow, or not-always-available link to one person, who passes it to their community over cheaper or more-reliable links.](https://www.plantuml.com/plantuml/svg/ZOv1QiCm44NtFSLSm0bjToMOB4hf3RhfHfP_aY7Io4YZkb1wzsemc1GIo4Q8_zz_pBweorfZU20Y7r8TwGD3OGNzM4Hqu02Qt16RangsPXmjdEIuP4t31-ULvcM_6QgC0Kkvxgdh-gl4Qhj1_DhJz2dJAnVDF5JxxtRlDJhfUwl_hwXvBj4NmlS4AVo5RGbftfOKeHnHkY4aVyRuAIoAB53oIGHUEOc9BpLstbjcoFZObFu4Dv50vvJFjz6d-z7dQ-Y-5JM6Fm00)
+
+   </summary>
+
+   ```plantuml
+   @startuml
+   cloud Website {
+     file page.html
+     file image.png
+     artifact website.bundle
+     page.html --> website.bundle
+     image.png --> website.bundle
+   }
+   actor Distributor <<Human>>
+   website.bundle -> Distributor : expensive/slow/sometimes-blocked\ninternet connection
+   Distributor --> Friend1 : cheap network
+   Distributor --> Friend2 : cheap network
+   Distributor --> Friend3 : cheap network
+   @enduml
+   ```
+
+   </details>
+
+1. Provide a way for sites like https://archive.org/ to distribute archived
+   content without having to rewrite all its internal links.
+
+   <details>
+   <summary>
+
+   ![A drawing of an archive bundling the contents of several other websites, and then passing those on to several users.](https://www.plantuml.com/plantuml/svg/bP1BZeCm38RtSmfV02Ji_OWvnAXh7WOYXOT2qYwgths1jeh00QbBF_nz-Wq0-MmBOrslVtnHwT7LSE5oLfOpk2yzW4PfXgbeEKixwnT3K_LhTnhQfVaG21G8Z2Bm6442GL44HH1_fkhKbJy4drCrHMNXzWwObcweDR-c8I0aoMzy9-Gzt14M51OK5fGMt5lmr4B2Gi92qaB18dVMJth7QE1_PfDjIzoMvClzGnPmE0qvlXZYmL0uwUoIefSv3xNhzHC0)
+
+   </summary>
+
+   ```plantuml
+   @startuml
+   cloud Website1 {
+     file page1.html
+     file image1.png
+   }
+   cloud Website2 {
+     file page2.html
+     file image2.png
+   }
+   cloud Website3 {
+     file page3.html
+     file image3.png
+   }
+   cloud Archive {
+     artifact website1.bundle
+     page1.html --> website1.bundle
+     image1.png --> website1.bundle
+     artifact website2.bundle
+     page2.html --> website2.bundle
+     image2.png --> website2.bundle
+     artifact website3.bundle
+     page3.html --> website3.bundle
+     image3.png --> website3.bundle
+   }
+   actor User1
+   actor User2
+   actor User3
+   website1.bundle --> User1
+   website2.bundle --> User1
+   website2.bundle --> User2
+   website2.bundle --> User3
+   website3.bundle --> User2
+   website3.bundle --> User3
+   @enduml
+   ```
+
+   </details>
+
+See the [Considered alternatives](#considered-alternatives) section for a
+description of why the many existing bundling and archiving solutions don't work
+well for these use cases.
 
 ## Proposal
 
