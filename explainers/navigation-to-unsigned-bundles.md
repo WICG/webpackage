@@ -11,14 +11,18 @@ https://datatracker.ietf.org/wg/wpack/about/.
 - [Proposal](#proposal)
   - [Relevant structure of a bundle](#relevant-structure-of-a-bundle)
   - [Process of loading a bundle](#process-of-loading-a-bundle)
-  - [Loading a trusted unsigned bundle.](#loading-a-trusted-unsigned-bundle)
-  - [Loading an untrusted bundle](#loading-an-untrusted-bundle)
+  - [Loading an authoritative unsigned bundle](#loading-an-authoritative-unsigned-bundle)
+  - [Loading a non-authoritative bundle](#loading-a-non-authoritative-bundle)
   - [Subsequent loads with an attached bundle](#subsequent-loads-with-an-attached-bundle)
   - [Service Workers](#service-workers)
   - [URLs for bundle components](#urls-for-bundle-components)
 - [Open design questions](#open-design-questions)
+  - [Do we need an "internal redirect" notion for the bundle->primary-URL redirect?](#do-we-need-an-internal-redirect-notion-for-the-bundle-primary-url-redirect)
+  - [Authoritative responses or bundles](#authoritative-responses-or-bundles)
   - [Network access](#network-access)
   - [Non-origin-trusted signatures](#non-origin-trusted-signatures)
+- [Anticipated questions](#anticipated-questions)
+  - [Why does the distributor control expected authority?](#why-does-the-distributor-control-expected-authority)
 - [Security and privacy considerations](#security-and-privacy-considerations)
   - [Security/Privacy Questionaire](#securityprivacy-questionaire)
 - [Considered alternatives](#considered-alternatives)
@@ -172,10 +176,18 @@ created.
 ### Relevant structure of a bundle
 
 A bundle is loaded from a "*bundle URL*", and it contains a set of HTTP *items*,
-each with a "*claimed URL*". The items are serialized in a particular order
-within the bundle, and this will affect the performance of loading the bundle
-when the bundle is loaded from a non-random-access medium (like the network),
-but it doesn't affect the semantics of the bundle.
+each with a "*claimed URL*", optional content negotiation information, and an
+*HTTP response*. The items are serialized in a particular order within the
+bundle, and this will affect the performance of loading the bundle when the
+bundle is loaded from a non-random-access medium (like the network), but it
+doesn't affect the semantics of the bundle.
+
+<span id="authoritative">Each response might or might not be an [*authoritative
+response*](https://httpwg.org/http-core/draft-ietf-httpbis-semantics-latest.html#establishing.authority)</span>
+based on considerations below, and we intend the next version of the format to
+include a flag stating whether the bundle's distributor ([not necessarily the
+original publisher](#why-does-the-distributor-control-expected-authority))
+expects the responses to be authoritative.
 
 The bundle URL might be a `file://` URL containing private information like the
 user's name, which they might not want exposed to a website they saved for
@@ -187,44 +199,56 @@ When the browser navigates to an `application/webbundle;v=___` resource, or
 opens a file that the filesystem identifies as that MIME type, it first parses
 the resource enough to pull out the bundle's [primary
 URL](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#name-load-a-bundles-metadata)
-and a set of flags to control loading (not yet defined in the format). One of
-these flags defines whether the claimed URLs in the bundle are expected to be
-trusted, which for unsigned bundles means the bundle is served from the origin
-that claims it.
+and an indication of whether the responses in the bundle are expected to be
+[authoritiative responses](#authoritative), which for unsigned bundles means the
+bundle is served from the origin that its resources claim.
 
-> An origin could use an "untrusted" bundle with same-origin resources to create
-> a kind of [suborigin](https://w3c.github.io/webappsec-suborigins/).
+> An origin could use a "non-authoritative" bundle with same-origin resources to
+> create a kind of [suborigin](https://w3c.github.io/webappsec-suborigins/).
 
-The diagram below shows how signatures, flags, and primary URL of a WebBundle determine the mode in which the bundle is loaded.
+The diagram below shows how signatures, flags, and primary URL of a WebBundle
+determine the mode in which the bundle is loaded.
 
-![@startuml
+<details>
+<summary>
+
+![When we navigate to a bundle, we parse the primary URL and some control flags
+and then follow the following conditional logic. If the bundle is not marked as
+expected-to-be-authoritative, its responses aren't treated as authoritative. if
+a resource's URL is within the bundle's scope  it's loaded as an authoritative
+resource. Determining whether the bundle's resources are correctly signed is
+outside the scope of this explainer, but that's another way to have the
+resources treated as authoritative. Otherwise it's treated as a redirect to the
+claimed
+URL.](https://www.plantuml.com/plantuml/svg/XP2nQiCm48PtFyMDpb2qEqC2dGgXBQ7Tl2ZIEHR8Tq9tIfgth-M6KfT2fnFYllyx_hsepLgcs7JFzXBELWCJA8Cbi2d5u9OVSyNJgP2F21c5ItQuRRfNcmKXvJ3PV8Ftus6cF3WcpHnXYFOisoOCq3u9t6dyIEWKVK_AS4AmHKVEGMVB1NSRq149sXlAfW6ewDkuDWJfwHfq35HtmPX24iw4tfYUZBbhn752Otu7OXIieO-SCpgDD_XYTpsrBqKbU9o1EzuJ3p2B13oxCY7fveyuQ8dh6w0xeWyrjjQdwxEtouOefugH3yCykmDR3rRM9TI24vEWL6X1lZq_8M9w-1TSJFjvb2b-0W00)
+
+</summary>
+
+```plantuml
+@startuml
 :Navigation to an application/webbundle resource;
 :Parse primary URL and control flags;
-if (Signed?) then (yes)
-  :Load as a signed bundle
-  (Out of the scope of
-  this document);
-  stop
-else (no)
-  if (The trusted flag is set?) then (yes)
-    if (The primary URL is\nwithin the unsigned\nbundle scope?) then (yes)
-      :Load as a trusted bundle;
-      stop
-    else (no)
-      :Redirect to the primary URL;
-      stop
-    endif
+if (Is bundle expected\nto be authoritative?) then (yes)
+  if (The primary URL is\nwithin the //unsigned//\n//bundle scope//?) then (yes)
+  elseif (Correctly signed?\n(Outside the scope\nof this document)) then (yes)
   else (no)
-    :Load as an
-    untrusted bundle;
+    :Redirect to the primary URL;
     stop
   endif
+  :Load as authoritative responses;
+  stop
+else (no)
+  :Load as non-authoritative responses;
+  stop
 endif
-@enduml](http://www.plantuml.com/plantuml/svg/POyzRWCX48LxJl7ATPNUMyG7i9B8IJet66OT97POCKCitpuOP2KRDy2Wz_FDJjHcBNCqPljYlyFPQaWCJR0CkomnkFRpTA7JgR2FX4oIIdOqcksRpK9OSfXjlkBpiAyk3vTOSugOeZtBQCA4uJsScVpp1lf5ZE5AiZ70Tf-iXnLOI1EWLnXWU2sADDtq49SMgeD17OF09rTcOjsC1X1DYw4eX87JBVHMzr5Tceie-KQ1wXBI__rtyNg584U-XDh4hRrmPpjoX-iuZr6hTUxbtJ8sGMTjpp-ytNaW7p8vXIReckVHp3vCPXMoAkSs5tvW-0tf4VqqktgNEVu0)
+@enduml
+```
+
+</details>
 
 The following sections describe how bundles are loaded in each mode.
 
-### Loading a trusted unsigned bundle.
+### Loading an authoritative unsigned bundle
 
 The browser selects an **unsigned bundle scope** that's based on the bundle's
 URL in the same way the [service worker's scope
@@ -236,8 +260,9 @@ the unsigned bundle scope to the value of that header. (We are also considering
 using a differently-named header that applies only to bundles.)
 
 > Browsers might also provide a way for device manufacturers to define an area
-  of the local filesystem that can serve trusted unsigned bundles without any
-  scope restriction. This would make it easier to pre-install applications in a way that has a chance of working across different browsers.
+  of the local filesystem that can serve authoritative unsigned bundles without
+  any scope restriction. This would make it easier to pre-install applications
+  in a way that has a chance of working across different browsers.
 
 The browser redirects to the bundle's primary URL. If that primary URL is within
 the unsigned bundle scope, it also attaches the bundle itself and its unsigned
@@ -248,7 +273,7 @@ claim URL space it's not allowed to define.
 Subsequent subresource requests will also only be served from the bundle if
 they're inside its scope.
 
-### Loading an untrusted bundle
+### Loading a non-authoritative bundle
 
 The browser redirects to [a URL that refers to the bundle's primary URL *inside
 its bundle*](#urls-for-bundle-components), with the bundle itself attached.
@@ -267,21 +292,19 @@ The bundle that's attached to the request above will eventually get attached to
 the environment settings object created for the response, from where subsequent
 fetches can use it.
 
-For trusted bundles, any fetch, both navigations and subresources, within the
-bundle's scope checks the bundle for a response before going to the network. If
-a navigation fetch finds a response inside the bundle, the bundle is propagated
-to the environment settings object created for that navigation.
-
-For untrusted bundles, all fetches should check inside the bundle before going
-to the network. [We need more discussion about whether subresource requests that
-aren't inside the bundle should be able to touch the network at
-all.](#network-access)
+All fetches, both navigations and subresources, check inside the bundle before
+going to the network and keep propagating the bundle to new environment settings
+objects. For authoritative bundles, the logic above for redirecting to the
+network still applies if a contained resource is outside the authoritative
+scope. For non-authoritative bundles, [we're not sure if subresource requests
+should be able to touch the network at all.](#network-access)
 
 ### Service Workers
 
-We plan to, but haven't yet, defined an API to expose trusted bundles to that
-origin's service worker. This API should allow the service worker to fill its
-cache with the contents of the bundle.
+We plan to, but haven't yet, defined an API to expose
+[authoritative](#authoritative) resources within bundles to that origin's
+service worker. This API should allow the service worker to fill its cache with
+the contents of the bundle.
 
 ### URLs for bundle components
 
@@ -316,17 +339,28 @@ can't conflict with or attack:
 
 ## Open design questions
 
-* Do we need an "internal redirect" notion for the bundle->primary-URL redirect?
-  See also [whatwg/fetch#576](https://github.com/whatwg/fetch/issues/576).
+### Do we need an "internal redirect" notion for the bundle->primary-URL redirect?
+
+See also [whatwg/fetch#576](https://github.com/whatwg/fetch/issues/576).
+
+### Authoritative responses or bundles
+
+Should we mark entire bundles as authoritative vs non-authoritative or make it
+possible to mark the individual resources differently within the same bundle?
+
+It seems simpler to mark the bundle as a whole, and there might be footguns in
+letting people mark different resources differently, but ultimately HTTP relies
+on describing each response, so we could allow them to be different.
 
 ### Network access
 
-Should untrusted bundles be able to go to the network at all? Should users be
-able to explicitly grant permission?
+Should non-authoritative bundles be able to go to the network at all? Should
+users be able to explicitly grant permission?
 
-Under repressive governments, untrusted bundles may be a good way for dissidents
-to share information, but if the government can add their own tracking code to
-the bundles, they may be able to catch people using the banned information.
+Under repressive governments, non-authoritative bundles may be a good way for
+dissidents to share information, but if the government can add their own
+tracking code to the bundles, they may be able to catch people using the banned
+information.
 
 However, there are also use cases like for sharing book previews, where a
 publisher might want to provide both a free preview and the encrypted rest of
@@ -348,13 +382,41 @@ in the bundle, there are several options:
 * Grant access to some particularly-powerful API because the signature vouches
   that a trusted auditor checked the package for malicious behavior.
 
+## Anticipated questions
+
+### Why does the distributor control expected authority?
+
+The distributor, rather than the publisher, defines whether responses in a
+bundle are expected to be [authoritative](#authoritative) because we can't stop
+them and because it doesn't give them any extra power.
+
+There are 3 cases:
+
+1. **The resource is authoritative:** For an unsigned bundle to be
+   authoritative, the publisher has to be the distributor. We're not dealing
+   with signed bundles in this explainer.
+1. **The resource is not authoritative:**
+   1. **The publisher marked the resources as expected-to-be-authoritative, but
+      the distributor changed that to expected-to-not-be-authoritative:**
+
+      Without encryption, the distributor could build an entrely new bundle with
+      the same content
+
+   1. **The publisher marked the resources as expected-to-not-be-authoritative,
+      but the distributor changed that to expected-to-be-authoritative:**
+
+      This causes a redirect to the claimed URL. Since the resource isn't
+      authoritative, the distributor could have rewritten the resource itself
+      into a redirect, accomplishing the same effect.
+
 ## Security and privacy considerations
 
 * Unsigned bundles served by one origin can't be trusted to provide content for
   another origin. The [URL design](#urls-for-bundle-components) and the division
-  between trusted and untrusted bundles are designed to keep separate origins
-  safely separate, but this is more than a trivial amount of complexity, and
-  browsers will need to be careful to actually enforce the boundaries.
+  between authoritative and non-authoritative bundles are designed to keep
+  separate origins safely separate, but this is more than a trivial amount of
+  complexity, and browsers will need to be careful to actually enforce the
+  boundaries.
 
 * It's straightforward for someone serving an unsigned bundle to include a
   unique ID in the resources within that bundle. If the bundle can then make
@@ -373,9 +435,9 @@ in the bundle, there are several options:
   URLs, the tracking could move to path segments.
 
 * The path of a locally-saved bundle may include private information like a
-  username. As [Loading an untrusted bundle](#loading-an-untrusted-bundle)
-  suggests, the URL of the bundle itself needs to be hidden from web APIs to
-  avoid exposing this.
+  username. As [Loading a non-authoritative
+  bundle](#loading-a-non-authoritative-bundle) suggests, the URL of the bundle
+  itself needs to be hidden from web APIs to avoid exposing this.
 
 ### Security/Privacy Questionaire
 
@@ -384,8 +446,8 @@ Questionnaire](https://w3ctag.github.io/security-questionnaire/).
 
 #### 1. What information might this feature expose to Web sites or other parties, and for what purposes is that exposure necessary?
 
-If we allow [network access](#network-access) from untrusted bundles, they could
-be abused to [identify the set of people who have copies of the same
+If we allow [network access](#network-access) from non-authoritative bundles,
+they could be abused to [identify the set of people who have copies of the same
 download](#security-and-privacy-considerations).
 
 We're blocking access to the `package:` URL because for local bundles that would
@@ -422,13 +484,13 @@ No.
 
 Network requests (e.g. fetch or iframe) from the unsigned bundle could expose IP
 address of the user, in the same way as regular navigation does.  See also this
-[section](#network-access) about how network requests from untrusted bundles
+[section](#network-access) about how network requests from non-authoritative bundles
 should be performed or not.
 
 Navigation and subresource requests within the [unsigned bundle
-scope](#loading-a-trusted-unsigned-bundle) of a "trusted" bundle should expose
-strictly less information than loading each contained resource directly from the
-server, since it stops exposing the time that resource was needed.
+scope](#loading-an-authoritative-unsigned-bundle) of an authoritative bundle should
+expose strictly less information than loading each contained resource directly
+from the server, since it stops exposing the time that resource was needed.
 
 #### 9. Does this specification enable new script execution/loading mechanisms?
 
@@ -444,7 +506,7 @@ No.
 
 #### 12. What temporary identifiers might this specification create or expose to the web?
 
-This explainer avoids exposing the [new URL scheme for untrusted
+This explainer avoids exposing the [new URL scheme for non-authoritative
 bundles](#urls-for-bundle-components) to the web, as the bundle URL piece of the
 authority can include private information including identifiers.
 
@@ -455,8 +517,8 @@ in first-party (i.e. top-level navigation) and third-party (i.e. iframe or
 nested navigation) and doesn't affect other constraints on navigations.
 
 A first-party bundle (that is, one whose claimed URLs are same-origin with the
-bundle itself) can be trusted, while a third-party one must be untrusted (as
-this explainer doesn't cover signed bundles).
+bundle itself) can provide [authoritative responses](#authoritative), while a
+third-party one must not (as this explainer doesn't cover signed bundles).
 
 For subsequent subresource loading with an attached bundle, again there is no
 particular difference from regular subresource loading, and origins between
@@ -482,7 +544,7 @@ in this explainer](#open-design-questions).
 Similarly to Service Workers, this specification allows a resource fetched from
 one path to provide responses for another path within the same origin. For
 Service Workers, that's the Service Worker script itself; here it's the Web
-Bundle. Both are [constrained by default](#loading-a-trusted-unsigned-bundle) to
+Bundle. Both are [constrained by default](#loading-an-authoritative-unsigned-bundle) to
 only override the subtree of paths rooted at their own directory, and someone
 with control of the server's response headers can loosen the constraint using
 the `Service-Worker-Allowed` response header (or possibly a differently-named
