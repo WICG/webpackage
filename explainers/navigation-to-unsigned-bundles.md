@@ -209,7 +209,7 @@ bundle is served from the origin that its resources claim.
 The diagram below shows how signatures, flags, and primary URL of a WebBundle
 determine the mode in which the bundle is loaded.
 
-<detail>
+<details>
 <summary>
 
 ![When we navigate to a bundle, we parse the primary URL and some control flags
@@ -244,7 +244,7 @@ endif
 @enduml
 ```
 
-</detail>
+</details>
 
 The following sections describe how bundles are loaded in each mode.
 
