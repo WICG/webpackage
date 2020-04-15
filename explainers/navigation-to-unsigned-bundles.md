@@ -156,9 +156,9 @@ We propose to use the [Web Bundle
 format](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html),
 without origin-trusted signatures, to give users a format they can create from
 any website they're visiting, share it using existing peer-to-peer sharing apps,
-and then have a peer load it in their browser. The IETF has
-[approved](https://ietf.org/blog/ietf106-highlights/) but not yet created a
-WPACK working group to continue developing this format as of February 2020.
+and then have a peer load it in their browser. The IETF's [WPACK
+WG](https://datatracker.ietf.org/wg/wpack/about/) is chartered to continue
+developing this format.
 
 Here's a [demo video](https://youtu.be/xAujz66la3Y) of this use-case for Web
 Bundles (a.k.a. Bundled HTTP Exchanges):
