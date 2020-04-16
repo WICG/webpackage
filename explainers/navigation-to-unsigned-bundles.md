@@ -483,6 +483,12 @@ It seems unlikely that ad networks will abandon their ability to dynamically
 choose ads, even in order to avoid ad blockers, and if they wanted to do so,
 they could do it without bundles for a significant fraction of sites.
 
+Non-advertising scripts that "ad" blockers want to block have an easier job
+today, meaning web packaging helps them less.
+https://github.com/Valve/fingerprintjs#manual-minification already describes how
+to disguise the names in a fingerprinting script and inline it into, for
+example, a [rollup.js](https://rollupjs.org/) bundle.
+
 ### Security/Privacy Questionaire
 
 This section contains answers to the [W3C TAG Security and Privacy
