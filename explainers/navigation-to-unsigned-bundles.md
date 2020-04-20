@@ -24,6 +24,7 @@ https://datatracker.ietf.org/wg/wpack/about/.
 - [Anticipated questions](#anticipated-questions)
   - [Why does the distributor control expected authority?](#why-does-the-distributor-control-expected-authority)
 - [Security and privacy considerations](#security-and-privacy-considerations)
+  - [Potential help to anti-adblock](#potential-help-to-anti-adblock)
   - [Security/Privacy Questionaire](#securityprivacy-questionaire)
 - [Considered alternatives](#considered-alternatives)
   - [Alternate formats considered](#alternate-formats-considered)
@@ -438,6 +439,55 @@ There are 3 cases:
   username. As [Loading a non-authoritative
   bundle](#loading-a-non-authoritative-bundle) suggests, the URL of the bundle
   itself needs to be hidden from web APIs to avoid exposing this.
+
+### Potential help to anti-adblock
+
+By providing a standard format to represent a whole website, these bundles might
+make it easier for advertising networks to disguise their resources from
+url-based ad blockers that take input like
+https://easylist.to/easylist/easylist.txt.
+
+To make it impossible to add a URL-based rule to block an ad, all of the URLs
+used to load the ad's content need to be indistinguishable from the URLs used
+for wanted content. That's difficult for an ad network in general because they
+value being able to update the code that renders ads and to select the ads
+themselves in real time. This leads most to work by having publishers add a
+static piece of HTML to their site, like (from
+https://support.google.com/adsense/answer/7584263 and
+https://support.google.com/admanager/answer/1638622)
+
+```html
+<script data-ad-client="ca-pub-1234567890123456" async
+  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script async="async"
+  src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+```
+
+This link out to some dynamic online resource acts as a drag on the ad network's
+ability to avoid EasyList blocks. To avoid the online request, the ad network
+needs to be able to transform the publisher's HTML as often as they want to
+change their code or ad choice. Today, they could do this by giving the
+publisher some code to integrate into the publisher's site-building software
+that would pull down the latest ad network code and serve it from an obfuscated
+URL. This could be especially easy for a publisher whose site is based on
+Wordpress, since it takes plugins in a common format and constitutes a large
+proportion of all sites.
+
+With bundles, they could instead have publishers publish their pages to bundles
+and let the ad network transform the bundles to embed ads before the publisher
+serves them. If bundles become very widely used, that might reduce the ad
+network's maintenance burden. Even then, the publisher would still need to be
+able to generate their sites dynamically in order to let ad networks select ads.
+
+It seems unlikely that ad networks will abandon their ability to dynamically
+choose ads, even in order to avoid ad blockers, and if they wanted to do so,
+they could do it without bundles for a significant fraction of sites.
+
+Non-advertising scripts that "ad" blockers want to block have an easier job
+today, meaning web packaging helps them less.
+https://github.com/Valve/fingerprintjs#manual-minification already describes how
+to disguise the names in a fingerprinting script and inline it into, for
+example, a [rollup.js](https://rollupjs.org/) bundle.
 
 ### Security/Privacy Questionaire
 
