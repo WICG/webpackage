@@ -50,7 +50,7 @@ a format that allows multiple resources to be bundled, e.g.
 
 ## Requirements
 
-Web pages will declare that some of their their subresources are provided by the
+Web pages will declare that some of their subresources are provided by the
 [Web
 Bundle](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html)
 at a particular URL.
