@@ -64,6 +64,11 @@ We don't see an initial need for an associated Javascript API to pull
 information out of the bundle.
 
 We also don't address a way for Service Workers to use bundles to fill a Cache.
+Service Workers can technically unpack a bundle into
+[`cache.put()`](https://developer.mozilla.org/en-US/docs/Web/API/Cache/put)
+calls themselves, and, while the result may take an inefficient amount of
+browser-internal communication, letting some sites experiement with this will
+give us a better chance of designing the right API.
 
 ## `<link>`-based API
 
@@ -192,15 +197,16 @@ being bigger and less readable.
 
 As discussed in [Dynamic bundle serving with
 WebBundles](https://docs.google.com/document/d/11t4Ix2bvF1_ZCV9HKfafGfWu82zbOD7aUhZ_FyDAgmA/edit),
-simply including a base64-encoded compressed list of resources may cost as
-little as 5 bytes per URL on average. (That document doesn't show the details of
-that measurement.) The compressed list of resources could look like:
+simply including a list of resources in the HTML [may cost as little as 5 bytes
+per URL on average after the HTML is
+compressed](https://github.com/yoavweiss/url_compression_experiments).  The list
+of resources could look like:
 
 ```html
 <link
   rel="webbundle"
   href="https://example.com/dir/subresources.wbn"
-  resources="br-ofgFAO9IsGNWvPgiTk1dFeb2JqXM6FKBaQ5qcg7PdtubJNbKHsM8xoZYw5RxpG0udZvcCxS5jf6eWVHIDLLp+1Bo"
+  resources="https://example.com/this,https://example.com/is,https://example.com/not,https://example.com/a,https://example.com/real,https://example.com/list,https://example.com/of,https://example.com/URLs"
 />
 ```
 
