@@ -9,7 +9,6 @@ describe('Bundle Builder', () => {
   const defaultContent = 'Hello, world!';
   const invalidURLs = [
     '',
-    'ftp://example.com/',
     'https://example.com/#fragment',
     'https://user:pass@example.com/',
     'relative/url',
