@@ -346,16 +346,15 @@ Since it's a new scheme, we have to think about how browsers should render
 spec](https://url.spec.whatwg.org/#url-rendering) is probably not appropriate
 for the default display of `package:` URLs, as users won't understand the
 significance of its "host" part,
-`https!,,distributor.example,otherpackage.wbn;q=query$https!,,publisher.example`.
+`https:,,distributor.example,otherpackage.wbn;q=query$https:,,publisher.example`.
 
 We suggest that, in places the browser would render just a URL's host, it render
 the host of the *bundle's* URL, so just `distributor.example` in the above
-example. When the user opens the full URL for editing, it should expand to the full `package:` URL with encoding.
-
-Browsers can investigate showing a more detailed view, with the two components
-displayed separately, or even a full browser of the possible resource URLs
-within the bundle, but this shouldn't block shipping the first version of the
-feature.
+example. When the browser would render the full URL, it should show just the
+bundle's URL with some indication that it's viewing just a piece of that bundle.
+To edit the URL, the browser should allow the user to pick from the resources
+contained inside the bundle instead of encouraging the user to edit the text of
+the `package:` URL.
 
 ## Open design questions
 
