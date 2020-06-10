@@ -314,19 +314,19 @@ Each item of the bundle is addressible using a URL, with the new scheme
 this choice.) This scheme identifies both the URL of the bundle itself (e.g.
 `https://distributor.example/package.wbn?q=query`) and the claimed URL inside
 the bundle (e.g. `https://publisher.example/page.html?q=query`). These are
-encoded to minimize the changes needed to the [algorithm for computing an origin
-from a URL](https://url.spec.whatwg.org/#concept-url-origin), by replacing `:`
-with `!`, `/` with `,`, and `?` with `;`, and separating the 2 URLs with `$`.
-Any instance of `!`, `,`, `;`, or `$` in the URLs themselves is %-encoded:
+encoded to clearly separate the
+[origin](https://url.spec.whatwg.org/#concept-url-origin) from the path, by
+replacing `/` with `,` and `?` with `;`, and separating the 2 URLs with `$`. Any
+instance of `,`, `;`, or `$` in the URLs themselves is %-encoded:
 
 ```url
-package://https!,,distributor.example,package.wbn;q=query$https!,,publisher.example/page.html?q=query
+package:https:,,distributor.example,package.wbn;q=query$https:,,publisher.example/page.html?q=query
 ```
 
 The origin for that URL is:
 
 ```url
-package://https!,,distributor.example,package.wbn;q=query$https!,,publisher.example
+package:https:,,distributor.example,package.wbn;q=query$https:,,publisher.example
 ```
 
 These URLs and origins allow the components of bundles to save data in a way
@@ -335,8 +335,8 @@ can't conflict with or attack:
 
 * sites served verifiably from that claimed origin (e.g.
   `https://publisher.example/page.html?q=query`),
-* other bundles (e.g. `package://https!,,distributor.example,otherpackage.wbn;q=query$https!,,publisher.example/page.html?q=query`), or
-* other origins within the same bundle (e.g. `package://https!,,distributor.example,package.wbn;q=query$https!,,otherpublisher.example/page.html?q=query`).
+* other bundles (e.g. <code>package:https:,,distributor.example,<b>otherpackage.wbn</b>;q=query$https:,,publisher.example/page.html?q=query</code>), or
+* other origins within the same bundle (e.g. <code>package:https:,,distributor.example,package.wbn;q=query$https:,,<b>otherpublisher.example</b>/page.html?q=query</code>).
 
 ## Open design questions
 
@@ -688,6 +688,16 @@ Packages](https://docs.google.com/document/d/1BYQEi8xkXDAg9lxm3PaoMzEutuQAZi1r8Y
 goes into more detail about why we need a new scheme at all, and discusses the
 2-URL scheme described above and a hash+URL scheme similar to [`arcp://ni,`
 URIs](https://tools.ietf.org/html/draft-soilandreyes-arcp-03#section-4.1).
+
+#### Why not package://?
+
+The `package:` scheme is hierarchical with a similar origin/path?query structure
+to common `https://` URLs, so it would seem natural to use the URL authority
+component in its design. However, because the "authority" in a package URL is
+not "registered" as described in [RFC
+3986](https://tools.ietf.org/html/rfc3986#section-3.2.2), and because its syntax
+is more complex than a [DNS name](https://www.rfc-editor.org/rfc/rfc1034.html),
+we think it's safer to use the form without an authority.
 
 #### arcp
 
