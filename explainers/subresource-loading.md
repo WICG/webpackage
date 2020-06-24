@@ -206,7 +206,7 @@ of resources could look like:
 <link
   rel="webbundle"
   href="https://example.com/dir/subresources.wbn"
-  resources="https://example.com/this,https://example.com/is,https://example.com/not,https://example.com/a,https://example.com/real,https://example.com/list,https://example.com/of,https://example.com/URLs"
+  resources="https://example.com/this https://example.com/is https://example.com/not https://example.com/a https://example.com/real https://example.com/list https://example.com/of https://example.com/URLs"
 />
 ```
 
