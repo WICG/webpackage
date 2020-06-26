@@ -210,6 +210,8 @@ of resources could look like:
 />
 ```
 
+The `resources` attribute is reflected to JavaScript as a [`DOMTokenList`](https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList).
+
 #### Approximate Membership Query datastructure
 
 A page still executes correctly, albeit slower than optimal, if a resource
