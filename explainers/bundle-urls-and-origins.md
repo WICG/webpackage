@@ -40,6 +40,7 @@ Participate:
 - [Detailed design discussion](#detailed-design-discussion)
   - [Exactly how do we compose the package: URL?](#exactly-how-do-we-compose-the-package-url)
 - [Considered alternatives](#considered-alternatives)
+  - [Rely on storage partitioning](#rely-on-storage-partitioning)
   - [URL encoding variants](#url-encoding-variants)
     - [Fragment-based URL scheme](#fragment-based-url-scheme)
       - [Fragments and MIME types](#fragments-and-mime-types)
@@ -467,6 +468,27 @@ To parse the `package:` URL into a bundle URL and a claimed URL, we can use the 
 1. Return the *bundle URL* and the *claimed URL*.
 
 ## Considered alternatives
+
+### Rely on storage partitioning
+
+The above design relies on the URL to both [name a bundle
+subresource](#fully-qualified-subresource-names) and [give its storage the right
+scope](#correctly-scoped-storage). Instead, we could explicitly define that the
+active [storage shelf](https://storage.spec.whatwg.org/#storage-shelf) depends
+on the bundle path to the resource (in addition to [the frame path to the
+`window`](https://github.com/privacycg/storage-partitioning)).
+
+Environment settings objects loaded from a bundle need to track the bundle
+regardless, so that fetches can look in the bundle before going to the network,
+so this isn't an extra piece of data to track.
+
+Going this route makes [same-bundle introspection](#same-bundle-introspection)
+easier, since the active URL of the document is the *claimed URL*. However, it
+makes it harder to ensure [referrers](#referer-headers) and [origins](#origins)
+are correct since it avoids defining a syntax that can slot into the existing
+headers and fields. That could be positive—existing code won't be expecting a
+new scheme here, so one could cause compatibility issues—but also seems likely
+to cause confusion about which entity is acting.
 
 ### URL encoding variants
 
