@@ -15,7 +15,6 @@ https://datatracker.ietf.org/wg/wpack/about/.
   - [Loading a non-authoritative bundle](#loading-a-non-authoritative-bundle)
   - [Subsequent loads with an attached bundle](#subsequent-loads-with-an-attached-bundle)
   - [Service Workers](#service-workers)
-  - [URLs for bundle components](#urls-for-bundle-components)
 - [Open design questions](#open-design-questions)
   - [Do we need an "internal redirect" notion for the bundle->primary-URL redirect?](#do-we-need-an-internal-redirect-notion-for-the-bundle-primary-url-redirect)
   - [Authoritative responses or bundles](#authoritative-responses-or-bundles)
@@ -28,7 +27,6 @@ https://datatracker.ietf.org/wg/wpack/about/.
   - [Security/Privacy Questionaire](#securityprivacy-questionaire)
 - [Considered alternatives](#considered-alternatives)
   - [Alternate formats considered](#alternate-formats-considered)
-  - [Alternate URL schemes considered](#alternate-url-schemes-considered)
 - [Stakeholder feedback](#stakeholder-feedback)
 - [Acknowledgements](#acknowledgements)
 
@@ -277,15 +275,14 @@ they're inside its scope.
 ### Loading a non-authoritative bundle
 
 The browser redirects to [a URL that refers to the bundle's primary URL *inside
-its bundle*](#urls-for-bundle-components), with the bundle itself attached.
+its bundle*](./bundle-urls-and-origins.md), with the bundle itself attached.
 
-Because the user might save a bundle to a file whose path includes private
-information like their username, APIs like
+APIs like
 [`Window.location`](https://developer.mozilla.org/en-US/docs/Web/API/Window/location)
 and
 [`Document.URL`](https://developer.mozilla.org/en-US/docs/Web/API/Document/URL)
-have to return the claimed URL and not the full encoded URL. Avoiding the new
-scheme in these APIs will also probably improve compatibility.
+[return the claimed URL and not the full encoded
+URL](./bundle-urls-and-origins.md#same-bundle-introspection).
 
 ### Subsequent loads with an attached bundle
 
@@ -306,37 +303,6 @@ We plan to, but haven't yet, defined an API to expose
 [authoritative](#authoritative) resources within bundles to that origin's
 service worker. This API should allow the service worker to fill its cache with
 the contents of the bundle.
-
-### URLs for bundle components
-
-Each item of the bundle is addressible using a URL, with the new scheme
-`package:`. (See [below](#alternate-URL-schemes-considered) for some details of
-this choice.) This scheme identifies both the URL of the bundle itself (e.g.
-`https://distributor.example/package.wbn?q=query`) and the claimed URL inside
-the bundle (e.g. `https://publisher.example/page.html?q=query`). These are
-encoded to minimize the changes needed to the [algorithm for computing an origin
-from a URL](https://url.spec.whatwg.org/#concept-url-origin), by replacing `:`
-with `!`, `/` with `,`, and `?` with `;`, and separating the 2 URLs with `$`.
-Any instance of `!`, `,`, `;`, or `$` in the URLs themselves is %-encoded:
-
-```url
-package://https!,,distributor.example,package.wbn;q=query$https!,,publisher.example/page.html?q=query
-```
-
-The origin for that URL is:
-
-```url
-package://https!,,distributor.example,package.wbn;q=query$https!,,publisher.example
-```
-
-These URLs and origins allow the components of bundles to save data in a way
-that's shared within the same claimed origin within a single bundle, but which
-can't conflict with or attack:
-
-* sites served verifiably from that claimed origin (e.g.
-  `https://publisher.example/page.html?q=query`),
-* other bundles (e.g. `package://https!,,distributor.example,otherpackage.wbn;q=query$https!,,publisher.example/page.html?q=query`), or
-* other origins within the same bundle (e.g. `package://https!,,distributor.example,package.wbn;q=query$https!,,otherpublisher.example/page.html?q=query`).
 
 ## Open design questions
 
@@ -413,7 +379,7 @@ There are 3 cases:
 ## Security and privacy considerations
 
 * Unsigned bundles served by one origin can't be trusted to provide content for
-  another origin. The [URL design](#urls-for-bundle-components) and the division
+  another origin. The [URL design](./bundle-urls-and-origins.md) and the division
   between authoritative and non-authoritative bundles are designed to keep
   separate origins safely separate, but this is more than a trivial amount of
   complexity, and browsers will need to be careful to actually enforce the
@@ -519,7 +485,7 @@ See #3.
 
 This proposal introduces a new kind of origin with state that persists across
 browsing sessions. Specifically, the [`package:`
-scheme](#urls-for-bundle-components) defines an origin based on the location or
+scheme](./bundle-urls-and-origins.md) defines an origin based on the location or
 the URL of the bundle itself, and the claimed URL inside the bundle.
 
 #### 6. What information from the underlying platform, e.g. configuration data, is exposed by this specification to an origin?
@@ -557,7 +523,7 @@ No.
 #### 12. What temporary identifiers might this specification create or expose to the web?
 
 This explainer avoids exposing the [new URL scheme for non-authoritative
-bundles](#urls-for-bundle-components) to the web, as the bundle URL piece of the
+bundles](./bundle-urls-and-origins.md) to the web, as the bundle URL piece of the
 authority can include private information including identifiers.
 
 #### 13. How does this specification distinguish between behavior in first-party and third-party contexts?
@@ -680,54 +646,6 @@ authoritative index prevents a consumer from processing anything until the
 complete file is received. Streaming isn't particularly useful for the
 peer-to-peer transfer use case, but it allows the same format to be used for
 subresource bundles (which will have a separate explainer).
-
-### Alternate URL schemes considered
-
-A Google doc, [Origins for Resources in Unsigned
-Packages](https://docs.google.com/document/d/1BYQEi8xkXDAg9lxm3PaoMzEutuQAZi1r8Y0pLaFJQoo/edit),
-goes into more detail about why we need a new scheme at all, and discusses the
-2-URL scheme described above and a hash+URL scheme similar to [`arcp://ni,`
-URIs](https://tools.ietf.org/html/draft-soilandreyes-arcp-03#section-4.1).
-
-#### arcp
-
-[draft-soilandreyes-arcp](https://tools.ietf.org/html/draft-soilandreyes-arcp-03),
-from 2018, proposes an `arcp:` scheme that encodes a UUID, hash, or name for an
-archive/package, plus a path within that package. It's designed to be usable
-with several different kinds of archive, listing "application/zip",
-"application/x-7z-compressed", LDP Containers, installed Web Apps, and a BagIt
-folder structure as possible kinds.
-
-By using just a path to identify the thing within the package, `arcp:` isn't
-compatible with the way bundles include resources from several different
-origins. On the other hand, the [`package:` scheme](#urls-for-bundle-components)
-discussed above can work for path-based archives, by either using a `file:` URL
-to identify the element of the package, or perhaps by omitting the part of the
-authority after `$`. Adding a second URL may also be a compatible addition to
-`arcp:`.
-
-`arcp:` doesn't define a way to locate the archive, which prevents an external
-link from pointing directly to one element of the archive, but an external link
-can still point to the archive as a whole. Once a client has seen an archive, it
-can store a mapping from any of the `arcp:` URI forms to the archive itself,
-which allows navigation within the archive. The `arcp://ni,` form, in
-particular, has the benefit of allowing users to move an archive around without
-losing its storage; and the drawback of preventing the user from upgrading the
-archive without losing its storage.
-
-`arcp:`'s flexibility in naming the archive, between random UUIDs, UUIDs based
-on the archive's location, hashes of the archive content, or system-dependent
-archive names, could be useful for varying system requirements, but it also
-introduces implementation complexity. We'd probably want to pick just one of those options for bundles.
-
-#### pack
-
-[draft-shur-pack-uri-scheme](https://tools.ietf.org/html/draft-shur-pack-uri-scheme-05),
-from 2009, defines a `pack:` scheme meant for use with OOXML packages. It
-identifies a package with an encoded URL, which partially inspired the
-[encoding](#urls-for-bundle-components) proposed in this document. Like `arcp:`
-it only expects elements of a package to have paths, which doesn't allow the
-full URLs needed by web bundles.
 
 ## Stakeholder feedback
 
