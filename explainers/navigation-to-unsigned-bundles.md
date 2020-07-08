@@ -773,15 +773,17 @@ full URLs needed by web bundles.
   * [Dan York of the Internet
     Society](https://www.iab.org/wp-content/IAB-uploads/2019/06/dan-york.pdf)
     offered use cases for packaging web content focused on availability in low
-    bandwidth / high latency environments. More specifically, part of the ISOC's
-    mission involves reaching people who only have have limited connectivity to
-    the Internet, e.g. WiFi at a few local places that people visit to download
-    content that they want to read or watch later. The ability to package web
-    content would be useful in such context. The ISOC is also working with
-    communities where the electricity is unreliable, which negatively impacts
-    Internet access as a result. Here again, these communities could benefit
-    from the ability to download a package of content, either for learning or
-    reading even in the absence of connectivity.
+    bandwidth / high latency environments. More specifically, part of the
+    Internet Society's work involves reaching people who only have have limited
+    connectivity to the Internet, e.g. WiFi at a few local places that people
+    visit to download content that they want to read or watch later. The ability
+    to package web content would be useful in such context. The Internet Society
+    is also working with communities where the electricity is unreliable, which
+    negatively impacts Internet access as a result. There are also cases where
+    communities only have periodic connectivity via satellite connections. Here
+    again, these communities could benefit from the ability to download a
+    package of content, either for learning or reading even in the absence of
+    connectivity.
 * Computer vendors: Interest in using bundles to represent pre-installed
   applications.
 
