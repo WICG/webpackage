@@ -770,6 +770,18 @@ full URLs needed by web bundles.
     but archivists were worried that content producers might not package their
     content enough to make it fully effective. They also thought packages might
     improve the "situation for archival replay".
+  * [Dan York of the Internet
+    Society](https://www.iab.org/wp-content/IAB-uploads/2019/06/dan-york.pdf)
+    offered use cases for packaging web content focused on availability in low
+    bandwidth / high latency environments. More specifically, part of the ISOC's
+    mission involves reaching people who only have have limited connectivity to
+    the Internet, e.g. WiFi at a few local places that people visit to download
+    content that they want to read or watch later. The ability to package web
+    content would be useful in such context. The ISOC is also working with
+    communities where the electricity is unreliable, which negatively impacts
+    Internet access as a result. Here again, these communities could benefit
+    from the ability to download a package of content, either for learning or
+    reading even in the absence of connectivity.
 * Computer vendors: Interest in using bundles to represent pre-installed
   applications.
 
