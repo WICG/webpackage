@@ -357,11 +357,13 @@ field to determine which recipients can read it.
 * When sending from inside the bundle to inside, the sender uses just the
   claimed origin.
 * When sending from inside the bundle to outside, the sender uses the same
-  target origin that a sender outside the bundle would use. This means the
-  message could be intercepted by something inside the same bundle, which should
-  be ok: things inside bundles are meant to be quotes of things outside, and if
-  the entity who composed a bundle is dishonest about this, they can modify the
-  sender as easily as its target.
+  target origin that a sender outside the bundle would use. This means that
+  `package:a-bundle$https:,,source.example` uses the same target origin for
+  sending to either `https://target.example` or
+  `package:a-bundle$https:,,target.example`, which could let either receive
+  messages meant for the other. This should be ok: things inside bundles are
+  meant to be quotes of things outside, and if the entity who composed a bundle
+  is dishonest about this, they can modify the sender as easily as its target.
 
 #### `postMessage` source origin
 
