@@ -37,6 +37,7 @@ Participate:
     - [`postMessage` source origin](#postmessage-source-origin)
   - [Rendering the URL bar](#rendering-the-url-bar)
   - [Permissions](#permissions)
+  - [Downloading bundles](#downloading-bundles)
 - [Detailed design discussion](#detailed-design-discussion)
   - [Exactly how do we compose the package: URL?](#exactly-how-do-we-compose-the-package-url)
 - [Considered alternatives](#considered-alternatives)
@@ -413,6 +414,26 @@ may be a good way to express this. Specifically, we could treat bundled content
 as cross-origin from its server, and only allow permission requests if the
 server sends a `Permissions-Policy: geolocation=(self
 "package:https://server.example")` header.
+
+### Downloading bundles
+
+If the user downloads a bundle, by default it has a new *bundle URL* referring
+to its new location, and so it loses access to any storage it created while the
+user was using it online. This is undesirable, so user agents should take
+measures to avoid confusion and lost data. It's not clear yet what those
+measures should be:
+
+1. Store a mapping between the offline location and the online location, and
+   treat them as same-origin.
+   * This can't _just_ be the offline bundle's Mark Of The Web, because if the
+     user received the bundle on an SD card, that mark isn't trustworthy.
+   * Storing the offline location in a trusted place could still cause trouble
+     if the user later mounts a less-trusted bundle there.
+   * The browser could safely store a hash of the offline bundle.
+1. Copy storage from the online bundle to the offline bundle when it's
+   downloaded.
+   * This could be confusing if the user continues updating the offline storage
+     and then goes back to the online bundle.
 
 ## Detailed design discussion
 
