@@ -2118,6 +2118,10 @@ exchange argues for embedding a signature's lifetime into the signature.
 
 RFC EDITOR PLEASE DELETE THIS SECTION.
 
+draft-09
+
+* No change
+
 draft-08
 
 * Improve the privacy considerations.
