@@ -612,7 +612,7 @@ a self-extracting executable.
 To implement {{semantics-load-metadata-from-end}}, taking a sequence of bytes
 `bytes`, the client MUST:
 
-1. Let `byteStringHeader` be `bytes[bytes.length - 9]`. If `byteStringHeader is
+1. Let `byteStringHeader` be `bytes[bytes.length - 9]`. If `byteStringHeader` is
    not `0x48` (the CBOR ({{CBORbis}}) initial byte for an 8-byte byte string),
    return an error.
 1. Let `bundleLength` be `[bytes[bytes.length - 8], bytes[bytes.length])` (the
@@ -968,6 +968,12 @@ section is not processed.
 # Change Log
 
 RFC EDITOR PLEASE DELETE THIS SECTION.
+
+draft-03
+
+* Make the manifest optional.
+* Update the reference to draft-yasskin-wpack-use-cases.
+* Retitle to "web bundles".
 
 draft-02
 
