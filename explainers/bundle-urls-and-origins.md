@@ -640,5 +640,6 @@ Many thanks for valuable feedback and advice from:
 - Martin Thomson
 - Mike West
 - Ryan Sleevi
+- Ted Hardie
 - The participants in the IETF WPACK Working Group
 - Tsuyoshi Horo
