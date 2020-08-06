@@ -11,7 +11,7 @@ jobs:
       node_js:
        - "node"
       install:
-       - npm --prefix ./js/bundle install
+       - npm --prefix ./js/bundle ci
       script:
        - npm --prefix ./js/bundle run build
        - npm --prefix ./js/bundle test
