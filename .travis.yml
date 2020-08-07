@@ -6,6 +6,16 @@ jobs:
         - GO111MODULE=on
       script: go test -v ./go/...
 
+    - name: "JavaScript"
+      language: node_js
+      node_js:
+       - "node"
+      install:
+       - npm --prefix ./js/bundle ci
+      script:
+       - npm --prefix ./js/bundle run build
+       - npm --prefix ./js/bundle test
+
     - name: "Specifications"
       language: python
 
