@@ -573,10 +573,6 @@ following steps
 1. If |parsedSignature| [=exchange signature/does not establish cross-origin
     trust=] for |parsedExchange|, return
     "[=signed exchange report/cert_verification_error=]".
-1. Set |parsedExchange|'s [=exchange/response=]'s [=response/HTTPS state=] to
-    either "`deprecated`" or "`modern`".
-
-    Note: See <a spec="fetch">HTTP-network fetch</a> for details of this choice.
 1. If |parsedExchange|'s [=exchange/response=]'s [=response/status=] is a
     [=redirect status=] or the [=signed exchange version=] of |parsedExchange|'s
     [=exchange/response=] is not undefined, return
