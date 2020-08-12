@@ -331,6 +331,67 @@ Note: Applying the signed exchange's response here has the effect of letting a
 newer HTTP cache entry override a signed exchange's content, and of not storing
 the signed exchange's response in the HTTP cache.
 
+# Subresource substitution # {#subresource-substitution}
+
+To support [Signed Exchange subresource substitution](https://github.com/WICG/webpackage/blob/master/explainers/signed-exchange-subresource-subtitution-explainer.md),
+this secion describes how web browsers prefetch subresource signed exchanges.
+
+<h3 algorithm id="mp-fetching-the-resource-hint-link">
+Monkeypatch Fetching the resource hint link</h3>
+In [Fetching the resource hint
+link](https://w3c.github.io/resource-hints/#fetching-the-resource-hint-link),
+add the following lines:
+
+The user agent SHOULD prefetch the alternate subresources signed exchanges if
+declared in link headers in the outer and the inner response header of the
+signed exchanges by running the following steps:
+    1. When the UA detects a "preload" link HTTP header in a signed exchange
+        inner response, check whether a matching “allowed-alt-sxg” link HTTP
+        header in the inner response exists or not. (Note that multiple
+        `allowed-alt-sxg` links can be present for the same preload if they
+        include `variants` and `variant-key` attributes. In that case, the UA
+        uses the algorithm written in [HTTP Representation
+        Variants](https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html)
+        spec to find the matching header.)
+    1. If an `allowed-alt-sxg` link exists, check whether the signed exchange
+        was served with a matching “alternate” link HTTP header.
+    1. If the outer signed exchange did identify an alternate version of the
+        subresource, prefetch the subresource signed exchange.
+    1. If the resulting signed exchange is valid and matches the allowed-alt-sxg
+        link, attach it to the top-level prefetch.
+
+<h3 algorithm id="mp-navigating-across-documents">
+Monkeypatch Navigating across documents</h3>
+In [navigating across documents](https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigating-across-documents),
+add the following step:
+    1. Copy the signed exchanges that were prefetched above to the target
+        document except for the one that serves the navigation itself.
+- Note that as browsers move toward partitioned HTTP caches, the source
+    document's cache will likely be separate from the target's cache, so
+    we can't just pass prefetched content through the cache.
+
+
+<h3 algorithm id="mp-link-type-preload">
+Monkeypatch Link type "preload"</h3>
+
+The navigated-to document has a set of preloads for which it uses the
+allowed-alt-sxg link relation to declare that they can be served by signed
+exchanges. The UA either serves all of them from SXGs prefetched by the previous
+page, or none of them.
+So in [processing](https://www.w3.org/TR/preload/#processing) of [Link type
+"preload"](https://www.w3.org/TR/preload/#link-type-preload) add the following
+step:
+    1. For each preload, use the imagesrcset and imagesizes attributes to pick a
+        single URL to preload.
+    1. Identify the subset |SxgPreloads| of those preloads with an
+        `allowed-alt-sxg` link for that selected URL.
+    1. If every member of |SxgPreloads| has a valid signed exchange that was
+        transferred from the referring document, use the signed contents of
+        those resources to satisfy the preloads. Ignore any other prefetched
+        signed exchanges.
+    1. Otherwise, ignore all prefetched signed exchanges and re-fetch the
+        preloads from their original URLs.
+
 # Structures # {#structs}
 
 <h3 dfn-type=dfn export>Exchange</h3>
