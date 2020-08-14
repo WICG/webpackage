@@ -116,6 +116,13 @@ spec: RFC7231; urlPrefix: https://tools.ietf.org/html/rfc7231#
         text: HTTP media type; url: section-3.1.1.1
     type: http-header
         text: Date; url: section-7.1.1.2
+spec: RFC8288; urlPrefix: https://tools.ietf.org/html/rfc8288#
+    type: http-header
+        text: Link; url: section-3
+    type: dfn
+        text: link target; url: section-3.1
+    type: dfn
+        text: anchor; url: section-3.2
 spec: RFC8446; urlPrefix: https://tools.ietf.org/html/draft-ietf-tls-tls13-28#
     text: ecdsa_secp256r1_sha256; type: dfn; url: section-4.2.3
 spec: draft-ietf-httpbis-variants; urlPrefix: https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html#
@@ -333,64 +340,219 @@ the signed exchange's response in the HTTP cache.
 
 # Subresource substitution # {#subresource-substitution}
 
-To support [Signed Exchange subresource substitution](https://github.com/WICG/webpackage/blob/master/explainers/signed-exchange-subresource-subtitution-explainer.md),
-this secion describes how web browsers prefetch subresource signed exchanges.
+To let the UA know that subresources of a page it's prenavigating to, can
+be retrieved as signed exchanges from the source site, this section introduces
+an extension to the HTTP Link header.
+
+* A <dfn dfn-type=dfn>allowed-alt-sxg link</dfn> is a relationship that is used
+    in HTTP <a http-header>Link</a> header of inner HTTP response of main
+    resource signed exchange to indicate that the subresource of the
+    [=link target=] can be loaded from different URL as a signed exchange. This
+    link has a
+    [rel](https://html.spec.whatwg.org/multipage/semantics.html#attr-link-rel)
+    parameter contains `allowed-alt-sxg` and a `header-integrity` parameter set
+    to the value of the [=header integrity value=] of the [=alternate signed
+    exchange=] 
+* A <dfn dfn-type=dfn>alternate signed exchange link</dfn> is a relationship
+    that is used in HTTP <a http-header>Link</a> header of outer HTTP response
+    of main resource signed exchange to indicate that the
+    <dfn dfn-type=dfn>alternate signed exchange</dfn> of the [=link target=] can
+    be loaded instead of the subresource  of the URL declared at the [=anchor=]
+    parameter. This link has a
+    [rel](https://html.spec.whatwg.org/multipage/semantics.html#attr-link-rel)
+    parameter contains
+    [alternate](https://html.spec.whatwg.org/multipage/links.html#rel-alternate)
+    keyword and a
+    [type](https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-type)
+    parameter set to the value 'application/signed-exchange' and an [=anchor=]
+    parameter set to the original subresource URL.
+* A <dfn dfn-type=dfn>header integrity value</dfn> is the SHA256 hash value of
+    the |signedHeaders| value from the
+    [application/signed-exchange format](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#application-signed-exchange)
+    for integrity checking.
+
+    Note: This |signedHeaders| is *"the canonical serialization of the CBOR
+    representation of the response headers of the exchange represented by the
+    application/signed-exchange resource, excluding the Signature header
+    field"*. So this value doesn’t change even if the publisher signs the
+    content again or changes the signing key, but it does change if any of the
+    headers or body change. (It catches changes to the body because a valid
+    signed exchange's headers have to include a `Digest` value that covers
+    the body.)
+
+<h3 algorithm id="mp-document">
+Monkeypatch Document</h3>
+In the end of
+[the Document object](https://html.spec.whatwg.org/multipage/dom.html#the-document-object)
+section, add the following lines:
+
+The <code>Document</code> has a <dfn dfn-type=dfn>prefetched singed exchanges
+for navigation</dfn>, which is a set of [=exchanges=], initially empty.
+
+The document has a <dfn dfn-for="document-obj" dfn-type=dfn>prefetched
+subresource singed exchanges</dfn>, which is a set of [=exchanges=], initially
+empty.
+
+The document has a <dfn dfn-for="document-obj" dfn-type=dfn>transferred
+subresource singed exchanges</dfn>, which is a set of [=exchanges=], initially empty.
+
+The document has a <dfn dfn-for="document-obj" dfn-type=dfn>allowed alternate
+subresource signed exchange links</dfn>, which is a set of
+[=allowed-alt-sxg link=], initially empty.
+
+<h3 algorithm id="mp-navigation-params">
+Monkeypatch navigation params struct</h3>
+In the
+[navigation params struct](https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigation-params),
+add the following item:
+
+<dl dfn-for="navigation params">
+: <dfn>prefetched subresource singed exchanges</dfn>
+:: A a set of [=exchanges=], initially empty.
+: <dfn>allowed alternate subresource signed exchange links</dfn>
+:: A a set of [=allowed-alt-sxg link=], initially empty.
+
+</dl>
 
 <h3 algorithm id="mp-fetching-the-resource-hint-link">
 Monkeypatch Fetching the resource hint link</h3>
-In [Fetching the resource hint
-link](https://w3c.github.io/resource-hints/#fetching-the-resource-hint-link),
-add the following lines:
+In the end of
+[Fetching the resource hint link](https://w3c.github.io/resource-hints/#fetching-the-resource-hint-link)
+section, add the following lines:
+
+The user agent SHOULD run the following steps if the response of the prefetched
+resource is a valid signed exchange:
+    1. Let |clonedResponse| be the result of [=response/cloning=] the response.
+    1. Create an [=exchange=] with the request URL and |clonedResponse|,
+        and store the exchange to the
+        [=prefetched singed exchanges for navigation=] of the Document.
 
 The user agent SHOULD prefetch the alternate subresources signed exchanges if
 declared in link headers in the outer and the inner response header of the
 signed exchanges by running the following steps:
     1. When the UA detects a "preload" link HTTP header in a signed exchange
-        inner response, check whether a matching “allowed-alt-sxg” link HTTP
-        header in the inner response exists or not. (Note that multiple
-        `allowed-alt-sxg` links can be present for the same preload if they
-        include `variants` and `variant-key` attributes. In that case, the UA
-        uses the algorithm written in [HTTP Representation
+        inner response, check whether a matching [=allowed-alt-sxg link=] in the
+        inner HTTP response exists or not.
+
+        Note: multiple [=allowed-alt-sxg links=] can be present for the same
+        preload if they include `variants` and `variant-key` attributes. In that
+        case, the UA uses the algorithm written in [HTTP Representation
         Variants](https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html)
         spec to find the matching header.)
-    1. If an `allowed-alt-sxg` link exists, check whether the signed exchange
-        was served with a matching “alternate” link HTTP header.
-    1. If the outer signed exchange did identify an alternate version of the
-        subresource, prefetch the subresource signed exchange.
-    1. If the resulting signed exchange is valid and matches the allowed-alt-sxg
-        link, attach it to the top-level prefetch.
+    1. If an [=allowed-alt-sxg link=] exists, check whether the signed exchange
+        was served with a matching [=alternate signed exchange link=] in the
+        outer HTTP response.
+    1. If there is an [=alternate signed exchange link=] which identify an
+        alternate version of the subresource, prefetch the
+        [=alternate signed exchange=].
+    1. If the resulting [=alternate signed exchange=] is valid and the
+        [=header integrity value=] of it matches the `header-integrity`
+        parameter of the [=allowed-alt-sxg link=], create a [=exchange=]
+        with the URL of the [=allowed-alt-sxg link=]'s [=link target=] URL and
+        the result of [=response/cloning=] the inner response of the
+        [=alternate signed exchange=], and store the exchange to the
+        [=document-obj/prefetched subresource singed exchanges=] of the
+        document.
 
-<h3 algorithm id="mp-navigating-across-documents">
-Monkeypatch Navigating across documents</h3>
-In [navigating across documents](https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigating-across-documents),
-add the following step:
-    1. Copy the signed exchanges that were prefetched above to the target
-        document except for the one that serves the navigation itself.
-- Note that as browsers move toward partitioned HTTP caches, the source
-    document's cache will likely be separate from the target's cache, so
-    we can't just pass prefetched content through the cache.
+<h3 algorithm id="mp-process-a-navigate-fetch">
+Monkeypatch process a navigate fetch</h3>
+In [process a navigate fetch](https://html.spec.whatwg.org/multipage/browsing-the-web.html#process-a-navigate-fetch)
+before
+
+> 9. While true:
+
+add the following steps:
+
+    9. Let |allowed alternate subresource signed exchange links| be null.
+
+    10. If |sourceBrowsingContext|'s [=active document=]'s
+        [=prefetched singed exchanges for navigation=] has a matching exchange
+        for the |request|'s [=request/url=], then:
+        
+        1. Let |clonedExchange| be the result of creating a new [=exchange=]
+            with the matching exchange's [=exchange/request URL=] and the result
+            of [=response/cloning=] the matching exchange's
+            [=exchange/response=].
+
+        1. Move |clonedExchange| to the |request|'s
+            [=request/stashed exchange=].
+
+        1. Copy [=allowed-alt-sxg link=] of the exchange's
+            [=exchange/response=]'s inner response to
+            |allowed alternate subresource signed exchange links|.
+
+
+
+And before
+
+> 17. Run process a navigate response with navigationType, the source browsing
+>     context, and navigationParams.
+
+add the following steps:
+
+    19. Copy |sourceBrowsingContext|'s [=active document=]'s
+        [=document-obj/prefetched subresource singed exchanges=]
+        to navigationParams's
+        [=navigation params/prefetched subresource singed exchanges=].
+
+    20. Set navigationParams's
+        [=navigation params/allowed alternate subresource signed exchange links=]
+        to |allowed alternate subresource signed exchange links|.
+
+Note: As browsers move toward partitioned HTTP caches, the source document's
+    cache will likely be separate from the target's cache, so we can't just pass
+    prefetched content through the cache.
+
+
+<h3 algorithm id="mp-initialise-the-document-object">
+Monkeypatch Initialize a Document object</h3>
+In
+[initialize a Document object](https://html.spec.whatwg.org/multipage/browsing-the-web.html#initialise-the-document-object)
+before
+
+> 15. Return document.
+
+add the following steps:
+
+    15. Move the navigationParams's
+        [=navigation params/prefetched subresource singed exchanges=] to the
+        document's [=document-obj/transferred subresource singed exchanges=].
+
+    16. Set document's
+        [=document-obj/allowed alternate subresource signed exchange links=] to
+        navigationParams's
+        [=navigation params/allowed alternate subresource signed exchange links=].
 
 
 <h3 algorithm id="mp-link-type-preload">
 Monkeypatch Link type "preload"</h3>
 
 The navigated-to document has a set of preloads for which it uses the
-allowed-alt-sxg link relation to declare that they can be served by signed
+[=allowed-alt-sxg link=] relation to declare that they can be served by signed
 exchanges. The UA either serves all of them from SXGs prefetched by the previous
 page, or none of them.
-So in [processing](https://www.w3.org/TR/preload/#processing) of [Link type
-"preload"](https://www.w3.org/TR/preload/#link-type-preload) add the following
-step:
-    1. For each preload, use the imagesrcset and imagesizes attributes to pick a
-        single URL to preload.
-    1. Identify the subset |SxgPreloads| of those preloads with an
-        `allowed-alt-sxg` link for that selected URL.
-    1. If every member of |SxgPreloads| has a valid signed exchange that was
-        transferred from the referring document, use the signed contents of
-        those resources to satisfy the preloads. Ignore any other prefetched
-        signed exchanges.
-    1. Otherwise, ignore all prefetched signed exchanges and re-fetch the
-        preloads from their original URLs.
+So in the
+[linked resource fetch setup steps for preload type of linked resource](https://html.spec.whatwg.org/multipage/links.html#link-type-preload:linked-resource-fetch-setup-steps)
+before
+
+> 5. Return true.
+
+add the following steps:
+
+    5. If |el| is for the main resource's HTTP <a http-header>Link</a> header,
+        and the document's
+        [=document-obj/allowed alternate subresource signed exchange links=] 
+        has a matching link to |request|'s url, then run the following steps in
+        parallel:
+
+        1. Wait until there is no remaining preload Link header of the main
+            resource to be processed.
+
+        1. If every |el|'s in this step has a matching exchange in the 
+            document's [=document-obj/transferred subresource singed exchanges=],
+            set the |request|'s [=request/stashed exchange=] to the exchange.
+            
+        1. Return true.
 
 # Structures # {#structs}
 
