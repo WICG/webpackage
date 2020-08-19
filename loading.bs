@@ -120,9 +120,9 @@ spec: RFC8288; urlPrefix: https://tools.ietf.org/html/rfc8288#
     type: http-header
         text: Link; url: section-3
     type: dfn
-        text: link target; url: section-3.1
+        text: Link Target; url: section-3.1
     type: dfn
-        text: anchor; url: section-3.2
+        text: Link Context; url: section-3.2
 spec: RFC8446; urlPrefix: https://tools.ietf.org/html/draft-ietf-tls-tls13-28#
     text: ecdsa_secp256r1_sha256; type: dfn; url: section-4.2.3
 spec: draft-ietf-httpbis-variants; urlPrefix: https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html#
@@ -340,45 +340,47 @@ the signed exchange's response in the HTTP cache.
 
 # Subresource substitution # {#subresource-substitution}
 
-To let the UA know that subresources of a page it's prenavigating to, can
-be retrieved as signed exchanges from the source site, this section introduces
-an extension to the HTTP Link header.
+When prenavigating to a page held in a signed exchange, it can be useful to
+also prefetch subresources of that page as signed exchanges from the same
+server. To identify those transitive prefetchable resources, this section
+introduces an extension to the HTTP Link header.
 
-* A <dfn dfn-type=dfn>allowed-alt-sxg link</dfn> is a relationship that is used
+* Link type "<dfn dfn-type=dfn>allowed-alt-sxg</dfn>"
+
+    The [=allowed-alt-sxg=] keyword may be used
     in HTTP <a http-header>Link</a> header of inner HTTP response of main
-    resource signed exchange to indicate that the subresource of the
-    [=link target=] can be loaded from different URL as a signed exchange. This
-    link has a
-    [rel](https://html.spec.whatwg.org/multipage/semantics.html#attr-link-rel)
-    parameter contains `allowed-alt-sxg` and a `header-integrity` parameter set
-    to the value of the [=header integrity value=] of the [=alternate signed
-    exchange=] 
-* A <dfn dfn-type=dfn>alternate signed exchange link</dfn> is a relationship
-    that is used in HTTP <a http-header>Link</a> header of outer HTTP response
-    of main resource signed exchange to indicate that the
-    <dfn dfn-type=dfn>alternate signed exchange</dfn> of the [=link target=] can
-    be loaded instead of the subresource  of the URL declared at the [=anchor=]
-    parameter. This link has a
-    [rel](https://html.spec.whatwg.org/multipage/semantics.html#attr-link-rel)
-    parameter contains
-    [alternate](https://html.spec.whatwg.org/multipage/links.html#rel-alternate)
-    keyword and a
-    [type](https://html.spec.whatwg.org/multipage/links.html#attr-hyperlink-type)
-    parameter set to the value 'application/signed-exchange' and an [=anchor=]
-    parameter set to the original subresource URL.
-* A <dfn dfn-type=dfn>header integrity value</dfn> is the SHA256 hash value of
-    the |signedHeaders| value from the
-    [application/signed-exchange format](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#application-signed-exchange)
-    for integrity checking.
+    resource signed exchange to indicate an
+    <dfn dfn-type=dfn>allowed-alt-sxg link</dfn> that the subresource of the
+    [=Link Target=] can be loaded from different URL as a signed exchange. This
+    link has a `header-integrity` parameter set to the value of the
+    [=exchange/header integrity value=] of the [=alternate signed exchange=].
+    <div class="example" id="example-allowed-alt-sxg-link">
+    ```http
+    Link: <https://cdn.publisher.example/lib.js>;
+            rel="preload";
+            as="script"
+    Link: <https://cdn.publisher.example/lib.js>;
+            rel="allowed-alt-sxg";
+            header-integrity="sha256-XXXXXX
+    ```
+    </div>
+* An <dfn>alternate signed exchange link</dfn> is a `` `Link` `` header sent
+    with a signed exchange |S|, with the [=alternate=] link type, the `type`
+    parameter set to `application/signed-exchange`, and a [=Link Context=]. The
+    [=Link Context=] MUST be the [=Link Target=] of a [=preload=] `` `Link` ``
+    header inside the signed content of |S|, and the
+    [=alternate signed exchange link=] means that this resource can also be
+    found inside the <dfn dfn-type=dfn>alternate signed exchange</dfn> at the
+    [=Link Target=] of the [=alternate signed exchange link=].
 
-    Note: This |signedHeaders| is *"the canonical serialization of the CBOR
-    representation of the response headers of the exchange represented by the
-    application/signed-exchange resource, excluding the Signature header
-    field"*. So this value doesn’t change even if the publisher signs the
-    content again or changes the signing key, but it does change if any of the
-    headers or body change. (It catches changes to the body because a valid
-    signed exchange's headers have to include a `Digest` value that covers
-    the body.)
+    <div class="example" id="example-alternate-signed-exchange-link">
+    ```http
+    Link: <https://feed.example/sxg.publisher.example/lib.js.sxg>;
+            rel="alternate";
+            type="application/signed-exchange";
+            anchor="https://cdn.publisher.example/lib.js"
+    ```
+    </div>
 
 <h3 algorithm id="mp-document">
 Monkeypatch Document</h3>
@@ -386,17 +388,17 @@ In the end of
 [the Document object](https://html.spec.whatwg.org/multipage/dom.html#the-document-object)
 section, add the following lines:
 
-The <code>Document</code> has a <dfn dfn-type=dfn>prefetched singed exchanges
-for navigation</dfn>, which is a set of [=exchanges=], initially empty.
+The {{Document}} has a set of <dfn for="Document" dfn-type=dfn>prefetched singed
+exchanges for navigation</dfn>, which is a set of [=exchanges=], initially empty.
 
-The document has a <dfn dfn-for="document-obj" dfn-type=dfn>prefetched
+The {{Document}} has a <dfn dfn-for="Document" dfn-type=dfn>prefetched
 subresource singed exchanges</dfn>, which is a set of [=exchanges=], initially
 empty.
 
-The document has a <dfn dfn-for="document-obj" dfn-type=dfn>transferred
+The {{Document}} has a <dfn dfn-for="Document" dfn-type=dfn>transferred
 subresource singed exchanges</dfn>, which is a set of [=exchanges=], initially empty.
 
-The document has a <dfn dfn-for="document-obj" dfn-type=dfn>allowed alternate
+The {{Document}} has a <dfn dfn-for="Document" dfn-type=dfn>allowed alternate
 subresource signed exchange links</dfn>, which is a set of
 [=allowed-alt-sxg link=], initially empty.
 
@@ -425,7 +427,7 @@ resource is a valid signed exchange:
     1. Let |clonedResponse| be the result of [=response/cloning=] the response.
     1. Create an [=exchange=] with the request URL and |clonedResponse|,
         and store the exchange to the
-        [=prefetched singed exchanges for navigation=] of the Document.
+        [=Document/prefetched singed exchanges for navigation=] of the Document.
 
 The user agent SHOULD prefetch the alternate subresources signed exchanges if
 declared in link headers in the outer and the inner response header of the
@@ -446,12 +448,12 @@ signed exchanges by running the following steps:
         alternate version of the subresource, prefetch the
         [=alternate signed exchange=].
     1. If the resulting [=alternate signed exchange=] is valid and the
-        [=header integrity value=] of it matches the `header-integrity`
+        [=exchange/header integrity value=] of it matches the `header-integrity`
         parameter of the [=allowed-alt-sxg link=], create a [=exchange=]
-        with the URL of the [=allowed-alt-sxg link=]'s [=link target=] URL and
+        with the URL of the [=allowed-alt-sxg link=]'s [=Link Target=] URL and
         the result of [=response/cloning=] the inner response of the
         [=alternate signed exchange=], and store the exchange to the
-        [=document-obj/prefetched subresource singed exchanges=] of the
+        [=Document/prefetched subresource singed exchanges=] of the
         document.
 
 <h3 algorithm id="mp-process-a-navigate-fetch">
@@ -466,7 +468,7 @@ add the following steps:
     9. Let |allowed alternate subresource signed exchange links| be null.
 
     10. If |sourceBrowsingContext|'s [=active document=]'s
-        [=prefetched singed exchanges for navigation=] has a matching exchange
+        [=Document/prefetched singed exchanges for navigation=] has a matching exchange
         for the |request|'s [=request/url=], then:
         
         1. Let |clonedExchange| be the result of creating a new [=exchange=]
@@ -491,7 +493,7 @@ And before
 add the following steps:
 
     19. Copy |sourceBrowsingContext|'s [=active document=]'s
-        [=document-obj/prefetched subresource singed exchanges=]
+        [=Document/prefetched subresource singed exchanges=]
         to navigationParams's
         [=navigation params/prefetched subresource singed exchanges=].
 
@@ -516,10 +518,10 @@ add the following steps:
 
     15. Move the navigationParams's
         [=navigation params/prefetched subresource singed exchanges=] to the
-        document's [=document-obj/transferred subresource singed exchanges=].
+        document's [=Document/transferred subresource singed exchanges=].
 
     16. Set document's
-        [=document-obj/allowed alternate subresource signed exchange links=] to
+        [=Document/allowed alternate subresource signed exchange links=] to
         navigationParams's
         [=navigation params/allowed alternate subresource signed exchange links=].
 
@@ -541,7 +543,7 @@ add the following steps:
 
     5. If |el| is for the main resource's HTTP <a http-header>Link</a> header,
         and the document's
-        [=document-obj/allowed alternate subresource signed exchange links=] 
+        [=Document/allowed alternate subresource signed exchange links=] 
         has a matching link to |request|'s url, then run the following steps in
         parallel:
 
@@ -549,7 +551,7 @@ add the following steps:
             resource to be processed.
 
         1. If every |el|'s in this step has a matching exchange in the 
-            document's [=document-obj/transferred subresource singed exchanges=],
+            document's [=Document/transferred subresource singed exchanges=],
             set the |request|'s [=request/stashed exchange=] to the exchange.
             
         1. Return true.
@@ -564,6 +566,14 @@ An exchange is a [=struct=] with the following items:
 
 * <dfn export>request URL</dfn>, a [=URL=].
 * <dfn export>response</dfn>, a [=response=].
+* <dfn>header integrity value</dfn>, a [=byte sequence=] holding the [=SHA-256=]
+    hash that verified the [=exchange/response=]'s [=response/header list=].
+
+    Note: [=exchange/Header integrity value=] doesn’t change even if the
+    publisher signs the content again or changes the signing key, but it does
+    change if any of the headers or body change. (It catches changes to the body
+    because a valid signed exchange's headers have to include a `Digest` value
+    that covers the body.)
 
 </ul>
 
@@ -1123,7 +1133,9 @@ a URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
     |responseHeaders|.
 1. Let |response| be a new [=response=] with [=response/status=] |headers|[1][``
     `:status` ``] and [=response/header list=] |responseHeaders|.
-1. Return an [=exchange=] of |requestUrl| and |response|.
+1. Let |headerIntegrityValue| be the [=SHA-256=] hash of |headerBytes|.
+1. Return an [=exchange=] of |requestUrl|, |response| and
+    |headerIntegrityValue|.
 
     Note: This ignores |requestHeaders|, which can't be encoded in b3 and later.
 
@@ -1151,7 +1163,9 @@ a URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
 1. If |responseHeaders| is a failure, return it.
 1. Let |response| be a new [=response=] with [=response/status=] |headers|[``
     `:status` ``] and [=response/header list=] |responseHeaders|.
-1. Return an [=exchange=] of |requestUrl| and |response|.
+1. Let |headerIntegrityValue| be the [=SHA-256=] hash of |headerBytes|.
+1. Return an [=exchange=] of |requestUrl|, |response| and
+    |headerIntegrityValue|.
 
 <h4 algorithm id="headers-from-map">Converting a map to a header list</h4>
 
