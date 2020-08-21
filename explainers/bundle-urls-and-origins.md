@@ -39,13 +39,12 @@ Participate:
   - [Permissions](#permissions)
   - [Downloading bundles](#downloading-bundles)
 - [Detailed design discussion](#detailed-design-discussion)
-  - [Exactly how do we compose the package: URL?](#exactly-how-do-we-compose-the-package-url)
 - [Considered alternatives](#considered-alternatives)
   - [Rely on storage partitioning](#rely-on-storage-partitioning)
   - [URL encoding variants](#url-encoding-variants)
     - [Fragment-based URL scheme](#fragment-based-url-scheme)
       - [Fragments and MIME types](#fragments-and-mime-types)
-    - [Percent-encode "/" instead of replacing it with ","](#percent-encode--instead-of-replacing-it-with-)
+    - [Replace "/" and "?" with "," and ";" instead of percent-encoding](#replace--and--with--and--instead-of-percent-encoding)
     - [Only percent-encode "$"](#only-percent-encode-)
     - [Other Internet-Drafts](#other-internet-drafts)
   - [Referrer computation variants](#referrer-computation-variants)
@@ -195,20 +194,18 @@ picking out a storage shelf.
 
 To put the right parts of the bundle and claimed URLs into that first path
 segment, the whole bundle URL and the part of the claimed URL before the path
-are percent-encoded except for `/` and `?`, and then those characters are
-replaced by `,` and `;`, respectively. See the [details
-below](#exactly-how-do-we-compose-the-package-url).
+are percent-encoded.
 
 For a bundle URL of `https://distributor.example/package.wbn?q=query` and a claimed URL of `https://claimed.example/path/page.html?q=query`, we get:
 
 ```url
-package:https:,,distributor.example,package.wbn;q=query$https:,,publisher.example/path/page.html?q=query
+package:https%3a%2f%2fdistributor.example,package.wbn%3fq=query$https%3a%2f%2fpublisher.example/path/page.html?q=query
 ```
 
 We define the origin for these URLs to consist of everything before the first `/`:
 
 ```url
-package:https:,,distributor.example,package.wbn;q=query$https:,,publisher.example
+package:https%3a%2f%2fdistributor.example,package.wbn%3fq=query$https%3a%2f%2fpublisher.example
 ```
 
 These URLs and origins satisfy the goals of letting us [directly address bundle subresouces](#fully-qualified-subresource-names) and [scoping storage correctly](#correctly-scoped-storage).
@@ -437,58 +434,6 @@ measures should be:
 
 ## Detailed design discussion
 
-### Exactly how do we compose the package: URL?
-
-The `package:` URL contains two other URLs, which need to be encoded and
-delimited so that they're clearly distinct. Because this involves characters
-that would not appear in an `https://` URL's authority, we choose to avoid the
-generic URL's authority component, and instead use the `package:<path>` form. To
-clearly show the part of the URL that selects a storage shelf, we encode that
-into the first path component. This leads to the following algorithm for
-combining a *bundle URL* and a *claimed URL* into a `package:` URL:
-
-1. Let the *claimed URL prefix* be the part of the *claimed URL* before its
-   path. For example, the prefix of `https://host/path` would be `https://host`,
-   while the prefix of `urn:uuid:12345` would be `urn:`.
-1. Let the *package percent encode set* be the [C0 control percent-encode
-   set](https://url.spec.whatwg.org/#c0-control-percent-encode-set) and `,`,
-   `;`, `$`, and `%`.
-1. Let the *encoded bundle URL* be the result of
-   [UTF-8-percent-encoding](https://url.spec.whatwg.org/#string-utf-8-percent-encode)
-   the *bundle URL* with the *package percent encode set*.
-1. Let the *encoded claimed URL prefix* be the result of
-   [UTF-8-percent-encoding](https://url.spec.whatwg.org/#string-utf-8-percent-encode)
-   the *claimed URL prefix* with the *package percent encode set*.
-1. In the *encoded bundle URL* and the *encoded claimed URL prefix*, replace `/`
-   with  `,` and `?` with `;`.
-1. Return the concatenation of:
-   1. `package:`
-   1. The *encoded bundle URL*
-   1. `$`
-   1. The *encoded claimed URL prefix*
-   1. The path and query of the *claimed URL*.
-
-To parse the `package:` URL into a bundle URL and a claimed URL, we can use the following algorithm:
-
-1. Let *package URL* be the
-   [parsed](https://url.spec.whatwg.org/#concept-url-parser) `package:` URL.
-1. If *package URL*'s [path](https://url.spec.whatwg.org/#concept-url-path)
-   doesn't have exactly 1 component, the URL is malformed. (The URL parser
-   doesn't parse out path segments for URLs without `://`.)
-1. Split the only component of the *package URL*'s path on the `$` into the
-   *encoded bundle URL* and the *encoded claimed URL*. If it doesn't have a `$`,
-   it's malformed.
-1. Split the *encoded claimed URL* into the *encoded claimed URL prefix* before
-   the first `/` if any, and the *claimed URL path and query* including the
-   first `/` and after. The *claimed URL path and query* is empty if there is no
-   `/`.
-1. In both the *encoded bundle URL* and the *encoded claimed URL prefix*,
-    replace `,` with `/` and `;` with `?`.
-1. Let the *bundle URL* be the [percent decoding](https://url.spec.whatwg.org/#percent-decode) of *encoded bundle URL*.
-1. Let the *claimed URL* be the concatenation of
-   1. the [percent decoding](https://url.spec.whatwg.org/#percent-decode) of the *encoded claimed URL prefix* with
-   1. the *claimed URL path and query*.
-1. Return the *bundle URL* and the *claimed URL*.
 
 ## Considered alternatives
 
@@ -555,18 +500,78 @@ The fact that the other formats only name their contents with paths and not full
 URLs only [slightly diminishes the
 utility](#distinguish-from-other-origins-in-the-same-bundle).
 
-#### Percent-encode "/" instead of replacing it with ","
+#### Replace "/" and "?" with "," and ";" instead of percent-encoding
 
-The algorithm for encoding `package:` URLs would be simpler if each component URL were uniformly percent-encoded. We'd wind up with something like:
+It would be slightly easier to read `package:` URLs if we percent-encoded fewer
+characters. Since `/` and `?` are very likely to appear in the nested URLs, we
+can replace them with `,` and `;` (for example) instead of percent-encoding
+them. `:` only really needs to be percent-encoded in `://` schemes where it
+separates a port. We'd wind up with something like:
 
 ```url
-package:https%3A%2F%2Fdistributor.example%2Fpackage.wbn%3Fq%3Dquery$https%3A%2F%2Fclaimed.example/path/page.html?q=query
+package:https:,,distributor.example,package.wbn;q=query$https:,,claimed.example/path/page.html?q=query
 ```
 
 While none of the `package:` URLs are readable by end-users (URLs in general
 aren't readable by end-users), there's some benefit to making the URLs as
 readable as possible for developers trying to figure out why their links are
 broken. Minimizing the amount of percent-encoding helps with that.
+
+<details>
+<summary>Exactly how do we compose the package: URL?</summary>
+
+The `package:` URL contains two other URLs, which need to be encoded and
+delimited so that they're clearly distinct. Because this involves characters
+that would not appear in an `https://` URL's authority, we choose to avoid the
+generic URL's authority component, and instead use the `package:<path>` form. To
+clearly show the part of the URL that selects a storage shelf, we encode that
+into the first path component. This leads to the following algorithm for
+combining a *bundle URL* and a *claimed URL* into a `package:` URL:
+
+1. Let the *claimed URL prefix* be the part of the *claimed URL* before its
+   path. For example, the prefix of `https://host/path` would be `https://host`,
+   while the prefix of `urn:uuid:12345` would be `urn:`.
+1. Let the *package percent encode set* be the [C0 control percent-encode
+   set](https://url.spec.whatwg.org/#c0-control-percent-encode-set) and `,`,
+   `;`, `$`, and `%`.
+1. Let the *encoded bundle URL* be the result of
+   [UTF-8-percent-encoding](https://url.spec.whatwg.org/#string-utf-8-percent-encode)
+   the *bundle URL* with the *package percent encode set*.
+1. Let the *encoded claimed URL prefix* be the result of
+   [UTF-8-percent-encoding](https://url.spec.whatwg.org/#string-utf-8-percent-encode)
+   the *claimed URL prefix* with the *package percent encode set*.
+1. In the *encoded bundle URL* and the *encoded claimed URL prefix*, replace `/`
+   with  `,` and `?` with `;`.
+1. Return the concatenation of:
+   1. `package:`
+   1. The *encoded bundle URL*
+   1. `$`
+   1. The *encoded claimed URL prefix*
+   1. The path and query of the *claimed URL*.
+
+To parse the `package:` URL into a bundle URL and a claimed URL, we can use the following algorithm:
+
+1. Let *package URL* be the
+   [parsed](https://url.spec.whatwg.org/#concept-url-parser) `package:` URL.
+1. If *package URL*'s [path](https://url.spec.whatwg.org/#concept-url-path)
+   doesn't have exactly 1 component, the URL is malformed. (The URL parser
+   doesn't parse out path segments for URLs without `://`.)
+1. Split the only component of the *package URL*'s path on the `$` into the
+   *encoded bundle URL* and the *encoded claimed URL*. If it doesn't have a `$`,
+   it's malformed.
+1. Split the *encoded claimed URL* into the *encoded claimed URL prefix* before
+   the first `/` if any, and the *claimed URL path and query* including the
+   first `/` and after. The *claimed URL path and query* is empty if there is no
+   `/`.
+1. In both the *encoded bundle URL* and the *encoded claimed URL prefix*,
+    replace `,` with `/` and `;` with `?`.
+1. Let the *bundle URL* be the [percent decoding](https://url.spec.whatwg.org/#percent-decode) of *encoded bundle URL*.
+1. Let the *claimed URL* be the concatenation of
+   1. the [percent decoding](https://url.spec.whatwg.org/#percent-decode) of the *encoded claimed URL prefix* with
+   1. the *claimed URL path and query*.
+1. Return the *bundle URL* and the *claimed URL*.
+
+</details>
 
 #### Only percent-encode "$"
 
