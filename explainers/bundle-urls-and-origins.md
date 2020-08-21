@@ -47,6 +47,7 @@ Participate:
       - [Fragments and MIME types](#fragments-and-mime-types)
     - [Percent-encode "/" instead of replacing it with ","](#percent-encode--instead-of-replacing-it-with-)
     - [Only percent-encode "$"](#only-percent-encode-)
+    - [Infer https and file](#infer-https-and-file)
     - [Other Internet-Drafts](#other-internet-drafts)
   - [Referrer computation variants](#referrer-computation-variants)
   - [Origin serialization variants](#origin-serialization-variants)
@@ -582,6 +583,25 @@ fragments](#fragment-based-url-scheme). Like with the fragment, it makes it
 unclear which parts of the URL contribute to the storage key, but it doesn't
 incur the risk that fragments are dropped before they could contribute to the
 origin.
+
+#### Infer https and file
+
+The primary use cases for package: URLs fetch the package with either an
+`https:` or `file:` scheme. We could omit the package's scheme from the URL, and
+infer it from whether the URL started with `package://` or `package:///`
+(whether the authority component is empty). So:
+
+```url
+package://distributor.example/package.wbn?q=query$https://claimed.example/path/page.html?q=query
+```
+
+fetches its package from `https://distributor.example/package.wbn?q=query`, and
+
+```url
+package:///c:/Users/uname/Downloads/package.wbn$https://claimed.example/path/page.html?q=query
+```
+
+fetches its package from `file:///c:/Users/uname/Downloads/package.wbn`.
 
 #### Other Internet-Drafts
 
