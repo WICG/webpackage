@@ -151,6 +151,16 @@ spec: draft-ietf-httpbis-header-structure; urlPrefix: https://tools.ietf.org/htm
     text: Parsing HTTP1 Header Fields into Structured Headers; type: dfn; url: section-4.2
 spec: http-dig-alg; urlPrefix: https://www.iana.org/assignments/http-dig-alg/http-dig-alg.xhtml#
     type: dfn; text: Digest algorithm; url: http-dig-alg-1
+spec: html; urlPrefix: https://html.spec.whatwg.org/multipage/
+    type: attr-value;
+        for: link/rel; text: alternate; url: links.html#rel-alternate
+        for: link/rel; text: prefetch; url: links.html#link-type-prefetch
+        for: link/rel; text: preload; url: links.html#link-type-preload
+    type: dfn;
+        text: appropriate time; url: semantics.html#processing-the-type-attribute
+        text: fetch and process the linked resource; url: semantics.html#fetch-and-process-the-linked-resource
+        text: navigation params; url: browsing-the-web.html#navigation-params
+        text: process the linked resource; url: semantics.html#process-the-linked-resource
 spec: SHA2; urlPrefix: http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf
     type: dfn
         text: SHA-256; url: #
@@ -246,6 +256,23 @@ Rewrite [=request/clone|clone a request=] to run these steps:
 
  <li>Return |newRequest|.
 </ol>
+
+## New response fields {#mp-response}
+
+A [=response=] has an associated <dfn for="response">came from a signed
+exchange</dfn> boolean, which is false by default.
+
+A [=response=] has an associated <dfn for="response">header integrity
+    value</dfn>, either null or, for responses that [=response/came from a
+    signed exchange=], a [=byte sequence=] holding the [=SHA-256=] hash that
+    verified the [=exchange/response=]'s [=response/header list=].
+
+    Note: The [=response/header integrity value=] doesn’t change even if the
+    publisher signs the content again or changes the signing key, but it does
+    change if any of the headers or body change. (It catches changes to the body
+    because a valid signed exchange's headers have to include a `Digest` value
+    that covers the body.)
+
 
 <h3 algorithm id="mp-response-date">Response date</h3>
 
@@ -343,10 +370,47 @@ the signed exchange's response in the HTTP cache.
 When prenavigating to a page held in a signed exchange, it can be useful to
 also prefetch subresources of that page as signed exchanges from the same
 server. To identify those transitive prefetchable resources, this section
-introduces an extension to the HTTP Link header.
+introduces an extension to the HTTP <a http-header>Link</a> header.
 
-* Link type "<dfn dfn-type="attr-value"
-    dfn-for="link/rel">allowed-alt-sxg</dfn>"
+<div class="example" id="example-alternate-signed-exchange-link">
+
+The following is an example HTTP response for
+`https://feed.example/sxg.publisher.example/page.html.wbn` showing the right
+Link headers to let a browser prefetch subresources.
+
+```http
+Content-Type: application/signed-exchange;v=b3
+Link: <https://feed.example/sxg.publisher.example/lib.js.sxg>;
+    rel="alternate";
+    type="application/signed-exchange";
+    anchor="https://cdn.publisher.example/lib.js"
+
+A signed exchange, whose request URL is https://sxg.publisher.example/page.html:
+
+    Content-Type: text/html
+    Link: <https://cdn.publisher.example/lib.js>;
+        rel="preload";
+        as="script"
+    Link: <https://cdn.publisher.example/lib.js>;
+        rel="allowed-alt-sxg";
+        header-integrity="sha256-XXXXXX"
+
+    <html>
+      <head>
+        <script src="https://cdn.publisher.example/lib.js"></script>
+      </head>
+      ...
+    </html>
+```
+
+If another page includes a `<link rel="prefetch"
+href="https://feed.example/sxg.publisher.example/page.html.wbn">`, the above
+response allows it to transitively prefetch a signed exchange that it can use to
+satisfy the `https://cdn.publisher.example/lib.js` `<script>` element.
+
+</div>
+
+* Link type "<dfn attr-value for="link/rel">allowed-alt-sxg</dfn>"
 
     The <{link/rel/allowed-alt-sxg}> keyword may be used in the HTTP
     <a http-header>Link</a> header of the inner HTTP response of the main
@@ -354,112 +418,111 @@ introduces an extension to the HTTP Link header.
     is also available as a particular signed exchange identified by the
     <{link/header-integrity}> parameter.
     The <dfn element-attr for="link">header-integrity</dfn> parameter holds the
-    value of the [=exchange/header integrity value=] of the
+    value of the [=response/header integrity value=] of the
     [=alternate signed exchange=], encoded as a [[CSP]]
     <a grammar>hash-source</a>.
-
-    <div class="example" id="example-allowed-alt-sxg-link">
-    ```http
-    Link: <https://cdn.publisher.example/lib.js>;
-            rel="preload";
-            as="script"
-    Link: <https://cdn.publisher.example/lib.js>;
-            rel="allowed-alt-sxg";
-            header-integrity="sha256-XXXXXX"
-    ```
-    </div>
 * An <dfn>alternate signed exchange link</dfn> is a `` `Link` `` header sent
     with a signed exchange |S|, with the <{link/rel/alternate}> link type, the
-    `type` parameter set to `application/signed-exchange`, and a
-    [=Link Context=]. The [=Link Context=] MUST be the [=Link Target=] of a
-    <{link/rel/preload}> `` `Link` `` header inside the signed content of |S|,
-    and the [=alternate signed exchange link=] means that this resource can also
-    be found inside the <dfn dfn-type=dfn>alternate signed exchange</dfn> at the
-    [=Link Target=] of the [=alternate signed exchange link=].
+    `type` parameter set to `application/signed-exchange`, and a [=Link
+    Context=] (an `anchor` parameter). The [=Link Context=] MUST be the [=Link
+    Target=] of a <{link/rel/preload}> `` `Link` `` header inside the signed
+    content of |S|, and the [=alternate signed exchange link=] means that this
+    resource can also be found inside the <dfn dfn-type=dfn>alternate signed
+    exchange</dfn> at the [=Link Target=] of the [=alternate signed exchange
+    link=].
 
-    <div class="example" id="example-alternate-signed-exchange-link">
-    ```http
-    Link: <https://feed.example/sxg.publisher.example/lib.js.sxg>;
-            rel="alternate";
-            type="application/signed-exchange";
-            anchor="https://cdn.publisher.example/lib.js"
-    ```
-    </div>
 
-<h3 algorithm id="mp-document">
-Monkeypatch Document</h3>
-In the end of
+The [=appropriate time=] to [=fetch and process the linked resource=] for an
+is when the following steps return true:
+
+<ol algorithm="appropriate time for an alternate signed exchange link">
+
+1. Let |R| be the [=response=] created from the signed exchange in the response
+    that held the [=alternate signed exchange link=].
+1. Let |L| be the set of <{link/rel/preload}> <a http-header>Link</a> HTTP
+    headers on |R| whose [=Link Target=] is the same as the [=alternate signed
+    exchange link=]'s [=Link Context=].
+1. If |L| is empty, return false.
+1. Let |allowedSxgs| be the set of <{link/rel/allowed-alt-sxg}> <a
+    http-header>Link</a> HTTP headers on |R| that "match" (TODO, maybe use
+    [[draft-ietf-httpbis-variants]] here) any header in |L|.
+1. If |allowedSxgs| is empty, return false.
+1. Return true.
+
+</ol>
+
+<div algorithm="process the alternate signed exchange linked resource">
+
+The [=process the linked resource=] steps for an [=alternate signed exchange
+link=] , given the Link header |header|, boolean |success|, and [=response=]
+|response|:
+
+1. Do something when |success| is false.
+1. If the |response| [=response/came from a signed exchange=] and the
+    |response|'s [=response/header integrity value=] matches the
+    `header-integrity` parameter of the <{link/rel/allowed-alt-sxg}> link (TODO:
+    find a way to attach the <{link/rel/allowed-alt-sxg}> header to the fetch
+    for |header|), create an [=exchange=] with the URL of the
+    <{link/rel/allowed-alt-sxg}> link's [=Link Target=] URL and the result of
+    [=response/cloning=] the inner response of the [=alternate signed
+    exchange=], and store the exchange to the [=Document/prefetched subresource
+    signed exchanges=] of the document.
+
+</div>
+
+<h3 algorithm id="mp-document">Monkeypatch Document</h3>
+
+At the end of
 [the Document object](https://html.spec.whatwg.org/multipage/dom.html#the-document-object)
 section, add the following lines:
 
-The {{Document}} has a set of <dfn for="Document" dfn-type=dfn>prefetched singed
-exchanges for navigation</dfn>, which is a set of [=exchanges=], initially empty.
+<blockquote dfn-for="Document">
 
-The {{Document}} has a set of <dfn dfn-for="Document" dfn-type=dfn>prefetched
-subresource singed exchanges</dfn>, which is a set of [=exchanges=], initially
+The {{Document}} has a set of <dfn dfn>prefetched signed exchanges for
+navigation</dfn>, which is a set of [=exchanges=], initially empty.  <span
+class="note">This might merge with the set of prefetched resources when
+<{link/rel/prefetch}> is specified more completely.</span>
+
+The {{Document}} has a set of <dfn dfn>prefetched
+subresource signed exchanges</dfn>, which is a set of [=exchanges=], initially
 empty.
 
-The {{Document}} has a set of <dfn dfn-for="Document" dfn-type=dfn>transferred
-subresource singed exchanges</dfn>, which is a set of [=exchanges=], initially
+The {{Document}} has a set of <dfn dfn>transferred
+subresource signed exchanges</dfn>, which is a set of [=exchanges=], initially
 empty.
 
-The {{Document}} has a set of <dfn dfn-for="Document" dfn-type=dfn>allowed
+The {{Document}} has a set of <dfn dfn>allowed
 alternate subresource signed exchange links</dfn>, which is a set of
 <{link/rel/allowed-alt-sxg}> links, initially empty.
 
-<h3 algorithm id="mp-navigation-params">
-Monkeypatch navigation params struct</h3>
-In the
-[navigation params struct](https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigation-params),
-add the following item:
+</blockquote>
+
+<h3 algorithm id="mp-navigation-params">Monkeypatch navigation params struct</h3>
+
+In the [=navigation params=], add the following items:
 
 <dl dfn-for="navigation params">
-: <dfn>prefetched subresource singed exchanges</dfn>
-:: A a set of [=exchanges=], initially empty.
+
+: <dfn>prefetched subresource signed exchanges</dfn>
+:: A set of [=exchanges=], initially empty.
 : <dfn>allowed alternate subresource signed exchange links</dfn>
-:: A a set of <{link/rel/allowed-alt-sxg}> links, initially empty.
+:: A set of <{link/rel/allowed-alt-sxg}> links, initially empty.
 
 </dl>
 
-<h3 algorithm id="mp-fetching-the-resource-hint-link">
-Monkeypatch Fetching the resource hint link</h3>
-In the end of
-[Fetching the resource hint link](https://w3c.github.io/resource-hints/#fetching-the-resource-hint-link)
-section, add the following lines:
+<h3 algorithm id="mp-fetching-the-resource-hint-link">Monkeypatch Fetching the resource hint link</h3>
 
-The user agent SHOULD run the following steps if the response of the prefetched
-resource is a valid signed exchange:
+At the end of the [Fetching the resource hint
+link](https://w3c.github.io/resource-hints/#fetching-the-resource-hint-link)
+section in [[resource-hints]], add the following lines:
+
+The user agent SHOULD run the following steps if the response of a
+<{link/rel/prefetch}>ed resource [=response/came from a signed exchange=]:
+
     1. Let |clonedResponse| be the result of [=response/cloning=] the response.
     1. Create an [=exchange=] with the request URL and |clonedResponse|,
         and store the exchange to the
-        [=Document/prefetched singed exchanges for navigation=] of the Document.
-
-The user agent SHOULD prefetch the alternate subresources signed exchanges if
-declared in link headers in the outer and the inner response header of the
-signed exchanges by running the following steps:
-    1. When the UA detects a "preload" link HTTP header in a signed exchange
-        inner response, check whether a matching <{link/rel/allowed-alt-sxg}>
-        link in the inner HTTP response exists or not.
-
-        Note: multiple <{link/rel/allowed-alt-sxg}> links can be present for the
-        same preload if they include `variants` and `variant-key` attributes. In
-        that case, the UA uses the algorithm written in [HTTP Representation
-        Variants](https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html)
-        spec to find the matching header.)
-    1. If an <{link/rel/allowed-alt-sxg}> link exists, check whether the signed
-        exchange was served with a matching [=alternate signed exchange link=]
-        in the outer HTTP response.
-    1. If there is an [=alternate signed exchange link=] which identify an
-        alternate version of the subresource, prefetch the
-        [=alternate signed exchange=].
-    1. If the resulting [=alternate signed exchange=] is valid and the
-        [=exchange/header integrity value=] of it matches the `header-integrity`
-        parameter of the <{link/rel/allowed-alt-sxg}> link, create an
-        [=exchange=] with the URL of the <{link/rel/allowed-alt-sxg}> link's
-        [=Link Target=] URL and the result of [=response/cloning=] the inner
-        response of the [=alternate signed exchange=], and store the exchange to
-        the [=Document/prefetched subresource singed exchanges=] of the
-        document.
+        [=Document/prefetched signed exchanges for navigation=] of the Document.
 
 <h3 algorithm id="mp-process-a-navigate-fetch">
 Monkeypatch process a navigate fetch</h3>
@@ -473,7 +536,7 @@ add the following steps:
     9. Let |allowed alternate subresource signed exchange links| be null.
 
     10. If |sourceBrowsingContext|'s [=active document=]'s
-        [=Document/prefetched singed exchanges for navigation=] has a matching exchange
+        [=Document/prefetched signed exchanges for navigation=] has a matching exchange
         for the |request|'s [=request/url=], then:
 
         1. Let |clonedExchange| be the result of creating a new [=exchange=]
@@ -498,9 +561,9 @@ And before
 add the following steps:
 
     19. Copy |sourceBrowsingContext|'s [=active document=]'s
-        [=Document/prefetched subresource singed exchanges=]
+        [=Document/prefetched subresource signed exchanges=]
         to navigationParams's
-        [=navigation params/prefetched subresource singed exchanges=].
+        [=navigation params/prefetched subresource signed exchanges=].
 
     20. Set navigationParams's
         [=navigation params/allowed alternate subresource signed exchange links=]
@@ -522,8 +585,8 @@ before
 add the following steps:
 
     15. Move the navigationParams's
-        [=navigation params/prefetched subresource singed exchanges=] to the
-        document's [=Document/transferred subresource singed exchanges=].
+        [=navigation params/prefetched subresource signed exchanges=] to the
+        document's [=Document/transferred subresource signed exchanges=].
 
     16. Set document's
         [=Document/allowed alternate subresource signed exchange links=] to
@@ -555,7 +618,7 @@ add the following steps:
             resource to be processed.
 
         1. If every |el|'s in this step has a matching exchange in the
-            document's [=Document/transferred subresource singed exchanges=],
+            document's [=Document/transferred subresource signed exchanges=],
             set the |request|'s [=request/stashed exchange=] to the exchange.
 
         1. Return true.
@@ -570,14 +633,6 @@ An exchange is a [=struct=] with the following items:
 
 * <dfn export>request URL</dfn>, a [=URL=].
 * <dfn export>response</dfn>, a [=response=].
-* <dfn>header integrity value</dfn>, a [=byte sequence=] holding the [=SHA-256=]
-    hash that verified the [=exchange/response=]'s [=response/header list=].
-
-    Note: [=exchange/Header integrity value=] doesn’t change even if the
-    publisher signs the content again or changes the signing key, but it does
-    change if any of the headers or body change. (It catches changes to the body
-    because a valid signed exchange's headers have to include a `Digest` value
-    that covers the body.)
 
 </ul>
 
@@ -807,6 +862,8 @@ following steps
     : `b3`
     :: the result of [=parsing b3 CBOR headers=] given |headerBytes| and
         |requestUrl|.
+1. Set |parsedExchange|'s [=exchange/response=]'s [=response/came from a signed
+    exchange=] to true.
 1. If |parsedSignature| [=exchange signature/does not establish cross-origin
     trust=] for |parsedExchange|, return
     "[=signed exchange report/cert_verification_error=]".
