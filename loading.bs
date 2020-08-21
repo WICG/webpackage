@@ -156,11 +156,16 @@ spec: html; urlPrefix: https://html.spec.whatwg.org/multipage/
         for: link/rel; text: alternate; url: links.html#rel-alternate
         for: link/rel; text: prefetch; url: links.html#link-type-prefetch
         for: link/rel; text: preload; url: links.html#link-type-preload
+    type: element-attr;
+        for: link; text: crossorigin; url: semantics.html#attr-link-crossorigin
+        for: link; text: href; url: semantics.html#attr-link-href
     type: dfn;
         text: appropriate time; url: semantics.html#processing-the-type-attribute
         text: fetch and process the linked resource; url: semantics.html#fetch-and-process-the-linked-resource
         text: navigation params; url: browsing-the-web.html#navigation-params
         text: process the linked resource; url: semantics.html#process-the-linked-resource
+        text: creating a potential-cors request; url: urls-and-fetching.html#create-a-potential-cors-request
+        text: linked resource fetch setup steps; url: semantics.html#linked-resource-fetch-setup-steps
 spec: SHA2; urlPrefix: http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf
     type: dfn
         text: SHA-256; url: #
@@ -168,6 +173,7 @@ spec: SHA2; urlPrefix: http://csrc.nist.gov/publications/fips/fips180-4/fips-180
 <pre class='link-defaults'>
 spec:fetch; type:dfn; for:/; text:response
 spec:streams; type:interface; text:ReadableStream
+spec:html; type:element; text:link
 </pre>
 
 <section class="non-normative">
@@ -410,17 +416,23 @@ satisfy the `https://cdn.publisher.example/lib.js` `<script>` element.
 
 </div>
 
+* The <{Link}> element.
+
+    The <dfn element-attr for="link">variants</dfn> parameter may be present.
+
+    The <dfn element-attr for="link">variant-key</dfn> parameter may be
+        present.
+
 * Link type "<dfn attr-value for="link/rel">allowed-alt-sxg</dfn>"
 
-    The <{link/rel/allowed-alt-sxg}> keyword may be used in the HTTP
-    <a http-header>Link</a> header of the inner HTTP response of the main
-    resource signed exchange to indicate that the content of the [=Link Target=]
-    is also available as a particular signed exchange identified by the
-    <{link/header-integrity}> parameter.
-    The <dfn element-attr for="link">header-integrity</dfn> parameter holds the
-    value of the [=response/header integrity value=] of the
-    [=alternate signed exchange=], encoded as a [[CSP]]
-    <a grammar>hash-source</a>.
+    The <{link/rel/allowed-alt-sxg}> keyword may be used in the HTTP <a
+    http-header>Link</a> header of the inner HTTP response of the main resource
+    signed exchange to indicate that the content of the [=Link Target=] is also
+    available as a particular signed exchange identified by the
+    <{link/header-integrity}> parameter. The <dfn element-attr
+    for="link">header-integrity</dfn> parameter holds the value of the
+    [=response/header integrity value=] of the [=alternate signed exchange=],
+    encoded as a [[CSP]] <a grammar>hash-source</a>. 
 * An <dfn>alternate signed exchange link</dfn> is a `` `Link` `` header sent
     with a signed exchange |S|, with the <{link/rel/alternate}> link type, the
     `type` parameter set to `application/signed-exchange`, and a [=Link
@@ -433,40 +445,49 @@ satisfy the `https://cdn.publisher.example/lib.js` `<script>` element.
 
 
 The [=appropriate time=] to [=fetch and process the linked resource=] for an
-is when the following steps return true:
+[=alternate signed exchange link=] is when the following steps return true:
 
 <ol algorithm="appropriate time for an alternate signed exchange link">
 
 1. Let |R| be the [=response=] created from the signed exchange in the response
     that held the [=alternate signed exchange link=].
-1. Let |L| be the set of <{link/rel/preload}> <a http-header>Link</a> HTTP
-    headers on |R| whose [=Link Target=] is the same as the [=alternate signed
-    exchange link=]'s [=Link Context=].
+1. Let |L| be the set of <{link/rel/allowed-alt-sxg}> <a http-header>Link</a>
+    HTTP headers on |R| whose [=Link Target=] is the same as the [=alternate
+    signed exchange link=]'s [=Link Context=] and whose <{link/variants}>
+    parameter and <{link/variant-key}> parameter are the same as the [=alternate
+    signed exchange link=]'s parameters if they are present.
 1. If |L| is empty, return false.
-1. Let |allowedSxgs| be the set of <{link/rel/allowed-alt-sxg}> <a
-    http-header>Link</a> HTTP headers on |R| that "match" (TODO, maybe use
-    [[draft-ietf-httpbis-variants]] here) any header in |L|.
-1. If |allowedSxgs| is empty, return false.
-1. Return true.
+1. Let |preload links| be the set of <{link/rel/allowed-alt-sxg}> <a
+    http-header>Link</a> HTTP headers on |R|.
+1. For each |preload link| in |preload links|:
+    1. Let |el| be a semantically equivalent link element to |preload link|.
+    1. If |el|'s <{link/href}> attribute's value is the empty string, then
+        continue.
+    1. Let |url| be the result of applying the [=URL parser=] to |el|'s
+        <{link/href}> attribute's value, with |R|'s [=response/URL=].
+    1. Let |corsAttributeState| be the current state of the |el|'s
+        <{link/crossorigin}> content attribute.
+    1. Let |request| be the result of [=creating a potential-CORS request=]
+        given |url|, the empty string, and |corsAttributeState|.
+    1. Run the [=linked resource fetch setup steps=], given |el| and |request|.
+        If the result is false, then continue.
+    1. If |request|'s [=request/URL=] is same as the same as the [=alternate
+        signed exchange link=]'s [=Link Context=], return true.
+1. Return false.
 
 </ol>
 
 <div algorithm="process the alternate signed exchange linked resource">
 
 The [=process the linked resource=] steps for an [=alternate signed exchange
-link=] , given the Link header |header|, boolean |success|, and [=response=]
-|response|:
+link=] , given boolean |success|, and [=response=] |response|:
 
-1. Do something when |success| is false.
-1. If the |response| [=response/came from a signed exchange=] and the
-    |response|'s [=response/header integrity value=] matches the
-    `header-integrity` parameter of the <{link/rel/allowed-alt-sxg}> link (TODO:
-    find a way to attach the <{link/rel/allowed-alt-sxg}> header to the fetch
-    for |header|), create an [=exchange=] with the URL of the
-    <{link/rel/allowed-alt-sxg}> link's [=Link Target=] URL and the result of
-    [=response/cloning=] the inner response of the [=alternate signed
-    exchange=], and store the exchange to the [=Document/prefetched subresource
-    signed exchanges=] of the document.
+1. If |success| is false, return.
+1. If the |response| [=response/came from a signed exchange=], create an
+    [=exchange=] with the URL of the <{link/rel/allowed-alt-sxg}> link's [=Link
+    Target=] URL and the result of [=response/cloning=] the inner response of
+    the [=alternate signed exchange=], and store the exchange to the
+    [=Document/prefetched subresource signed exchanges=] of the document.
 
 </div>
 
@@ -608,18 +629,37 @@ before
 
 add the following steps:
 
-    5. If |el| is for the main resource's HTTP <a http-header>Link</a> header,
-        and the document's
-        [=Document/allowed alternate subresource signed exchange links=] has a
-        matching link to |request|'s url, then run the following steps in
-        parallel:
+    1. If |el| is for the main resource's HTTP <a http-header>Link</a> header,
+        then:
 
-        1. Wait until there is no remaining preload Link header of the main
-            resource to be processed.
+        1.  For each |allowedAltSxgLink| in [=Document/allowed alternate subresource signed exchange links=]:
 
-        1. If every |el|'s in this step has a matching exchange in the
-            document's [=Document/transferred subresource signed exchanges=],
-            set the |request|'s [=request/stashed exchange=] to the exchange.
+            1. Let |storedExchange| be the result of creating an [=exchange=]
+                with the URL of the |allowedAltSxgLink| link's [=Link Target=]
+                URL and a new [=response=].
+                
+            1. If |allowedAltSxgLink| has <{link/variants}> parameter,
+                [=header list/set=] `` `Variants` ``/|allowedAltSxgLink|'s
+                <{link/variants}> in |storedExchange|'s [=exchange/response=]'s
+                [=response/header list=].
+                
+            1. If |allowedAltSxgLink| has <{link/variant-key}> parameter,
+                [=header list/set=] `` `Variant-Key` ``/|allowedAltSxgLink|'s
+                <{link/variant-key}> in |storedExchange|'s [=exchange/response=]'s
+                [=response/header list=].
+
+
+            1. If |request| [=matches the stored exchange=] |storedExchange|,
+                then run the following steps in parallel:
+
+                1. Wait until there is no remaining preload Link header of the main
+                    resource to be processed.
+
+                1. If every |el|'s in this step has a matching exchange in the
+                    document's [=Document/transferred subresource signed exchanges=],
+                    set the |request|'s [=request/stashed exchange=] to the exchange.
+
+                1. Return true.
 
         1. Return true.
 
