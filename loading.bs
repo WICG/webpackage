@@ -161,11 +161,11 @@ spec: html; urlPrefix: https://html.spec.whatwg.org/multipage/
         for: link; text: href; url: semantics.html#attr-link-href
     type: dfn;
         text: appropriate time; url: semantics.html#processing-the-type-attribute
+        text: creating a potential-cors request; url: urls-and-fetching.html#create-a-potential-cors-request
         text: fetch and process the linked resource; url: semantics.html#fetch-and-process-the-linked-resource
+        text: linked resource fetch setup steps; url: semantics.html#linked-resource-fetch-setup-steps
         text: navigation params; url: browsing-the-web.html#navigation-params
         text: process the linked resource; url: semantics.html#process-the-linked-resource
-        text: creating a potential-cors request; url: urls-and-fetching.html#create-a-potential-cors-request
-        text: linked resource fetch setup steps; url: semantics.html#linked-resource-fetch-setup-steps
 spec: SHA2; urlPrefix: http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf
     type: dfn
         text: SHA-256; url: #
@@ -655,13 +655,17 @@ add the following steps:
                 1. Wait until there is no remaining preload Link header of the main
                     resource to be processed.
 
-                1. If every |el|'s in this step has a matching exchange in the
-                    document's [=Document/transferred subresource signed exchanges=],
-                    set the |request|'s [=request/stashed exchange=] to the exchange.
+                1. If for every |el|'s in this step, document's
+                    [=Document/transferred subresource signed exchanges=]
+                    contains a |matchingExchange| which [=exchange/response=]'s
+                    [=response/header integrity value=] is the same as
+                    |allowedAltSxgLink|'s <{link/header-integrity}> parameter,
+                    then set the |request|'s [=request/stashed exchange=] to
+                    |matchingExchange|.
 
                 1. Return true.
 
-        1. Return true.
+            1. Otherwise, return true.
 
 # Structures # {#structs}
 
@@ -904,6 +908,8 @@ following steps
         |requestUrl|.
 1. Set |parsedExchange|'s [=exchange/response=]'s [=response/came from a signed
     exchange=] to true.
+1. Set |parsedExchange|'s [=exchange/response=]'s [=response/header integrity
+    value=] to the [=SHA-256=] hash of |headerBytes|.
 1. If |parsedSignature| [=exchange signature/does not establish cross-origin
     trust=] for |parsedExchange|, return
     "[=signed exchange report/cert_verification_error=]".
@@ -1234,9 +1240,7 @@ a URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
     |responseHeaders|.
 1. Let |response| be a new [=response=] with [=response/status=] |headers|[1][``
     `:status` ``] and [=response/header list=] |responseHeaders|.
-1. Let |headerIntegrityValue| be the [=SHA-256=] hash of |headerBytes|.
-1. Return an [=exchange=] of |requestUrl|, |response| and
-    |headerIntegrityValue|.
+1. Return an [=exchange=] of |requestUrl| and |response|.
 
     Note: This ignores |requestHeaders|, which can't be encoded in b3 and later.
 
@@ -1264,9 +1268,7 @@ a URL |requestUrl| returns a failure or an [=exchange=] via the following steps:
 1. If |responseHeaders| is a failure, return it.
 1. Let |response| be a new [=response=] with [=response/status=] |headers|[``
     `:status` ``] and [=response/header list=] |responseHeaders|.
-1. Let |headerIntegrityValue| be the [=SHA-256=] hash of |headerBytes|.
-1. Return an [=exchange=] of |requestUrl|, |response| and
-    |headerIntegrityValue|.
+1. Return an [=exchange=] of |requestUrl| and |response|.
 
 <h4 algorithm id="headers-from-map">Converting a map to a header list</h4>
 
