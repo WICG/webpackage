@@ -263,7 +263,7 @@ Rewrite [=request/clone|clone a request=] to run these steps:
  <li>Return |newRequest|.
 </ol>
 
-## New response fields {#mp-response}
+## New response fields ## {#mp-response}
 
 A [=response=] has an associated <dfn for="response">came from a signed
 exchange</dfn> boolean, which is false by default.
