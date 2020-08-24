@@ -557,8 +557,8 @@ add the following steps:
     9. Let |allowed alternate subresource signed exchange links| be null.
 
     10. If |sourceBrowsingContext|'s [=active document=]'s
-        [=Document/prefetched signed exchanges for navigation=] has a matching exchange
-        for the |request|'s [=request/url=], then:
+        [=Document/prefetched signed exchanges for navigation=] has a matching
+        exchange for the |request|'s [=request/url=], then:
 
         1. Let |clonedExchange| be the result of creating a new [=exchange=]
             with the matching exchange's [=exchange/request URL=] and the result
@@ -569,7 +569,7 @@ add the following steps:
             [=request/stashed exchange=].
 
         1. Copy <{link/rel/allowed-alt-sxg}> link of the exchange's
-            [=exchange/response=]'s inner response to
+            [=exchange/response=] to
             |allowed alternate subresource signed exchange links|.
 
 
@@ -583,10 +583,10 @@ add the following steps:
 
     19. Copy |sourceBrowsingContext|'s [=active document=]'s
         [=Document/prefetched subresource signed exchanges=]
-        to navigationParams's
+        to |navigationParams|'s
         [=navigation params/prefetched subresource signed exchanges=].
 
-    20. Set navigationParams's
+    20. Set |navigationParams|'s
         [=navigation params/allowed alternate subresource signed exchange links=]
         to |allowed alternate subresource signed exchange links|.
 
@@ -605,13 +605,13 @@ before
 
 add the following steps:
 
-    15. Move the navigationParams's
+    15. Move the |navigationParams|'s
         [=navigation params/prefetched subresource signed exchanges=] to the
-        document's [=Document/transferred subresource signed exchanges=].
+        |document|'s [=Document/transferred subresource signed exchanges=].
 
-    16. Set document's
+    16. Set |document|'s
         [=Document/allowed alternate subresource signed exchange links=] to
-        navigationParams's
+        |navigationParams|'s
         [=navigation params/allowed alternate subresource signed exchange links=].
 
 
@@ -629,10 +629,11 @@ before
 
 add the following steps:
 
-    1. If |el| is for the main resource's HTTP <a http-header>Link</a> header,
+    5. If |el| is for the main resource's HTTP <a http-header>Link</a> header,
         then:
 
-        1.  For each |allowedAltSxgLink| in [=Document/allowed alternate subresource signed exchange links=]:
+        1.  For each |allowedAltSxgLink| in |el|'s [=Node/node document=]'s
+            [=Document/allowed alternate subresource signed exchange links=]:
 
             1. Let |storedExchange| be the result of creating an [=exchange=]
                 with the URL of the |allowedAltSxgLink| link's [=Link Target=]
@@ -655,7 +656,8 @@ add the following steps:
                 1. Wait until there is no remaining preload Link header of the main
                     resource to be processed.
 
-                1. If for every |el|'s in this step, document's
+                1. If for every |el|'s in this step, |el|'s
+                    [=Node/node document=]'s
                     [=Document/transferred subresource signed exchanges=]
                     contains a |matchingExchange| which [=exchange/response=]'s
                     [=response/header integrity value=] is the same as
