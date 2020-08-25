@@ -123,6 +123,11 @@ spec: RFC8288; urlPrefix: https://tools.ietf.org/html/rfc8288#
         text: Link Target; url: section-3.1
     type: dfn
         text: Link Context; url: section-3.2
+    type: dfn
+        text: Target Attributes; url: section-3.4
+spec: RFC5988; urlPrefix: https://tools.ietf.org/html/rfc5988#
+    type: dfn
+        text: semantically equivalent; url: #page-5:~:text=semantically%20equivalent
 spec: RFC8446; urlPrefix: https://tools.ietf.org/html/draft-ietf-tls-tls13-28#
     text: ecdsa_secp256r1_sha256; type: dfn; url: section-4.2.3
 spec: draft-ietf-httpbis-variants; urlPrefix: https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html#
@@ -269,15 +274,15 @@ A [=response=] has an associated <dfn for="response">came from a signed
 exchange</dfn> boolean, which is false by default.
 
 A [=response=] has an associated <dfn for="response">header integrity
-    value</dfn>, either null or, for responses that [=response/came from a
-    signed exchange=], a [=byte sequence=] holding the [=SHA-256=] hash that
-    verified the [=exchange/response=]'s [=response/header list=].
+value</dfn>, either null or, for responses that [=response/came from a signed
+exchange=], a [=byte sequence=] holding the [=SHA-256=] hash that verified the
+[=exchange/response=]'s [=response/header list=].
 
-    Note: The [=response/header integrity value=] doesn’t change even if the
-    publisher signs the content again or changes the signing key, but it does
-    change if any of the headers or body change. (It catches changes to the body
-    because a valid signed exchange's headers have to include a `Digest` value
-    that covers the body.)
+Note: The [=response/header integrity value=] doesn’t change even if the
+publisher signs the content again or changes the signing key, but it does change
+if any of the headers or body change. (It catches changes to the body because a
+valid signed exchange's headers have to include a `Digest` value that covers the
+body.)
 
 
 <h3 algorithm id="mp-response-date">Response date</h3>
@@ -416,13 +421,6 @@ satisfy the `https://cdn.publisher.example/lib.js` `<script>` element.
 
 </div>
 
-* The <{Link}> element.
-
-    The <dfn element-attr for="link">variants</dfn> parameter may be present.
-
-    The <dfn element-attr for="link">variant-key</dfn> parameter may be
-        present.
-
 * Link type "<dfn attr-value for="link/rel">allowed-alt-sxg</dfn>"
 
     The <{link/rel/allowed-alt-sxg}> keyword may be used in the HTTP <a
@@ -433,38 +431,57 @@ satisfy the `https://cdn.publisher.example/lib.js` `<script>` element.
     for="link">header-integrity</dfn> parameter holds the value of the
     [=response/header integrity value=] of the [=alternate signed exchange=],
     encoded as a [[CSP]] <a grammar>hash-source</a>. 
-* An <dfn>alternate signed exchange link</dfn> is a `` `Link` `` header sent
-    with a signed exchange |S|, with the <{link/rel/alternate}> link type, the
-    `type` parameter set to `application/signed-exchange`, and a [=Link
-    Context=] (an `anchor` parameter). The [=Link Context=] MUST be the [=Link
-    Target=] of a <{link/rel/preload}> `` `Link` `` header inside the signed
-    content of |S|, and the [=alternate signed exchange link=] means that this
-    resource can also be found inside the <dfn dfn-type=dfn>alternate signed
-    exchange</dfn> at the [=Link Target=] of the [=alternate signed exchange
-    link=].
+* An <dfn>alternate signed exchange link</dfn> is a <a http-header>Link</a>
+    header sent with a signed exchange |S|, with the <{link/rel/alternate}> link
+    type, the `type` parameter set to `application/signed-exchange`, and a
+    [=Link Context=] (an `anchor` parameter). The [=Link Context=] MUST be the
+    [=Link Target=] of a <{link/rel/preload}> <a http-header>Link</a> header
+    inside the signed content of |S|, and the [=alternate signed exchange link=]
+    means that this resource can also be found inside the <dfn
+    dfn-type=dfn>alternate signed exchange</dfn> at the [=Link Target=] of the
+    [=alternate signed exchange link=].
 
+* New [=Target Attributes=] on the <a http-header>Link</a> header.
+
+    * The <dfn element-attr for="link">variants</dfn> parameter may be present.
+        This parameter is used in <{link/rel/allowed-alt-sxg}> link and
+        [=alternate signed exchange link=] to indicate what representations are
+        available for the resource at the time that the response is produced.
+        This attribute is using the same format as <a
+        http-header>Variants</a> Header Field.
+
+    * The <dfn element-attr for="link">variant-key</dfn> parameter may be
+        present. This parameter is used in <{link/rel/allowed-alt-sxg}> link and
+        [=alternate signed exchange link=] to indicate one or more sets of
+        available-values that identify the representation of the resource.
+        This parameter is using the same format as <a
+        http-header>Variant-Key</a> Header Field.
 
 The [=appropriate time=] to [=fetch and process the linked resource=] for an
 [=alternate signed exchange link=] is when the following steps return true:
 
 <ol algorithm="appropriate time for an alternate signed exchange link">
 
-1. Let |R| be the [=response=] created from the signed exchange in the response
-    that held the [=alternate signed exchange link=].
-1. Let |L| be the set of <{link/rel/allowed-alt-sxg}> <a http-header>Link</a>
-    HTTP headers on |R| whose [=Link Target=] is the same as the [=alternate
-    signed exchange link=]'s [=Link Context=] and whose <{link/variants}>
-    parameter and <{link/variant-key}> parameter are the same as the [=alternate
-    signed exchange link=]'s parameters if they are present.
-1. If |L| is empty, return false.
-1. Let |preload links| be the set of <{link/rel/allowed-alt-sxg}> <a
-    http-header>Link</a> HTTP headers on |R|.
-1. For each |preload link| in |preload links|:
-    1. Let |el| be a semantically equivalent link element to |preload link|.
+1. Let |signedResponse| be the [=response=] created from the signed exchange in
+    the response that held the [=alternate signed exchange link=].
+1. Let |allowedSxgLinks| be the set of <{link/rel/allowed-alt-sxg}> <a
+    http-header>Link</a> HTTP headers on |signedResponse| whose [=Link Target=]
+    is the same as the [=alternate signed exchange link=]'s [=Link Context=] and
+    whose <{link/variants}> parameter and <{link/variant-key}> parameter are the
+    same as the [=alternate signed exchange link=]'s parameters if they are
+    present.
+1. If |allowedSxgLinks| is empty, return false.
+1. Let |preload links| be the set of <{link/rel/preload}> <a
+    http-header>Link</a> HTTP headers on |signedResponse|.
+1. For each |preload link| in |preload links|, use the following steps to
+     resolve the link's actual target, incorporating attributes like
+     <{link/imagesrcset}> and <{link/imagesizes}>:
+    1. Let |el| be a [=semantically equivalent=] link element to |preload link|.
     1. If |el|'s <{link/href}> attribute's value is the empty string, then
         continue.
-    1. Let |url| be the result of applying the [=URL parser=] to |el|'s
-        <{link/href}> attribute's value, with |R|'s [=response/URL=].
+    1. Let |url| be the result of [=URL parser|parsing=] |el|'s <{link/href}>
+        attribute's value, with a base URL of |signedResponse|'s
+        [=response/URL=].
     1. Let |corsAttributeState| be the current state of the |el|'s
         <{link/crossorigin}> content attribute.
     1. Let |request| be the result of [=creating a potential-CORS request=]
@@ -668,6 +685,12 @@ add the following steps:
                 1. Return true.
 
             1. Otherwise, return true.
+
+Issue(whatwg/html#4224): Currently the processing model of the HTTP <a
+http-header>Link</a> header is not defined. In this section, we treat the ``
+`preload` `` <a http-header>Link</a> headers as if their [=semantically
+equivalent=] <{link/rel/preload}> type link elements are generated and
+processed at some point.
 
 # Structures # {#structs}
 
