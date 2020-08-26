@@ -117,6 +117,8 @@ spec: RFC7231; urlPrefix: https://tools.ietf.org/html/rfc7231#
     type: http-header
         text: Date; url: section-7.1.1.2
 spec: RFC8288; urlPrefix: https://tools.ietf.org/html/rfc8288#
+    type: dfn
+        text: Target Attributes list; url: section-2.2
     type: http-header
         text: Link; url: section-3
     type: dfn
@@ -124,7 +126,12 @@ spec: RFC8288; urlPrefix: https://tools.ietf.org/html/rfc8288#
     type: dfn
         text: Link Context; url: section-3.2
     type: dfn
+        text: Relation Type; url: section-3.3
+    type: dfn
         text: Target Attributes; url: section-3.4
+    type: dfn
+        text: Parsing a Link Field Value; url: appendix-B.2
+        
 spec: RFC5988; urlPrefix: https://tools.ietf.org/html/rfc5988#
     type: dfn
         text: semantically equivalent; url: #page-5:~:text=semantically%20equivalent
@@ -165,15 +172,23 @@ spec: html; urlPrefix: https://html.spec.whatwg.org/multipage/
         for: link; text: crossorigin; url: semantics.html#attr-link-crossorigin
         for: link; text: href; url: semantics.html#attr-link-href
     type: dfn;
-        text: appropriate time; url: semantics.html#processing-the-type-attribute
+        text: Anonymous; url: urls-and-fetching.html#attr-crossorigin-anonymous
+        text: CORS settings attribute; url: urls-and-fetching.html#cors-settings-attribute
         text: creating a potential-cors request; url: urls-and-fetching.html#create-a-potential-cors-request
         text: fetch and process the linked resource; url: semantics.html#fetch-and-process-the-linked-resource
         text: linked resource fetch setup steps; url: semantics.html#linked-resource-fetch-setup-steps
         text: navigation params; url: browsing-the-web.html#navigation-params
+        text: No CORS; url: urls-and-fetching.html#attr-crossorigin-none
         text: process the linked resource; url: semantics.html#process-the-linked-resource
+        text: response; for: navigation params; url: browsing-the-web.html#navigation-params-response
+        text: selecting an image source; url: images.html#select-an-image-source
+        text: Use Credentials; url: urls-and-fetching.html#attr-crossorigin-use-credentials
 spec: SHA2; urlPrefix: http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf
     type: dfn
         text: SHA-256; url: #
+spec: CSS2; urlPrefix: https://drafts.csswg.org/css2/
+    type: dfn
+        text: viewport; url: #viewport
 </pre>
 <pre class='link-defaults'>
 spec:fetch; type:dfn; for:/; text:response
@@ -272,6 +287,9 @@ Rewrite [=request/clone|clone a request=] to run these steps:
 
 A [=response=] has an associated <dfn for="response">came from a signed
 exchange</dfn> boolean, which is false by default.
+
+A [=response=] has an associated <dfn for="response">signed exchange outer
+header list</dfn> (a [=header list=]). Unless stated otherwise it is empty.
 
 A [=response=] has an associated <dfn for="response">header integrity
 value</dfn>, either null or, for responses that [=response/came from a signed
@@ -457,58 +475,7 @@ satisfy the `https://cdn.publisher.example/lib.js` `<script>` element.
         This parameter is using the same format as <a
         http-header>Variant-Key</a> Header Field.
 
-The [=appropriate time=] to [=fetch and process the linked resource=] for an
-[=alternate signed exchange link=] is when the following steps return true:
-
-<ol algorithm="appropriate time for an alternate signed exchange link">
-
-1. Let |signedResponse| be the [=response=] created from the signed exchange in
-    the response that held the [=alternate signed exchange link=].
-1. Let |allowedSxgLinks| be the set of <{link/rel/allowed-alt-sxg}> <a
-    http-header>Link</a> HTTP headers on |signedResponse| whose [=Link Target=]
-    is the same as the [=alternate signed exchange link=]'s [=Link Context=] and
-    whose <{link/variants}> parameter and <{link/variant-key}> parameter are the
-    same as the [=alternate signed exchange link=]'s parameters if they are
-    present.
-1. If |allowedSxgLinks| is empty, return false.
-1. Let |preload links| be the set of <{link/rel/preload}> <a
-    http-header>Link</a> HTTP headers on |signedResponse|.
-1. For each |preload link| in |preload links|, use the following steps to
-     resolve the link's actual target, incorporating attributes like
-     <{link/imagesrcset}> and <{link/imagesizes}>:
-    1. Let |el| be a [=semantically equivalent=] link element to |preload link|.
-    1. If |el|'s <{link/href}> attribute's value is the empty string, then
-        continue.
-    1. Let |url| be the result of [=URL parser|parsing=] |el|'s <{link/href}>
-        attribute's value, with a base URL of |signedResponse|'s
-        [=response/URL=].
-    1. Let |corsAttributeState| be the current state of the |el|'s
-        <{link/crossorigin}> content attribute.
-    1. Let |request| be the result of [=creating a potential-CORS request=]
-        given |url|, the empty string, and |corsAttributeState|.
-    1. Run the [=linked resource fetch setup steps=], given |el| and |request|.
-        If the result is false, then continue.
-    1. If |request|'s [=request/URL=] is same as the same as the [=alternate
-        signed exchange link=]'s [=Link Context=], return true.
-1. Return false.
-
-</ol>
-
-<div algorithm="process the alternate signed exchange linked resource">
-
-The [=process the linked resource=] steps for an [=alternate signed exchange
-link=] , given boolean |success|, and [=response=] |response|:
-
-1. If |success| is false, return.
-1. If the |response| [=response/came from a signed exchange=], create an
-    [=exchange=] with the URL of the <{link/rel/allowed-alt-sxg}> link's [=Link
-    Target=] URL and the result of [=response/cloning=] the inner response of
-    the [=alternate signed exchange=], and store the exchange to the
-    [=Document/prefetched subresource signed exchanges=] of the document.
-
-</div>
-
-<h3 algorithm id="mp-document">Monkeypatch Document</h3>
+<h3 algorithm id="mp-document">New Document fields</h3>
 
 At the end of
 [the Document object](https://html.spec.whatwg.org/multipage/dom.html#the-document-object)
@@ -516,26 +483,18 @@ section, add the following lines:
 
 <blockquote dfn-for="Document">
 
-The {{Document}} has a set of <dfn dfn>prefetched signed exchanges for
-navigation</dfn>, which is a set of [=exchanges=], initially empty.  <span
-class="note">This might merge with the set of prefetched resources when
-<{link/rel/prefetch}> is specified more completely.</span>
+The {{Document}} has a map of <dfn dfn>prefetched signed exchanges for
+navigation</dfn>, which is a [=map=] of [=URL=] to [=exchange=], initially
+empty.  <span class="note">This might merge with the set of prefetched resources
+when <{link/rel/prefetch}> is specified more completely.</span>
 
 The {{Document}} has a set of <dfn dfn>prefetched
 subresource signed exchanges</dfn>, which is a set of [=exchanges=], initially
 empty.
 
-The {{Document}} has a set of <dfn dfn>transferred
-subresource signed exchanges</dfn>, which is a set of [=exchanges=], initially
-empty.
-
-The {{Document}} has a set of <dfn dfn>allowed
-alternate subresource signed exchange links</dfn>, which is a set of
-<{link/rel/allowed-alt-sxg}> links, initially empty.
-
 </blockquote>
 
-<h3 algorithm id="mp-navigation-params">Monkeypatch navigation params struct</h3>
+<h3 algorithm id="mp-navigation-params">New navigation params struct field</h3>
 
 In the [=navigation params=], add the following items:
 
@@ -543,24 +502,136 @@ In the [=navigation params=], add the following items:
 
 : <dfn>prefetched subresource signed exchanges</dfn>
 :: A set of [=exchanges=], initially empty.
-: <dfn>allowed alternate subresource signed exchange links</dfn>
-:: A set of <{link/rel/allowed-alt-sxg}> links, initially empty.
 
 </dl>
 
-<h3 algorithm id="mp-fetching-the-resource-hint-link">Monkeypatch Fetching the resource hint link</h3>
+<h3 algorithm id="mp-link-type-prefetch">
+Monkeypatch Link type "prefetch"</h3>
 
-At the end of the [Fetching the resource hint
-link](https://w3c.github.io/resource-hints/#fetching-the-resource-hint-link)
-section in [[resource-hints]], add the following lines:
+The [=process the linked resource=] given a link element |el|, boolean
+|success|, and [=response=] |response|:
 
-The user agent SHOULD run the following steps if the response of a
-<{link/rel/prefetch}>ed resource [=response/came from a signed exchange=]:
+1. If the |success| is false, then return.
+1. If the |response|'s [=response/came from a signed exchange=] is false, then
+    return.
+1. Let |clonedExchange| be the result of creating a new [=exchange=] with the
+    first item of |response|'s [=response/URL list=] and the result of
+    [=response/cloning=] |response|.
+1. [=map/Set=] |el|'s [=Node/node document=]'s [=Document/prefetched signed
+    exchanges for navigation=][|clonedExchange|'s [=exchange/request URL=]] to
+    |clonedExchange|.
+1. Let |outerLinkHeader| be the result of [=header list/getting=] `` `Link` ``
+    from |response|'s [=response/signed exchange outer header list=].
+1. If |outerLinkHeader| is null, then return.
+1. Let |outerLinks| be the result of [=Parsing a Link Field Value=] from
+    |outerLinkHeader|.
+1. If |outerLinks| is null, then return.
+1. Let |innerLinkHeader| be the result of [=header list/getting=] `` `Link` ``
+    from |response|'s [=response/header list=].
+1. If |innerLinkHeader| is null, then return.
+1. Let |innerLinks| be the result of [=Parsing a Link Field Value=] from
+    |innerLinkHeader|.
+1. If |innerLinks| is null, then return.
+1. Let |alternateLinks| be an empty [=list=].
+1. For each |outerLink| of |outerLinks|:
+    1. If |outerLink|'s [=Relation Type=] is not 'alternate', then continue.
+    1. If |outerLink|'s [=Target Attributes list|Target Attributes=] doesn't
+        [=list/contain=] (`"type"`,`"application/signed-exchange"`), then
+        continue.
+    1. Let |linkTarget| be |outerLink|'s [=Link Target=].
+    1. Let |linkContext| be |outerLink|'s [=Link Context=].
+    1. Let |outerLinkVariants| be the second item of the first tuple of
+        |outerLink|'s [=Target Attributes list|Target Attributes=] whose first
+        item matches the string `"variants"` or the empty string ("") if it is
+        not present.
+    1. Let |outerLinkVariantKey| be the second item of the first tuple of
+        |outerLink|'s [=Target Attributes list|Target Attributes=] whose first
+        item matches the string `"variant-key"` or the empty string ("") if it
+        is not present.
+    1. [=list/Append=] (|linkContext|, |outerLinkVariants|,
+        |outerLinkVariantKey|, |linkTarget|) to |alternateLinks|.
+1. Let |allowedSxgLinks| be an empty [=list=].
+1. For each |innerLink| of |innerLinks|:
+    1. If |innerLink|'s [=Relation Type=] is not 'allowed-alt-sxg', then
+        continue.
+    1. Let |linkTarget| be |innerLink|'s [=Link Target=].
+    1. Let |innerLinkVariants| be the second item of the first tuple of
+        |innerLink|'s [=Target Attributes list|Target Attributes=] whose first
+        item matches the string `"variants"` or the empty string ("") if it is
+        not present.
+    1. Let |innerLinkVariantKey| be the second item of the first tuple of
+        |innerLink|'s [=Target Attributes list|Target Attributes=] whose first
+        item matches the string `"variant-key"` or the empty string ("") if it
+        is not present.
+    1. Let |headerIntegrity| be the second item of the first tuple of
+        |innerLink|'s [=Target Attributes list|Target Attributes=] whose first
+        item matches the string `"header-integrity"` or continue if it is not
+        present.
+    1. [=list/Append=] (|linkTarget|, |innerLinkVariants|,
+        |innerLinkVariantKey|, |headerIntegrity|) to |allowedSxgLinks|.
+1. For each |innerLink| of |innerLinks|:
+    1. If |innerLink|'s [=Relation Type=] is not 'preload', then continue.
+    1. Let |linkTarget| be |innerLink|'s [=Link Target=].
+    1. Let |asAttribute| be the second item of the first tuple of |innerLink|'s
+        [=Target Attributes list|Target Attributes=] whose first item matches
+        the string `"as"` or the empty string ("") if it is not present.
+    1. If |asAttribute| is `"image"`, then:
+        1. Let |imagesrcset| be the second item of the first tuple of
+            |innerLink|'s [=Target Attributes list|Target Attributes=] whose
+            first item matches the string `"imagesrcset"` or the empty string
+            ("") if it is not present.
+        1. Let |imagesizes| be the second item of the first tuple of
+            |innerLink|'s [=Target Attributes list|Target Attributes=] whose
+            first item matches the string `"imagesizes"` or the empty string
+            ("") if it is not present.
+        1. Create a <{link}> element |linkElement| which <{link/href}> attribute
+            is |linkTarget|, and <{link/imagesrcset}> attribute is
+            |imagesrcset|, and <{link/imagesizes}> is |imagesizes|.
+        1. Let |selected source| and <var ignore=''>selected pixel density</var>
+            be the URL and pixel density that results from [=selecting an image
+            source=] given |linkElement|, respectively.
+        1. If |selected source| is not null, then set |linkTarget| to the result
+            of [=URL parser|parsing=] |selected source|, with a base URL of
+            |response|'s [=response/URL=].
+    1. For each |allowedSxgLink| of |allowedSxgLinks|:
+        1. If the first element isn't the same as |linkTarget|, then continue.
+        1. Let |innerLinkVariants| be the second item of |allowedSxgLink|.
+        1. Let |innerLinkVariantKey| be the third item of |allowedSxgLink|.
+        1. Let |storedExchange| be the result of creating an [=exchange=] with
+            the URL of |linkTarget| and a new [=response=].
+        1. If |innerLinkVariants| is not the empty string (""), [=header
+            list/set=] `` `Variants` ``/|innerLinkVariants| in
+            |storedExchange|'s [=exchange/response=]'s [=response/header list=].
+        1. If |innerLinkVariantKey| is not the empty string (""), [=header
+            list/set=] `` `Variant-Key` ``/|innerLinkVariantKey| in
+            |storedExchange|'s [=exchange/response=]'s [=response/header list=].
+        1. Let |requestForMatch| be the result of [=creating a potential-CORS
+            request=] given |linkTarget|, the empty string, and [=No CORS=].
+        1. If |requestForMatch| doesn't [=matches the stored exchange=]
+            |storedExchange|, then continue.
+        1. Let |alternateSxgUrl| be the first item of the first tuple of
+            |alternateLinks| whose second item matches |innerLinkVariants| and
+            whose third item matches |innerLinkVariantKey| and whose fourth item
+            matches |linkTarget| or continue if it is not present.
+        1. Let |sxgRequest| be the result of [=creating a potential-CORS
+            request=] given |alternateSxgUrl|, the empty string, and [=No
+            CORS=].
+        1. Run the following steps [=in parallel=]:
+            1. Let |sxgResponse| be the result of [=fetching=] |sxgRequest|.
+            1. If |sxgResponse|'s [=response/came from a signed exchange=] is
+                true, and |sxgResponse|'s [=response/URL=] is the same as
+                |linkTarget|, then create an [=exchange=] with the URL of
+                |linkTarget| and the result of [=response/cloning=]
+                |sxgResponse|, and store the exchange to |el|'s [=Node/node
+                document=]'s [=Document/prefetched subresource signed
+                exchanges=].
 
-    1. Let |clonedResponse| be the result of [=response/cloning=] the response.
-    1. Create an [=exchange=] with the request URL and |clonedResponse|,
-        and store the exchange to the
-        [=Document/prefetched signed exchanges for navigation=] of the Document.
+
+Issue(w3c/resource-hints#77): Currently the behavior of recursive prefetch is
+not defined in the specs. This section monkeypatches Link type
+"<{link/rel/prefetch}>" to support the recursive prefetching of alternate signed
+exchange subresources. When we will change the HTML spec to support the general
+recursive prefetching, this section must be made align with the change.
 
 <h3 algorithm id="mp-process-a-navigate-fetch">
 Monkeypatch process a navigate fetch</h3>
@@ -571,24 +642,18 @@ before
 
 add the following steps:
 
-    9. Let |allowed alternate subresource signed exchange links| be null.
+    9. If |sourceBrowsingContext|'s [=active document=]'s
+        [=Document/prefetched signed exchanges for navigation=][|request|'s
+        [=request/url=]] [=map/exists=], then:
 
-    10. If |sourceBrowsingContext|'s [=active document=]'s
-        [=Document/prefetched signed exchanges for navigation=] has a matching
-        exchange for the |request|'s [=request/url=], then:
+        1. Let |prefetchedExchange| be |sourceBrowsingContext|'s 
+            [=active document=]'s [=Document/prefetched signed exchanges for
+            navigation=][|request|'s [=request/url=]].
 
-        1. Let |clonedExchange| be the result of creating a new [=exchange=]
-            with the matching exchange's [=exchange/request URL=] and the result
-            of [=response/cloning=] the matching exchange's
-            [=exchange/response=].
-
-        1. Move |clonedExchange| to the |request|'s
-            [=request/stashed exchange=].
-
-        1. Copy <{link/rel/allowed-alt-sxg}> link of the exchange's
-            [=exchange/response=] to
-            |allowed alternate subresource signed exchange links|.
-
+        1. Set |request|'s [=request/stashed exchange=] to the result of
+            creating a new [=exchange=] with |prefetchedExchange|'s
+            [=exchange/request URL=] and the result of [=response/cloning=]
+            |prefetchedExchange|'s [=exchange/response=].
 
 
 And before
@@ -598,99 +663,161 @@ And before
 
 add the following steps:
 
-    19. Copy |sourceBrowsingContext|'s [=active document=]'s
+    18. Copy |sourceBrowsingContext|'s [=active document=]'s
         [=Document/prefetched subresource signed exchanges=]
-        to |navigationParams|'s
+        to <var ignore=''>navigationParams</var>'s
         [=navigation params/prefetched subresource signed exchanges=].
-
-    20. Set |navigationParams|'s
-        [=navigation params/allowed alternate subresource signed exchange links=]
-        to |allowed alternate subresource signed exchange links|.
 
 Note: As browsers move toward partitioned HTTP caches, the source document's
     cache will likely be separate from the target's cache, so we can't just pass
     prefetched content through the cache.
 
 
-<h3 algorithm id="mp-initialise-the-document-object">
-Monkeypatch Initialize a Document object</h3>
+<h3 algorithm id="mp-page-load-processing-model-for-html-fiiles">
+Monkeypatch Page load processing model for HTML files</h3>
 In
-[initialize a Document object](https://html.spec.whatwg.org/multipage/browsing-the-web.html#initialise-the-document-object)
+[Page load processing model for HTML files](https://html.spec.whatwg.org/multipage/browsing-the-web.html#read-html)
 before
 
-> 15. Return document.
+> 2. Create an HTML parser and ...
 
 add the following steps:
-
-    15. Move the |navigationParams|'s
-        [=navigation params/prefetched subresource signed exchanges=] to the
-        |document|'s [=Document/transferred subresource signed exchanges=].
-
-    16. Set |document|'s
-        [=Document/allowed alternate subresource signed exchange links=] to
-        |navigationParams|'s
-        [=navigation params/allowed alternate subresource signed exchange links=].
-
-
-<h3 algorithm id="mp-link-type-preload">
-Monkeypatch Link type "preload"</h3>
-
-The navigated-to document has a set of preloads for which it uses the
-<{link/rel/allowed-alt-sxg}> link relation to declare that they can be served by
-signed exchanges. The UA either serves all of them from SXGs prefetched by the
-previous page, or none of them. So in the
-[linked resource fetch setup steps for preload type of linked resource](https://html.spec.whatwg.org/multipage/links.html#link-type-preload:linked-resource-fetch-setup-steps)
-before
-
-> 5. Return true.
-
-add the following steps:
-
-    5. If |el| is for the main resource's HTTP <a http-header>Link</a> header,
-        then:
-
-        1.  For each |allowedAltSxgLink| in |el|'s [=Node/node document=]'s
-            [=Document/allowed alternate subresource signed exchange links=]:
-
-            1. Let |storedExchange| be the result of creating an [=exchange=]
-                with the URL of the |allowedAltSxgLink| link's [=Link Target=]
-                URL and a new [=response=].
-                
-            1. If |allowedAltSxgLink| has <{link/variants}> parameter,
-                [=header list/set=] `` `Variants` ``/|allowedAltSxgLink|'s
-                <{link/variants}> in |storedExchange|'s [=exchange/response=]'s
-                [=response/header list=].
-                
-            1. If |allowedAltSxgLink| has <{link/variant-key}> parameter,
-                [=header list/set=] `` `Variant-Key` ``/|allowedAltSxgLink|'s
-                <{link/variant-key}> in |storedExchange|'s [=exchange/response=]'s
-                [=response/header list=].
-
-
-            1. If |request| [=matches the stored exchange=] |storedExchange|,
-                then run the following steps in parallel:
-
-                1. Wait until there is no remaining preload Link header of the main
-                    resource to be processed.
-
-                1. If for every |el|'s in this step, |el|'s
-                    [=Node/node document=]'s
-                    [=Document/transferred subresource signed exchanges=]
-                    contains a |matchingExchange| which [=exchange/response=]'s
-                    [=response/header integrity value=] is the same as
-                    |allowedAltSxgLink|'s <{link/header-integrity}> parameter,
-                    then set the |request|'s [=request/stashed exchange=] to
-                    |matchingExchange|.
-
-                1. Return true.
-
-            1. Otherwise, return true.
+    2. Run the following steps [=in parallel=]:
+        1. Wait until |document|'s [=viewport=] is initialized.
+        1. Let |linkHeader| be the result of [=header list/getting=] `` `Link`
+            `` from |navigationParams|'s [=navigation params/response=]'s
+            [=response/header list=].
+        1. If |linkHeader| is null, then return.
+        1. Let |links| be the result of [=Parsing a Link Field Value=] from
+            |linkHeader|.
+        1. Let |allowedSxgLinks| be an empty [=list=].
+        1. For each |link| of |links|:
+            1. If |link|'s [=Relation Type=] is not 'allowed-alt-sxg', then
+                continue.
+            1. Let |linkTarget| be |link|'s [=Link Target=].
+            1. Let |linkVariants| be the second item of the first tuple of
+                |link|'s [=Target Attributes list|Target Attributes=] whose
+                first item matches the string `"variants"` or the empty string
+                ("") if it is not present.
+            1. Let |linkVariantKey| be the second item of the first tuple of
+                |link|'s [=Target Attributes list|Target Attributes=] whose
+                first item matches the string `"variant-key"` or the empty
+                string ("") if it is not present.
+            1. Let |headerIntegrity| be the second item of the first tuple of
+                |link|'s [=Target Attributes list|Target Attributes=] whose
+                first item matches the string `"header-integrity"` or continue
+                if it is not present.
+            1. [=list/Append=] (|linkTarget|, |linkVariants|, |linkVariantKey|,
+                |headerIntegrity|) to |allowedSxgLinks|.
+        1. Let |preloadLinkItems| be an empty [=list=].
+        1. Let |canLoadAlternateSxg| be true. 
+        1. For each |link| of |links|:
+            1. If |link|'s [=Relation Type=] is not 'preload', then continue.
+            1. Let |linkTarget| be |link|'s [=Link Target=].
+            1. Let |asAttribute| be the second item of the first tuple of
+                |link|'s [=Target Attributes list|Target Attributes=] whose
+                first item matches the string `"as"` or the empty string ("") if
+                it is not present.
+            1. If |asAttribute| is an empty string, then continue.
+            1. If |asAttribute| is `"image"`, then:
+                1. Let |imagesrcset| be the second item of the first tuple of
+                    |link|'s [=Target Attributes list|Target Attributes=] whose
+                    first item matches the string `"imagesrcset"` or the empty
+                    string ("") if it is not present.
+                1. Let |imagesizes| be the second item of the first tuple of
+                    |link|'s [=Target Attributes list|Target Attributes=] whose
+                    first item matches the string `"imagesizes"` or the empty
+                    string ("") if it is not present.
+                1. Create a <{link}> element |linkElement| which <{link/href}>
+                    attribute is |linkTarget|, and <{link/imagesrcset}>
+                    attribute is |imagesrcset|, and <{link/imagesizes}> is
+                    |imagesizes|.
+                1. Let |selected source| and <var ignore=''>selected pixel
+                    density</var> be the URL and pixel density that results from
+                    [=selecting an image source=] given |linkElement|,
+                    respectively.
+                1. If |selected source| is not null, then set |linkTarget| to
+                    the result of [=URL parser|parsing=] |selected source|, with
+                    a base URL of |navigationParams|'s [=navigation
+                    params/response=]'s [=response/URL=].
+            1. Let |headerIntegrity| be an empty string.
+            1. For each |allowedSxgLink| of |allowedSxgLinks|:
+                1. If the first element isn't the same as |linkTarget|, then
+                    continue.
+                1. Let |innerLinkVariants| be the second item of
+                    |allowedSxgLink|.
+                1. Let |innerLinkVariantKey| be the third item of
+                    |allowedSxgLink|.
+                1. Let |storedExchange| be the result of creating an
+                    [=exchange=] with the URL of |linkTarget| and a new
+                    [=response=].
+                1. If |innerLinkVariants| is not the empty string (""), [=header
+                    list/set=] `` `Variants` ``/|innerLinkVariants| in
+                    |storedExchange|'s [=exchange/response=]'s [=response/header
+                    list=].
+                1. If |innerLinkVariantKey| is not the empty string (""),
+                    [=header list/set=] `` `Variant-Key`
+                    ``/|innerLinkVariantKey| in |storedExchange|'s
+                    [=exchange/response=]'s [=response/header list=].
+                1. Let |requestForMatch| be the result of [=creating a
+                    potential-CORS request=] given |linkTarget|, the empty
+                    string, and [=No CORS=].
+                1. If |requestForMatch| doesn't [=matches the stored exchange=]
+                    |storedExchange|, then continue.
+                1. Set |headerIntegrity| to the fourth item of |allowedSxgLink|.
+            1. Let |alternateSXG| be null.
+            1. For each |sxg| of |navigationParams|'s [=navigation
+                params/prefetched subresource signed exchanges=]:
+                1. If |headerIntegrity| is the same as the value of |sxg|'s
+                    [=exchange/response=]'s [=response/header integrity value=]
+                    encoded as a [[CSP]] <a grammar>hash-source</a>, then set
+                    |alternateSXG| to |sxg|.
+            1. If |headerIntegrity| is not an empty string and |alternateSXG| is
+                null, then set |canLoadAlternateSxg| to false.
+            1. [=list/Append=] (|link|, |linkTarget|, |headerIntegrity|,
+                |alternateSXG|) to |preloadLinkItems|.
+        1. For each |preloadLinkItem| of |preloadLinkItems|:
+            1. Let |link| be the first item of |preloadLinkItem|.
+            1. Let |linkTarget| be the second item of |preloadLinkItem|.
+            1. Let |headerIntegrity| be the third item of |preloadLinkItem|.
+            1. Let |alternateSXG| be the fourth item of |preloadLinkItem|.
+            1. Let |corsAttribute| be the [=CORS settings attribute=] of the
+                second item of the first tuple of |link|'s [=Target Attributes
+                list|Target Attributes=] whose first item matches the string
+                `"crossorigin"` or [=No CORS=] if it is not present.
+            1. Let |request| be the result of [=creating a potential-CORS
+                request=] given |linkTarget|, the empty string, and
+                |corsAttribute|.
+            1. Set |request|'s [=request/synchronous flag=].
+            1. Set |request|'s [=request/client=] to |document|.
+            1. Set |request|'s [=request/cryptographic nonce metadata=] to be
+                the second item of the first tuple of |link|'s [=Target
+                Attributes list|Target Attributes=] whose first item matches the
+                string `"nonce"` if it is present.
+            1. Set |request|'s [=request/integrity metadata=] to be the second
+                item of the first tuple of |link|'s [=Target Attributes
+                list|Target Attributes=] whose first item matches the string
+                `"integrity"` if it is present.
+            1. Set |request|'s [=request/referrer policy=] to be the [=referrer
+                policy attribute=] of second item of the first tuple of |link|'s
+                [=Target Attributes list|Target Attributes=] whose first item
+                matches the string `"referrerpolicy"` if it is present.
+            1. Set |request|'s [=request/destination=] to the second item of the
+                first tuple of |link|'s [=Target Attributes list|Target
+                Attributes=] whose first item matches the string `"as"` or the
+                empty string ("") if it is not present.
+            1. If |canLoadAlternateSxg| is true and |alternateSXG| is not null,
+                then set |request|'s [=request/stashed exchange=] to
+                |alternateSXG|.
+            1. [=Fetch=] |request| in parallel.
 
 Issue(whatwg/html#4224): Currently the processing model of the HTTP <a
-http-header>Link</a> header is not defined. In this section, we treat the ``
-`preload` `` <a http-header>Link</a> headers as if their [=semantically
-equivalent=] <{link/rel/preload}> type link elements are generated and
-processed at some point.
+http-header>Link</a> header is not defined in the HTML spec. This section
+monkeypatches the [Page load processing model for HTML
+files](https://html.spec.whatwg.org/multipage/browsing-the-web.html#read-html)
+to support proccessing <a http-header>Link</a> rel=preload HTTP headers. When we
+will change the HTML spec to generally support <a http-header>Link</a> HTTP
+headers, this section must be made align with the change.
 
 # Structures # {#structs}
 
@@ -933,6 +1060,8 @@ following steps
         |requestUrl|.
 1. Set |parsedExchange|'s [=exchange/response=]'s [=response/came from a signed
     exchange=] to true.
+1. Set |parsedExchange|'s [=exchange/response=]'s [=response/signed exchange
+    outer header list=] to |response|'s [=response/header list=].
 1. Set |parsedExchange|'s [=exchange/response=]'s [=response/header integrity
     value=] to the [=SHA-256=] hash of |headerBytes|.
 1. If |parsedSignature| [=exchange signature/does not establish cross-origin
