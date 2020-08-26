@@ -131,10 +131,6 @@ spec: RFC8288; urlPrefix: https://tools.ietf.org/html/rfc8288#
         text: Target Attributes; url: section-3.4
     type: dfn
         text: Parsing a Link Field Value; url: appendix-B.2
-        
-spec: RFC5988; urlPrefix: https://tools.ietf.org/html/rfc5988#
-    type: dfn
-        text: semantically equivalent; url: #page-5:~:text=semantically%20equivalent
 spec: RFC8446; urlPrefix: https://tools.ietf.org/html/draft-ietf-tls-tls13-28#
     text: ecdsa_secp256r1_sha256; type: dfn; url: section-4.2.3
 spec: draft-ietf-httpbis-variants; urlPrefix: https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html#
@@ -525,13 +521,13 @@ The [=process the linked resource=] given a link element |el|, boolean
 1. If |outerLinkHeader| is null, then return.
 1. Let |outerLinks| be the result of [=Parsing a Link Field Value=] from
     |outerLinkHeader|.
-1. If |outerLinks| is null, then return.
+1. If |outerLinks| is empty, then return.
 1. Let |innerLinkHeader| be the result of [=header list/getting=] `` `Link` ``
     from |response|'s [=response/header list=].
 1. If |innerLinkHeader| is null, then return.
 1. Let |innerLinks| be the result of [=Parsing a Link Field Value=] from
     |innerLinkHeader|.
-1. If |innerLinks| is null, then return.
+1. If |innerLinks| is empty, then return.
 1. Let |alternateLinks| be an empty [=list=].
 1. For each |outerLink| of |outerLinks|:
     1. If |outerLink|'s [=Relation Type=] is not 'alternate', then continue.
@@ -548,8 +544,8 @@ The [=process the linked resource=] given a link element |el|, boolean
         |outerLink|'s [=Target Attributes list|Target Attributes=] whose first
         item matches the string `"variant-key"` or the empty string ("") if it
         is not present.
-    1. [=list/Append=] (|linkContext|, |outerLinkVariants|,
-        |outerLinkVariantKey|, |linkTarget|) to |alternateLinks|.
+    1. [=list/Append=] (|linkTarget|, |outerLinkVariants|,
+        |outerLinkVariantKey|, |linkContext|) to |alternateLinks|.
 1. Let |allowedSxgLinks| be an empty [=list=].
 1. For each |innerLink| of |innerLinks|:
     1. If |innerLink|'s [=Relation Type=] is not 'allowed-alt-sxg', then
