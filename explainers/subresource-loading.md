@@ -265,6 +265,15 @@ the bundle's exact scope) but before the content arrives:
 We might be able to use a link type as general as `"bundle"`, especially if it
 also uses the MIME type of the bundle resource to determine how to process it.
 
+We might even be able to use
+
+```html
+<link
+  rel="preload"
+  type="application/webbundle"
+  href="https://example.com/dir/subresources.wbn">
+```
+
 We'll need to disambiguate between a bundle meant for preloading subresources
 and a bundle meant as an alternative form of the current page. The second can
 use `<link rel="alternate" type="application/web-bundle">`.
