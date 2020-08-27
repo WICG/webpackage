@@ -507,6 +507,8 @@ Monkeypatch Link type "prefetch"</h3>
 The [=process the linked resource=] given a link element |el|, boolean
 |success|, and [=response=] |response|:
 
+1. If |success| is true, [=fire an event=] named {{HTMLElement/load}} at |el|.
+1. Otherwise, [=fire an event=] named {{HTMLElement/error}} at |el|.
 1. If the |success| is false, then return.
 1. If the |response|'s [=response/came from a signed exchange=] is false, then
     return.
