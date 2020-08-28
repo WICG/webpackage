@@ -174,6 +174,7 @@ spec: html; urlPrefix: https://html.spec.whatwg.org/multipage/
         text: response; for: navigation params; url: browsing-the-web.html#navigation-params-response
         text: selecting an image source; url: images.html#select-an-image-source
         text: Use Credentials; url: urls-and-fetching.html#attr-crossorigin-use-credentials
+        text: Page load processing model for HTML files; url: browsing-the-web.html#read-html
 spec: SHA2; urlPrefix: http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf
     type: dfn
         text: SHA-256; url: #
@@ -498,6 +499,16 @@ In the [=navigation params=], add the following items:
 
 <h3 algorithm id="mp-link-type-prefetch">Monkeypatch Link type "prefetch"</h3>
 
+Note: To prefetch the [=alternate signed exchanges=] when the UA receives a
+prefetched main resource signed exchange, this section monkeypatchs
+Link type "<{link/rel/prefetch}>".
+
+Issue(w3c/resource-hints#77): Currently the behavior of recursive prefetch is
+not defined in the specs. This section monkeypatches Link type
+"<{link/rel/prefetch}>" to support only for the [=alternate signed exchanges=]
+subresources. When we will change the HTML spec to support the general recursive
+prefetching, this section must be made align with the change.
+
 The [=process the linked resource=] given a link element |el|, boolean
 |success|, and [=response=] |response|:
 
@@ -587,12 +598,6 @@ The [=process the linked resource=] given a link element |el|, boolean
                 exchanges=].
 
 
-Issue(w3c/resource-hints#77): Currently the behavior of recursive prefetch is
-not defined in the specs. This section monkeypatches Link type
-"<{link/rel/prefetch}>" to support the recursive prefetching of alternate signed
-exchange subresources. When we will change the HTML spec to support the general
-recursive prefetching, this section must be made align with the change.
-
 <h3 algorithm id="mp-process-a-navigate-fetch">
 Monkeypatch process a navigate fetch</h3>
 In [process a navigate fetch](https://html.spec.whatwg.org/multipage/browsing-the-web.html#process-a-navigate-fetch)
@@ -635,15 +640,28 @@ Note: As browsers move toward partitioned HTTP caches, the source document's
 
 <h3 algorithm id="mp-page-load-processing-model-for-html-fiiles">
 Monkeypatch Page load processing model for HTML files</h3>
-In
-[Page load processing model for HTML files](https://html.spec.whatwg.org/multipage/browsing-the-web.html#read-html)
-before
+
+Note: To use the prefetched subresource signed exchanges after the navigation,
+this section monkeypatchs [=Page load processing model for HTML files=].
+
+Issue(whatwg/html#4224): Currently the processing model of the HTTP <a
+http-header>Link</a> header is not defined in the HTML spec. This section
+monkeypatches only for <a http-header>Link</a> rel=preload HTTP headers. When we
+will change the HTML spec to generally support <a http-header>Link</a> HTTP
+headers, this section must be made align with the change.
+
+
+In [=Page load processing model for HTML files=] before
 
 > 2. Create an HTML parser and ...
 
 add the following steps:
     2. Run the following steps [=in parallel=]:
-        1. Wait until |document|'s [=viewport=] is initialized.
+        1. Wait until |document|'s [=viewport=] is known.
+
+            Note: When the |document|'s [=viewport=] is known is not normatively
+            defined in the HTML spec. Need to define the behavior of
+            preloadScanner to define this.
         1. Let |linkHeader| be the result of [=header list/getting=] `` `Link`
             `` from |navigationParams|'s [=navigation params/response=]'s
             [=response/header list=].
@@ -745,15 +763,13 @@ add the following steps:
             1. If |canLoadAlternateSxg| is true, then set |request|'s
                 [=request/stashed exchange=] to |preloadLinkItem|'s [=alternate
                 signed exchange peload info/prefetched alternate exchange=].
+
+                Note: When |canLoadAlternateSxg| if false or there is no
+                matching prefetched alternate exchange, the original resource
+                declared in the  <{link/rel/preload}> <a http-header>Link</a>
+                header |link| will be fetched.
             1. [=Fetch=] |request| in parallel.
 
-Issue(whatwg/html#4224): Currently the processing model of the HTTP <a
-http-header>Link</a> header is not defined in the HTML spec. This section
-monkeypatches the [Page load processing model for HTML
-files](https://html.spec.whatwg.org/multipage/browsing-the-web.html#read-html)
-to support proccessing <a http-header>Link</a> rel=preload HTTP headers. When we
-will change the HTML spec to generally support <a http-header>Link</a> HTTP
-headers, this section must be made align with the change.
 
 # Structures # {#structs}
 
