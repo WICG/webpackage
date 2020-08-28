@@ -119,18 +119,13 @@ spec: RFC7231; urlPrefix: https://tools.ietf.org/html/rfc7231#
 spec: RFC8288; urlPrefix: https://tools.ietf.org/html/rfc8288#
     type: dfn
         text: Target Attributes list; url: section-2.2
+        text: Link Target; url: section-3.1
+        text: Link Context; url: section-3.2
+        text: Relation Type; url: section-3.3
+        text: Target Attributes; url: section-3.4
+        text: Parsing a Link Field Value; url: appendix-B.2
     type: http-header
         text: Link; url: section-3
-    type: dfn
-        text: Link Target; url: section-3.1
-    type: dfn
-        text: Link Context; url: section-3.2
-    type: dfn
-        text: Relation Type; url: section-3.3
-    type: dfn
-        text: Target Attributes; url: section-3.4
-    type: dfn
-        text: Parsing a Link Field Value; url: appendix-B.2
 spec: RFC8446; urlPrefix: https://tools.ietf.org/html/draft-ietf-tls-tls13-28#
     text: ecdsa_secp256r1_sha256; type: dfn; url: section-4.2.3
 spec: draft-ietf-httpbis-variants; urlPrefix: https://httpwg.org/http-extensions/draft-ietf-httpbis-variants.html#
@@ -501,8 +496,7 @@ In the [=navigation params=], add the following items:
 
 </dl>
 
-<h3 algorithm id="mp-link-type-prefetch">
-Monkeypatch Link type "prefetch"</h3>
+<h3 algorithm id="mp-link-type-prefetch">Monkeypatch Link type "prefetch"</h3>
 
 The [=process the linked resource=] given a link element |el|, boolean
 |success|, and [=response=] |response|:
@@ -530,61 +524,22 @@ The [=process the linked resource=] given a link element |el|, boolean
 1. Let |innerLinks| be the result of [=Parsing a Link Field Value=] from
     |innerLinkHeader|.
 1. If |innerLinks| is empty, then return.
-1. Let |alternateLinks| be an empty [=list=].
-1. For each |outerLink| of |outerLinks|:
-    1. If |outerLink|'s [=Relation Type=] is not 'alternate', then continue.
-    1. If |outerLink|'s [=Target Attributes list|Target Attributes=] doesn't
-        [=list/contain=] (`"type"`,`"application/signed-exchange"`), then
-        continue.
-    1. Let |linkTarget| be |outerLink|'s [=Link Target=].
-    1. Let |linkContext| be |outerLink|'s [=Link Context=].
-    1. Let |outerLinkVariants| be the second item of the first tuple of
-        |outerLink|'s [=Target Attributes list|Target Attributes=] whose first
-        item matches the string `"variants"` or the empty string ("") if it is
-        not present.
-    1. Let |outerLinkVariantKey| be the second item of the first tuple of
-        |outerLink|'s [=Target Attributes list|Target Attributes=] whose first
-        item matches the string `"variant-key"` or the empty string ("") if it
-        is not present.
-    1. [=list/Append=] (|linkTarget|, |outerLinkVariants|,
-        |outerLinkVariantKey|, |linkContext|) to |alternateLinks|.
-1. Let |allowedSxgLinks| be an empty [=list=].
-1. For each |innerLink| of |innerLinks|:
-    1. If |innerLink|'s [=Relation Type=] is not 'allowed-alt-sxg', then
-        continue.
-    1. Let |linkTarget| be |innerLink|'s [=Link Target=].
-    1. Let |innerLinkVariants| be the second item of the first tuple of
-        |innerLink|'s [=Target Attributes list|Target Attributes=] whose first
-        item matches the string `"variants"` or the empty string ("") if it is
-        not present.
-    1. Let |innerLinkVariantKey| be the second item of the first tuple of
-        |innerLink|'s [=Target Attributes list|Target Attributes=] whose first
-        item matches the string `"variant-key"` or the empty string ("") if it
-        is not present.
-    1. Let |headerIntegrity| be the second item of the first tuple of
-        |innerLink|'s [=Target Attributes list|Target Attributes=] whose first
-        item matches the string `"header-integrity"` or continue if it is not
-        present.
-    1. [=list/Append=] (|linkTarget|, |innerLinkVariants|,
-        |innerLinkVariantKey|, |headerIntegrity|) to |allowedSxgLinks|.
+1. Let |alternateLinks| be the result of [=getting alternate signed exchange
+    link info=] from |outerLinks|.
+1. Let |allowedSxgLinks| be the result of [=getting allowed signed exchange link
+    info=] from |innerLink|.
 1. For each |innerLink| of |innerLinks|:
     1. If |innerLink|'s [=Relation Type=] is not 'preload', then continue.
     1. Let |linkTarget| be |innerLink|'s [=Link Target=].
-    1. Let |asAttribute| be the second item of the first tuple of |innerLink|'s
-        [=Target Attributes list|Target Attributes=] whose first item matches
-        the string `"as"` or the empty string ("") if it is not present.
+    1. Let |asAttribute| be |innerLink|'s [=Target Attribute named=] `"as"`.
     1. If |asAttribute| is `"image"`, then:
-        1. Let |imagesrcset| be the second item of the first tuple of
-            |innerLink|'s [=Target Attributes list|Target Attributes=] whose
-            first item matches the string `"imagesrcset"` or the empty string
-            ("") if it is not present.
-        1. Let |imagesizes| be the second item of the first tuple of
-            |innerLink|'s [=Target Attributes list|Target Attributes=] whose
-            first item matches the string `"imagesizes"` or the empty string
-            ("") if it is not present.
-        1. Create a <{link}> element |linkElement| which <{link/href}> attribute
+        1. Let |imagesrcset| be |innerLink|'s [=Target Attribute named=]
+            `"imagesrcset"`.
+        1. Let |imagesizes| be |innerLink|'s [=Target Attribute named=]
+            `"imagesizes"`.
+        1. Create a <{link}> element |linkElement| whose <{link/href}> attribute
             is |linkTarget|, and <{link/imagesrcset}> attribute is
-            |imagesrcset|, and <{link/imagesizes}> is |imagesizes|.
+            |imagesrcset|, and <{link/imagesizes}> attribute is |imagesizes|.
         1. Let |selected source| and <var ignore=''>selected pixel density</var>
             be the URL and pixel density that results from [=selecting an image
             source=] given |linkElement|, respectively.
@@ -592,25 +547,32 @@ The [=process the linked resource=] given a link element |el|, boolean
             of [=URL parser|parsing=] |selected source|, with a base URL of
             |response|'s [=response/URL=].
     1. For each |allowedSxgLink| of |allowedSxgLinks|:
-        1. If the first element isn't the same as |linkTarget|, then continue.
-        1. Let |innerLinkVariants| be the second item of |allowedSxgLink|.
-        1. Let |innerLinkVariantKey| be the third item of |allowedSxgLink|.
+        1. If |allowedSxgLink|'s [=allowed signed exchange link info/target=]
+            isn't the same as |linkTarget|, then continue.
         1. Let |storedExchange| be the result of creating an [=exchange=] with
-            the URL of |linkTarget| and a new [=response=].
-        1. If |innerLinkVariants| is not the empty string (""), [=header
-            list/set=] `` `Variants` ``/|innerLinkVariants| in
-            |storedExchange|'s [=exchange/response=]'s [=response/header list=].
-        1. If |innerLinkVariantKey| is not the empty string (""), [=header
-            list/set=] `` `Variant-Key` ``/|innerLinkVariantKey| in
-            |storedExchange|'s [=exchange/response=]'s [=response/header list=].
+            |linkTarget| and a new [=response=].
+        1. If |allowedSxgLink|'s [=allowed signed exchange link info/variants=]
+            is not null, [=header list/set=] `` `Variants` ``/|allowedSxgLink|'s
+            [=allowed signed exchange link info/variants=] in |storedExchange|'s
+            [=exchange/response=]'s [=response/header list=].
+        1. If |allowedSxgLink|'s [=allowed signed exchange link info/variant
+            key=] is not null, [=header list/set=] `` `Variant-Key`
+            ``/|allowedSxgLink|'s [=allowed signed exchange link info/variant
+            key=] in |storedExchange|'s [=exchange/response=]'s
+            [=response/header list=].
         1. Let |requestForMatch| be the result of [=creating a potential-CORS
             request=] given |linkTarget|, the empty string, and [=No CORS=].
         1. If |requestForMatch| doesn't [=matches the stored exchange=]
             |storedExchange|, then continue.
-        1. Let |alternateSxgUrl| be the first item of the first tuple of
-            |alternateLinks| whose second item matches |innerLinkVariants| and
-            whose third item matches |innerLinkVariantKey| and whose fourth item
-            matches |linkTarget| or continue if it is not present.
+        1. Let |alternateSxgUrl| be [=alternate signed exchange link
+            info/target=] of the first [=alternate signed exchange link info=]
+            of |alternateLinks| whose [=alternate signed exchange link
+            info/variants=] matches |allowedSxgLink|'s [=allowed signed exchange
+            link info/variants=] and whose [=alternate signed exchange link
+            info/variant key=] matches |allowedSxgLink|'s [=allowed signed
+            exchange link info/variant key=] and whose [=alternate signed
+            exchange link info/context=] matches |linkTarget| or continue if it
+            is not present.
         1. Let |sxgRequest| be the result of [=creating a potential-CORS
             request=] given |alternateSxgUrl|, the empty string, and [=No
             CORS=].
@@ -688,48 +650,24 @@ add the following steps:
         1. If |linkHeader| is null, then return.
         1. Let |links| be the result of [=Parsing a Link Field Value=] from
             |linkHeader|.
-        1. Let |allowedSxgLinks| be an empty [=list=].
-        1. For each |link| of |links|:
-            1. If |link|'s [=Relation Type=] is not 'allowed-alt-sxg', then
-                continue.
-            1. Let |linkTarget| be |link|'s [=Link Target=].
-            1. Let |linkVariants| be the second item of the first tuple of
-                |link|'s [=Target Attributes list|Target Attributes=] whose
-                first item matches the string `"variants"` or the empty string
-                ("") if it is not present.
-            1. Let |linkVariantKey| be the second item of the first tuple of
-                |link|'s [=Target Attributes list|Target Attributes=] whose
-                first item matches the string `"variant-key"` or the empty
-                string ("") if it is not present.
-            1. Let |headerIntegrity| be the second item of the first tuple of
-                |link|'s [=Target Attributes list|Target Attributes=] whose
-                first item matches the string `"header-integrity"` or continue
-                if it is not present.
-            1. [=list/Append=] (|linkTarget|, |linkVariants|, |linkVariantKey|,
-                |headerIntegrity|) to |allowedSxgLinks|.
+        1. Let |allowedSxgLinks| be the result of [=getting allowed signed
+            exchange link info=] from |links|.
         1. Let |preloadLinkItems| be an empty [=list=].
         1. Let |canLoadAlternateSxg| be true. 
         1. For each |link| of |links|:
             1. If |link|'s [=Relation Type=] is not 'preload', then continue.
             1. Let |linkTarget| be |link|'s [=Link Target=].
-            1. Let |asAttribute| be the second item of the first tuple of
-                |link|'s [=Target Attributes list|Target Attributes=] whose
-                first item matches the string `"as"` or the empty string ("") if
-                it is not present.
-            1. If |asAttribute| is an empty string, then continue.
+            1. Let |asAttribute| be |link|'s [=Target Attribute named=] `"as"`.
+            1. If |asAttribute| is null, then continue.
             1. If |asAttribute| is `"image"`, then:
-                1. Let |imagesrcset| be the second item of the first tuple of
-                    |link|'s [=Target Attributes list|Target Attributes=] whose
-                    first item matches the string `"imagesrcset"` or the empty
-                    string ("") if it is not present.
-                1. Let |imagesizes| be the second item of the first tuple of
-                    |link|'s [=Target Attributes list|Target Attributes=] whose
-                    first item matches the string `"imagesizes"` or the empty
-                    string ("") if it is not present.
-                1. Create a <{link}> element |linkElement| which <{link/href}>
+                1. Let |imagesrcset| be |link|'s [=Target Attribute named=]
+                    `"imagesrcset"`.
+                1. Let |imagesizes| be |link|'s [=Target Attribute named=]
+                    `"imagesizes"`.
+                1. Create a <{link}> element |linkElement| whose <{link/href}>
                     attribute is |linkTarget|, and <{link/imagesrcset}>
-                    attribute is |imagesrcset|, and <{link/imagesizes}> is
-                    |imagesizes|.
+                    attribute is |imagesrcset|, and <{link/imagesizes}>
+                    attribute is |imagesizes|.
                 1. Let |selected source| and <var ignore=''>selected pixel
                     density</var> be the URL and pixel density that results from
                     [=selecting an image source=] given |linkElement|,
@@ -738,75 +676,75 @@ add the following steps:
                     the result of [=URL parser|parsing=] |selected source|, with
                     a base URL of |navigationParams|'s [=navigation
                     params/response=]'s [=response/URL=].
-            1. Let |headerIntegrity| be an empty string.
+            1. Let |headerIntegrity| be null.
             1. For each |allowedSxgLink| of |allowedSxgLinks|:
-                1. If the first element isn't the same as |linkTarget|, then
-                    continue.
-                1. Let |innerLinkVariants| be the second item of
-                    |allowedSxgLink|.
-                1. Let |innerLinkVariantKey| be the third item of
-                    |allowedSxgLink|.
                 1. Let |storedExchange| be the result of creating an
-                    [=exchange=] with the URL of |linkTarget| and a new
-                    [=response=].
-                1. If |innerLinkVariants| is not the empty string (""), [=header
-                    list/set=] `` `Variants` ``/|innerLinkVariants| in
-                    |storedExchange|'s [=exchange/response=]'s [=response/header
-                    list=].
-                1. If |innerLinkVariantKey| is not the empty string (""),
-                    [=header list/set=] `` `Variant-Key`
-                    ``/|innerLinkVariantKey| in |storedExchange|'s
+                    [=exchange=] with the URL of |allowedSxgLink|'s [=allowed
+                    signed exchange link info/target=] and a new [=response=].
+                1. If |allowedSxgLink|'s [=allowed signed exchange link
+                    info/variants=] is null, [=header list/set=] `` `Variants`
+                    ``/|allowedSxgLink|'s [=allowed signed exchange link
+                    info/variants=] in |storedExchange|'s
+                    [=exchange/response=]'s [=response/header list=].
+                1. If |allowedSxgLink|'s [=allowed signed exchange link
+                    info/variant key=] is not null, [=header list/set=] ``
+                    `Variant-Key` ``/|allowedSxgLink|'s [=allowed signed
+                    exchange link info/variant key=] in |storedExchange|'s
                     [=exchange/response=]'s [=response/header list=].
                 1. Let |requestForMatch| be the result of [=creating a
-                    potential-CORS request=] given |linkTarget|, the empty
-                    string, and [=No CORS=].
+                    potential-CORS request=] given |allowedSxgLink|'s [=allowed
+                    signed exchange link info/target=], the empty string, and
+                    [=No CORS=].
                 1. If |requestForMatch| doesn't [=matches the stored exchange=]
                     |storedExchange|, then continue.
-                1. Set |headerIntegrity| to the fourth item of |allowedSxgLink|.
-            1. Let |alternateSXG| be null.
+                1. Set |headerIntegrity| to |allowedSxgLink|'s [=allowed signed
+                    exchange link info/header integrity=].
+            1. Let |prefetched alternate exchange| be null.
             1. For each |sxg| of |navigationParams|'s [=navigation
                 params/prefetched subresource signed exchanges=]:
                 1. If |headerIntegrity| is the same as the value of |sxg|'s
                     [=exchange/response=]'s [=response/header integrity value=]
                     encoded as a [[CSP]] <a grammar>hash-source</a>, then set
-                    |alternateSXG| to |sxg|.
-            1. If |headerIntegrity| is not an empty string and |alternateSXG| is
-                null, then set |canLoadAlternateSxg| to false.
-            1. [=list/Append=] (|link|, |linkTarget|, |headerIntegrity|,
-                |alternateSXG|) to |preloadLinkItems|.
+                    |prefetched alternate exchange| to |sxg|.
+            1. If |headerIntegrity| is not null and |prefetched alternate
+                exchange| is null, then set |canLoadAlternateSxg| to false.
+                
+                Note: This means that there is a matching
+                <{link/rel/allowed-alt-sxg}> link for the <{link/rel/preload}>
+                |link|, but the matching signed exchange has not been
+                prefetched. In this case the UA MUST NOT use the prefetched
+                subresource signed exchanges for other  <{link/rel/preload}>
+                links. This is intended to prevent the referrer page from
+                encoding a tracking ID into the set of subresources it
+                prefetches.
+            1. [=list/Append=] the [=alternate signed exchange peload info=]
+                (|link|, |linkTarget|, |prefetched alternate exchange|) to
+                |preloadLinkItems|.
         1. For each |preloadLinkItem| of |preloadLinkItems|:
-            1. Let |link| be the first item of |preloadLinkItem|.
-            1. Let |linkTarget| be the second item of |preloadLinkItem|.
-            1. Let |headerIntegrity| be the third item of |preloadLinkItem|.
-            1. Let |alternateSXG| be the fourth item of |preloadLinkItem|.
-            1. Let |corsAttribute| be the [=CORS settings attribute=] of the
-                second item of the first tuple of |link|'s [=Target Attributes
-                list|Target Attributes=] whose first item matches the string
-                `"crossorigin"` or [=No CORS=] if it is not present.
+            1. Let |corsAttribute| be the [=CORS settings attribute=] of
+                |preloadLinkItem|'s [=alternate signed exchange peload
+                info/link=]'s [=Target Attribute named=] `"crossorigin"`.
             1. Let |request| be the result of [=creating a potential-CORS
-                request=] given |linkTarget|, the empty string, and
-                |corsAttribute|.
+                request=] given |preloadLinkItem|'s [=alternate signed exchange
+                peload info/target=], the empty string, and |corsAttribute|.
             1. Set |request|'s [=request/synchronous flag=].
             1. Set |request|'s [=request/client=] to |document|.
-            1. Set |request|'s [=request/cryptographic nonce metadata=] to be
-                the second item of the first tuple of |link|'s [=Target
-                Attributes list|Target Attributes=] whose first item matches the
-                string `"nonce"` if it is present.
-            1. Set |request|'s [=request/integrity metadata=] to be the second
-                item of the first tuple of |link|'s [=Target Attributes
-                list|Target Attributes=] whose first item matches the string
-                `"integrity"` if it is present.
+            1. Set |request|'s [=request/cryptographic nonce metadata=] to
+                |preloadLinkItem|'s [=alternate signed exchange peload
+                info/link=]'s [=Target Attribute named=] `"nonce"`.
+            1. Set |request|'s [=request/integrity metadata=] to
+                |preloadLinkItem|'s [=alternate signed exchange peload
+                info/link=]'s [=Target Attribute named=] `"integrity"`.
             1. Set |request|'s [=request/referrer policy=] to be the [=referrer
-                policy attribute=] of second item of the first tuple of |link|'s
-                [=Target Attributes list|Target Attributes=] whose first item
-                matches the string `"referrerpolicy"` if it is present.
-            1. Set |request|'s [=request/destination=] to the second item of the
-                first tuple of |link|'s [=Target Attributes list|Target
-                Attributes=] whose first item matches the string `"as"` or the
-                empty string ("") if it is not present.
-            1. If |canLoadAlternateSxg| is true and |alternateSXG| is not null,
-                then set |request|'s [=request/stashed exchange=] to
-                |alternateSXG|.
+                policy attribute=] of |preloadLinkItem|'s [=alternate signed
+                exchange peload info/link=]'s [=Target Attribute named=]
+                `"referrerpolicy"`.
+            1. Set |request|'s [=request/destination=] to |preloadLinkItem|'s
+                [=alternate signed exchange peload info/link=]'s [=Target
+                Attribute named=] `"as"`.
+            1. If |canLoadAlternateSxg| is true, then set |request|'s
+                [=request/stashed exchange=] to |preloadLinkItem|'s [=alternate
+                signed exchange peload info/prefetched alternate exchange=].
             1. [=Fetch=] |request| in parallel.
 
 Issue(whatwg/html#4224): Currently the processing model of the HTTP <a
@@ -935,6 +873,61 @@ An exchange signature is a [=struct=] with the following items:
 :: The POSIX time at which the signature stops being valid.
 
 </dl>
+
+<h3 dfn-type=dfn export>Allowed signed exchange link info</h3>
+
+An allowed signed exchange link info is a [=struct=] with the following items:
+
+<dl dfn-for="allowed signed exchange link info">
+: <dfn>target</dfn>
+:: A [=Link Target=] of the link.
+: <dfn>header integrity</dfn>
+:: A [=string=] holding the value of the link's of [=Target Attributes
+    list|Target Attribute=] named `"header-integrity"`.
+: <dfn>variants</dfn>
+:: A [=string=] holding the value of the link's of [=Target Attributes
+    list|Target Attribute=] named `"variants"`, or null.
+: <dfn>variant key</dfn>
+:: A [=string=] holding the value of the link's of [=Target Attributes
+    list|Target Attribute=] named `"varivariant keyants"`, or null.
+
+</dl>
+
+<h3 dfn-type=dfn export>Alternate signed exchange link info</h3>
+
+An alternate signed exchange link info is a [=struct=] with the following items:
+
+<dl dfn-for="alternate signed exchange link info">
+: <dfn>target</dfn>
+:: A [=Link Target=] of the link.
+: <dfn>context</dfn>
+:: A [=string=] holding the value of the link's of [=Link Context=].
+: <dfn>variants</dfn>
+:: A [=string=] holding the value of the link's of [=Target Attributes
+    list|Target Attribute=] named `"variants"`, or null.
+: <dfn>variant key</dfn>
+:: A [=string=] holding the value of the link's of [=Target Attributes
+    list|Target Attribute=] named `"varivariant keyants"`, or null.
+
+</dl>
+
+<h3 dfn-type=dfn export>Alternate signed exchange peload info</h3>
+
+An alternate signed exchange peload info is a [=struct=] with the following items:
+
+<dl dfn-for="alternate signed exchange peload info">
+: <dfn>link</dfn>
+:: A link object [=Parsing a Link Field Value|parsed=] from a HTTP <a
+    http-header>Link</a> header.
+: <dfn>target</dfn>
+:: A URL to be preloaded. <span class="note">This MAY be different from
+    [=alternate signed exchange peload info/link=]'s [=Link Target=], when
+    `"imagesrcset"` is used for image preload.</span>
+: <dfn>prefetched alternate exchange</dfn>
+:: A [=exchange=] of the prefetched [=alternate signed exchange=], or null.
+
+</dl>
+
 
 # Algorithms # {#algorithms}
 
@@ -1770,6 +1763,59 @@ To <dfn for="read buffer">Dump</dfn> a [=read buffer=] |input| to a
         :: [=ReadableStream/Error=] |output| with reason |e|.
 
         </dl>
+
+<h4 algorithm id="dump-value-of-target-attributes">Get value of [=Target
+Attributes list|Target Attributes=]</h4>
+
+A link header value |link|'s <dfn noexport>Target Attribute named</dfn> |name|
+is the second item of the first tuple of |link|'s [=Target Attributes
+list|Target Attributes=] whose first item matches the string |name|, or null if
+no such tuple is present.
+
+
+<h4 algorithm id="get-allowed-signed-exchange-links">Get allowed signed exchange
+link info</h4>
+
+The result of <dfn>getting allowed signed exchange link info</dfn> from a
+[=list=] |links| is returned by the following steps:
+
+1. Let |allowedSxgLinks| be an empty [=list=].
+1. For each |link| of |links|:
+    1. If |link|'s [=Relation Type=] is not 'allowed-alt-sxg', then continue.
+    1. Let |linkTarget| be |link|'s [=Link Target=].
+    1. Let |headerIntegrity| be |link|'s [=Target Attribute named=]
+        `"header-integrity"`.
+    1. If |headerIntegrity| is null, then continue.
+    1. Let |linkVariants| be |link|'s [=Target Attribute named=] `"variants"`.
+    1. Let |linkVariantKey| be |link|'s [=Target Attribute named=]
+        `"variant-key"`.
+    1. [=list/Append=] the [=allowed signed exchange link info=] (|linkTarget|,
+        |headerIntegrity|, |linkVariants|, |linkVariantKey|) to
+        |allowedSxgLinks|.
+1. Return |allowedSxgLinks|.
+
+<h4 algorithm id="get-alternate-signed-exchange-links">Get alternate signed 
+exchange link info</h4>
+
+The result of <dfn>getting alternate signed exchange link info</dfn> from a
+[=list=] |links| is returned by the following steps:
+
+1. Let |alternateSxgLinks| be an empty [=list=].
+1. For each |link| of |links|:
+    1. If |link|'s [=Relation Type=] is not 'alternate', then continue.
+    1. If |link|'s [=Target Attributes list|Target Attributes=] doesn't
+        [=list/contain=] (`"type"`,`"application/signed-exchange"`), then
+        continue.
+    1. Let |linkTarget| be |link|'s [=Link Target=].
+    1. Let |linkContext| be |link|'s [=Link Context=].
+    1. Let |linkVariants| be |link|'s [=Target Attribute named=] `"variants"`.
+    1. Let |linkVariantKey| be |link|'s [=Target Attribute named=]
+        `"variant-key"`.
+    1. [=list/Append=] the [=alternate signed exchange link info=]
+        (|linkTarget|, |linkContext|, |linkVariants|, |linkVariantKey|) to
+        |alternateSxgLinks|.
+1. Return |alternateSxgLinks|.
+
 
 # Security Considerations # {#seccons}
 
