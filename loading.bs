@@ -987,8 +987,8 @@ To <dfn lt="reading a body|read a body">read a body</dfn> from a [=read buffer=]
 1. Let |cancel| be the following steps, taking |reason| as an argument:
     1. [=ReadableStream/Cancel=] |stream|'s [=read buffer/stream=] with
         |reason|.
-1. Let |outputStream| be the result of [=ReadableStream/construct a
-    ReadableStream object|constructing a ReadableStream=] with |cancel|.
+1. Let |outputStream| be the result of [=constructing a ReadableStream object=]
+    with |cancel|.
 1. Set |body|'s [=body/stream=] to |outputStream|.
 1. Set |response|'s [=response/body=] to |body|.
 1. [=In parallel=]:
@@ -1251,15 +1251,8 @@ To <dfn for="read buffer">Dump</dfn> a [=read buffer=] |input| to a
 {{ReadableStream}} |output|, the UA MUST:
 
 1. Assert: This algorithm is running [=in parallel=].
-1. Let |enqueue| be the following steps, taking |bytes|:
-    1. [=ReadableStream/Enqueue=] a {{Uint8Array}} object wrapping an
-        {{ArrayBuffer}} containing |bytes| to |output|. Both objects are created
-        in |output|'s realm.
-    1. If that threw an exception |ex|, [=ReadableStream/error=] |output| with
-        |ex| and [=ReadableStream/cancel=] |input|'s [=read buffer/stream=] with
-        |ex|.
-    1. Abort this algorithm.
-1. |enqueue| |input|'s [=read buffer/bytes=].
+1. [=ReadableStream/Enqueue bytes=] given |input|'s [=read buffer/bytes=] and
+    |output|.
 1. While |input|'s [=read buffer/stream=] is [=ReadableStream/readable=]:
     1. Wait until |output| is [=ReadableStream/closed=],
         [=ReadableStream/errored=], or [=ReadableStream/need more data|needs
@@ -1276,7 +1269,7 @@ To <dfn for="read buffer">Dump</dfn> a [=read buffer=] |input| to a
 
         : Fulfilled with an object whose `done` property is `false` and whose
             `value` property is a {{Uint8Array}} object |bytes|:
-        :: |enqueue| |bytes|.
+        :: [=ReadableStream/Enqueue bytes=] given |bytes| and |output|.
 
         : Fulfilled with an object whose `done` property is `true`:
         :: [=ReadableStream/Close=] |output|.
