@@ -116,6 +116,10 @@ spec: RFC7231; urlPrefix: https://tools.ietf.org/html/rfc7231#
         text: HTTP media type; url: section-3.1.1.1
     type: http-header
         text: Date; url: section-7.1.1.2
+spec: 7230; urlPrefix: https://tools.ietf.org/html/rfc7230#
+    type: grammar
+        text: quoted-string; url: section-3.2.6
+        text: token; url: section-3.2.6
 spec: RFC8288; urlPrefix: https://tools.ietf.org/html/rfc8288#
     type: dfn
         text: Target Attributes list; url: section-2.2
@@ -278,7 +282,7 @@ Rewrite [=request/clone|clone a request=] to run these steps:
 ## New response fields ## {#mp-response}
 
 A [=response=] has an associated <dfn for="response">came from a signed
-exchange</dfn> boolean, which is false by default.
+exchange</dfn> boolean. Unless stated otherwise, it is false.
 
 A [=response=] has an associated <dfn for="response">signed exchange outer
 header list</dfn> (a [=header list=]). Unless stated otherwise it is empty.
@@ -286,7 +290,8 @@ header list</dfn> (a [=header list=]). Unless stated otherwise it is empty.
 A [=response=] has an associated <dfn for="response">header integrity
 value</dfn>, either null or, for responses that [=response/came from a signed
 exchange=], a [=byte sequence=] holding the [=SHA-256=] hash that verified the
-[=exchange/response=]'s [=response/header list=].
+[=exchange/response=]'s [=response/header list=]. Unless stated otherwise, it is
+null.
 
 Note: The [=response/header integrity value=] doesn’t change even if the
 publisher signs the content again or changes the signing key, but it does change
@@ -440,7 +445,7 @@ satisfy the `https://cdn.publisher.example/lib.js` `<script>` element.
     <{link/header-integrity}> parameter. The <dfn element-attr
     for="link">header-integrity</dfn> parameter holds the value of the
     [=response/header integrity value=] of the [=alternate signed exchange=],
-    encoded as a [[CSP]] <a grammar>hash-source</a>. 
+    encoded as a [[CSP]] <a grammar>hash-source</a>.
 * An <dfn>alternate signed exchange link</dfn> is a <a http-header>Link</a>
     header sent with a signed exchange |S|, with the <{link/rel/alternate}> link
     type, the `type` parameter set to `application/signed-exchange`, and a
@@ -451,21 +456,34 @@ satisfy the `https://cdn.publisher.example/lib.js` `<script>` element.
     dfn-type=dfn>alternate signed exchange</dfn> at the [=Link Target=] of the
     [=alternate signed exchange link=].
 
-* New [=Target Attributes=] on the <a http-header>Link</a> header.
+* New serialisation-defined [=Target Attributes=] on the <a http-header>Link</a>
+    header.
 
-    * The <dfn element-attr for="link">variants</dfn> parameter may be present.
+    * The <dfn element-attr for="link">variants</dfn> target attribute has the
+        same values as the <a http-header>Variants</a> Header Field.  There MUST
+        NOT be more than one <{link/variants}> attribute in a link-value; occurrences
+        after the first MUST be ignored by parsers. It is serialized to an HTTP
+        link-param by first encoding as if it were a <a http-header>Variants</a>
+        Header Field value, and then if there are characters that don't match
+        the <a grammar>token</a> production, encoding as a <a
+        grammar>quoted-string</a>.
+
         This parameter is used in <{link/rel/allowed-alt-sxg}> link and
         [=alternate signed exchange link=] to indicate what representations are
         available for the resource at the time that the response is produced.
-        This attribute is using the same format as <a
-        http-header>Variants</a> Header Field.
 
-    * The <dfn element-attr for="link">variant-key</dfn> parameter may be
-        present. This parameter is used in <{link/rel/allowed-alt-sxg}> link and
+    * The <dfn element-attr for="link">variant-key</dfn> target attribute has
+        the same values as the <a http-header>Variant-Key</a> Header Field.
+        There MUST NOT be more than one <{link/variant-key}> attribute in a
+        link-value; occurrences after the first MUST be ignored by parsers. It
+        is serialized to an HTTP link-param by first encoding as if it were a <a
+        http-header>Variant-Key</a> Header Field value, and then if there are
+        characters that don't match the <a grammar>token</a> production,
+        encoding as a <a grammar>quoted-string</a>.
+
+        This parameter is used in <{link/rel/allowed-alt-sxg}> link and
         [=alternate signed exchange link=] to indicate one or more sets of
         available-values that identify the representation of the resource.
-        This parameter is using the same format as <a
-        http-header>Variant-Key</a> Header Field.
 
 <h3 algorithm id="mp-document">New Document fields</h3>
 
@@ -614,7 +632,7 @@ add the following steps:
         [=Document/prefetched signed exchanges for navigation=][|request|'s
         [=request/url=]] [=map/exists=], then:
 
-        1. Let |prefetchedExchange| be |sourceBrowsingContext|'s 
+        1. Let |prefetchedExchange| be |sourceBrowsingContext|'s
             [=active document=]'s [=Document/prefetched signed exchanges for
             navigation=][|request|'s [=request/url=]].
 
@@ -678,7 +696,7 @@ add the following steps:
         1. Let |allowedSxgLinks| be the result of [=getting allowed signed
             exchange link info=] from |links|.
         1. Let |preloadLinkItems| be an empty [=list=].
-        1. Let |canLoadAlternateSxg| be true. 
+        1. Let |canLoadAlternateSxg| be true.
         1. For each |link| of |links|:
             1. If |link|'s [=Relation Type=] is not 'preload', then continue.
             1. Let |linkTarget| be |link|'s [=Link Target=].
@@ -733,7 +751,7 @@ add the following steps:
                     |prefetched alternate exchange| to |sxg|.
             1. If |headerIntegrity| is not null and |prefetched alternate
                 exchange| is null, then set |canLoadAlternateSxg| to false.
-                
+
                 Note: This means that there is a matching
                 <{link/rel/allowed-alt-sxg}> link for the <{link/rel/preload}>
                 |link|, but the matching signed exchange has not been
@@ -1817,7 +1835,7 @@ The result of <dfn>getting allowed signed exchange link info</dfn> from a
         |allowedSxgLinks|.
 1. Return |allowedSxgLinks|.
 
-<h4 algorithm id="get-alternate-signed-exchange-links">Get alternate signed 
+<h4 algorithm id="get-alternate-signed-exchange-links">Get alternate signed
 exchange link info</h4>
 
 The result of <dfn>getting alternate signed exchange link info</dfn> from a
