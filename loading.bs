@@ -500,8 +500,11 @@ In the [=navigation params=], add the following items:
 <h3 algorithm id="mp-link-type-prefetch">Monkeypatch Link type "prefetch"</h3>
 
 Note: To prefetch the [=alternate signed exchanges=] when the UA receives a
-prefetched main resource signed exchange, this section monkeypatchs
-Link type "<{link/rel/prefetch}>".
+prefetched main resource signed exchange, this section monkeypatchs Link type
+"<{link/rel/prefetch}>". This is getting all the [=alternate signed exchange
+links=] from the outer response, and see if they are allowed by the inner
+response's <{link/rel/allowed-alt-sxg}> links, and if they are match with the
+inner response's <{link/rel/preload}> links.
 
 Issue(w3c/resource-hints#77): Currently the behavior of recursive prefetch is
 not defined in the specs. This section monkeypatches Link type
@@ -520,9 +523,9 @@ The [=process the linked resource=] given a link element |el|, boolean
 1. Let |clonedExchange| be the result of creating a new [=exchange=] with the
     first item of |response|'s [=response/URL list=] and the result of
     [=response/cloning=] |response|.
-1. [=map/Set=] |el|'s [=Node/node document=]'s [=Document/prefetched signed
-    exchanges for navigation=][|clonedExchange|'s [=exchange/request URL=]] to
-    |clonedExchange|.
+1. [=map/Set=] |clonedExchange| to |el|'s [=Node/node document=]'s
+    [=Document/prefetched signed exchanges for navigation=][|clonedExchange|'s
+    [=exchange/request URL=]].
 1. Let |outerLinkHeader| be the result of [=header list/getting=] `` `Link` ``
     from |response|'s [=response/signed exchange outer header list=].
 1. If |outerLinkHeader| is null, then return.
@@ -641,8 +644,12 @@ Note: As browsers move toward partitioned HTTP caches, the source document's
 <h3 algorithm id="mp-page-load-processing-model-for-html-fiiles">
 Monkeypatch Page load processing model for HTML files</h3>
 
-Note: To use the prefetched subresource signed exchanges after the navigation,
-this section monkeypatchs [=Page load processing model for HTML files=].
+Note: To use the [=navigation params/prefetched subresource signed exchanges=]
+after the navigation, this section monkeypatchs [=Page load processing model for
+HTML files=]. This is getting all the <{link/rel/allowed-alt-sxg}> links from
+the inner response. And use the [=navigation params/prefetched subresource
+signed exchanges=] if the all allowed signe exchanges for subresources which are
+indicated by the inner response's <{link/rel/preload}> links are prefetched.
 
 Issue(whatwg/html#4224): Currently the processing model of the HTTP <a
 http-header>Link</a> header is not defined in the HTML spec. This section
