@@ -122,11 +122,11 @@ spec: 7230; urlPrefix: https://tools.ietf.org/html/rfc7230#
         text: token; url: section-3.2.6
 spec: RFC8288; urlPrefix: https://tools.ietf.org/html/rfc8288#
     type: dfn
-        text: Target Attributes list; url: section-2.2
+        text: Target Attribute; url: section-2.2
         text: Link Target; url: section-3.1
         text: Link Context; url: section-3.2
         text: Relation Type; url: section-3.3
-        text: Target Attributes; url: section-3.4
+        text: Serialisation-Defined Target Attribute; url: section-3.4
         text: Parsing a Link Field Value; url: appendix-B.2
     type: http-header
         text: Link; url: section-3
@@ -281,8 +281,9 @@ Rewrite [=request/clone|clone a request=] to run these steps:
 
 ## New response fields ## {#mp-response}
 
-A [=response=] has an associated <dfn for="response">came from a signed
-exchange</dfn> boolean. Unless stated otherwise, it is false.
+A [=response=] has an associated <dfn for="response" lt="came from a signed
+exchange|did not come from a signed exchange">came from a signed exchange</dfn>
+boolean. Unless stated otherwise, it is false.
 
 A [=response=] has an associated <dfn for="response">signed exchange outer
 header list</dfn> (a [=header list=]). Unless stated otherwise it is empty.
@@ -456,20 +457,20 @@ satisfy the `https://cdn.publisher.example/lib.js` `<script>` element.
     dfn-type=dfn>alternate signed exchange</dfn> at the [=Link Target=] of the
     [=alternate signed exchange link=].
 
-* New serialisation-defined [=Target Attributes=] on the <a http-header>Link</a>
+* New [=serialisation-defined Target Attributes=] on the <a http-header>Link</a>
     header.
 
     * The <dfn element-attr for="link">variants</dfn> target attribute has the
         same values as the <a http-header>Variants</a> Header Field.  There MUST
-        NOT be more than one <{link/variants}> attribute in a link-value; occurrences
-        after the first MUST be ignored by parsers. It is serialized to an HTTP
-        link-param by first encoding as if it were a <a http-header>Variants</a>
-        Header Field value, and then if there are characters that don't match
-        the <a grammar>token</a> production, encoding as a <a
-        grammar>quoted-string</a>.
+        NOT be more than one <{link/variants}> attribute in a link-value;
+        occurrences after the first MUST be ignored by parsers. It is serialized
+        to an HTTP link-param by first encoding as if it were a <a
+        http-header>Variants</a> Header Field value, and then if there are
+        characters that don't match the <a grammar>token</a> production,
+        encoding as a <a grammar>quoted-string</a>.
 
-        This parameter is used in <{link/rel/allowed-alt-sxg}> link and
-        [=alternate signed exchange link=] to indicate what representations are
+        This parameter is used in <{link/rel/allowed-alt-sxg}> links and
+        [=alternate signed exchange links=] to indicate what representations are
         available for the resource at the time that the response is produced.
 
     * The <dfn element-attr for="link">variant-key</dfn> target attribute has
@@ -481,8 +482,8 @@ satisfy the `https://cdn.publisher.example/lib.js` `<script>` element.
         characters that don't match the <a grammar>token</a> production,
         encoding as a <a grammar>quoted-string</a>.
 
-        This parameter is used in <{link/rel/allowed-alt-sxg}> link and
-        [=alternate signed exchange link=] to indicate one or more sets of
+        This parameter is used in <{link/rel/allowed-alt-sxg}> links and
+        [=alternate signed exchange links=] to indicate one or more sets of
         available-values that identify the representation of the resource.
 
 <h3 algorithm id="mp-document">New Document fields</h3>
@@ -494,7 +495,7 @@ section, add the following lines:
 <blockquote dfn-for="Document">
 
 The {{Document}} has a map of <dfn dfn>prefetched signed exchanges for
-navigation</dfn>, which is a [=map=] of [=URL=] to [=exchange=], initially
+navigation</dfn>, which is a [=map=] of [=URLs=] to [=exchanges=], initially
 empty.  <span class="note">This might merge with the set of prefetched resources
 when <{link/rel/prefetch}> is specified more completely.</span>
 
@@ -506,44 +507,45 @@ empty.
 
 <h3 algorithm id="mp-navigation-params">New navigation params struct field</h3>
 
-In the [=navigation params=], add the following items:
+In the [=navigation params=] struct, add the following items:
 
 <dl dfn-for="navigation params">
 
 : <dfn>prefetched subresource signed exchanges</dfn>
-:: A set of [=exchanges=], initially empty.
+:: A set of [=exchanges=], empty unless specified otherwise.
 
 </dl>
 
 <h3 algorithm id="mp-link-type-prefetch">Monkeypatch Link type "prefetch"</h3>
 
 Note: To prefetch the [=alternate signed exchanges=] when the UA receives a
-prefetched main resource signed exchange, this section monkeypatchs Link type
-"<{link/rel/prefetch}>". This is getting all the [=alternate signed exchange
-links=] from the outer response, and see if they are allowed by the inner
-response's <{link/rel/allowed-alt-sxg}> links, and if they are match with the
-inner response's <{link/rel/preload}> links.
+prefetched main resource signed exchange, this section monkeypatches Link type
+"<{link/rel/prefetch}>". This algorithm gets all the [=alternate signed exchange
+links=] from the outer response, checks if they are allowed by the inner
+response's <{link/rel/allowed-alt-sxg}> links, and if they are, associates them
+with the inner response's <{link/rel/preload}> links.
 
 Issue(w3c/resource-hints#77): Currently the behavior of recursive prefetch is
-not defined in the specs. This section monkeypatches Link type
-"<{link/rel/prefetch}>" to support only for the [=alternate signed exchanges=]
-subresources. When we will change the HTML spec to support the general recursive
-prefetching, this section must be made align with the change.
+not specified. This section monkeypatches Link type "<{link/rel/prefetch}>" to
+add support only for the [=alternate signed exchanges=] subresources. When we
+change the HTML spec to support general recursive prefetching, this section
+needs to align with that change.
 
-The [=process the linked resource=] given a link element |el|, boolean
-|success|, and [=response=] |response|:
+To [=process the linked resource|process this type of linked resource=]
+("<{link/rel/prefetch}>"), given a link element |el|, boolean |success|, and
+[=response=] |response|:
 
 1. If |success| is true, [=fire an event=] named {{HTMLElement/load}} at |el|.
 1. Otherwise, [=fire an event=] named {{HTMLElement/error}} at |el|.
-1. If the |success| is false, then return.
-1. If the |response|'s [=response/came from a signed exchange=] is false, then
+1. If |success| is false, then return.
+1. If the |response| [=response/did not come from a signed exchange=], then
     return.
-1. Let |clonedExchange| be the result of creating a new [=exchange=] with the
-    first item of |response|'s [=response/URL list=] and the result of
-    [=response/cloning=] |response|.
-1. [=map/Set=] |clonedExchange| to |el|'s [=Node/node document=]'s
-    [=Document/prefetched signed exchanges for navigation=][|clonedExchange|'s
-    [=exchange/request URL=]].
+1. Let |requestUrl| be the first item of |response|'s [=response/URL list=].
+1. Let |clonedExchange| be the result of creating a new [=exchange=] with
+    |requestUrl| and the result of [=response/cloning=] |response|.
+1. Let |prefetchedSignedExchanges| be |el|'s [=Node/node document=]'s
+    [=Document/prefetched signed exchanges for navigation=].
+1. [=map/Set=] |prefetchedSignedExchanges|[|requestUrl|] to |clonedExchange|.
 1. Let |outerLinkHeader| be the result of [=header list/getting=] `` `Link` ``
     from |response|'s [=response/signed exchange outer header list=].
 1. If |outerLinkHeader| is null, then return.
@@ -760,34 +762,34 @@ add the following steps:
                 links. This is intended to prevent the referrer page from
                 encoding a tracking ID into the set of subresources it
                 prefetches.
-            1. [=list/Append=] the [=alternate signed exchange peload info=]
+            1. [=list/Append=] the [=alternate signed exchange preload info=]
                 (|link|, |linkTarget|, |prefetched alternate exchange|) to
                 |preloadLinkItems|.
         1. For each |preloadLinkItem| of |preloadLinkItems|:
             1. Let |corsAttribute| be the [=CORS settings attribute=] of
-                |preloadLinkItem|'s [=alternate signed exchange peload
+                |preloadLinkItem|'s [=alternate signed exchange preload
                 info/link=]'s [=Target Attribute named=] `"crossorigin"`.
             1. Let |request| be the result of [=creating a potential-CORS
                 request=] given |preloadLinkItem|'s [=alternate signed exchange
-                peload info/target=], the empty string, and |corsAttribute|.
+                preload info/target=], the empty string, and |corsAttribute|.
             1. Set |request|'s [=request/synchronous flag=].
             1. Set |request|'s [=request/client=] to |document|.
             1. Set |request|'s [=request/cryptographic nonce metadata=] to
-                |preloadLinkItem|'s [=alternate signed exchange peload
+                |preloadLinkItem|'s [=alternate signed exchange preload
                 info/link=]'s [=Target Attribute named=] `"nonce"`.
             1. Set |request|'s [=request/integrity metadata=] to
-                |preloadLinkItem|'s [=alternate signed exchange peload
+                |preloadLinkItem|'s [=alternate signed exchange preload
                 info/link=]'s [=Target Attribute named=] `"integrity"`.
             1. Set |request|'s [=request/referrer policy=] to be the [=referrer
                 policy attribute=] of |preloadLinkItem|'s [=alternate signed
-                exchange peload info/link=]'s [=Target Attribute named=]
+                exchange preload info/link=]'s [=Target Attribute named=]
                 `"referrerpolicy"`.
             1. Set |request|'s [=request/destination=] to |preloadLinkItem|'s
-                [=alternate signed exchange peload info/link=]'s [=Target
+                [=alternate signed exchange preload info/link=]'s [=Target
                 Attribute named=] `"as"`.
             1. If |canLoadAlternateSxg| is true, then set |request|'s
                 [=request/stashed exchange=] to |preloadLinkItem|'s [=alternate
-                signed exchange peload info/prefetched alternate exchange=].
+                signed exchange preload info/prefetched alternate exchange=].
 
                 Note: When |canLoadAlternateSxg| if false or there is no
                 matching prefetched alternate exchange, the original resource
@@ -917,55 +919,57 @@ An exchange signature is a [=struct=] with the following items:
 
 <h3 dfn-type=dfn export>Allowed signed exchange link info</h3>
 
-An allowed signed exchange link info is a [=struct=] with the following items:
+An allowed signed exchange link info is a [=struct=] with the following items,
+holding a parsed <{link/rel/allowed-alt-sxg}> link:
 
 <dl dfn-for="allowed signed exchange link info">
 : <dfn>target</dfn>
 :: A [=Link Target=] of the link.
 : <dfn>header integrity</dfn>
-:: A [=string=] holding the value of the link's of [=Target Attributes
-    list|Target Attribute=] named `"header-integrity"`.
+:: A [=string=] holding the value of the link's [=Target Attribute=] named
+    `"header-integrity"`.
 : <dfn>variants</dfn>
-:: A [=string=] holding the value of the link's of [=Target Attributes
-    list|Target Attribute=] named `"variants"`, or null.
+:: A [=string=] holding the value of the link's [=Target Attribute=] named
+    `"variants"`, or null.
 : <dfn>variant key</dfn>
-:: A [=string=] holding the value of the link's of [=Target Attributes
-    list|Target Attribute=] named `"varivariant keyants"`, or null.
+:: A [=string=] holding the value of the link's [=Target Attribute=] named
+    `"variant key"`, or null.
 
 </dl>
 
 <h3 dfn-type=dfn export>Alternate signed exchange link info</h3>
 
-An alternate signed exchange link info is a [=struct=] with the following items:
+An alternate signed exchange link info is a [=struct=] with the following items,
+holding a parsed <{link/rel/alternate}> link:
 
 <dl dfn-for="alternate signed exchange link info">
 : <dfn>target</dfn>
-:: A [=Link Target=] of the link.
+:: The [=Link Target=] of the link.
 : <dfn>context</dfn>
-:: A [=string=] holding the value of the link's of [=Link Context=].
+:: A [=string=] holding the value of the link's [=Link Context=].
 : <dfn>variants</dfn>
-:: A [=string=] holding the value of the link's of [=Target Attributes
-    list|Target Attribute=] named `"variants"`, or null.
+:: A [=string=] holding the value of the link's [=Target Attribute=] named
+    `"variants"`, or null.
 : <dfn>variant key</dfn>
-:: A [=string=] holding the value of the link's of [=Target Attributes
-    list|Target Attribute=] named `"varivariant keyants"`, or null.
+:: A [=string=] holding the value of the link's [=Target Attribute=] named
+    `"variant key"`, or null.
 
 </dl>
 
-<h3 dfn-type=dfn export>Alternate signed exchange peload info</h3>
+<h3 dfn-type=dfn export>Alternate signed exchange preload info</h3>
 
-An alternate signed exchange peload info is a [=struct=] with the following items:
+An alternate signed exchange preload info is a [=struct=] with the following items:
 
-<dl dfn-for="alternate signed exchange peload info">
+<dl dfn-for="alternate signed exchange preload info">
 : <dfn>link</dfn>
 :: A link object [=Parsing a Link Field Value|parsed=] from a HTTP <a
     http-header>Link</a> header.
 : <dfn>target</dfn>
-:: A URL to be preloaded. <span class="note">This MAY be different from
-    [=alternate signed exchange peload info/link=]'s [=Link Target=], when
+:: A URL to be preloaded. <span class="note">This can be different from
+    [=alternate signed exchange preload info/link=]'s [=Link Target=], when
     `"imagesrcset"` is used for image preload.</span>
 : <dfn>prefetched alternate exchange</dfn>
-:: A [=exchange=] of the prefetched [=alternate signed exchange=], or null.
+:: The [=exchange=] of the prefetched [=alternate signed exchange=], or null.
 
 </dl>
 
@@ -1805,17 +1809,14 @@ To <dfn for="read buffer">Dump</dfn> a [=read buffer=] |input| to a
 
         </dl>
 
-<h4 algorithm id="dump-value-of-target-attributes">Get value of [=Target
-Attributes list|Target Attributes=]</h4>
+<h3 algorithm id="dump-value-of-target-attributes">Get value of [=Target Attributes=]</h3>
 
 A link header value |link|'s <dfn noexport>Target Attribute named</dfn> |name|
-is the second item of the first tuple of |link|'s [=Target Attributes
-list|Target Attributes=] whose first item matches the string |name|, or null if
-no such tuple is present.
+is the second item of the first tuple of |link|'s [=Target Attributes=] whose
+first item matches the string |name|, or null if no such tuple is present.
 
 
-<h4 algorithm id="get-allowed-signed-exchange-links">Get allowed signed exchange
-link info</h4>
+<h3 algorithm id="get-allowed-signed-exchange-links">Get allowed signed exchange link info</h3>
 
 The result of <dfn>getting allowed signed exchange link info</dfn> from a
 [=list=] |links| is returned by the following steps:
@@ -1835,8 +1836,8 @@ The result of <dfn>getting allowed signed exchange link info</dfn> from a
         |allowedSxgLinks|.
 1. Return |allowedSxgLinks|.
 
-<h4 algorithm id="get-alternate-signed-exchange-links">Get alternate signed
-exchange link info</h4>
+<h3 algorithm id="get-alternate-signed-exchange-links">Get alternate signed
+exchange link info</h3>
 
 The result of <dfn>getting alternate signed exchange link info</dfn> from a
 [=list=] |links| is returned by the following steps:
@@ -1844,9 +1845,8 @@ The result of <dfn>getting alternate signed exchange link info</dfn> from a
 1. Let |alternateSxgLinks| be an empty [=list=].
 1. For each |link| of |links|:
     1. If |link|'s [=Relation Type=] is not 'alternate', then continue.
-    1. If |link|'s [=Target Attributes list|Target Attributes=] doesn't
-        [=list/contain=] (`"type"`,`"application/signed-exchange"`), then
-        continue.
+    1. If |link|'s [=Target Attributes=] doesn't [=list/contain=]
+        (`"type"`,`"application/signed-exchange"`), then continue.
     1. Let |linkTarget| be |link|'s [=Link Target=].
     1. Let |linkContext| be |link|'s [=Link Context=].
     1. Let |linkVariants| be |link|'s [=Target Attribute named=] `"variants"`.
