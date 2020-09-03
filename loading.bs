@@ -596,17 +596,22 @@ To [=process the linked resource|process this type of linked resource=]
             [=response/header list=].
         1. Let |requestForMatch| be the result of [=creating a potential-CORS
             request=] given |linkTarget|, the empty string, and [=No CORS=].
-        1. If |requestForMatch| doesn't [=matches the stored exchange=]
+        1. If |requestForMatch| [=doesn't match the stored exchange=]
             |storedExchange|, then continue.
-        1. Let |alternateSxgUrl| be [=alternate signed exchange link
+        1. Let |alternateSxgUrl| be the [=alternate signed exchange link
             info/target=] of the first [=alternate signed exchange link info=]
-            of |alternateLinks| whose [=alternate signed exchange link
-            info/variants=] matches |allowedSxgLink|'s [=allowed signed exchange
-            link info/variants=] and whose [=alternate signed exchange link
-            info/variant key=] matches |allowedSxgLink|'s [=allowed signed
-            exchange link info/variant key=] and whose [=alternate signed
-            exchange link info/context=] matches |linkTarget| or continue if it
-            is not present.
+            of |alternateLinks| whose
+
+            * [=alternate signed exchange link info/variants=] is
+                [=string/identical to=] |allowedSxgLink|'s [=allowed signed
+                exchange link info/variants=],
+            * [=alternate signed exchange link info/variant key=] is
+                [=string/identical to=] |allowedSxgLink|'s [=allowed signed
+                exchange link info/variant key=], and
+            * [=alternate signed exchange link info/context=] [=url/equals=]
+                |linkTarget|
+
+            or continue if no such link is present.
         1. Let |sxgRequest| be the result of [=creating a potential-CORS
             request=] given |alternateSxgUrl|, the empty string, and [=No
             CORS=].
@@ -665,7 +670,7 @@ Note: As browsers move toward partitioned HTTP caches, the source document's
 Monkeypatch Page load processing model for HTML files</h3>
 
 Note: To use the [=navigation params/prefetched subresource signed exchanges=]
-after the navigation, this section monkeypatchs [=Page load processing model for
+after the navigation, this section monkeypatches [=Page load processing model for
 HTML files=]. This is getting all the <{link/rel/allowed-alt-sxg}> links from
 the inner response. And use the [=navigation params/prefetched subresource
 signed exchanges=] if the all allowed signe exchanges for subresources which are
@@ -688,7 +693,7 @@ add the following steps:
 
             Note: When the |document|'s [=viewport=] is known is not normatively
             defined in the HTML spec. Need to define the behavior of
-            preloadScanner to define this.
+            the preload scanner to define this.
         1. Let |linkHeader| be the result of [=header list/getting=] `` `Link`
             `` from |navigationParams|'s [=navigation params/response=]'s
             [=response/header list=].
@@ -740,7 +745,7 @@ add the following steps:
                     potential-CORS request=] given |allowedSxgLink|'s [=allowed
                     signed exchange link info/target=], the empty string, and
                     [=No CORS=].
-                1. If |requestForMatch| doesn't [=matches the stored exchange=]
+                1. If |requestForMatch| [=doesn't match the stored exchange=]
                     |storedExchange|, then continue.
                 1. Set |headerIntegrity| to |allowedSxgLink|'s [=allowed signed
                     exchange link info/header integrity=].
@@ -946,7 +951,7 @@ holding a parsed <{link/rel/alternate}> link:
 : <dfn>target</dfn>
 :: The [=Link Target=] of the link.
 : <dfn>context</dfn>
-:: A [=string=] holding the value of the link's [=Link Context=].
+:: A [=URL=] holding the value of the link's [=Link Context=].
 : <dfn>variants</dfn>
 :: A [=string=] holding the value of the link's [=Target Attribute=] named
     `"variants"`, or null.
@@ -1526,7 +1531,7 @@ To <dfn lt="reading a body|read a body">read a body</dfn> from a [=read buffer=]
 
 <h3 algorithm id="request-matching">Request matching</h3>
 
-A [=request=] |browserRequest| <dfn>matches the stored exchange</dfn>
+A [=request=] |browserRequest| <dfn lt="matches the stored exchange|doesn't match the stored exchange">matches the stored exchange</dfn>
 |storedExchange| if the following steps return "match":
 
 1. If |browserRequest|'s [=request/method=] is not `` `GET` `` or `` `HEAD` ``,
