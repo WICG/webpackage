@@ -751,10 +751,11 @@ add the following steps:
                 [=allowed signed exchange link info/target=], a destination of
                 the result of [=destination/translating=] |asAttribute|, and a
                 corsAttributeState of [=No CORS=].
-            1. If |requestForMatch| [=doesn't match the stored exchange=]
-                |storedExchange|, then continue.
-            1. Set |headerIntegrity| to |allowedSxgLink|'s [=allowed signed
-                exchange link info/header integrity=].
+            1. If |requestForMatch| [=matches the stored exchange=]
+                |storedExchange|, then:
+                1. Set |headerIntegrity| to |allowedSxgLink|'s [=allowed signed
+                    exchange link info/header integrity=].
+                1. Break out of the |allowedSxgLinks| loop.
         1. Let |prefetched alternate exchange| be null.
         1. For each |sxg| of |navigationParams|'s [=navigation
             params/prefetched subresource signed exchanges=]:
