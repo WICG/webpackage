@@ -1261,9 +1261,13 @@ reporting to a [=signed exchange report=] |report|, returns a
     "[=signed exchange report/cert_fetch_error=]".
 1. If |certResponse|'s [=response/body=] is null or that body's [=body/stream=]
     is null, return "[=signed exchange report/cert_parse_error=]".
-1. Let |bytes| be the result of [=ReadableStream/read all bytes|reading all
-    bytes=] from |certResponse|'s [=response/body=]'s [=body/stream=] with a
-    [=ReadableStream/get a reader|new reader=] over the same stream.
+1. Let |reader| be the result of [=ReadableStream/getting a reader=] for
+    |certResponse|'s [=response/body=]'s [=body/stream=].
+1. Assert: Getting a reader did not throw an exception, because the response was
+    created in this algorithm and not passed anywhere that could create a reader
+    for its body.
+1. Let |bytes| be the result of [=ReadableStreamDefaultReader/reading all
+    bytes=] from |reader|.
 1. Wait for |bytes| to settle.
 1. If |bytes| was rejected, return "[=signed exchange report/cert_parse_error=]".
 1. Let |chain| be the [=certificate chain=] produced by parsing |bytes|' value
@@ -1532,8 +1536,9 @@ To <dfn lt="reading a body|read a body">read a body</dfn> from a [=read buffer=]
 1. Let |cancel| be the following steps, taking |reason| as an argument:
     1. [=ReadableStream/Cancel=] |stream|'s [=read buffer/stream=] with
         |reason|.
-1. Let |outputStream| be the result of [=constructing a ReadableStream object=]
-    with |cancel|.
+1. Let |outputStream| be the result of [=ReadableStream/creating=] a
+    {{ReadableStream}} with a [=ReadableStream/create/cancelAlgorithm=] of
+    |cancel|.
 1. Set |body|'s [=body/stream=] to |outputStream|.
 1. Set |response|'s [=response/body=] to |body|.
 1. [=In parallel=]:
@@ -1741,8 +1746,8 @@ To <dfn for="read buffer" lt="reading up to">read up to</dfn> |N| bytes from a
 1. While |done| is `false` and the length of |buffer|'s [=read buffer/bytes=]
     item is less than |N| bytes:
 
-    1. Let |chunk| be the result of [=ReadableStream/read a chunk|reading a
-        chunk=] with |buffer|'s [=read buffer/reader=].
+    1. Let |chunk| be the result of [=ReadableStreamDefaultReader/read a
+        chunk|reading a chunk=] from |buffer|'s [=read buffer/reader=].
 
     1. Wait for |chunk| to settle.
 
@@ -1796,8 +1801,8 @@ To <dfn for="read buffer">Dump</dfn> a [=read buffer=] |input| to a
 {{ReadableStream}} |output|, the UA MUST:
 
 1. Assert: This algorithm is running [=in parallel=].
-1. [=ReadableStream/Enqueue bytes=] given |input|'s [=read buffer/bytes=] and
-    |output|.
+1. [=ReadableStream/Enqueue=] a {{Uint8Array}} wrapping an {{ArrayBuffer}}
+    containing |input|'s [=read buffer/bytes=] into |output|.
 1. While |input|'s [=read buffer/stream=] is [=ReadableStream/readable=]:
     1. Wait until |output| is [=ReadableStream/closed=],
         [=ReadableStream/errored=], or [=ReadableStream/need more data|needs
@@ -1805,8 +1810,8 @@ To <dfn for="read buffer">Dump</dfn> a [=read buffer=] |input| to a
     1. If |output| is [=ReadableStream/closed=] or [=ReadableStream/errored=],
         [=ReadableStream/cancel=] |input|'s [=read buffer/stream=] and abort
         these steps.
-    1. Let |chunk| be the result of [=ReadableStream/read a chunk|reading a
-        chunk=] with |input|'s [=read buffer/reader=].
+    1. Let |chunk| be the result of [=ReadableStreamDefaultReader/read a
+        chunk|reading a chunk=] with |input|'s [=read buffer/reader=].
     1. Wait for |chunk| to settle.
     1. If |chunk| is:
 
@@ -1814,7 +1819,8 @@ To <dfn for="read buffer">Dump</dfn> a [=read buffer=] |input| to a
 
         : Fulfilled with an object whose `done` property is `false` and whose
             `value` property is a {{Uint8Array}} object |bytes|:
-        :: [=ReadableStream/Enqueue bytes=] given |bytes| and |output|.
+        :: [=ReadableStream/Enqueue=] a {{Uint8Array}} wrapping an
+            {{ArrayBuffer}} containing |bytes| into |output|.
 
         : Fulfilled with an object whose `done` property is `true`:
         :: [=ReadableStream/Close=] |output|.
