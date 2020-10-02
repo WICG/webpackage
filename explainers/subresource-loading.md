@@ -17,9 +17,10 @@ a format that allows multiple resources to be bundled, e.g.
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
 - [Compressed list of resources](#compressed-list-of-resources)
 - [Alternate designs](#alternate-designs)
-  - [Defining the scope](#defining-the-scope)
-  - [Approximate Membership Query datastructure](#approximate-membership-query-datastructure)
-  - [No declarative scope](#no-declarative-scope)
+  - [Summarizing the contents of the bundle](#summarizing-the-contents-of-the-bundle)
+    - [Defining the scope](#defining-the-scope)
+    - [Approximate Membership Query datastructure](#approximate-membership-query-datastructure)
+    - [No declarative scope](#no-declarative-scope)
   - [Naming](#naming)
 
 <!-- /TOC -->
@@ -93,8 +94,9 @@ When the browser parses such a `link` element, it:
 2. Records the `resources` and _delays_ fetching a subresource specified there if either
 
    - a subresource's origin is the [same origin](https://html.spec.whatwg.org/#same-origin)
-     as the bundle's origin, or
-   - a subresource's URL is [urn::uuid](https://tools.ietf.org/html/rfc4122) URL.
+     as the bundle's origin and its [path](https://url.spec.whatwg.org/#concept-url-path)
+     contains the bundle's path as a prefix, or
+   - a subresource's URL is a [`urn:uuid:`](https://tools.ietf.org/html/rfc4122) URL.
 
 3. As the bundle arrives, the browser fulfills those pending subresource
    fetches from the bundle's contents.
@@ -104,14 +106,14 @@ When the browser parses such a `link` element, it:
    it's easier for developers to fix a deterministic network error
    than a performance problem.
 
-The primary requirement to avoid fetching the same bytes twice is that "If a
-specified subresource is needed later in the document, that later fetch
-should block until at least the index of the bundle has downloaded to see if
-it's there."
+   The primary requirement to avoid fetching the same bytes twice is that "If a
+   specified subresource is needed later in the document, that later fetch
+   should block until at least the index of the bundle has downloaded to see if
+   it's there."
 
-It seems secondary to then say that if a specified subresource isn't
-in the bundle, its fetch should fail or otherwise notify the developer: that
-just prevents delays in starting the subresource fetch.
+   It seems secondary to then say that if a specified subresource isn't
+   in the bundle, its fetch should fail or otherwise notify the developer: that
+   just prevents delays in starting the subresource fetch.
 
 ## Example
 
@@ -132,9 +134,9 @@ Suppose that the bundle, `subresources.wbn`, includes the following resources:
 ```html
 <link rel="webbundle"
   href="https://example.com/dir/subresources.wbn"
-  resources="https://example.com/dir/a.js \
-             https://example.com/dir/b.js \
-             https://example.com/dir/c.png \
+  resources="https://example.com/dir/a.js
+             https://example.com/dir/b.js
+             https://example.com/dir/c.png
              urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
 />
 
@@ -173,9 +175,11 @@ compressed](https://github.com/yoavweiss/url_compression_experiments).
 
 ## Alternate designs
 
-Several other mechanisms are available to give the bundler more flexibility.
+### Summarizing the contents of the bundle
 
-### Defining the scope
+Several other mechanisms are available to give the bundler more flexibility or to compress the resource list.
+
+#### Defining the scope
 
 Instead of including a list of resources, the page defines a `scope`.
 
@@ -210,7 +214,7 @@ datastructure.
 />
 ```
 
-### No declarative scope
+#### No declarative scope
 
 In some cases, the page might be able to control when it issues fetches for all
 of the resources contained in a bundle. In that case, it doesn't need to
