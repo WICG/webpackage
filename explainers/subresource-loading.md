@@ -1,6 +1,6 @@
 # Explainer: Subresource loading with Web Bundles
 
-Last updated: April 2020
+Last updated: Oct 2020
 
 We propose a new approach to load a large number of resources efficiently using
 a format that allows multiple resources to be bundled, e.g.
@@ -15,10 +15,10 @@ a format that allows multiple resources to be bundled, e.g.
   - [The bundle](#the-bundle)
   - [The main document](#the-main-document)
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
-- [Authority](#authority)
+- [Compressed list of resources](#compressed-list-of-resources)
 - [Alternate designs](#alternate-designs)
-  - [Defining the scope](#defining-the-scope)
-    - [Compressed list of resources](#compressed-list-of-resources)
+  - [Summarizing the contents of the bundle](#summarizing-the-contents-of-the-bundle)
+    - [Defining the scope](#defining-the-scope)
     - [Approximate Membership Query datastructure](#approximate-membership-query-datastructure)
     - [No declarative scope](#no-declarative-scope)
   - [Naming](#naming)
@@ -67,7 +67,7 @@ We also don't address a way for Service Workers to use bundles to fill a Cache.
 Service Workers can technically unpack a bundle into
 [`cache.put()`](https://developer.mozilla.org/en-US/docs/Web/API/Cache/put)
 calls themselves, and, while the result may take an inefficient amount of
-browser-internal communication, letting some sites experiement with this will
+browser-internal communication, letting some sites experiment with this will
 give us a better chance of designing the right API.
 
 ## `<link>`-based API
@@ -80,55 +80,40 @@ Developers will write
 <link
   rel="webbundle"
   href="https://example.com/dir/subresources.wbn"
-  scope="https://example.com/dir/scope/"
+  resources="https://example.com/dir/a.js https://example.com/dir/b.js https://example.com/dir/c.png"
 />
 ```
 
-to tell the browser that subresources under `https://example.com/dir/scope/` can
-be found within the `https://example.com/dir/subresources.wbn` scope.
+to tell the browser that subresources specified in `resources` attribute can
+be found within the `https://example.com/dir/subresources.wbn` bundle.
 
 When the browser parses such a `link` element, it:
 
-1. Fetches the specified Web Bundle, `/dir/subresources.wbn`.
+1. Fetches the specified Web Bundle, `https://example.com/dir/subresources.wbn`.
 
-2. Records the scope and _delays_ fetching any other subresource within that
-   scope.
+2. Records the `resources` and _delays_ fetching a subresource specified there if either
 
-3. As the bundle arrives, the browser fulfills those other pending subresource
+   - a subresource's origin is the [same origin](https://html.spec.whatwg.org/#same-origin)
+     as the bundle's origin and its [path](https://url.spec.whatwg.org/#concept-url-path)
+     contains the bundle's path as a prefix, or
+   - a subresource's URL is a [`urn:uuid:`](https://tools.ietf.org/html/rfc4122) URL.
+
+3. As the bundle arrives, the browser fulfills those pending subresource
    fetches from the bundle's contents.
 
-4. If a fetch within the bundle's declared scope isn't actually contained inside
-   the bundle, it's probably better to fail that fetch than to go to the
-   network, since it's easier for developers to fix a deterministic network
-   error than a performance problem.
+4. If a fetch isn't actually contained inside the bundle, it's
+   probably better to fail that fetch than to go to the network, since
+   it's easier for developers to fix a deterministic network error
+   than a performance problem.
 
-As mentioned above, several aspects of this design are tentative. [Alternate
-Designs](#alternate-designs) suggests several ways we're considering changing
-it.
+   The primary requirement to avoid fetching the same bytes twice is that "If a
+   specified subresource is needed later in the document, that later fetch
+   should block until at least the index of the bundle has downloaded to see if
+   it's there."
 
-- All the subresources whose URLs are under the scope
-  `https://example.com/scope/` must [**2**] be loaded from the specified Web
-  Bundle.
-
-[**1**] The syntax is tentative. The API surface is not so important for us yet.
-Any alternative ideas are welcome. This is basically about mapping a set of
-resources to a particular bundled resource. Something like
-[Fetch maps proposal](https://discourse.wicg.io/t/proposal-fetch-maps/4259)
-might be able to extend to this case.
-
-[**2**] The exact behavior is TBD. There are several possible behaviors when the
-bundle does not contain the subresource; e.g. just fail, fallback to the
-network, or allow users to specify its behavior with a `link` element's
-attribute.
-
-The primary requirement to avoid fetching the same bytes twice is that "If a
-subresource under that scope is needed later in the document, that later fetch
-should block until at least the index of the bundle has downloaded to see if
-it's there."
-
-It seems secondary to then say that if the subresource within that scope isn't
-in the bundle, its fetch should fail or otherwise notify the developer: that
-just prevents delays in starting the subresource fetch.
+   It seems secondary to then say that if a specified subresource isn't
+   in the bundle, its fetch should fail or otherwise notify the developer: that
+   just prevents delays in starting the subresource fetch.
 
 ## Example
 
@@ -137,9 +122,10 @@ just prevents delays in starting the subresource fetch.
 Suppose that the bundle, `subresources.wbn`, includes the following resources:
 
 ```
-- https://example.com/scope/a.js (which depends on ./b.js)
-- https://example.com/scope/b.js
-- https://example.com/scope/c.png
+- https://example.com/dir/a.js (which depends on ./b.js)
+- https://example.com/dir/b.js
+- https://example.com/dir/c.png
+- urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6
 - … (omitted)
 ```
 
@@ -147,16 +133,26 @@ Suppose that the bundle, `subresources.wbn`, includes the following resources:
 
 ```html
 <link rel="webbundle"
-    href="https://example.com/subresources.wbn"
-    scope="https://example.com/scope/"
+  href="https://example.com/dir/subresources.wbn"
+  resources="https://example.com/dir/a.js
+             https://example.com/dir/b.js
+             https://example.com/dir/c.png
+             urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
 />
 
-<script type=”module” src=”https://example.com/scope/a.js”></script>
-<img src=https://example.com/scope/c.png>
+<script type=”module” src=”https://example.com/dir/a.js”></script>
+<img src=https://example.com/dir/c.png>
+<iframe src="urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6">
 ```
 
 Then, a browser must fetch the bundle, `subresources.wbn`, and load
 subresources, `a.js`, `b.js`, and `c.png`, from the bundle.
+
+`urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6` is also loaded from
+the bundle, and a subframe is instantiated as an
+[opaque origin](https://html.spec.whatwg.org/multipage/origin.html#concept-origin-opaque) frame.
+
+Note that `resources` attribute is reflected to JavaScript as a [`DOMTokenList`](https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList).
 
 ## Subsequent loading and Caching
 
@@ -166,51 +162,36 @@ is a detailed exploration of how to efficiently retrieve only updated resources
 on the second load. The key property is that the client's request for a bundle
 embeds something like a [cache
 digest](https://httpwg.org/http-extensions/cache-digest.html) of the resources
-it already has within the bundle's scope, and the server sends down the subset
-of the bundle that the client doesn't already have.
+it already has, and the server sends down the subset of the bundle that the
+client doesn't already have.
 
-## Authority
-
-As with [navigation to unsigned
-bundles](https://github.com/WICG/webpackage/blob/master/explainers/navigation-to-unsigned-bundles.md#loading-an-authoritative-unsigned-bundle),
-a bundle's responses aren't always
-[authoritative](https://httpwg.org/http-core/draft-ietf-httpbis-semantics-latest.html#establishing.authority)
-for their claimed URLs. Responses on the bundle's origin and (by default) under
-the bundle's path are authoritative. Responses with a claimed URL that is a hash
-of the response itself, like the [`ni:///`
-scheme](https://tools.ietf.org/html/rfc6920), could also be authoritative.
-
-Unlike in the navigation case, but like with Service Workers, it may be
-acceptable to let a page lie to itself and use non-authoritative responses from
-bundles it has selected. However, we do not intend to allow this for now.
-
-## Alternate designs
-
-### Defining the scope
-
-The approach above of just defining a scope directory doesn't allow much
-flexiblity in how resources are grouped into bundles. Several other scoping
-mechanisms are available to give the bundler more flexibility, at the cost of
-being bigger and less readable.
-
-#### Compressed list of resources
+## Compressed list of resources
 
 As discussed in [Dynamic bundle serving with
 WebBundles](https://docs.google.com/document/d/11t4Ix2bvF1_ZCV9HKfafGfWu82zbOD7aUhZ_FyDAgmA/edit),
 simply including a list of resources in the HTML [may cost as little as 5 bytes
 per URL on average after the HTML is
-compressed](https://github.com/yoavweiss/url_compression_experiments).  The list
-of resources could look like:
+compressed](https://github.com/yoavweiss/url_compression_experiments).
+
+## Alternate designs
+
+### Summarizing the contents of the bundle
+
+Several other mechanisms are available to give the bundler more flexibility or to compress the resource list.
+
+#### Defining the scope
+
+Instead of including a list of resources, the page defines a `scope`.
 
 ```html
 <link
   rel="webbundle"
   href="https://example.com/dir/subresources.wbn"
-  resources="https://example.com/this https://example.com/is https://example.com/not https://example.com/a https://example.com/real https://example.com/list https://example.com/of https://example.com/URLs"
+  scope="https://example.com/dir"
 />
 ```
 
-The `resources` attribute is reflected to JavaScript as a [`DOMTokenList`](https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList).
+Any subresource under the `scope` will be fetched from the bundle.
 
 #### Approximate Membership Query datastructure
 
