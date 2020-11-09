@@ -533,6 +533,7 @@ draft-04
 * Make a bundle represent a set of HTTP Representations, with the
   Content-Location replacing what was the request URL, and the Variants
   information, as before, driving content negotiation.
+* Make the primary URL optional.
 * Remove the signatures section.
 * Update Variants examples for the latest Variants draft.
 * Removed the distinction between "metadata" and non-metadata sections.
