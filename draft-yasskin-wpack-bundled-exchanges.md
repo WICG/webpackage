@@ -97,7 +97,7 @@ they are distinguished by the content negotiation information contained in their
 `Variants` and `Variant-Key` headers ({{!I-D.ietf-httpbis-variants}}).
 
 This identifying information for each representation is stored in an index
-rather than in that representation's HTTP response message.
+({{index-section}}) rather than in that representation's HTTP response message.
 
 # Expected performance {#performance}
 
