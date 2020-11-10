@@ -380,7 +380,7 @@ content sniffing vulnerabilities ({{seccons-content-sniffing}}):
 
 ## Version skew {#seccons-version-skew}
 
-Bundles currently have no mechanism for ensuring that the signed exchanges they
+Bundles currently have no mechanism for ensuring that any signed exchanges they
 contain constitute a consistent version of those resources. Even if a website
 never has a security vulnerability when resources are fetched at a single time,
 an attacker might be able to combine a set of resources pulled from different
