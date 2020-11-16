@@ -29,9 +29,8 @@ jobs:
          - mmark=./mmark
 
       install:
-       - pip install bikeshed
+       - pip install bikeshed xml2rfc python-dateutil
        - bikeshed update
-       - pip install xml2rfc python-dateutil
        - if head -1 -q *.md | grep '^\-\-\-' >/dev/null 2>&1; then gem install --no-doc kramdown-rfc2629; fi
        - if head -1 -q *.md | grep '^%%%' >/dev/null 2>&1; then go get "$mmark_src" && go build "$mmark_src"; fi
 
