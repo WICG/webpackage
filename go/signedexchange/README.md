@@ -87,9 +87,6 @@ In this section, you will create a signed exchange using a certificate issued by
 
 Your signed exchange needs to be signed with a certificate with the ["CanSignHttpExchanges" extension](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req).
 
-For testing purposes, Chrome M73+ will accept the signed exchanges without the "CanSignHttpExchanges" extention with the following flag enabled:
-- chrome://flags/#allow-sxg-certs-without-extension
-
 1. Get a certificate from a CA. You have to use prime256v1 ecdsa keys, as you did in the previous section. Please follow the CA's instructions. (For example, [DigiCert](https://www.digicert.com/account/ietf/http-signed-exchange.php) offers the right kind of certificates.)
 
    Assume you got a server certificate `server.pem` and an intermediate certificate `intermediates.pem`. The tools need all certificates in a single file, so concatenate them.
