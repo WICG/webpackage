@@ -179,19 +179,21 @@ compressed](https://github.com/yoavweiss/url_compression_experiments).
 
 Several other mechanisms are available to give the bundler more flexibility or to compress the resource list.
 
-#### Defining the scope
+#### Defining the scopes
 
-Instead of including a list of resources, the page defines a `scope`.
+Instead of including a list of resources, the page defines a `scopes`.
 
 ```html
 <link
   rel="webbundle"
   href="https://example.com/dir/subresources.wbn"
-  scope="https://example.com/dir"
+  scopes="https://example.com/dir/js/
+          https://example.com/dir/img/
+          https://example.com/dir/css/"
 />
 ```
 
-Any subresource under the `scope` will be fetched from the bundle.
+Any subresource under the `scopes` will be fetched from the bundle.
 
 #### Approximate Membership Query datastructure
 
