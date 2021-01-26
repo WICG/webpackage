@@ -10,7 +10,7 @@ website. A full list of use cases and resulting requirements is available in
 [draft-yasskin-wpack-use-cases](https://wicg.github.io/webpackage/draft-yasskin-wpack-use-cases.html)
 ([IETF
 draft](https://tools.ietf.org/html/draft-yasskin-wpack-use-cases)).
-The [explainer](explainer.md) walks through how to use these specs to
+The [explainers](explainers/) walk through how to use these specs to
 achieve the use cases.
 
 The specifications come in several layers:
