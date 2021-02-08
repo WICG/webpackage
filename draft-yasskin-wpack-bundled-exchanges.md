@@ -44,9 +44,8 @@ normative:
 
 Web bundles provide a way to bundle up groups of HTTP responses, with the
 request URLs and content negotiation that produced them, to transmit or store
-together. They can include multiple top-level resources with one identified as
-the default by a primaryUrl metadata, provide random access to their component
-exchanges, and efficiently store 8-bit resources.
+together. They can include multiple top-level resources, provide random access
+to their component exchanges, and efficiently store 8-bit resources.
 
 --- middle
 
@@ -166,13 +165,7 @@ elements (up to 15).
 
 The `version` bytestring MUST be `31 00 00 00` in base 16 (an ASCII "1" followed
 by 3 0s) for this version of bundles. If the recipient doesn't support the
-version in this field, it MUST either ignore the bundle or fetch and use the
-content of the `primary-url` field instead.
-
-The `primary-url` field identifies both a fallback when the recipient doesn't
-understand the bundle and a default resource inside the bundle to use when the
-recipient doesn't have more specific instructions. This field MAY be an empty
-string, although protocols using bundles MAY themselves forbid that empty value.
+version in this field, it MUST ignore the bundle.
 
 The `section-lengths` and `sections` arrays contain the actual content of the
 bundle and are defined in {{sections}}. The `section-lengths` array is embedded
