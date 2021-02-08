@@ -43,10 +43,10 @@ normative:
 --- abstract
 
 Web bundles provide a way to bundle up groups of HTTP responses, with the
-request URLs and content negotiation that produced them, to transmit or store
-together. They can include multiple top-level resources with one identified as
-the default by a primaryUrl metadata, provide random access to their component
-exchanges, and efficiently store 8-bit resources.
+request URLs that produced them, to transmit or store together. They can
+include multiple top-level resources with one identified as the default by
+a primaryUrl metadata, provide random access to their component exchanges,
+and efficiently store 8-bit resources.
 
 --- middle
 
@@ -83,18 +83,13 @@ Bundle parsers support two primary operations:
 
 1. They can load the bundle's metadata given a prefix of the bundle.
 1. They can find a representation within the bundle given that representation's
-   URL ({{semantics-naming}}) and the content-negotiation information that would
-   appear in an HTTP request's headers.
+   URL ({{semantics-naming}}).
 
 ## Naming a representation {#semantics-naming}
 
 Representations within a bundle are named by their `Content-Location` (Section
 7.8 of {{!I-D.ietf-httpbis-semantics}}), which holds a URL. This is also known
 as the representation's URL.
-
-Multiple representations within a bundle can have the same URL, in which case
-they are distinguished by the content negotiation information contained in their
-`Variants` and `Variant-Key` headers ({{!I-D.ietf-httpbis-variants}}).
 
 This identifying information for each representation is stored in an index
 ({{index-section}}) rather than in that representation's HTTP response message.
@@ -248,7 +243,7 @@ sections are optional.
 ### The index section {#index-section}
 
 ~~~ cddl
-index = {* whatwg-url => [ variants-value, +location-in-responses ] }
+index = {* whatwg-url => [ location-in-responses ] }
 variants-value = bstr
 location-in-responses = (offset: uint, length: uint)
 ~~~
@@ -256,49 +251,11 @@ location-in-responses = (offset: uint, length: uint)
 The `"index"` section defines the set of HTTP representations in the bundle and
 identifies their locations in the `"responses"` section. It consists of a CBOR
 map whose keys are the URLs of the representations in the bundle
-({{semantics-naming}}). The value of an index entry is an array whose first item
-is a `Variants` header field value ({{I-D.ietf-httpbis-variants}}) or the empty
-string. This is followed by a sequence of offset/length pairs, one for each
-representation of this resource. The offset is relative to the start of the
-`"responses"` section, with an offset of 0 referring to the head of the CBOR
-`responses` array itself. The length is the length in bytes of the `response`
-CBOR item holding this representation ({{responses-section}}).
-
-If the first item in the value of an index entry is empty, it MUST be followed
-by exactly one offset/length pair. This means there is a single representation
-for this resource, with no content negotiation.
-
-Otherwise, the first item MUST be followed by one offset/length pair for each of
-the possible combinations of available-values within the `Variants` value (the
-first item of the array) in lexicographic (row-major) order.
-
-For example, given a `Variants` value of `accept-encoding=(gzip br),
-accept-language=(en fr ja)`, the list of offset/length pairs will correspond to
-the `Variant-Key`s:
-
-* (gzip en)
-* (gzip fr)
-* (gzip ja)
-* (br en)
-* (br fr)
-* (br ja)
-
-The order of variant-axes is important. If the `Variants` value were
-`accept-language=(en fr ja), accept-encoding=(gzip br)` instead, the
-`location-in-responses` pairs would instead correspond to:
-
-* (en gzip)
-* (en br)
-* (fr gzip)
-* (fr br)
-* (ja gzip)
-* (ja br)
-
-If the wrong number of offset/length pairs is present in a resource's array, the
-entire index MUST fail to parse.
-
-A combination of available-values that is omitted from the bundle MUST be
-signaled by setting its offset and length to 0.
+({{semantics-naming}}). The value of an index entry is an offset/length pair.
+The offset is relative to the start of the `"responses"` section, with an offset
+of 0 referring to the head of the CBOR `responses` array itself. The length is
+the length in bytes of the `response` CBOR item holding this representation
+({{responses-section}}).
 
 ### The manifest section {#manifest-section}
 
@@ -308,11 +265,6 @@ manifest = whatwg-url
 
 The "manifest" section records a single URL identifying the manifest of the
 bundle. The URL MUST refer to a resource with representations contained in the bundle itself.
-
-The bundle can contain multiple representations at this URL, and the client is
-expected to content-negotiate for the best one. For example, a client might
-select the one matching an `accept` header of `application/manifest+json`
-({{appmanifest}}) and an `accept-language` header of `es-419`.
 
 Many bundles have a choice between identifying their manifest in this section or
 in their primary resource, especially if that resource is an HTML file.
