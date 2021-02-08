@@ -136,7 +136,6 @@ schema:
 webbundle = [
   magic: h'F0 9F 8C 90 F0 9F 93 A6',
   version: bytes .size 4,
-  primary-url: whatwg-url,
   section-lengths: bytes .cbor section-lengths,
   sections: [* any ],
   length: bytes .size 8,  ; Big-endian number of bytes in the bundle.
@@ -227,6 +226,7 @@ jump directly to the section it needs. This specification defines the following
 sections:
 
 * `"index"` ({{index-section}})
+* `"primary"` ({{primary-section}})
 * `"manifest"` ({{manifest-section}})
 * `"critical"` ({{critical-section}})
 * `"responses"` ({{responses-section}})
@@ -299,6 +299,15 @@ entire index MUST fail to parse.
 
 A combination of available-values that is omitted from the bundle MUST be
 signaled by setting its offset and length to 0.
+
+### The primary section {#primary-section}
+
+~~~ cddl
+primary = whatwg-url
+~~~
+
+The "primary" section records a single URL identifying the primary URL of the
+bundle. The URL MUST refer to a resource with representations contained in the bundle itself.
 
 ### The manifest section {#manifest-section}
 
