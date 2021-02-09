@@ -18,7 +18,6 @@ author:
     email: jyasskin@chromium.org
 
 normative:
-  appmanifest: W3C.WD-appmanifest-20180523
   CBORbis: I-D.ietf-cbor-7049bis
   CDDL: RFC8610
   FETCH:
@@ -227,8 +226,6 @@ jump directly to the section it needs. This specification defines the following
 sections:
 
 * `"index"` ({{index-section}})
-* `"manifest"` ({{manifest-section}})
-* `"critical"` ({{critical-section}})
 * `"responses"` ({{responses-section}})
 
 Future specifications can register new section names as described in
@@ -299,39 +296,6 @@ entire index MUST fail to parse.
 
 A combination of available-values that is omitted from the bundle MUST be
 signaled by setting its offset and length to 0.
-
-### The manifest section {#manifest-section}
-
-~~~ cddl
-manifest = whatwg-url
-~~~
-
-The "manifest" section records a single URL identifying the manifest of the
-bundle. The URL MUST refer to a resource with representations contained in the bundle itself.
-
-The bundle can contain multiple representations at this URL, and the client is
-expected to content-negotiate for the best one. For example, a client might
-select the one matching an `accept` header of `application/manifest+json`
-({{appmanifest}}) and an `accept-language` header of `es-419`.
-
-Many bundles have a choice between identifying their manifest in this section or
-in their primary resource, especially if that resource is an HTML file.
-Identifying the manifest in this section can help recipients apply fields in the
-manifest sooner, for example to show a splash screen before parsing the primary
-resource.
-
-### The critical section {#critical-section}
-
-~~~ cddl
-critical = [*tstr]
-~~~
-
-The "critical" section consists of the names of sections of the bundle that the
-client needs to understand in order to load the bundle correctly. Other sections
-are assumed to be optional.
-
-If the client has not implemented a section named by one of the items in this
-list, the client MUST fail to parse the bundle as a whole.
 
 ## Responses {#responses-section}
 
@@ -415,7 +379,7 @@ following strategies:
    submitting content or existing signatures reaching a certain age, rather than
    in response to untrusted-reader queries.
 1. Do all of:
-   1. If the bundle's contained URLs (e.g. in the manifest and index) are
+   1. If the bundle's contained URLs (e.g. in the index) are
       derived from the request for the bundle,
       [percent-encode](https://url.spec.whatwg.org/#percent-encode) ({{URL}})
       any bytes that are greater than 0x7E or are not [URL code
@@ -511,8 +475,6 @@ Initial Assignments:
 
 | Section Name | Specification |
 | "index" | {{index-section}} |
-| "manifest" | {{manifest-section}} |
-| "critical" | {{critical-section}} |
 | "responses" | {{responses-section}} |
 
 Requirements on new assignments:
