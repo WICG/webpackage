@@ -120,7 +120,7 @@ func run() error {
 	if *flagHeaderIntegrity {
 		// Print header-integrity value needed for including this SXG as an
 		// allowed-alt-sxg, per
-		// https://github.com/WICG/webpackage/blob/master/explainers/signed-exchange-subresource-subtitution-explainer.md.
+		// https://github.com/WICG/webpackage/blob/main/explainers/signed-exchange-subresource-substitution.md.
 		var header bytes.Buffer
 		if err := e.DumpExchangeHeaders(&header); err != nil {
 			return err

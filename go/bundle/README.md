@@ -41,7 +41,7 @@ These command-line flags are common to all the three options:
 #### From a HAR file
 
 One convenient way to generate HAR file is via Chrome Devtools. Navigate to "Network" panel, and right-click on any resource and select "Save as HAR with content".
-![generating har with devtools](https://raw.githubusercontent.com/WICG/webpackage/master/go/bundle/har-devtools.png)
+![generating har with devtools](https://raw.githubusercontent.com/WICG/webpackage/main/go/bundle/har-devtools.png)
 
 Once you have the har file, generate the web bundle via:
 ```
