@@ -92,7 +92,7 @@ $ make
 ```
 
 This requires that you have software installed as described in
-https://github.com/martinthomson/i-d-template/blob/master/doc/SETUP.md.
+https://github.com/martinthomson/i-d-template/blob/main/doc/SETUP.md.
 
 ### Packaging tools
 

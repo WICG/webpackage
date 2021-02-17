@@ -51,7 +51,7 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
     ```
 
 1. Host the `application/cert-chain+cbor` created in Step 3 on the HTTPS server. Configure the resource to be served with `Content-Type: application/cert-chain+cbor` HTTP header. The steps below assume the `cert.cbor` is hosted at `https://yourcdn.example.net/cert.cbor`, so substitute the URL to the actual URL in below steps.
-    - Note: If you are using [Firebase Hosting](https://firebase.google.com/docs/hosting/) as your HTTPS server, see an example config [here](https://github.com/WICG/webpackage/blob/master/examples/firebase.json).
+    - Note: If you are using [Firebase Hosting](https://firebase.google.com/docs/hosting/) as your HTTPS server, see an example config [here](https://github.com/WICG/webpackage/blob/main/examples/firebase.json).
 
 1. Generate the signed exchange using `gen-signedexchange` tool.
     ```
@@ -66,7 +66,7 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
     ```
 
 1. Host the signed exchange file `example.org.hello.sxg` on the HTTPS server. Configure the resource to be served with `Content-Type: application/signed-exchange;v=b3` HTTP header.
-    - Note: If you are using [Firebase Hosting](https://firebase.google.com/docs/hosting/) as your HTTPS server, see an example config [here](https://github.com/WICG/webpackage/blob/master/examples/firebase.json).
+    - Note: If you are using [Firebase Hosting](https://firebase.google.com/docs/hosting/) as your HTTPS server, see an example config [here](https://github.com/WICG/webpackage/blob/main/examples/firebase.json).
 
 1. Navigate to the signed exchange URL using a web browser supporting signed exchanges.
     - Chrome: To ignore certificate errors of the self-signed certificate:
