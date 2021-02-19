@@ -14,6 +14,7 @@ a format that allows multiple resources to be bundled, e.g.
 - [Example](#example)
   - [The bundle](#the-bundle)
   - [The main document](#the-main-document)
+- [Request's mode and credentials mode](#requests-mode-and-credentials-mode)
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
 - [Compressed list of resources](#compressed-list-of-resources)
 - [Alternate designs](#alternate-designs)
@@ -153,6 +154,32 @@ the bundle, and a subframe is instantiated as an
 [opaque origin](https://html.spec.whatwg.org/multipage/origin.html#concept-origin-opaque) frame.
 
 Note that `resources` attribute is reflected to JavaScript as a [`DOMTokenList`](https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList).
+
+## Request's mode and credentials mode
+
+With the `<link>`-based API, a
+[request](https://fetch.spec.whatwg.org/#concept-request) for a bundle
+will have its [mode][request mode] set to "`cors`" and its
+[credentials mode][credentials mode] set to "`same-origin`" unless a
+[crossorigin][crossorigin attribute] attribute is specified.
+
+If a [crossorigin][crossorigin attribute] attribute is specified,
+the request's [mode][request mode] and [credentials mode][credentials mode]
+will be set as the [CORS settings attributes][cors settings attribute]
+section describes.
+
+The following table is the summary.
+
+| State           | [mode][request mode] | [credentials mode][credentials mode] |
+| --------------- | -----------          | ----------------                     |
+| No CORS         | "`cors`"             | "`same-origin`"                      |
+| Anonymous       | "`cors`"             | "`same-origin`"                      |
+| Use credentials | "`cors`"             | "`include`"                          |
+
+[crossorigin attribute]: https://html.spec.whatwg.org/multipage/semantics.html#attr-link-crossorigin
+[request mode]: https://fetch.spec.whatwg.org/#concept-request-mode
+[credentials mode]: https://fetch.spec.whatwg.org/#concept-request-credentials-mode
+[cors settings attribute]: https://html.spec.whatwg.org/multipage/urls-and-fetching.html#cors-settings-attribute
 
 ## Subsequent loading and Caching
 
