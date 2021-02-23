@@ -19,7 +19,7 @@ author:
 
 normative:
   appmanifest: W3C.WD-appmanifest-20180523
-  CBORbis: I-D.ietf-cbor-7049bis
+  CBORbis: RFC8949
   CDDL: RFC8610
   FETCH:
     target: https://fetch.spec.whatwg.org/
@@ -178,7 +178,7 @@ string, although protocols using bundles MAY themselves forbid that empty value.
 The `section-lengths` and `sections` arrays contain the actual content of the
 bundle and are defined in {{sections}}. The `section-lengths` array is embedded
 in a byte string to facilitate reading it from a network. This byte string MUST
-be less than 8192 (8*1024) bytes long, and parsers MUST not load any data from a
+be less than 8192 (8*1024) bytes long, and parsers MUST NOT load any data from a
 `section-lengths` item longer than this.
 
 The bundle ends with an 8-byte integer holding the length of the whole bundle.
@@ -236,7 +236,7 @@ Future specifications can register new section names as described in
 incrementing its version number.
 
 The `"responses"` section MUST appear after the other three sections defined
-here, and parsers MUST not load any data if that is not the case.
+here, and parsers MUST NOT load any data if that is not the case.
 
 The `sections` array contains the sections' content. The length of this array
 MUST be exactly half the length of the `section-lengths` array, and parsers MUST
