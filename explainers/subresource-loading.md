@@ -15,6 +15,7 @@ a format that allows multiple resources to be bundled, e.g.
   - [The bundle](#the-bundle)
   - [The main document](#the-main-document)
 - [Request's mode and credentials mode](#requests-mode-and-credentials-mode)
+- [Request's destination](#requests-destination)
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
 - [Compressed list of resources](#compressed-list-of-resources)
 - [Alternate designs](#alternate-designs)
@@ -180,6 +181,15 @@ The following table is the summary.
 [request mode]: https://fetch.spec.whatwg.org/#concept-request-mode
 [credentials mode]: https://fetch.spec.whatwg.org/#concept-request-credentials-mode
 [cors settings attribute]: https://html.spec.whatwg.org/multipage/urls-and-fetching.html#cors-settings-attribute
+
+## Request's destination
+
+With the `<link>`-based API, a
+[request](https://fetch.spec.whatwg.org/#concept-request) for a bundle
+will have its
+[destination](https://fetch.spec.whatwg.org/#concept-request-destination)
+set to "`webbundle`"
+([whatwg/fetch#1120](https://github.com/whatwg/fetch/issues/1120)).
 
 ## Subsequent loading and Caching
 
