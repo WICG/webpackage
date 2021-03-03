@@ -158,7 +158,7 @@ the bundle, and a subframe is instantiated as an
 [opaque origin](https://html.spec.whatwg.org/multipage/origin.html#concept-origin-opaque) frame.
 Even if a custom scheme handler for `urn` schme was registered by
 [registerProtocolHandler(scheme, url)](https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler)
-method, the browser should ignore the registered handler and load the resource
+method, the browser must ignore the registered handler and load the resource
 in the web bundle specified by the `link` element.
 
 Note that `resources` attribute is reflected to JavaScript as a [`DOMTokenList`](https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList).
