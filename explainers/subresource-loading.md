@@ -156,10 +156,8 @@ subresources, `a.js`, `b.js`, and `c.png`, from the bundle.
 `urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6` is also loaded from
 the bundle, and a subframe is instantiated as an
 [opaque origin](https://html.spec.whatwg.org/multipage/origin.html#concept-origin-opaque) frame.
-Even if a custom scheme handler for `urn` schme was registered by
-[registerProtocolHandler(scheme, url)](https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler)
-method, the browser must ignore the registered handler and load the resource
-in the web bundle specified by the `link` element.
+The browser must ignore any [registered custom protocol handler](https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler) in loading a resource
+from a bundle.
 
 Note that `resources` attribute is reflected to JavaScript as a [`DOMTokenList`](https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList).
 
