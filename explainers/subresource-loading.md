@@ -157,7 +157,7 @@ subresources, `a.js`, `b.js`, and `c.png`, from the bundle.
 the bundle, and a subframe is instantiated as an
 [opaque origin](https://html.spec.whatwg.org/multipage/origin.html#concept-origin-opaque) frame.
 If a URL is available from an attached bundle, the browser must retrieve it from
-the bundle, instead of using any [registered custom protocolhandler](https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler)
+the bundle, instead of using any [registered custom protocol handler](https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler)
 for its scheme.
 
 Note that `resources` attribute is reflected to JavaScript as a [`DOMTokenList`](https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList).
