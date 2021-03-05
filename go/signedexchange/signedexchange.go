@@ -378,7 +378,7 @@ func (e *Exchange) Write(w io.Writer) error {
 }
 
 // draft-yasskin-http-origin-signed-responses.html#application-http-exchange
-func ReadExchange(r io.Reader) (*Exchange, error) {
+func ReadExchangePrologue(r io.Reader) (*Exchange, error) {
 	// Step 1. "8 bytes consisting of the ASCII characters “sxg1” followed by 4 0x00 bytes, to serve as a file signature. This is redundant with the MIME type, and recipients that receive both MUST check that they match and stop parsing if they don’t." [spec text]
 	// "Note: RFC EDITOR PLEASE DELETE THIS NOTE; The implementation of the final RFC MUST use this file signature, but implementations of drafts MUST NOT use it and MUST use another implementation-specific 8-byte string beginning with “sxg1-“." [spec text]
 	magic := make([]byte, version.HeaderMagicBytesLen)
@@ -444,6 +444,15 @@ func ReadExchange(r io.Reader) (*Exchange, error) {
 
 	dec := cbor.NewDecoder(bytes.NewReader(encodedHeader))
 	if err := e.decodeExchangeHeaders(dec); err != nil {
+		return nil, err
+	}
+
+	return e, nil
+}
+
+func ReadExchange(r io.Reader) (*Exchange, error) {
+	e, err := ReadExchangePrologue(r)
+	if err != nil {
 		return nil, err
 	}
 
