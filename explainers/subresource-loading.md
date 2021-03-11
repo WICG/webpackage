@@ -16,6 +16,7 @@ a format that allows multiple resources to be bundled, e.g.
   - [The main document](#the-main-document)
 - [Request's mode and credentials mode](#requests-mode-and-credentials-mode)
 - [Request's destination](#requests-destination)
+- [Content Security Policy (CSP)](#content-security-policy-csp)
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
 - [Compressed list of resources](#compressed-list-of-resources)
 - [Alternate designs](#alternate-designs)
@@ -193,6 +194,35 @@ will have its
 [destination](https://fetch.spec.whatwg.org/#concept-request-destination)
 set to "`webbundle`"
 ([whatwg/fetch#1120](https://github.com/whatwg/fetch/issues/1120)).
+
+## Content Security Policy (CSP)
+
+For resources loaded from bundles, URL matching of CSP is done based on the URL
+of the resource, not the URL of the bundle. For example, given this CSP header:
+```
+Content-Security-Policy: script-src https://example.com/script/; frame-src urn:
+```
+
+In the following, the first `<script>` and the `<iframe>` will be loaded, and
+the second `<script>` will be blocked:
+
+```
+<link rel="webbundle"
+  href="https://example.com/subresources.wbn"
+  resources="https://example.com/script/a.js
+             https://example.com/b.js
+             urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+/>
+
+<script src=”https://example.com/script/a.js”></script>
+<script src=”https://example.com/b.js”></script>
+<iframe src="urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"></iframe>
+```
+
+Note that `*` source expression does not match `urn:uuid` resources according
+to the CSP's [matching rule](https://w3c.github.io/webappsec-csp/#match-url-to-source-expression).
+To allow `urn:uuid` resources in CSP, the `urn:` scheme must be explicitly
+specified.
 
 ## Subsequent loading and Caching
 
