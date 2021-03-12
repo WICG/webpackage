@@ -200,22 +200,24 @@ set to "`webbundle`"
 For resources loaded from bundles, URL matching of CSP is done based on the URL
 of the resource, not the URL of the bundle. For example, given this CSP header:
 ```
-Content-Security-Policy: script-src https://example.com/script/; frame-src urn:
+Content-Security-Policy: script-src https://example.com/script/ urn:; frame-src *
 ```
 
-In the following, the first `<script>` and the `<iframe>` will be loaded, and
-the second `<script>` will be blocked:
+In the following, the first and third `<script>` will be loaded, and the second
+`<script>` and the `<iframe>` will be blocked:
 
 ```
 <link rel="webbundle"
   href="https://example.com/subresources.wbn"
   resources="https://example.com/script/a.js
              https://example.com/b.js
+             urn:uuid:429fcc4e-0696-4bad-b099-ee9175f023ae
              urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
 />
 
 <script src=”https://example.com/script/a.js”></script>
 <script src=”https://example.com/b.js”></script>
+<script src=”urn:uuid:429fcc4e-0696-4bad-b099-ee9175f023ae”></script>
 <iframe src="urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"></iframe>
 ```
 
