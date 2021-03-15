@@ -20,6 +20,7 @@ a format that allows multiple resources to be bundled, e.g.
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
 - [Compressed list of resources](#compressed-list-of-resources)
 - [Alternate designs](#alternate-designs)
+  - [Resource Bundles](#resource-bundles)
   - [Summarizing the contents of the bundle](#summarizing-the-contents-of-the-bundle)
     - [Defining the scope](#defining-the-scope)
     - [Approximate Membership Query datastructure](#approximate-membership-query-datastructure)
@@ -246,6 +247,17 @@ per URL on average after the HTML is
 compressed](https://github.com/yoavweiss/url_compression_experiments).
 
 ## Alternate designs
+
+### Resource Bundles
+
+A [resource bundle] is the same effort, with a particular scope. A
+[resource bundle] has a good
+[FAQ](https://github.com/WICG/resource-bundles/blob/main/faq.md#q-how-does-this-proposal-relate-to-the-web-packageweb-packagingweb-bundlesbundled-exchange-effort-repo)
+which explains how this proposal and a [resource bundle] are related.
+
+We have been collaborating closely to gather more feedback to draw a shared conclusion.
+
+[resource bundle]: https://github.com/WICG/resource-bundles
 
 ### Summarizing the contents of the bundle
 
