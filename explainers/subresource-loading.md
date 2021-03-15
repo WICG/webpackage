@@ -19,6 +19,7 @@ a format that allows multiple resources to be bundled, e.g.
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
 - [Compressed list of resources](#compressed-list-of-resources)
 - [Alternate designs](#alternate-designs)
+  - [Resource Bundles](#resource-bundles)
   - [Summarizing the contents of the bundle](#summarizing-the-contents-of-the-bundle)
     - [Defining the scope](#defining-the-scope)
     - [Approximate Membership Query datastructure](#approximate-membership-query-datastructure)
