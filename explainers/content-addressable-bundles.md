@@ -12,7 +12,8 @@ other bundles.
 
 ## Participate
 
-- [WICG/webpackage](https://github.com/WICG/webpackage/issues)
+- [WICG/webpackage](https://github.com/WICG/webpackage/)
+  ([#638](https://github.com/WICG/webpackage/issues/638))
 
 <!-- TOC -->
 
@@ -111,6 +112,12 @@ a loading performance.
   [Git]'s commit ID you might be familiar with. Content-Addressability gives web
   developers reproducible builds as well as giving a browser an opportunity to
   improve their cache efficiency.
+
+- URL integrity. Brave
+  [raised the concern](https://brave.com/webbundles-harmful-to-content-blocking-security-tools-and-the-open-web/)
+  that bundling systems could be used in a way where URLs are "rotated" between
+  different requests, making URLs less meaningful/stable. Content-Addressability
+  prevents this kind of undesired behaviors.
 
 ## Non-Goals
 
@@ -613,6 +620,7 @@ Not yet.
 - [Web Bundles]
 - [Subresource Loading with Web Bundles]
 - [Resource Bundles]
+- [Resource Batch Preloading]
 - [Bundling for the Web]
 - [Dynamic bundle serving with Web Bundles]
 - [NixOS]
@@ -638,3 +646,6 @@ Not yet.
   https://deno.land/manual/linking_to_external_code#it-seems-unwieldy-to-import-urls-everywhere
 [first contentful paint]: https://web.dev/first-contentful-paint/
 [code splitting]: https://webpack.js.org/guides/code-splitting/
+[import-maps]: https://github.com/WICG/import-maps
+[resource batch preloading]:
+  https://gist.github.com/littledan/e01801001c277b0be03b1ca54788505e
