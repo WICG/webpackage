@@ -570,9 +570,9 @@ In the example case, the top page may declare:
 
 <!-- prettier-ignore -->
 ```html
-<!-- This is a mandarory -->
+<!-- This is mandarory -->
 <link rel=webbundle href=https://example.com/app/index.js.abcd.wbn resources="index.js" >
-<!-- The followings are optional, as a hint for a browwer to prefetch -->
+<!-- The followings are optional, as a hint for a browser to prefetch -->
 <link rel=webbundle href=https://cdn.example.com/date-util.js.f1f2.wbn>
 <link rel=webbundle href=https://cdn.example.com/common-util.js.3b3b.wbn>
 ```
