@@ -178,6 +178,8 @@ number. The bundle should have the following fields:
    section writes down a hash as just 4 characters, however, a hash would be
    much longer in real cases, like 40 characters used in a Git commit ID.
 
+   TODO(hayato): Consider to use [Subresource Integrity] if that is applicable.
+
 2. bundle's main-resource URL: `https://example.com/app/index.js`
 
    Note: The current WebBundle format also defines a main-resource URL. Now, a
@@ -660,6 +662,10 @@ Not yet.
 - [Resource Bundles]
 - [Resource Batch Preloading]
 - [Bundling for the Web]
+- [Subresource Integrity]
+- [Webpack]
+- [Browserify]
+- [Import maps]
 - [Dynamic bundle serving with Web Bundles]
 - [NixOS]
 - [Cargo]
@@ -689,3 +695,5 @@ Not yet.
 [import-maps]: https://github.com/WICG/import-maps
 [resource batch preloading]:
   https://gist.github.com/littledan/e01801001c277b0be03b1ca54788505e
+[subresource integrity]:
+  https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
