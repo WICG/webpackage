@@ -178,8 +178,6 @@ number. The bundle should have the following fields:
    section writes down a hash as just 4 characters, however, a hash would be
    much longer in real cases, like 40 characters used in a Git commit ID.
 
-   TODO(hayato): Consider to use [Subresource Integrity] if that is applicable.
-
 2. bundle's main-resource URL: `https://example.com/app/index.js`
 
    Note: The current WebBundle format also defines a main-resource URL. Now, a
@@ -650,6 +648,39 @@ We might want to let them refer to each other, with some restrictions:
 
 We'll explore this problem space, and update this section.
 
+### How can this proposal support the [WebBundles for Ad Serving](https://github.com/WICG/webpackage/issues/624) use case?
+
+CAB is probably inappropriate for this use case, however, you can continue to
+use a _mutable_ bundle for this use case.
+
+You can always use a _mutable_ bundle if the strictness of CAB doesn't meet your
+requirements.
+
+### The Web Platform already has [Subresource integrity (SRI)][subresource integrity] feature. How is this proposal relate to SRI?
+
+You may use SRI for a bundle as follows (Note: SRI is not currently supported):
+
+```html
+<link
+  rel="webbundle"
+  href="https://example.com/app/mutable-bundle.wbn"
+  integrity="sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"
+  ...
+/>
+```
+
+However, this usage of SRI might be inappropriate for bundles use cases because:
+
+- A bundle usually contains more than one resources. A browser wants to start to
+  load and process each subresource immediately when a necessary byte range of
+  each subresource arrives, utilizing streaming.
+
+- To make a streaming possible, a bundle's hash should be conceptually a hash
+  for an _index_ section of a bundle. A browser verifies an _index_ section,
+  which is placed before a _responses_ section in [Web Bundles
+  format][web bundles], and can get a hash for each subresource before their
+  bodies arrive.
+
 ## Stakeholder Feedback / Opposition
 
 Not yet.
@@ -692,7 +723,7 @@ Not yet.
 [first contentful paint]: https://web.dev/first-contentful-paint/
 [code splitting]:
   https://developer.mozilla.org/en-US/docs/Glossary/Code_splitting
-[import-maps]: https://github.com/WICG/import-maps
+[import maps]: https://github.com/WICG/import-maps
 [resource batch preloading]:
   https://gist.github.com/littledan/e01801001c277b0be03b1ca54788505e
 [subresource integrity]:
