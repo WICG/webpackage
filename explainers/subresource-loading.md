@@ -21,10 +21,8 @@ a format that allows multiple resources to be bundled, e.g.
 - [Compressed list of resources](#compressed-list-of-resources)
 - [Alternate designs](#alternate-designs)
   - [Resource Bundles](#resource-bundles)
-  - [Summarizing the contents of the bundle](#summarizing-the-contents-of-the-bundle)
-    - [Defining the scope](#defining-the-scope)
-    - [Approximate Membership Query datastructure](#approximate-membership-query-datastructure)
-    - [No declarative scope](#no-declarative-scope)
+  - [Defining the scope](#defining-the-scope)
+  - [No declarative scope](#no-declarative-scope)
   - [Naming](#naming)
 
 <!-- /TOC -->
@@ -262,11 +260,7 @@ We have been collaborating closely to gather more feedback to draw a shared conc
 
 [resource bundle]: https://github.com/WICG/resource-bundles
 
-### Summarizing the contents of the bundle
-
-Several other mechanisms are available to give the bundler more flexibility or to compress the resource list.
-
-#### Defining the scopes
+### Defining the scopes
 
 Instead of including a list of resources, the page defines a `scopes`.
 
@@ -282,28 +276,7 @@ Instead of including a list of resources, the page defines a `scopes`.
 
 Any subresource under the `scopes` will be fetched from the bundle.
 
-#### Approximate Membership Query datastructure
-
-A page still executes correctly, albeit slower than optimal, if a resource
-that's in a bundle is fetched an extra time, or a resource that's not in a
-bundle waits for the bundle to arrive before its fetch starts. That raises the
-possibility of putting a Bloom filter or other _approximate membership query_
-datastructure, like a cuckoo filter or quotient filter, in the scoping
-attribute.
-
-In this case, it must not be an error if a resource matches the filter but turns
-out not to be in the bundle, since that's an expected property of this
-datastructure.
-
-```html
-<link
-  rel="webbundle"
-  href="https://example.com/dir/subresources.wbn"
-  digest="cuckoo-CwAAAAOztbwAAAM2AAAAAFeafVZwIPgAAAAA"
-/>
-```
-
-#### No declarative scope
+### No declarative scope
 
 In some cases, the page might be able to control when it issues fetches for all
 of the resources contained in a bundle. In that case, it doesn't need to
