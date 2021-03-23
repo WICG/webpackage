@@ -681,12 +681,15 @@ However, this usage of SRI might be inappropriate for bundles use cases because:
   format][web bundles], and can get a hash for each subresource before their
   bodies arrive.
 
-### It seems weird to use a file name convention to map a main-resource URL to a bundle's URL, and vice-verse. Can we have a more flexible way?
+TODO(hayato): Figure out whether [Merkle Integrity Content Encoding] is
+applicable or not.
+
+### It seems weird to use a file name convention to map a main-resource URL to a bundle's URL, and vice-versa. Can we have a more flexible way?
 
 This proposal's current approach is tentative. We may want to introduce a more
-flexible way to map a main-resource URL(s) (maybe one-or-more) to a bundle's URL
-. Mapping should be declarative so that static analysis tools for a bundle can
-understand it easily without any _runtime_.
+flexible way to map a main-resource URL(s) (maybe one-or-more) to a bundle's
+URL. Mapping should be declarative so that static analysis tools for a bundle
+can understand it easily without any _runtime_.
 
 TODO(hayato): Any requirements or feature requests for mapping? Feedback is
 welcome.
@@ -710,6 +713,7 @@ Not yet.
 - [Dynamic bundle serving with Web Bundles]
 - [NixOS]
 - [Cargo]
+- [Merkle Integrity Content Encoding]
 
 [webpack]: https://webpack.js.org/
 [browserify]: http://browserify.org/
@@ -738,3 +742,5 @@ Not yet.
   https://gist.github.com/littledan/e01801001c277b0be03b1ca54788505e
 [subresource integrity]:
   https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
+[merkle integrity content encoding]:
+  https://tools.ietf.org/html/draft-thomson-http-mice-03
