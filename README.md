@@ -116,7 +116,7 @@ There are several tools.
 
   There is a npm package, [wbn](https://www.npmjs.com/package/wbn).
 
-- Plugin for bundlers
+- Plugin for bundlers (Experimental)
 
   - [Rollup plugin](https://github.com/GoogleChromeLabs/rollup-plugin-webbundle)
   - [Webpack plugin](https://github.com/GoogleChromeLabs/webbundle-webpack-plugin)
