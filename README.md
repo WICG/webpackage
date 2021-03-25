@@ -104,6 +104,23 @@ See [go/signedexchange](go/signedexchange) for the usage of the tool.
 
 #### Web Bundles
 
-Install this with `go install github.com/WICG/webpackage/go/bundle/cmd/...`.
+There are several tools.
 
-See [go/bundle](go/bundle) for the usage of the tool.
+- Go (Reference Implementation)
+
+  Install this with `go install github.com/WICG/webpackage/go/bundle/cmd/...`.
+
+  See [go/bundle](go/bundle) for the usage of the tool.
+
+- Node
+
+  There is a npm package, [wbn](https://www.npmjs.com/package/wbn).
+
+- Plugin for bundlers
+
+  - [Rollup plugin](https://github.com/GoogleChromeLabs/rollup-plugin-webbundle)
+  - [Webpack plugin](https://github.com/GoogleChromeLabs/webbundle-webpack-plugin)
+
+- Rust (Experimental)
+
+  - [google/webbundle](https://github.com/google/webbundle)
