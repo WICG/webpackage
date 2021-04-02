@@ -44,7 +44,7 @@ Suppose that the bundle, `subresources.wbn`, includes the following resources:
 ### The main document
 
 ```html
-<linkn
+<link
   rel="webbundle"
   href="https://example.com/dir/subresources.wbn"
   resources="urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
@@ -60,9 +60,10 @@ iframe.
 
 Note:
 
-- `url:uuid:` resource must be explicitly specified in `resources` attribute in
-  `<link>` elements, similar to other subresources. `scope` attribute can not be
-  used to specify `urn:uuid` resources.
+- `urn:uuid:` resource must be explicitly specified in `resources` attribute in
+  `<link>` elements, similar to other subresources. `scopes` attribute can be
+  also used for `urn:uuid:` resources. For example, `scopes=urn:` allows all
+  `urn:` resources.
 
 ### Content Security Policy (CSP)
 
