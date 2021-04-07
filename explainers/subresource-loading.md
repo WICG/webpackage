@@ -1,6 +1,6 @@
 # Explainer: Subresource loading with Web Bundles
 
-Last updated: Oct 2020
+Last updated: Apr 2021
 
 We propose a new approach to load a large number of resources efficiently using
 a format that allows multiple resources to be bundled, e.g.
@@ -98,12 +98,10 @@ When the browser parses such a `link` element, it:
 
 1. Fetches the specified Web Bundle, `https://example.com/dir/subresources.wbn`.
 
-2. Records the `resources` and _delays_ fetching a subresource specified there if either
-
-   - a subresource's origin is the [same origin](https://html.spec.whatwg.org/#same-origin)
-     as the bundle's origin and its [path](https://url.spec.whatwg.org/#concept-url-path)
-     contains the bundle's path as a prefix, or
-   - a subresource's URL is a [`urn:uuid:`](https://tools.ietf.org/html/rfc4122) URL.
+2. Records the `resources` and _delays_ fetching a subresource specified there if
+   a subresource's origin is the [same origin](https://html.spec.whatwg.org/#same-origin)
+   as the bundle's origin and its [path](https://url.spec.whatwg.org/#concept-url-path)
+   contains the bundle's path as a prefix.
 
 3. As the bundle arrives, the browser fulfills those pending subresource
    fetches from the bundle's contents.
@@ -132,7 +130,6 @@ Suppose that the bundle, `subresources.wbn`, includes the following resources:
 - https://example.com/dir/a.js (which depends on ./b.js)
 - https://example.com/dir/b.js
 - https://example.com/dir/c.png
-- urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6
 - … (omitted)
 ```
 
@@ -144,22 +141,19 @@ Suppose that the bundle, `subresources.wbn`, includes the following resources:
   resources="https://example.com/dir/a.js
              https://example.com/dir/b.js
              https://example.com/dir/c.png
-             urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
 />
 
 <script type=”module” src=”https://example.com/dir/a.js”></script>
 <img src=https://example.com/dir/c.png>
-<iframe src="urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6">
 ```
 
 Then, a browser must fetch the bundle, `subresources.wbn`, and load
 subresources, `a.js`, `b.js`, and `c.png`, from the bundle.
 
-`urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6` is also loaded from
-the bundle, and a subframe is instantiated as an
-[opaque origin](https://html.spec.whatwg.org/multipage/origin.html#concept-origin-opaque) frame.
-If a URL is available from an attached bundle, the browser must retrieve it from
-the bundle, instead of using any [registered custom protocol handler](https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler)
+If a URL is available from an attached bundle, the browser must
+retrieve it from the bundle, instead of using any [registered custom
+protocol
+handler](https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler)
 for its scheme.
 
 Note that `resources` attribute is reflected to JavaScript as a [`DOMTokenList`](https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList).
@@ -204,31 +198,33 @@ set to "`webbundle`"
 For resources loaded from bundles, URL matching of CSP is done based on the URL
 of the resource, not the URL of the bundle. For example, given this CSP header:
 ```
-Content-Security-Policy: script-src https://example.com/script/ urn:; frame-src *
+Content-Security-Policy: script-src https://example.com/script/
 ```
 
-In the following, the first and third `<script>` will be loaded, and the second
-`<script>` and the `<iframe>` will be blocked:
+In the following, the first `<script>` will be loaded, but the second
+`<script>` will be blocked:
 
 ```
 <link rel="webbundle"
   href="https://example.com/subresources.wbn"
   resources="https://example.com/script/a.js
              https://example.com/b.js
-             urn:uuid:429fcc4e-0696-4bad-b099-ee9175f023ae
-             urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
 />
 
 <script src=”https://example.com/script/a.js”></script>
 <script src=”https://example.com/b.js”></script>
-<script src=”urn:uuid:429fcc4e-0696-4bad-b099-ee9175f023ae”></script>
-<iframe src="urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"></iframe>
 ```
 
-Note that `*` source expression does not match `urn:uuid` resources according
-to the CSP's [matching rule](https://w3c.github.io/webappsec-csp/#match-url-to-source-expression).
-To allow `urn:uuid` resources in CSP, the `urn:` scheme must be explicitly
-specified.
+## Extensions
+
+There are several extensions to this explainer, aiming to support
+various use cases which this explainer doesn't support:
+
+- [Subresource loading with Web Bundles: Support opaque origin iframes](./subresource-loading-opaque-origin-iframe.md)
+
+See [issue #641](https://github.com/WICG/webpackage/issues/641) for
+the motivation of splitting the explainer into the core part, this
+explainer, and the extension parts.
 
 ## Subsequent loading and Caching
 
