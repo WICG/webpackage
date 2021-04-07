@@ -17,6 +17,7 @@ a format that allows multiple resources to be bundled, e.g.
 - [Request's mode and credentials mode](#requests-mode-and-credentials-mode)
 - [Request's destination](#requests-destination)
 - [Content Security Policy (CSP)](#content-security-policy-csp)
+- [Extensions](#extensions)
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
 - [Compressed list of resources](#compressed-list-of-resources)
 - [Alternate designs](#alternate-designs)
@@ -220,7 +221,7 @@ In the following, the first `<script>` will be loaded, but the second
 There are several extensions to this explainer, aiming to support
 various use cases which this explainer doesn't support:
 
-- [Subresource loading with Web Bundles: Support opaque origin iframes](./subresource-loading-opaque-origin-iframe.md)
+- [Subresource loading with Web Bundles: Support opaque origin iframes](./subresource-loading-opaque-origin-iframes.md)
 
 See [issue #641](https://github.com/WICG/webpackage/issues/641) for
 the motivation of splitting the explainer into the core part, this
