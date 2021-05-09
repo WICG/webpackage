@@ -141,7 +141,7 @@ Suppose that the bundle, `subresources.wbn`, includes the following resources:
   href="https://example.com/dir/subresources.wbn"
   resources="https://example.com/dir/a.js
              https://example.com/dir/b.js
-             https://example.com/dir/c.png
+             https://example.com/dir/c.png"
 />
 
 <script type=”module” src=”https://example.com/dir/a.js”></script>
@@ -209,7 +209,7 @@ In the following, the first `<script>` will be loaded, but the second
 <link rel="webbundle"
   href="https://example.com/subresources.wbn"
   resources="https://example.com/script/a.js
-             https://example.com/b.js
+             https://example.com/b.js"
 />
 
 <script src=”https://example.com/script/a.js”></script>
