@@ -67,34 +67,12 @@ Note:
 
 ### Content Security Policy (CSP)
 
-To allow `urn:uuid` resources in CSP, the `urn:` scheme must be explicitly
-specified. "`*`" source expression does not match `urn:uuid` resources according
-to the CSP's
-[matching rule](https://w3c.github.io/webappsec-csp/#match-url-to-source-expression).
+Regarding `urn:uuid` resources in a bundle, a CSP restriction must be
+evaluated against the source of the bundle, instead of the literal
+`urn:uuid` URL.
 
-For example, given this CSP header,
-
-```
-Content-Security-Policy: script-src https://example.com/script/ urn:; frame-src *
-```
-
-In the following, the first and third `<script>` will be loaded, and the second
-`<script>` and the `<iframe>` will be blocked:
-
-```
-<link rel="webbundle"
-  href="https://example.com/subresources.wbn"
-  resources="https://example.com/script/a.js
-             https://example.com/b.js
-             urn:uuid:429fcc4e-0696-4bad-b099-ee9175f023ae
-             urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
-/>
-
-<script src=”https://example.com/script/a.js”></script>
-<script src=”https://example.com/b.js”></script>
-<script src=”urn:uuid:429fcc4e-0696-4bad-b099-ee9175f023ae”></script>
-<iframe src="urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"></iframe>
-```
+See an issue [#651](https://github.com/WICG/webpackage/issues/651) for
+the motivation.
 
 [subresource loading with web bundles]:
   https://github.com/WICG/webpackage/blob/main/explainers/subresource-loading.md
