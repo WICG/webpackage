@@ -1,6 +1,6 @@
 # Subresource loading with Web Bundles: Support opaque origin iframes
 
-Last updated: Apr 2021
+Last updated: May 2021
 
 This is an extension to [Subresource loading with Web Bundles]. This extension
 allows a bundle to include `urn:uuid:` URL resources, which will be used to
@@ -65,36 +65,43 @@ Note:
   also used for `urn:uuid:` resources. For example, `scopes=urn:` allows all
   `urn:` resources.
 
-### Content Security Policy (CSP)
+### Content Security Policy (CSP) for `urn:uuid` resources
 
-To allow `urn:uuid` resources in CSP, the `urn:` scheme must be explicitly
-specified. "`*`" source expression does not match `urn:uuid` resources according
-to the CSP's
-[matching rule](https://w3c.github.io/webappsec-csp/#match-url-to-source-expression).
+Using the `urn:uuid` URLs in CSP's
+[matching rule](https://w3c.github.io/webappsec-csp/#match-url-to-source-expression)
+is almost useless from a security standpoint, because anyone can use arbitrary
+`urn:uuid` URLs.
+So the CSP restrictions must be evaluated against the source of the bundle
+instead of to the `urn:uuid` URL.
 
 For example, given this CSP header,
 
 ```
-Content-Security-Policy: script-src https://example.com/script/ urn:; frame-src *
+Content-Security-Policy: script-src https://cdn.example; frame-src https://cdn.example
 ```
 
-In the following, the first and third `<script>` will be loaded, and the second
-`<script>` and the `<iframe>` will be blocked:
+the page can load `urn:uuid` resources in web bundles served from
+`https://cdn.example`.
 
 ```
 <link rel="webbundle"
-  href="https://example.com/subresources.wbn"
-  resources="https://example.com/script/a.js
-             https://example.com/b.js
-             urn:uuid:429fcc4e-0696-4bad-b099-ee9175f023ae
+  href="https://cdn.example/subresources.wbn"
+  resources="urn:uuid:429fcc4e-0696-4bad-b099-ee9175f023ae
              urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
 />
 
-<script src=”https://example.com/script/a.js”></script>
-<script src=”https://example.com/b.js”></script>
-<script src=”urn:uuid:429fcc4e-0696-4bad-b099-ee9175f023ae”></script>
+<script src="urn:uuid:429fcc4e-0696-4bad-b099-ee9175f023ae"></script>
 <iframe src="urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"></iframe>
 ```
+
+Note:
+- Loading `urn:uuid` resources from web bundles served from HTTPS server is
+  allowed when "\*" is set in the CSP
+  [source expression](https://w3c.github.io/webappsec-csp/#source-expression).
+  This is different from the CSP behavior that `data:` and `blob:` schemes are
+  excluded from matching a policy of "\*".
+- See an issue [#651](https://github.com/WICG/webpackage/issues/651) for the
+  detailed motivation.  
 
 [subresource loading with web bundles]:
   https://github.com/WICG/webpackage/blob/main/explainers/subresource-loading.md
