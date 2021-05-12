@@ -95,6 +95,8 @@ the page can load `urn:uuid` resources in web bundles served from
 ```
 
 Note:
+- When loading `HTTPS` resources from web bundles, the CSP restrictions must be
+  evaluated against the resource URL, not against the bundle URL.
 - Loading `urn:uuid` resources from web bundles served from HTTPS server is
   allowed when "\*" is set in the CSP
   [source expression](https://w3c.github.io/webappsec-csp/#source-expression).
