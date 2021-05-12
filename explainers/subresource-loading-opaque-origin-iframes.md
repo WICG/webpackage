@@ -103,7 +103,7 @@ Note:
   This is different from the CSP behavior that `data:` and `blob:` schemes are
   excluded from matching a policy of "\*". Loading `urn:uuid` resources from web
   bundles is safer than using `data:` or `blob:` URL resources which are
-  directly under the control of the page, because a urn:uuid resource is a
+  directly under the control of the page, because a `urn:uuid` resource is a
   reference to a component of something with a globally-accessible URL. So we
   don't need to exclude `urn:uuid` resources in a web bundle from matching the
   policy of "\*".
