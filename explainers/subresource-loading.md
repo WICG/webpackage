@@ -159,6 +159,11 @@ for its scheme.
 
 Note that `resources` attribute is reflected to JavaScript as a [`DOMTokenList`](https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList).
 
+A URL in `resources` attribute can be a [relative
+URL](https://url.spec.whatwg.org/#syntax-url-relative) to a document.
+A browser must [parse a URL](https://html.spec.whatwg.org/#parse-a-url)
+using document's [base URL](https://html.spec.whatwg.org/#document-base-url).
+
 ## Request's mode and credentials mode
 
 With the `<link>`-based API, a
