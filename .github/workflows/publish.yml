@@ -1,0 +1,31 @@
+name: publish
+on:
+  push:
+    tags:
+      - '*'
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - uses: ruby/setup-ruby@477b21f02be01bcb8030d50f37cfec92bfa615b6
+        with:
+          ruby-version: 2.6
+      - name: Install dependencies
+        run: |
+          pip install bikeshed xml2rfc python-dateutil
+          bikeshed update
+          if head -1 -q *.md | grep '^\-\-\-' >/dev/null 2>&1; then gem install --no-doc kramdown-rfc2629; fi
+          if head -1 -q *.md | grep '^%%%' >/dev/null 2>&1; then go get "$mmark_src" && go build "$mmark_src"; fi
+      - name: Make github pages
+        run: |
+          bikeshed --die-on=warning spec loading.bs
+          make
+          make issues || make issues DISABLE_ISSUE_FETCH=true && make gh-issues
+          make gh-pages
+      - name: deploy
+        run: |
+          make upload
