@@ -1,31 +1,37 @@
-name: publish
+name: "Publish New Draft Version"
+
 on:
   push:
     tags:
-      - '*'
+      - "draft-*"
+
 jobs:
-  release:
+  build:
+    name: "Publish New Draft Version"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-      - uses: ruby/setup-ruby@477b21f02be01bcb8030d50f37cfec92bfa615b6
-        with:
-          ruby-version: 2.6
-      - name: Install dependencies
-        run: |
-          pip install bikeshed xml2rfc python-dateutil
-          bikeshed update
-          if head -1 -q *.md | grep '^\-\-\-' >/dev/null 2>&1; then gem install --no-doc kramdown-rfc2629; fi
-          if head -1 -q *.md | grep '^%%%' >/dev/null 2>&1; then go get "$mmark_src" && go build "$mmark_src"; fi
-      - name: Make github pages
-        run: |
-          bikeshed --die-on=warning spec loading.bs
-          make
-          make issues || make issues DISABLE_ISSUE_FETCH=true && make gh-issues
-          make gh-pages
-      - name: deploy
-        run: |
-          make upload
+    - name: "Checkout"
+      uses: actions/checkout@v2
+
+    # See https://github.com/actions/checkout/issues/290
+    - name: "Get Tag Annotations"
+      run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
+
+    - name: "Cache Setup"
+      id: cache-setup
+      run: |
+        mkdir -p "$HOME"/.cache/xml2rfc
+        echo "::set-output name=path::$HOME/.cache/xml2rfc"
+        date -u "+::set-output name=date::%FT%T"
+    - name: "Cache References"
+      uses: actions/cache@v2
+      with:
+        path: ${{ steps.cache-setup.outputs.path }}
+        key: refcache-${{ steps.date.outputs.date }}
+        restore-keys: |
+          refcache-${{ steps.date.outputs.date }}
+          refcache-
+    - name: "Upload to Datatracker"
+      uses: martinthomson/i-d-template@v1
+      with:
+        make: upload
