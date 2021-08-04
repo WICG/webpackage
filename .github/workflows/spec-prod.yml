@@ -3,7 +3,7 @@ on:
   pull_request: {}
   push:
     branches: [main]
-Jobs:
+jobs:
   main:
     name: Build, Validate and Deploy
     runs-on: ubuntu-latest
