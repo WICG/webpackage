@@ -24,7 +24,7 @@ func (h *headerArgs) Set(value string) error {
 }
 
 var (
-	flagVersion      = flag.String("version", string(version.VersionB1), "The webbundle format version")
+	flagVersion      = flag.String("version", string(version.VersionB2), "The webbundle format version")
 	flagHar          = flag.String("har", "", "HTTP Archive (HAR) input file")
 	flagDir          = flag.String("dir", "", "Input directory")
 	flagBaseURL      = flag.String("baseURL", "", "Base URL (used with -dir)")
@@ -48,14 +48,16 @@ func main() {
 	if !ok {
 		log.Fatalf("Error: failed to parse version %q\n", *flagVersion)
 	}
-	if *flagPrimaryURL == "" {
-		fmt.Fprintln(os.Stderr, "Please specify -primaryURL.")
-		flag.Usage()
-		return
-	}
-	parsedPrimaryURL, err := url.Parse(*flagPrimaryURL)
-	if err != nil {
-		log.Fatalf("Failed to parse primary URL. err: %v", err)
+	if ver.HasPrimaryURLFieldInHeader() {
+		if *flagPrimaryURL == "" && ver.HasPrimaryURLFieldInHeader(){
+			fmt.Fprintln(os.Stderr, "Please specify -primaryURL or change your bundle version to a newer one.")
+			flag.Usage()
+			return
+		}
+		parsedPrimaryURL, err := url.Parse(*flagPrimaryURL)
+		if err != nil {
+			log.Fatalf("Failed to parse primary URL. err: %v", err)
+		}
 	}
 	var parsedManifestURL *url.URL
 	if len(*flagManifestURL) > 0 {

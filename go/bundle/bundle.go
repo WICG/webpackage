@@ -75,7 +75,7 @@ func (e *Exchange) AddPayloadIntegrity(ver version.Version, recordSize int) (str
 
 // Validate performs basic sanity checks on the bundle.
 func (b *Bundle) Validate() error {
-	if b.Version.HasPrimaryURLField() {
+	if b.PrimaryURL != nil {
 		hasExchangeForPrimaryURL := false
 		primaryURLString := b.PrimaryURL.String()
 		for _, e := range b.Exchanges {
