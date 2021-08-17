@@ -531,7 +531,7 @@ func loadMetadata(bs []byte) (*meta, error) {
 
 	var fallbackURL *url.URL
 	dec := cbor.NewDecoder(r)
-	if ver.HasPrimaryURLField() {
+	if ver.HasPrimaryURLFieldInHeader() {
 		// Step 4. "Let urlType and urlLength be the result of reading the type and argument of a CBOR item from stream (Section 3.5.3). If this is an error or urlType is not 3 (a CBOR text string), return a "format error"." [spec text]
 		// Step 5. "Let fallbackUrlBytes be the result of reading urlLength bytes from stream. If this is an error, return a "format error"." [spec text]
 		fallbackURLBytes, err := dec.DecodeTextString()

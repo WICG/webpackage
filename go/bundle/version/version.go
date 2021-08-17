@@ -37,7 +37,7 @@ var HeaderMagicBytesB2 = []byte{0x85, 0x48, 0xf0, 0x9f, 0x8c, 0x90, 0xf0, 0x9f, 
 var VersionMagicBytesB1 = []byte{0x44, 0x62, 0x31, 0x00, 0x00}
 
 // VersionMagicBytesB2 is the CBOR encoding of a 4-byte byte string holding an ASCII "b2" followed by two 0 bytes
-var VersionMagicBytesB1 = []byte{0x44, 0x62, 0x32, 0x00, 0x00}
+var VersionMagicBytesB2 = []byte{0x44, 0x62, 0x32, 0x00, 0x00}
 
 func Parse(str string) (Version, bool) {
 	switch Version(str) {
@@ -72,18 +72,21 @@ func ParseMagicBytes(r io.Reader) (Version, error) {
 	if bytes.Compare(hdrMagic, HeaderMagicBytesUnversioned) == 0 {
 		return Unversioned, nil
 	}
-	if bytes.Compare(hdrMagic, HeaderMagicBytesB1) != 0 {
-		return "", errors.New("bundle: header magic mismatch")
-	}
 
 	verMagic := make([]byte, len(VersionMagicBytesB1))
 	if _, err := io.ReadFull(r, verMagic); err != nil {
 		return "", err
 	}
 	if bytes.Compare(verMagic, VersionMagicBytesB1) == 0 {
+		if bytes.Compare(hdrMagic, HeaderMagicBytesB1) != 0 {
+			return "", errors.New("bundle: header magic mismatch")
+		}
 		return VersionB1, nil
 	}
 	if bytes.Compare(verMagic, VersionMagicBytesB2) == 0 {
+		if bytes.Compare(hdrMagic, HeaderMagicBytesB2) != 0 {
+			return "", errors.New("bundle: header magic mismatch")
+		}
 		return VersionB2, nil
 	}
 	return "", errors.New("bundle: unrecognized version magic")
