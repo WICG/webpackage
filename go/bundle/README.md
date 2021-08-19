@@ -46,6 +46,7 @@ One convenient way to generate HAR file is via Chrome Devtools:
 2. Make sure that "Disable cache" box is checked.
 3. Reload the page.
 4. Right click on any resource and select "Save as HAR with content".
+
 ![generating har with devtools](https://raw.githubusercontent.com/WICG/webpackage/main/go/bundle/har-devtools.png)
 
 Once you have the har file, generate the web bundle via:
