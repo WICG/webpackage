@@ -40,7 +40,13 @@ These command-line flags are common to all the three options:
 
 #### From a HAR file
 
-One convenient way to generate HAR file is via Chrome Devtools. Navigate to "Network" panel, and right-click on any resource and select "Save as HAR with content".
+One convenient way to generate HAR file is via Chrome Devtools:
+
+1. Open DevTools, navigate to Network panel.
+2. Make sure that "Disable cache" box is checked.
+3. Reload the page.
+4. Right click on any resource and select "Save as HAR with content".
+
 ![generating har with devtools](https://raw.githubusercontent.com/WICG/webpackage/main/go/bundle/har-devtools.png)
 
 Once you have the har file, generate the web bundle via:
