@@ -48,18 +48,22 @@ func main() {
 	if !ok {
 		log.Fatalf("Error: failed to parse version %q\n", *flagVersion)
 	}
-	if *flagPrimaryURL == "" && ver.HasPrimaryURLFieldInHeader(){
+	if *flagPrimaryURL == "" && ver.HasPrimaryURLFieldInHeader() {
 		fmt.Fprintln(os.Stderr, "Please specify -primaryURL or change your bundle version to a newer one.")
 		flag.Usage()
 		return
 	}
-	parsedPrimaryURL, err := url.Parse(*flagPrimaryURL)
-	if err != nil {
-		log.Fatalf("Failed to parse primary URL. err: %v", err)
-	}
+	var parsedPrimaryURL *url.URL
+	var err error
 	if len(*flagPrimaryURL) == 0 {
 		parsedPrimaryURL = nil
+	} else {
+		parsedPrimaryURL, err = url.Parse(*flagPrimaryURL)
+		if err != nil {
+			log.Fatalf("Failed to parse primary URL. err: %v", err)
+		}
 	}
+
 	var parsedManifestURL *url.URL
 	if len(*flagManifestURL) > 0 {
 		parsedManifestURL, err = url.Parse(*flagManifestURL)

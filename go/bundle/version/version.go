@@ -72,6 +72,9 @@ func ParseMagicBytes(r io.Reader) (Version, error) {
 	if bytes.Compare(hdrMagic, HeaderMagicBytesUnversioned) == 0 {
 		return Unversioned, nil
 	}
+	if bytes.Compare(hdrMagic, HeaderMagicBytesB1) != 0 && bytes.Compare(hdrMagic, HeaderMagicBytesB2) != 0 {
+		return "", errors.New("bundle: unrecognized header magic")
+	}
 
 	verMagic := make([]byte, len(VersionMagicBytesB1))
 	if _, err := io.ReadFull(r, verMagic); err != nil {
@@ -79,13 +82,13 @@ func ParseMagicBytes(r io.Reader) (Version, error) {
 	}
 	if bytes.Compare(verMagic, VersionMagicBytesB1) == 0 {
 		if bytes.Compare(hdrMagic, HeaderMagicBytesB1) != 0 {
-			return "", errors.New("bundle: header magic mismatch")
+			return "", errors.New("bundle: header magic bytes does not match version magic bytes")
 		}
 		return VersionB1, nil
 	}
 	if bytes.Compare(verMagic, VersionMagicBytesB2) == 0 {
 		if bytes.Compare(hdrMagic, HeaderMagicBytesB2) != 0 {
-			return "", errors.New("bundle: header magic mismatch")
+			return "", errors.New("bundle: header magic bytes does not match version magic bytes")
 		}
 		return VersionB2, nil
 	}
