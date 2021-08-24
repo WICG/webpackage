@@ -393,6 +393,24 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []secti
 	return requests, nil
 }
 
+// The "primary" section records a single URL identifying the primary URL of the bundle. The URL MUST refer to a resource with representations contained in the bundle itself.
+func parsePrimarySection(sectionContents []byte) (*url.URL, error) {
+	dec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
+	urlString, err := dec.DecodeTextString()
+	if err != nil {
+		return nil, fmt.Errorf("bundle: failed to parse primary section: %v", err)
+	}
+	primaryURL, err := url.Parse(urlString)
+	// If url is a failure, its fragment is not null, or it includes credentials, return an error.
+	if err != nil {
+		return nil, fmt.Errorf("bundle: failed to parse primary URL (%s): %v", urlString, err)
+	}
+	if !primaryURL.IsAbs() || primaryURL.Fragment != "" || primaryURL.User != nil {
+		return nil, fmt.Errorf("bundle: primary URL (%s) must be an absolute url without fragment or credentials.", urlString)
+	}
+	return primaryURL, nil
+}
+
 // https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#manifest-section
 // "To parse the manifest section, given its sectionContents and the metadata map to fill in, the parser MUST do the following:" [spec text]
 func parseManifestSection(sectionContents []byte) (*url.URL, error) {
@@ -498,6 +516,7 @@ func parseSignaturesSection(sectionContents []byte) (*Signatures, error) {
 var knownSections = map[string]struct{}{
 	"index":      {},
 	"manifest":   {},
+	"primary":    {},
 	"signatures": {},
 	"responses":  {},
 }
@@ -521,7 +540,7 @@ func loadMetadata(bs []byte) (*meta, error) {
 
 	r := bytes.NewBuffer(bs)
 
-	// Step 2. "If reading 10 bytes from stream returns an error or doesn't return the bytes with hex encoding "84 48 F0 9F 8C 90 F0 9F 93 A6" (the CBOR encoding of the 4-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8), return a "format error"." [spec text]
+	// Step 2. "If reading 10 bytes from stream returns an error or doesn't return the bytes with hex encoding "86 48 F0 9F 8C 90 F0 9F 93 A6" (the CBOR encoding of the 6-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8) or "85 48 F0 9F 8C 90 F0 9F 93 A6" (same as before, but a 5-item CBOR-array), return a "format error"." [spec text]
 	// Step 3. "Let version be the result of reading 5 bytes from stream. If this is an error, return a "format error"." [spec text]
 	ver, err := version.ParseMagicBytes(r)
 	// TODO(ksakamoto): Continue and return VersionError after parsing fallbackUrl.
@@ -531,7 +550,7 @@ func loadMetadata(bs []byte) (*meta, error) {
 
 	var fallbackURL *url.URL
 	dec := cbor.NewDecoder(r)
-	if ver.HasPrimaryURLField() {
+	if ver.HasPrimaryURLFieldInHeader() {
 		// Step 4. "Let urlType and urlLength be the result of reading the type and argument of a CBOR item from stream (Section 3.5.3). If this is an error or urlType is not 3 (a CBOR text string), return a "format error"." [spec text]
 		// Step 5. "Let fallbackUrlBytes be the result of reading urlLength bytes from stream. If this is an error, return a "format error"." [spec text]
 		fallbackURLBytes, err := dec.DecodeTextString()
@@ -545,7 +564,7 @@ func loadMetadata(bs []byte) (*meta, error) {
 		}
 	}
 
-	// Step 7. "If version does not have the hex encoding "44 31 00 00 00" (the CBOR encoding of a 4-byte byte string holding an ASCII "1" followed by three 0 bytes), return a "version error" with fallbackUrl. " [spec text]
+	// Step 7. "If version does not have the hex encoding "44 62 31 00 00"/"44 62 32 00 00" (the CBOR encoding of a 4-byte byte string holding an ASCII "b1"/"b2" followed by two 0 bytes), return a "version error" with fallbackUrl. " [spec text]
 	// This is checked inside version.ParseMagicBytes(r) above.
 
 	// Step 8. "Let sectionLengthsLength be the result of getting the length of the CBOR bytestring header from stream (Section 3.5.2). If this is an error, return a "format error" with fallbackUrl." [spec text]
@@ -601,7 +620,7 @@ func loadMetadata(bs []byte) (*meta, error) {
 		return nil, &LoadMetadataError{fmt.Errorf("bundle: Last section is not \"responses\""), FormatError, fallbackURL}
 	}
 
-	// Step 21. "Let metadata be a map ([INFRA]) initially containing the single key/value pair "primaryUrl"/fallbackUrl." [spec text]
+	// Step 21. "Let metadata be a map ([INFRA]) initially containing the single key/value pair "primaryUrl"/fallbackUrl" if the version matches b1. [spec text]
 	// Note: We use a struct rather than a map here.
 	meta := &meta{
 		version:        ver,
@@ -655,6 +674,13 @@ func loadMetadata(bs []byte) (*meta, error) {
 				}
 				meta.requests = requests
 			}
+		case "primary":
+			primaryURL, err := parsePrimarySection(sectionContents)
+			if err != nil {
+				return nil, &LoadMetadataError{err, FormatError, fallbackURL}
+			}
+			fallbackURL = primaryURL
+			meta.primaryURL = primaryURL
 		case "manifest":
 			manifestURL, err := parseManifestSection(sectionContents)
 			if err != nil {

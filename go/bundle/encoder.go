@@ -431,6 +431,21 @@ func (rs *responsesSection) WriteTo(w io.Writer) (int64, error) {
 	return rs.buf.WriteTo(w)
 }
 
+type primarySection struct {
+	bytes.Buffer
+}
+
+func (ps *primarySection) Name() string { return "primary" }
+
+func newPrimarySection(url *url.URL) (*primarySection, error) {
+	var ps primarySection
+	enc := cbor.NewEncoder(&ps)
+	if err := enc.EncodeTextString(url.String()); err != nil {
+		return nil, err
+	}
+	return &ps, nil
+}
+
 type manifestSection struct {
 	bytes.Buffer
 }
@@ -572,6 +587,13 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 
 	sections := []section{}
 	sections = append(sections, is)
+	if !b.Version.HasPrimaryURLFieldInHeader() && b.PrimaryURL != nil {
+		ps, err := newPrimarySection(b.PrimaryURL)
+		if err != nil {
+			return cw.Written, err
+		}
+		sections = append(sections, ps)
+	}
 	if b.ManifestURL != nil {
 		ms, err := newManifestSection(b.ManifestURL)
 		if err != nil {
@@ -591,7 +613,7 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 	if _, err := cw.Write(b.Version.HeaderMagicBytes()); err != nil {
 		return cw.Written, err
 	}
-	if b.Version.HasPrimaryURLField() {
+	if b.Version.HasPrimaryURLFieldInHeader() {
 		if err := writePrimaryURL(cw, b.PrimaryURL); err != nil {
 			return cw.Written, err
 		}
