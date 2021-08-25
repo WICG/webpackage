@@ -22,7 +22,7 @@ check that signatures are valid. For example, a client might:
   of any signature with an EC public key on the secp256r1 curve.
 * Reject all signatures by an RSA public key.
 * Treat an X.509 certificate with the CanSignHttpExchanges extension (Section
-  4.2 of [I-D.yasskin-http-origin-signed-responses](I-D.yasskin-http-origin-signed-responses))
+  4.2 of [I-D.yasskin-http-origin-signed-responses][I-D.yasskin-http-origin-signed-responses])
   and a valid chain to a trusted root as an authority that vouches for the
   authenticity of resources claimed to come from that certificate's domains.
 * Treat an X.509 certificate with another extension or EKU as vouching that a
@@ -60,7 +60,7 @@ resource-integrity = (
 )
 ~~~
 
-The `augmented-certificate` CDDL rule comes from Section 3.3 of [I-D.yasskin-http-origin-signed-responses](I-D.yasskin-http-origin-signed-responses).
+The `augmented-certificate` CDDL rule comes from Section 3.3 of [I-D.yasskin-http-origin-signed-responses][I-D.yasskin-http-origin-signed-responses].
 
 To parse the signatures section, given its `sectionContents`, the `sectionOffsets`
 map, and the `metadata` map to fill in, the parser MUST do the following:
