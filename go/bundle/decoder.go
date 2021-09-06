@@ -159,7 +159,7 @@ func decodeCborHeaders(dec *cbor.Decoder) (http.Header, map[string]string, error
 
 // https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html#index-section
 // "To parse the index section, given its sectionContents, the sectionsStart offset, the sectionOffsets CBOR item, and the metadata map to fill in, the parser MUST do the following:" [spec text]
-func parseIndexSectionUnversioned(sectionContents []byte, sectionsStart uint64, sos []sectionOffset, bs []byte) ([]requestEntryWithOffset, error) {
+func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []sectionOffset, bs []byte) ([]requestEntryWithOffset, error) {
 	// Step 1. "Let index be the result of parsing sectionContents as a CBOR item matching the index rule in the above CDDL (Section 3.4). If index is an error, return nil, an error." [spec text]
 	idxdec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
 	nidx, err := idxdec.DecodeArrayHeader()
@@ -279,7 +279,7 @@ func parseIndexSectionUnversioned(sectionContents []byte, sectionsStart uint64, 
 }
 
 // https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#index-section
-func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []sectionOffset) ([]requestEntryWithOffset, error) {
+func parseIndexSectionWithVariants(sectionContents []byte, sectionsStart uint64, sos []sectionOffset) ([]requestEntryWithOffset, error) {
 	// Step 1. "Let index be the result of parsing sectionContents as a CBOR item matching the index rule in the above CDDL (Section 3.5). If index is an error, return an error." [spec text]
 	dec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
 	numUrls, err := dec.DecodeMapHeader()
@@ -662,13 +662,13 @@ func loadMetadata(bs []byte) (*meta, error) {
 		switch so.Name {
 		case "index":
 			if ver.SupportsVariants() {
-				requests, err := parseIndexSection(sectionContents, sectionsStart, sos)
+				requests, err := parseIndexSectionWithVariants(sectionContents, sectionsStart, sos)
 				if err != nil {
 					return nil, &LoadMetadataError{err, FormatError, fallbackURL}
 				}
 				meta.requests = requests
 			} else {
-				requests, err := parseIndexSectionUnversioned(sectionContents, sectionsStart, sos, bs)
+				requests, err := parseIndexSection(sectionContents, sectionsStart, sos, bs)
 				if err != nil {
 					return nil, &LoadMetadataError{err, FormatError, fallbackURL}
 				}

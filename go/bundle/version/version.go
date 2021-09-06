@@ -120,7 +120,7 @@ func (v Version) HasPrimaryURLFieldInHeader() bool {
 }
 
 func (v Version) SupportsVariants() bool {
-	return v != Unversioned
+	return v == VersionB1
 }
 
 func (v Version) SupportsSignatures() bool {

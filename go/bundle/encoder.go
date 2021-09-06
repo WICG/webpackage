@@ -95,9 +95,12 @@ type indexSection struct {
 	bytes []byte
 }
 
-func (is *indexSection) addExchange(e *Exchange, offset, length int) error {
+func (is *indexSection) addExchange(e *Exchange, offset, length int, ver version.Version) error {
 	variants := normalizeHeaderValues(e.Response.Header[http.CanonicalHeaderKey("variants")])
 	variantKey := normalizeHeaderValues(e.Response.Header[http.CanonicalHeaderKey("variant-key")])
+	if (!ver.SupportsVariants() && (variants != "" || variantKey != "")) {
+		panic("Variants included in the exchange, but the specific bundle version '" + ver + "' does not support it.")
+	}
 	ent := &indexEntry{
 		Request:    e.Request,
 		Variants:   variants,
@@ -504,13 +507,13 @@ func newSignaturesSection(sigs *Signatures) (*signaturesSection, error) {
 	return &ss, nil
 }
 
-func addExchange(is *indexSection, rs *responsesSection, e *Exchange) error {
+func addExchange(is *indexSection, rs *responsesSection, e *Exchange, ver version.Version) error {
 	offset, length, err := rs.addResponse(e.Response)
 	if err != nil {
 		return err
 	}
 
-	if err := is.addExchange(e, offset, length); err != nil {
+	if err := is.addExchange(e, offset, length, ver); err != nil {
 		return err
 	}
 	return nil
@@ -577,7 +580,7 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 	rs := newResponsesSection(len(b.Exchanges))
 
 	for _, e := range b.Exchanges {
-		if err := addExchange(is, rs, e); err != nil {
+		if err := addExchange(is, rs, e, b.Version); err != nil {
 			return cw.Written, err
 		}
 	}
