@@ -170,6 +170,7 @@ func (is *indexSection) Finalize(ver version.Version) error {
 		// index = {* whatwg-url => [ location-in-responses ] }
 		// whatwg-url = tstr
 		// location-in-responses = (offset: uint, length: uint)
+		m := make(map[string][]*indexEntry)
 		for _, e := range is.es {
 			url := e.URL.String()
 			m[url] = append(m[url], e)
