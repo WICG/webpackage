@@ -90,10 +90,6 @@ func (s *SignedSubset) Encode() ([]byte, error) {
 }
 
 func NewSigner(ver version.Version, certs certurl.CertChain, privKey crypto.PrivateKey, validityUrl *url.URL, date time.Time, duration time.Duration) (*Signer, error) {
-	if ver == version.Unversioned {
-		return nil, errors.New("signature: unversioned bundles cannot be signed")
-	}
-
 	if err := certs.Validate(); err != nil {
 		return nil, err
 	}

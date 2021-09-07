@@ -11,19 +11,14 @@ import (
 type Version string
 
 const (
-	Unversioned Version = "unversioned"
 	VersionB1   Version = "b1"
 	VersionB2   Version = "b2"
 )
 
 var AllVersions = []Version{
-	Unversioned,
 	VersionB1,
 	VersionB2,
 }
-
-// HeaderMagicBytesUnversioned is the CBOR encoding of the 4-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8.
-var HeaderMagicBytesUnversioned = []byte{0x84, 0x48, 0xf0, 0x9f, 0x8c, 0x90, 0xf0, 0x9f, 0x93, 0xa6}
 
 // HeaderMagicBytesB1 is the CBOR encoding of the 6-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8.
 // These bytes are for the header of b1 version.
@@ -41,8 +36,6 @@ var VersionMagicBytesB2 = []byte{0x44, 0x62, 0x32, 0x00, 0x00}
 
 func Parse(str string) (Version, bool) {
 	switch Version(str) {
-	case Unversioned:
-		return Unversioned, true
 	case VersionB1:
 		return VersionB1, true
 	case VersionB2:
@@ -53,8 +46,6 @@ func Parse(str string) (Version, bool) {
 
 func (v Version) HeaderMagicBytes() []byte {
 	switch v {
-	case Unversioned:
-		return HeaderMagicBytesUnversioned
 	case VersionB1:
 		return append(HeaderMagicBytesB1, VersionMagicBytesB1...)
 	case VersionB2:
@@ -68,9 +59,6 @@ func ParseMagicBytes(r io.Reader) (Version, error) {
 	hdrMagic := make([]byte, len(HeaderMagicBytesB1))
 	if _, err := io.ReadFull(r, hdrMagic); err != nil {
 		return "", err
-	}
-	if bytes.Compare(hdrMagic, HeaderMagicBytesUnversioned) == 0 {
-		return Unversioned, nil
 	}
 	if bytes.Compare(hdrMagic, HeaderMagicBytesB1) != 0 && bytes.Compare(hdrMagic, HeaderMagicBytesB2) != 0 {
 		return "", errors.New("bundle: unrecognized header magic")
@@ -120,9 +108,9 @@ func (v Version) HasPrimaryURLFieldInHeader() bool {
 }
 
 func (v Version) SupportsVariants() bool {
-	return v != Unversioned
+	return true
 }
 
 func (v Version) SupportsSignatures() bool {
-	return v != Unversioned
+	return true
 }
