@@ -159,122 +159,64 @@ func decodeCborHeaders(dec *cbor.Decoder) (http.Header, map[string]string, error
 
 // https://wicg.github.io/webpackage/draft-yasskin-dispatch-bundled-exchanges.html#index-section
 // "To parse the index section, given its sectionContents, the sectionsStart offset, the sectionOffsets CBOR item, and the metadata map to fill in, the parser MUST do the following:" [spec text]
-func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []sectionOffset, bs []byte) ([]requestEntryWithOffset, error) {
-	// Step 1. "Let index be the result of parsing sectionContents as a CBOR item matching the index rule in the above CDDL (Section 3.4). If index is an error, return nil, an error." [spec text]
-	idxdec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
-	nidx, err := idxdec.DecodeArrayHeader()
+func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []sectionOffset) ([]requestEntryWithOffset, error) {
+	// Step 1. "Let index be the result of parsing sectionContents as a CBOR item matching the index rule in the above CDDL (Section 3.5). If index is an error, return an error." [spec text]
+	dec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
+	numUrls, err := dec.DecodeMapHeader()
 	if err != nil {
-		return nil, fmt.Errorf("bundle.index: Failed to decode \"index\" array header: %v", err)
+		return nil, fmt.Errorf("bundle.index: failed to decode index section map header: %v", err)
 	}
+	// Step 2. "Let requests be an initially-empty map ([INFRA]) from URLs to response descriptions, each of which is either a single location-in-stream value" [spec text]
+	requests := []requestEntryWithOffset{}
 
-	// Step 2. "Check that the responses array has the right number of items:" [spec text]
-	// Step 2.1. "Seek to offset sectionOffsets["responses"].offset in stream. If this fails, return an error." [spec text]
 	respso, respSectionRelOffset, found := FindSection(sos, "responses")
 	if !found {
 		return nil, fmt.Errorf("bundle.index: \"responses\" section not found")
 	}
 	respSectionOffset := sectionsStart + respSectionRelOffset
-
-	// Step 2.2. "Let (responsesType, numResponses) be the result of parsing the type and argument of a CBOR item from the stream. If this returns an error, return that error." [spec text]
-	respb := bytes.NewBuffer(bs[respSectionOffset : respSectionOffset+respso.Length])
-	respdec := cbor.NewDecoder(respb)
-	// Step 2.3. "If responsesType is not 4 (a CBOR array) or ..." [spec text]
-	nresp, err := respdec.DecodeArrayHeader()
-	if err != nil {
-		return nil, fmt.Errorf("bundle.index: Failed to decode \"response\" array header: %v", err)
-	}
-	// "numResponses is not half of the length of index, return an error." [spec text
-	if nresp*2 != nidx {
-		return nil, fmt.Errorf("bundle.index: numResponses=%d is not half of the length of index=%d", nresp, nidx)
+	// Step 3. "Let MakeRelativeToStream be a function that takes a location-in-responses value (offset, length) and returns a ResponseMetadata struct or error by running the following sub-steps:" [spec text]
+	makeRelativeToStream := func(offset, length uint64) (uint64, uint64, error) {
+		// Step 3.1. "If offset + length is larger than sectionOffsets["responses"].length, return an error." [spec text]
+		if offset+length > respso.Length {
+			return 0, 0, errors.New("bundle.index: response length out-of-range")
+		}
+		// Step 3.2. "Otherwise, return a ResponseMetadata struct whose offset is sectionOffsets["responses"].offset + offset and whose length is length." [spec text]
+		return respSectionOffset + offset, length, nil
 	}
 
-	// Step 2.4. "Let currentOffset be the current offset within stream minus sectionOffsets["responses"].offset" [spec text]
-	currentOffset := respso.Length - uint64(respb.Len())
-
-	// Step 3. "Let requests be an initially-empty map from HTTP requests to structs with items named "offset" and "length"." [spec text]
-	requests := []requestEntryWithOffset{}
-
-	// Step 4. "For each (cbor-http-request, length) pair of adjacent elements in index:" [spec text]
-	for i := uint64(0); i < nresp; i++ {
-		// Step 4.1. "Let headers/pseudos be the result of converting cbor-http-request to a header list and pseudoheaders using the algorithm in Section 3.5. If this returns an error, return nil, that error."
-		headers, pseudos, err := decodeCborHeaders(idxdec)
+	// Step 4. "For each (url, responses) entry in the index map:" [spec text]
+	for i := uint64(0); i < numUrls; i++ {
+		// Step 4.1. "Let parsedUrl be the result of parsing ([URL]) url with no base URL." [spec text]
+		rawUrl, err := dec.DecodeTextString()
 		if err != nil {
-			return nil, fmt.Errorf("bundle.index[%d]: %v", i, err)
+			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode map key: %v", i, err)
 		}
-
-		// parse length.
-		length, err := idxdec.DecodeUint()
-		if err != nil {
-			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode encoded response length: %v", i, err)
-		}
-
-		// Step 4.2. "If pseudos does not have keys named ':method' and ':url', or its size isn't 2, return nil, an error." [spec text]
-		method, exists := pseudos[":method"]
-		if !exists {
-			return nil, fmt.Errorf("bundle.index[%d]: The pseudo map must have key named \":method\"", i)
-		}
-		rawurl, exists := pseudos[":url"]
-		if !exists {
-			return nil, fmt.Errorf("bundle.index[%d]: The pseudo map must have key named \":url\"", i)
-		}
-		if len(pseudos) != 2 {
-			return nil, fmt.Errorf("bundle.index[%d]: The size of pseudo map must be 2", i)
-		}
-
-		// Step 4.3. "If pseudos[':method'] is not 'GET', return nil, an error." [spec text]
-		if method != "GET" {
-			return nil, fmt.Errorf("bundle.index[%d]: pseudo[\":method\"] must be \"GET\"", i)
-		}
-
-		// Step 4.4. "Let parsedUrl be the result of parsing ([URL]) pseudos[':url'] with no base URL." [spec text]
-		parsedUrl, err := url.Parse(rawurl)
-
-		// Step 4.5. "If parsedUrl is a failure, its fragment is not null, or it includes credentials, return nil, an error."
+		parsedUrl, err := url.Parse(rawUrl)
+		// Step 4.2. "If parsedUrl is a failure, its fragment is not null, or it includes credentials, return an error." [spec text]
 		if err != nil {
 			return nil, fmt.Errorf("bundle.index[%d]: Failed to parse URL: %v", i, err)
 		}
 		if parsedUrl.Fragment != "" {
-			return nil, fmt.Errorf("bundle.index[%d]: URL contains fragment: %q", i, rawurl)
+			return nil, fmt.Errorf("bundle.index[%d]: URL contains fragment: %q", i, rawUrl)
 		}
 		if parsedUrl.User != nil {
-			return nil, fmt.Errorf("bundle.index[%d]: URL contains credentials: %q", i, rawurl)
+			return nil, fmt.Errorf("bundle.index[%d]: URL contains credentials: %q", i, rawUrl)
 		}
 
-		// Step 4.6 appears later.
-
-		// Step 4.7. "Let responseOffset be sectionOffsets["responses"].offset + currentOffset." [spec text]
-		responseOffset := respSectionOffset + currentOffset
-
-		// Step 4.8. "If currentOffset + length is greater than sectionOffsets["responses"].length, return nil, an error." [spec text]
-		if currentOffset+length > respso.Length {
-			return nil, fmt.Errorf("bundle.index[%d]: responses length out-of-range", i)
+		offset, err := dec.DecodeUint()
+		if err != nil {
+			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode offset: %v", i, err)
 		}
-
-		// Step 4.6. "Let http-request be a new request ([FETCH]) whose:..." [spec text]
-		// Step 4.9. "Set requests[http-request] to a struct ..." [spec text]
-		e := requestEntryWithOffset{
-			// Step 4.6. cont "... method is pseudos[':method'], ..." => omitted, since this must be always "GET"
-			Request: Request{
-				// "... url is parsedUrl, ... "
-				URL: parsedUrl,
-				// "... header list is headers, and ..."
-				Header: headers,
-			},
-
-			// "... client is null." => not impl
-
-			// Step 4.9. cont "... whose "offset" item is responseOffset and ..."
-			Offset: responseOffset,
-			// "... whose "length" item is length." [spec text]
-			Length: length,
+		length, err := dec.DecodeUint()
+		if err != nil {
+			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode length: %v", i, err)
 		}
-		requests = append(requests, e)
-
-		// Step 4.10. "Set currentOffset to currentOffset + length".
-		currentOffset += length
+		offset, length, err = makeRelativeToStream(offset, length)
+		if err != nil {
+			return nil, fmt.Errorf("bundle.index[%d]: %v", i, err)
+		}
+		requests = append(requests, requestEntryWithOffset{Request: Request{URL: parsedUrl}, Offset: offset, Length: length})
 	}
-
-	// Step 5. "Set metadata["requests"] to requests." [spec text]
 	return requests, nil
 }
 
@@ -668,7 +610,7 @@ func loadMetadata(bs []byte) (*meta, error) {
 				}
 				meta.requests = requests
 			} else {
-				requests, err := parseIndexSection(sectionContents, sectionsStart, sos, bs)
+				requests, err := parseIndexSection(sectionContents, sectionsStart, sos)
 				if err != nil {
 					return nil, &LoadMetadataError{err, FormatError, fallbackURL}
 				}
