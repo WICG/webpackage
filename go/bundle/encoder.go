@@ -95,7 +95,7 @@ type indexSection struct {
 	bytes []byte
 }
 
-func (is *indexSection) addExchange(e *Exchange, offset, length int, ver version.Version) error {
+func (is *indexSection) addExchange(e *Exchange, offset, length int) error {
 	variants := normalizeHeaderValues(e.Response.Header[http.CanonicalHeaderKey("variants")])
 	variantKey := normalizeHeaderValues(e.Response.Header[http.CanonicalHeaderKey("variant-key")])
 	ent := &indexEntry{
