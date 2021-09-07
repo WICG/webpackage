@@ -107,10 +107,18 @@ func (v Version) HasPrimaryURLFieldInHeader() bool {
 	return v == VersionB1
 }
 
+// TODO(myrzakereyms): change this to 'v == VersionB1' like above
+// as B1 is the only version that still supports variants, leaving
+// it like this for now until the proper removal of the variant
+// support.
 func (v Version) SupportsVariants() bool {
 	return true
 }
 
+// TODO: consider changing this also to only version B1, as the
+// signatures section is not a part of the main spec anymore.
+// Currently returns true as both B1 and B2 can have signatures
+// (temporarily).
 func (v Version) SupportsSignatures() bool {
 	return true
 }
