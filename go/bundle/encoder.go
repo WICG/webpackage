@@ -165,53 +165,6 @@ func (is *indexSection) Finalize(ver version.Version) error {
 		if err := enc.EncodeMap(mes); err != nil {
 			return err
 		}
-	} else {
-		// CDDL: index = [* (headers, length: uint) ]
-		if err := enc.EncodeArrayHeader(len(is.es) * 2); err != nil {
-			return err
-		}
-
-		for _, e := range is.es {
-			mes := []*cbor.MapEntryEncoder{
-				cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-					if err := keyE.EncodeByteString([]byte(":method")); err != nil {
-						panic(err)
-					}
-					if err := valueE.EncodeByteString([]byte("GET")); err != nil {
-						panic(err)
-					}
-				}),
-				cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-					if err := keyE.EncodeByteString([]byte(":url")); err != nil {
-						panic(err)
-					}
-					if err := valueE.EncodeByteString([]byte(e.URL.String())); err != nil {
-						panic(err)
-					}
-				}),
-			}
-			h := e.Header
-			for name, _ := range h {
-				lname := strings.ToLower(name)
-				value := h.Get(name)
-				me := cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-					if err := keyE.EncodeByteString([]byte(lname)); err != nil {
-						panic(err)
-					}
-					if err := valueE.EncodeByteString([]byte(value)); err != nil {
-						panic(err)
-					}
-				})
-				mes = append(mes, me)
-			}
-
-			if err := enc.EncodeMap(mes); err != nil {
-				return err
-			}
-			if err := enc.EncodeUint(uint64(e.Length)); err != nil {
-				return err
-			}
-		}
 	}
 
 	is.bytes = b.Bytes()
