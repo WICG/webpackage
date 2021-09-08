@@ -11,19 +11,14 @@ import (
 type Version string
 
 const (
-	Unversioned Version = "unversioned"
 	VersionB1   Version = "b1"
 	VersionB2   Version = "b2"
 )
 
 var AllVersions = []Version{
-	Unversioned,
 	VersionB1,
 	VersionB2,
 }
-
-// HeaderMagicBytesUnversioned is the CBOR encoding of the 4-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8.
-var HeaderMagicBytesUnversioned = []byte{0x84, 0x48, 0xf0, 0x9f, 0x8c, 0x90, 0xf0, 0x9f, 0x93, 0xa6}
 
 // HeaderMagicBytesB1 is the CBOR encoding of the 6-item array initial byte and 8-byte bytestring initial byte, followed by 🌐📦 in UTF-8.
 // These bytes are for the header of b1 version.
@@ -41,8 +36,6 @@ var VersionMagicBytesB2 = []byte{0x44, 0x62, 0x32, 0x00, 0x00}
 
 func Parse(str string) (Version, bool) {
 	switch Version(str) {
-	case Unversioned:
-		return Unversioned, true
 	case VersionB1:
 		return VersionB1, true
 	case VersionB2:
@@ -53,8 +46,6 @@ func Parse(str string) (Version, bool) {
 
 func (v Version) HeaderMagicBytes() []byte {
 	switch v {
-	case Unversioned:
-		return HeaderMagicBytesUnversioned
 	case VersionB1:
 		return append(HeaderMagicBytesB1, VersionMagicBytesB1...)
 	case VersionB2:
@@ -68,9 +59,6 @@ func ParseMagicBytes(r io.Reader) (Version, error) {
 	hdrMagic := make([]byte, len(HeaderMagicBytesB1))
 	if _, err := io.ReadFull(r, hdrMagic); err != nil {
 		return "", err
-	}
-	if bytes.Compare(hdrMagic, HeaderMagicBytesUnversioned) == 0 {
-		return Unversioned, nil
 	}
 	if bytes.Compare(hdrMagic, HeaderMagicBytesB1) != 0 && bytes.Compare(hdrMagic, HeaderMagicBytesB2) != 0 {
 		return "", errors.New("bundle: unrecognized header magic")
@@ -119,10 +107,18 @@ func (v Version) HasPrimaryURLFieldInHeader() bool {
 	return v == VersionB1
 }
 
+// TODO(myrzakereyms): change this to 'v == VersionB1' like above
+// as B1 is the only version that still supports variants, leaving
+// it like this for now until the proper removal of the variant
+// support.
 func (v Version) SupportsVariants() bool {
 	return v == VersionB1
 }
 
+// TODO: consider changing this also to only version B1, as the
+// signatures section is not a part of the main spec anymore.
+// Currently returns true as both B1 and B2 can have signatures
+// (temporarily).
 func (v Version) SupportsSignatures() bool {
-	return v != Unversioned
+	return true
 }
