@@ -24,12 +24,17 @@ resource URLs in web bundles. The `uuid-in-package:` URL has the following synta
 <uuid-in-package> ::= "uuid-in-package:" <UUID>
 ```
 Where `<UUID>` is a UUID as specified in
-[RFC 4122](https://datatracker.ietf.org/doc/html/rfc2141).
+[RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122).
 
 In addition to the same origin subresource explained in the
 [`<link>`-based API](https://github.com/WICG/webpackage/blob/main/explainers/subresource-loading.md#link-based-api)
 section in the explainer, this extension allows a bundle to include a
-[`uuid-in-package:`](https://tools.ietf.org/html/rfc4122) URL subresource.
+`uuid-in-package:` URL subresource.
+
+Note: Previous version of this document used
+[`urn:uuid:` URLs](https://datatracker.ietf.org/doc/html/rfc4122) for this
+perpose. Chromium's experimental implementation currently supports only
+`urn:uuid:` (as of M95).
 
 ### Opaque origin iframes
 
