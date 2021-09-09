@@ -178,6 +178,13 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []secti
 			return nil, fmt.Errorf("bundle.index[%d]: URL contains credentials: %q", i, rawUrl)
 		}
 
+		numItems, err := dec.DecodeArrayHeader()
+		if err != nil {
+			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode value array header: %v", i, err)
+		}
+		if numItems == 0 {
+			return nil, fmt.Errorf("bundle.index[%d]: value array must not be empty.", i)
+		}
 		offset, err := dec.DecodeUint()
 		if err != nil {
 			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode offset: %v", i, err)

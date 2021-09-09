@@ -178,11 +178,17 @@ func (is *indexSection) Finalize(ver version.Version) error {
 
 		mes := []*cbor.MapEntryEncoder{}
 		for url, es := range m {
+			if (len(es) > 1) {
+				return errors.New("This WebBundle version '" + string(ver) + "' does not support variants, so we cannot have multiple resources per URL.")
+			}
 			me := cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				if err := keyE.EncodeTextString(url); err != nil {
 					panic(err)
 				}
 
+				if err := valueE.EncodeArrayHeader(2); err != nil {
+					panic(err)
+				}
 				if err := valueE.EncodeUint(es[0].Offset); err != nil {
 					panic(err)
 				}
