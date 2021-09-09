@@ -31,11 +31,6 @@ In addition to the same origin subresource explained in the
 section in the explainer, this extension allows a bundle to include a
 `uuid-in-package:` URL subresource.
 
-Note: Previous version of this document used
-[`urn:uuid:` URLs](https://datatracker.ietf.org/doc/html/rfc4122) for this
-perpose. Chromium's experimental implementation currently supports only
-`urn:uuid:` (as of M95).
-
 ### Opaque origin iframes
 
 If a `<iframe>`'s `src` attribute is a `uuid-in-package:` URL subresource in the
@@ -122,6 +117,21 @@ Note:
   policy of "\*".
 - See an issue [#651](https://github.com/WICG/webpackage/issues/651) for the
   detailed motivation.  
+
+## Alternatives Considered
+
+### urn:uuid: resources
+Previous version of this document used
+[`urn:uuid:` URLs](https://datatracker.ietf.org/doc/html/rfc4122) instead of
+`uuid-in-package:`. However, the `urn:` scheme is included in the
+[safelisted schemes](https://html.spec.whatwg.org/multipage/system-state.html#safelisted-scheme)
+of the HTML spec, meaning that web sites can
+[register a custom protocol handler](https://html.spec.whatwg.org/multipage/system-state.html#custom-handlers)
+that handles `urn:` scheme. To avoid the potential for conflict, this extension
+introduces the new `uuid-in-package:` scheme.
+
+Note that Chromium's experimental implementation currently supports only
+`urn:uuid:` as of M95.
 
 [subresource loading with web bundles]:
   https://github.com/WICG/webpackage/blob/main/explainers/subresource-loading.md
