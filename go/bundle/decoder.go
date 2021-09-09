@@ -182,8 +182,8 @@ func parseIndexSection(sectionContents []byte, sectionsStart uint64, sos []secti
 		if err != nil {
 			return nil, fmt.Errorf("bundle.index[%d]: Failed to decode value array header: %v", i, err)
 		}
-		if numItems == 0 {
-			return nil, fmt.Errorf("bundle.index[%d]: value array must not be empty.", i)
+		if numItems != 2 {
+			return nil, fmt.Errorf("bundle.index[%d]: value array must be exactly 2 elements: offset and length.", i)
 		}
 		offset, err := dec.DecodeUint()
 		if err != nil {
