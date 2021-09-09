@@ -107,12 +107,8 @@ func (v Version) HasPrimaryURLFieldInHeader() bool {
 	return v == VersionB1
 }
 
-// TODO(myrzakereyms): change this to 'v == VersionB1' like above
-// as B1 is the only version that still supports variants, leaving
-// it like this for now until the proper removal of the variant
-// support.
 func (v Version) SupportsVariants() bool {
-	return true
+	return v == VersionB1
 }
 
 // TODO: consider changing this also to only version B1, as the

@@ -165,6 +165,42 @@ func (is *indexSection) Finalize(ver version.Version) error {
 		if err := enc.EncodeMap(mes); err != nil {
 			return err
 		}
+	} else {
+		// CDDL:
+		// index = {* whatwg-url => [ location-in-responses ] }
+		// whatwg-url = tstr
+		// location-in-responses = (offset: uint, length: uint)
+		m := make(map[string][]*indexEntry)
+		for _, e := range is.es {
+			url := e.URL.String()
+			m[url] = append(m[url], e)
+		}
+
+		mes := []*cbor.MapEntryEncoder{}
+		for url, es := range m {
+			if (len(es) > 1) {
+				return errors.New("This WebBundle version '" + string(ver) + "' does not support variants, so we cannot have multiple resources per URL.")
+			}
+			me := cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				if err := keyE.EncodeTextString(url); err != nil {
+					panic(err)
+				}
+
+				if err := valueE.EncodeArrayHeader(2); err != nil {
+					panic(err)
+				}
+				if err := valueE.EncodeUint(es[0].Offset); err != nil {
+					panic(err)
+				}
+				if err := valueE.EncodeUint(es[0].Length); err != nil {
+					panic(err)
+				}
+			})
+			mes = append(mes, me)
+		}
+		if err := enc.EncodeMap(mes); err != nil {
+			return err
+		}
 	}
 
 	is.bytes = b.Bytes()
