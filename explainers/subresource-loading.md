@@ -134,6 +134,11 @@ Suppose that the bundle, `subresources.wbn`, includes the following resources:
 - … (omitted)
 ```
 
+A URL of the resource in the bundle can be a [relative
+URL](https://url.spec.whatwg.org/#syntax-url-relative) to the bundle.
+A browser must [parse a URL](https://html.spec.whatwg.org/#parse-a-url)
+using bundle's URL.
+
 ### The main document
 
 ```html
