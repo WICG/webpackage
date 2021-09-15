@@ -86,7 +86,7 @@ Note that this syntax is still tentative.
 Developers will write
 
 ```html
-<script type="webbundle"/>
+<script type="webbundle">
 {
    source: "https://example.com/dir/subresources.wbn",
    resources: ["https://example.com/dir/a.js", "https://example.com/dir/b.js", "https://example.com/dir/c.png"]
@@ -209,8 +209,7 @@ of the resource, not the URL of the bundle. For example, given this CSP header:
 Content-Security-Policy: script-src https://example.com/script/
 ```
 
-In the following, the first `<script>` will be loaded, but the second
-`<script>` will be blocked:
+In the following, `a.js` will be loaded, but `b.js` will be blocked:
 
 ```
 <script type="webbundle">
@@ -292,6 +291,9 @@ API. See [issue #580](https://github.com/WICG/webpackage/issues/580)
 for the motivation. Note that some of the following alternate designs
 were proposed at the era of `<link>`-based API. This explainer doesn't
 rewrite them with `<script>`-based API yet.
+
+Note that Chromium's experimental implementation currently supports
+only `<link>`-based API as of M95.
 
 ### Resource Bundles
 
