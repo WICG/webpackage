@@ -164,6 +164,8 @@ URL](https://url.spec.whatwg.org/#syntax-url-relative) to a document.
 A browser must [parse a URL](https://html.spec.whatwg.org/#parse-a-url)
 using document's [base URL](https://html.spec.whatwg.org/#document-base-url).
 
+`<script type="webbundle">` doesn't support `src=` attribute. The rule must be inline.
+
 ## Request's mode and credentials mode
 
 [Issue 640](https://github.com/WICG/webpackage/issues/670): Update this section for `<script>`-based API.
