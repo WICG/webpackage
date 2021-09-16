@@ -10,7 +10,7 @@ a format that allows multiple resources to be bundled, e.g.
 
 - [Backgrounds](#backgrounds)
 - [Requirements](#requirements)
-- [`<link>`-based API](#link-based-api)
+- [`<script>`-based API](#script-based-api)
 - [Example](#example)
   - [The bundle](#the-bundle)
   - [The main document](#the-main-document)
@@ -21,6 +21,7 @@ a format that allows multiple resources to be bundled, e.g.
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
 - [Compressed list of resources](#compressed-list-of-resources)
 - [Alternate designs](#alternate-designs)
+  - [`<link>`-based API](#link-based-api)
   - [Resource Bundles](#resource-bundles)
   - [Summarizing the contents of the bundle](#summarizing-the-contents-of-the-bundle)
     - [Defining the scope](#defining-the-scope)
@@ -78,24 +79,25 @@ give us a better chance of designing the right API.
 This feature is a powerful feature that can replace any subresources in the
 page. So we limit the use of this feature only in [secure contexts](https://www.w3.org/TR/powerful-features/).
 
-## `<link>`-based API
+## `<script>`-based API
 
 Note that this syntax is still tentative.
 
 Developers will write
 
 ```html
-<link
-  rel="webbundle"
-  href="https://example.com/dir/subresources.wbn"
-  resources="https://example.com/dir/a.js https://example.com/dir/b.js https://example.com/dir/c.png"
-/>
+<script type="webbundle">
+{
+   source: "https://example.com/dir/subresources.wbn",
+   resources: ["https://example.com/dir/a.js", "https://example.com/dir/b.js", "https://example.com/dir/c.png"]
+}
+</script>
 ```
 
-to tell the browser that subresources specified in `resources` attribute can
+to tell the browser that subresources specified in `resources` can
 be found within the `https://example.com/dir/subresources.wbn` bundle.
 
-When the browser parses such a `link` element, it:
+When the browser parses such a `script` element, it:
 
 1. Fetches the specified Web Bundle, `https://example.com/dir/subresources.wbn`.
 
@@ -137,12 +139,12 @@ Suppose that the bundle, `subresources.wbn`, includes the following resources:
 ### The main document
 
 ```html
-<link rel="webbundle"
-  href="https://example.com/dir/subresources.wbn"
-  resources="https://example.com/dir/a.js
-             https://example.com/dir/b.js
-             https://example.com/dir/c.png"
-/>
+<script type="webbundle">
+{
+  source: "https://example.com/dir/subresources.wbn",
+  resources: ["https://example.com/dir/a.js", "https://example.com/dir/b.js", "https://example.com/dir/c.png"]
+}
+</script>
 
 <script type=”module” src=”https://example.com/dir/a.js”></script>
 <img src=https://example.com/dir/c.png>
@@ -157,14 +159,16 @@ protocol
 handler](https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler)
 for its scheme.
 
-Note that `resources` attribute is reflected to JavaScript as a [`DOMTokenList`](https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList).
-
-A URL in `resources` attribute can be a [relative
+A URL in `source` and `resources` can be a [relative
 URL](https://url.spec.whatwg.org/#syntax-url-relative) to a document.
 A browser must [parse a URL](https://html.spec.whatwg.org/#parse-a-url)
 using document's [base URL](https://html.spec.whatwg.org/#document-base-url).
 
+`<script type="webbundle">` doesn't support `src=` attribute. The rule must be inline.
+
 ## Request's mode and credentials mode
+
+[Issue 640](https://github.com/WICG/webpackage/issues/670): Update this section for `<script>`-based API.
 
 With the `<link>`-based API, a
 [request](https://fetch.spec.whatwg.org/#concept-request) for a bundle
@@ -192,7 +196,7 @@ The following table is the summary.
 
 ## Request's destination
 
-With the `<link>`-based API, a
+With the `<script>`-based API, a
 [request](https://fetch.spec.whatwg.org/#concept-request) for a bundle
 will have its
 [destination](https://fetch.spec.whatwg.org/#concept-request-destination)
@@ -207,19 +211,38 @@ of the resource, not the URL of the bundle. For example, given this CSP header:
 Content-Security-Policy: script-src https://example.com/script/
 ```
 
-In the following, the first `<script>` will be loaded, but the second
-`<script>` will be blocked:
+In the following, `a.js` will be loaded, but `b.js` will be blocked:
 
 ```
-<link rel="webbundle"
-  href="https://example.com/subresources.wbn"
-  resources="https://example.com/script/a.js
-             https://example.com/b.js"
-/>
+<script type="webbundle">
+{
+  source: "https://example.com/subresources.wbn",
+  resources: ["https://example.com/script/a.js",
+              "https://example.com/b.js"]
+}
+</script>
 
 <script src=”https://example.com/script/a.js”></script>
 <script src=”https://example.com/b.js”></script>
 ```
+
+#### Defining the scopes
+
+Instead of including a list of resources, the `<script>` defines a `scopes`.
+
+```html
+<script type="webbundle">
+{
+  source: "https://example.com/dir/subresources.wbn",
+  scopes: ["https://example.com/dir/js/",
+           "https://example.com/dir/img/",
+           "https://example.com/dir/css/"]
+}
+</script>
+```
+
+Any subresource under the `scopes` will be fetched from the bundle.
+
 
 ## Extensions
 
@@ -253,6 +276,27 @@ compressed](https://github.com/yoavweiss/url_compression_experiments).
 
 ## Alternate designs
 
+### `<link>`-based API
+
+This explainer had used `<link>`-based API before adopting `<script>`-based API:
+
+```html
+<link
+  rel="webbundle"
+  href="https://example.com/dir/subresources.wbn"
+  resources="https://example.com/dir/a.js https://example.com/dir/b.js https://example.com/dir/c.png"
+/>
+```
+
+However, we abandoned `<link>`-based API, in favor of `<script>`-based
+API. See [issue #580](https://github.com/WICG/webpackage/issues/580)
+for the motivation. Note that some of the following alternate designs
+were proposed at the era of `<link>`-based API. This explainer doesn't
+rewrite them with `<script>`-based API yet.
+
+Note that Chromium's experimental implementation currently supports
+only `<link>`-based API as of M95.
+
 ### Resource Bundles
 
 A [resource bundle] is the same effort, with a particular scope. A
@@ -267,22 +311,6 @@ We have been collaborating closely to gather more feedback to draw a shared conc
 ### Summarizing the contents of the bundle
 
 Several other mechanisms are available to give the bundler more flexibility or to compress the resource list.
-
-#### Defining the scopes
-
-Instead of including a list of resources, the page defines a `scopes`.
-
-```html
-<link
-  rel="webbundle"
-  href="https://example.com/dir/subresources.wbn"
-  scopes="https://example.com/dir/js/
-          https://example.com/dir/img/
-          https://example.com/dir/css/"
-/>
-```
-
-Any subresource under the `scopes` will be fetched from the bundle.
 
 #### Approximate Membership Query datastructure
 
