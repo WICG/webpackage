@@ -1535,9 +1535,9 @@ To <dfn lt="reading a body|read a body">read a body</dfn> from a [=read buffer=]
 1. Let |cancel| be the following steps, taking |reason| as an argument:
     1. [=ReadableStream/Cancel=] |stream|'s [=read buffer/stream=] with
         |reason|.
-1. Let |outputStream| be the result of [=ReadableStream/creating=] a
-    {{ReadableStream}} with a [=ReadableStream/create/cancelAlgorithm=] of
-    |cancel|.
+1. Let |outputStream| be a [=new=] {{ReadableStream}}.
+1. [=ReadableStream/Set up=] |outputStream| with a [=ReadableStream/set
+    up/cancelAlgorithm=] of |cancel|.
 1. Set |body|'s [=body/stream=] to |outputStream|.
 1. Set |response|'s [=response/body=] to |body|.
 1. [=In parallel=]:
