@@ -16,6 +16,7 @@ a format that allows multiple resources to be bundled, e.g.
   - [The main document](#the-main-document)
 - [Request's mode and credentials mode](#requests-mode-and-credentials-mode)
 - [Request's destination](#requests-destination)
+- [CORS and CORP for subresource requests](#cors-and-corp-for-subresource-requests)
 - [Content Security Policy (CSP)](#content-security-policy-csp)
 - [Extensions](#extensions)
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
