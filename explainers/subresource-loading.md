@@ -16,6 +16,7 @@ a format that allows multiple resources to be bundled, e.g.
   - [The main document](#the-main-document)
 - [Request's mode and credentials mode](#requests-mode-and-credentials-mode)
 - [Request's destination](#requests-destination)
+- [CORS and CORP for subresource requests](#cors-and-corp-for-subresource-requests)
 - [Content Security Policy (CSP)](#content-security-policy-csp)
 - [Extensions](#extensions)
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
@@ -207,6 +208,20 @@ will have its
 [destination](https://fetch.spec.whatwg.org/#concept-request-destination)
 set to "`webbundle`"
 ([whatwg/fetch#1120](https://github.com/whatwg/fetch/issues/1120)).
+
+## CORS and CORP for subresource requests
+[CORS](https://fetch.spec.whatwg.org/#http-cors-protocol) and
+[CORP](https://fetch.spec.whatwg.org/#cross-origin-resource-policy-header)
+checks on subresources in bundles are based on the URL and response headers
+of requested subresource.
+
+For example, if a cors request is made to a cross-origin subresource in a
+bundle, and the subresource does not have an `Access-Control-Allow-Origin:`
+header, the request will fail.
+
+Similarly, if a no-cors request is made to a cross-origin subresource in a
+bundle, and the subresource has `Cross-Origin-Resource-Policy: same-origin`
+header, the request will fail.
 
 ## Content Security Policy (CSP)
 
