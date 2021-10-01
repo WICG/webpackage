@@ -7,7 +7,6 @@ interface Headers {
 const knownSections = [
   'critical',
   'index',
-  'manifest',
   'responses',
   'signatures',
 ];
@@ -15,19 +14,17 @@ const knownSections = [
 /** This class represents parsed Web Bundle. */
 export class Bundle {
   version: string;
-  primaryURL: string;
   private sections: { [key: string]: unknown } = {};
   private responses: { [key: number]: Response } = {}; // Offset-in-responses -> resp
 
   constructor(buffer: Buffer) {
     const wbn = asArray(CBOR.decode(buffer));
-    if (wbn.length !== 6) {
+    if (wbn.length !== 5) {
       throw new Error('Wrong toplevel structure');
     }
     const [
       magic,
       version,
-      primaryURL,
       sectionLengthsCBOR,
       sections,
       length,
@@ -36,7 +33,6 @@ export class Bundle {
       throw new Error('Wrong magic');
     }
     this.version = bytestringToString(version).replace(/\0+$/, ''); // Strip off the '\0' paddings.
-    this.primaryURL = asString(primaryURL);
     const sectionLengths = asArray(
       CBOR.decode(asBytestring(sectionLengthsCBOR))
     );
@@ -67,13 +63,6 @@ export class Bundle {
       this.responses[offsetInResponses] = new Response(asArray(resp));
       offsetInResponses += encodedLength(resp);
     }
-  }
-
-  get manifestURL(): string | null {
-    if (this.sections['manifest']) {
-      return asString(this.sections['manifest']);
-    }
-    return null;
   }
 
   get urls(): string[] {

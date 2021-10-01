@@ -20,11 +20,9 @@ Creating a Bundle:
 const wbn = require('wbn');
 const fs = require('fs');
 
-const primaryURL = 'https://example.com/';
-const builder = (new wbn.BundleBuilder(primaryURL))
-  .setManifestURL('https://example.com/manifest.json')
-  .addExchange(
-    primaryURL,                          // URL
+const builder = new wbn.BundleBuilder();
+builder.addExchange(
+    exampleURL,                          // URL
     200,                                 // response code
     {'Content-Type': 'text/html'},       // response headers
     '<html>Hello, Web Bundle!</html>');  // response body (string or Uint8Array)
@@ -52,8 +50,6 @@ for (const url of bundle.urls) {
 }
 console.log(JSON.stringify({
   version: bundle.version,  // format version
-  primaryURL: bundle.primaryURL,
-  manifestURL: bundle.manifestURL,
   exchanges
 }, null, 2));
 ```

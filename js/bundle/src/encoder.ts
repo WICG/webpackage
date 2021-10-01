@@ -25,24 +25,17 @@ export class BundleBuilder {
   private index: Map<string, [Uint8Array, number, number]> = new Map();
   private currentResponsesOffset = 0;
 
-  constructor(private primaryURL: string) {
-    validateExchangeURL(primaryURL);
+  constructor() {
   }
 
   // TODO: Provide async version of this.
   createBundle(): Buffer {
-    if (!this.index.has(this.primaryURL)) {
-      throw new Error(
-        `Exchange for primary URL (${this.primaryURL}) does not exist`
-      );
-    }
-
     this.addSection('index', this.fixupIndex());
     this.addSection('responses', this.responses);
 
     const estimatedBundleSize = this.sectionLengths.reduce(
       (size, s) => size + s.length,
-      16384 // For headers (including primary URL)
+      16384 // For headers
     );
     const wbn = encodeCanonical(this.createTopLevel(), estimatedBundleSize);
 
@@ -98,12 +91,6 @@ export class BundleBuilder {
         this.addFile(baseURL + file, filePath);
       }
     }
-    return this;
-  }
-
-  setManifestURL(url: string): BundleBuilder {
-    validateExchangeURL(url);
-    this.addSection('manifest', url);
     return this;
   }
 
@@ -169,7 +156,6 @@ export class BundleBuilder {
     return [
       byteString('🌐📦'),
       byteString('b1\0\0'),
-      this.primaryURL,
       new Uint8Array(encodeCanonical(sectionLengths)),
       this.sections,
       new Uint8Array(8), // Length (to be filled in later)
