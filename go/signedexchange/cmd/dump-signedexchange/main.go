@@ -182,8 +182,9 @@ func verify(e *signedexchange.Exchange, certFetcher signedexchange.CertFetcher, 
 	if decodedPayload, ok := e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "", 0)); ok {
 		e.Payload = decodedPayload
 		fmt.Println("The exchange has a valid signature.")
+                return nil
 	}
-	return nil
+	return fmt.Errorf("The exchange has an invalid signature.")
 }
 
 func jsonPrintHeaders(e *signedexchange.Exchange, certFetcher signedexchange.CertFetcher, verificationTime time.Time, w io.Writer) error {
