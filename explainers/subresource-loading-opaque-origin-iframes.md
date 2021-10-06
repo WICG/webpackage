@@ -31,6 +31,10 @@ In addition to the same origin subresource explained in the
 section in the explainer, this extension allows a bundle to include a
 `uuid-in-package:` URL subresource.
 
+The `uuid-in-package:` scheme is
+[registered as provisional](https://www.iana.org/assignments/uri-schemes/prov/uuid-in-package)
+in the IANA URI Schemes registry.
+
 ### Opaque origin iframes
 
 If a `<iframe>`'s `src` attribute is a `uuid-in-package:` URL subresource in the
