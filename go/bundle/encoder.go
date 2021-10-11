@@ -584,6 +584,9 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 		sections = append(sections, ps)
 	}
 	if b.ManifestURL != nil {
+		if !b.Version.SupportsManifestSection() {
+			return cw.Written, errors.New("This version of the WebBundle does not support storing manifest URL.")
+		}
 		ms, err := newManifestSection(b.ManifestURL)
 		if err != nil {
 			return cw.Written, err
