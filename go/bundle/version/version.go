@@ -118,3 +118,7 @@ func (v Version) SupportsVariants() bool {
 func (v Version) SupportsSignatures() bool {
 	return true
 }
+
+func (v Version) SupportsManifestSection() bool {
+	return v == VersionB1
+}
