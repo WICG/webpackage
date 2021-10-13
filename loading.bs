@@ -114,9 +114,12 @@ spec: RFC6962; urlPrefix: https://tools.ietf.org/html/rfc6962#
 spec: RFC7231; urlPrefix: https://tools.ietf.org/html/rfc7231#
     type: dfn
         text: HTTP media type; url: section-3.1.1.1
+        text: Vary; url: section-7.1.4
     type: http-header
         text: Date; url: section-7.1.1.2
-spec: 7230; urlPrefix: https://tools.ietf.org/html/rfc7230#
+spec: RFC7230; urlPrefix: https://tools.ietf.org/html/rfc7230#
+    type: dfn
+        text: field-value; for: http; url: section-3.2
     type: grammar
         text: quoted-string; url: section-3.2.6
         text: token; url: section-3.2.6
@@ -1557,6 +1560,21 @@ A [=request=] |browserRequest| <dfn lt="matches the stored exchange|doesn't matc
 
 1. If |browserRequest|'s [=request/url=] is not [=url/equal=] to
     |storedExchange|'s [=exchange/request URL=], return "mismatch".
+
+1. If |browserRequest|'s [=request/header list=] contains a [=header=]
+    [=header/named=] \``Cookie`\` and |storedExchange|'s [=exchange/response=]'s
+    [=response/header list=] contains a [=header=] [=header/named=] \``Vary`\`,
+    then:
+
+    1. Let |fieldValues| be the [=list=] containing the elements corresponding to
+        the [=http/field-values=] of the [=Vary=] header.
+
+    1. [=list/For each=] |fieldValue| of |fieldValues|:
+
+        1. If |fieldValue| matches "`Cookie`", return "mismatch".
+
+    Note: This allows publishers to specify that a Signed Exchange is only meant
+    for visitors who don't already have a cookie associated with the URL.
 
 1. If |storedExchange|'s [=exchange/response=]'s [=response/header list=]
     [=header list/contains=]:
