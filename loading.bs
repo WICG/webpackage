@@ -1571,7 +1571,8 @@ A [=request=] |browserRequest| <dfn lt="matches the stored exchange|doesn't matc
 
     1. [=list/For each=] |fieldValue| of |fieldValues|:
 
-        1. If |fieldValue| matches "`Cookie`", return "mismatch".
+        1. If |fieldValue| is a [=byte-case-insensitive=] match for "`Cookie`",
+            return "mismatch".
 
     Note: This allows publishers to specify that a Signed Exchange is only meant
     for visitors who don't already have a cookie associated with the URL.
