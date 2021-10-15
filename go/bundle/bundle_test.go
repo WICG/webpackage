@@ -149,3 +149,14 @@ func TestWriteAndReadWithVariants(t *testing.T) {
 		}
 	}
 }
+
+
+func TestB2BundleWithSpecifiedManifestURLShouldFail(t *testing.T) {
+	bundle := createTestBundle(t, version.VersionB2)
+	bundle.ManifestURL = urlMustParse("https://bundle.example.com/manifest")
+	var buf bytes.Buffer
+	_, err := bundle.WriteTo(&buf)
+	if err == nil || err.Error() != "This version of the WebBundle does not support storing manifest URL." {
+		t.Errorf("Bundle write should fail as version B2 does not support manifest URL.")
+	}
+}
