@@ -74,11 +74,8 @@ export class Bundle {
     if (!indexEntry) {
       throw new Error('No entry for ' + url);
     }
-    const [variants, offset, length] = indexEntry;
-    if (asBytestring(variants).length !== 0) {
-      throw new Error('Variants are not supported');
-    }
-    if (indexEntry.length !== 3) {
+    const [offset, length] = indexEntry;
+    if (indexEntry.length !== 2) {
       throw new Error('Unexpected length of index entry for ' + url);
     }
     const resp = this.responses[asNumber(offset)];

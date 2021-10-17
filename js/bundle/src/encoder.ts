@@ -22,7 +22,7 @@ export class BundleBuilder {
   private sectionLengths: Array<{ name: string; length: number }> = [];
   private sections: CBORValue[] = [];
   private responses: Uint8Array[][] = [];
-  private index: Map<string, [Uint8Array, number, number]> = new Map();
+  private index: Map<string, [number, number]> = new Map();
   private currentResponsesOffset = 0;
 
   constructor() {
@@ -132,7 +132,6 @@ export class BundleBuilder {
 
   private addIndexEntry(url: string, responseLength: number) {
     this.index.set(url, [
-      new Uint8Array(0), // variants-value
       this.currentResponsesOffset,
       responseLength,
     ]);
@@ -143,7 +142,7 @@ export class BundleBuilder {
     // Adjust the offsets by the length of the response section's CBOR header.
     const responsesHeaderSize = encodedLength(this.responses.length);
     for (const value of this.index.values()) {
-      value[1] += responsesHeaderSize;
+      value[0] += responsesHeaderSize;
     }
     return this.index;
   }
@@ -155,7 +154,7 @@ export class BundleBuilder {
     }
     return [
       byteString('🌐📦'),
-      byteString('b1\0\0'),
+      byteString('b2\0\0'),
       new Uint8Array(encodeCanonical(sectionLengths)),
       this.sections,
       new Uint8Array(8), // Length (to be filled in later)
