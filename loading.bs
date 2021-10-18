@@ -119,7 +119,7 @@ spec: RFC7231; urlPrefix: https://tools.ietf.org/html/rfc7231#
         text: Date; url: section-7.1.1.2
 spec: RFC7230; urlPrefix: https://tools.ietf.org/html/rfc7230#
     type: dfn
-        text: field-value; for: http; url: section-3.2
+        text: field-name; for: http; url: section-3.2
     type: grammar
         text: quoted-string; url: section-3.2.6
         text: token; url: section-3.2.6
@@ -1567,7 +1567,7 @@ A [=request=] |browserRequest| <dfn lt="matches the stored exchange|doesn't matc
     then:
 
     1. Let |fieldValues| be the [=list=] containing the elements corresponding to
-        the [=http/field-values=] of the [=Vary=] header.
+        the [=http/field-names=] in the [=Vary=] header field value.
 
     1. [=list/For each=] |fieldValue| of |fieldValues|:
 
