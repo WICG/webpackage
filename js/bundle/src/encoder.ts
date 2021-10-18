@@ -19,6 +19,7 @@ interface Headers {
 }
 
 export class BundleBuilder {
+  private formatVersion: string = 'b2';
   private sectionLengths: Array<{ name: string; length: number }> = [];
   private sections: CBORValue[] = [];
   private responses: Uint8Array[][] = [];
@@ -26,6 +27,14 @@ export class BundleBuilder {
   private currentResponsesOffset = 0;
 
   constructor() {
+  }
+
+  setFormatVersion(newFormatVersion: string) {
+    if (newFormatVersion === 'b1' || newFormatVersion === 'b2') {
+      this.formatVersion = newFormatVersion;
+    } else {
+      throw new Error(`Invalid webbundle format version`);
+    }
   }
 
   // TODO: Provide async version of this.
@@ -154,7 +163,7 @@ export class BundleBuilder {
     }
     return [
       byteString('🌐📦'),
-      byteString('b2\0\0'),
+      byteString(`${this.formatVersion}\0\0`),
       new Uint8Array(encodeCanonical(sectionLengths)),
       this.sections,
       new Uint8Array(8), // Length (to be filled in later)
