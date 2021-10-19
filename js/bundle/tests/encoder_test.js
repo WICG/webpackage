@@ -3,6 +3,8 @@ const CBOR = require('cbor');
 const fs = require('fs');
 const path = require('path');
 
+// Tests for webbundle format version b2
+
 describe('Bundle Builder', () => {
   const exampleURL = 'https://example.com/';
   const defaultHeaders = { 'Content-Type': 'text/plain' };

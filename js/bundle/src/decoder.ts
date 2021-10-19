@@ -7,32 +7,49 @@ interface Headers {
 const knownSections = [
   'critical',
   'index',
+  'manifest', // only defined in version b1, might be present anyway
   'responses',
   'signatures',
 ];
 
+interface CompatAdapter {
+  wbnLength: number;
+  getResponse(url: string): Response;
+  destructureBundle(wbn: unknown[]): [any, any, any, any, any, any];
+}
+
 /** This class represents parsed Web Bundle. */
 export class Bundle {
   version: string;
+  private b1PrimaryURL: string | null = null; // only valid in format version b1
   private sections: { [key: string]: unknown } = {};
   private responses: { [key: number]: Response } = {}; // Offset-in-responses -> resp
+  private compatAdapter: CompatAdapter;
 
   constructor(buffer: Buffer) {
     const wbn = asArray(CBOR.decode(buffer));
-    if (wbn.length !== 5) {
-      throw new Error('Wrong toplevel structure');
+
+    let peekVersion = bytestringToString(wbn[1]).replace(/\0+$/, '');
+    this.compatAdapter = this.createCompatAdapter(peekVersion);
+
+    if (wbn.length !== this.compatAdapter.wbnLength) {
+      throw new Error(`Wrong toplevel structure ${peekVersion} ${wbn.length} ${this.compatAdapter.wbnLength}`);
     }
     const [
       magic,
       version,
+      primaryURL, // null in format version b2
       sectionLengthsCBOR,
       sections,
       length,
-    ] = wbn;
+    ] = this.compatAdapter.destructureBundle(wbn);
     if (bytestringToString(magic) !== '🌐📦') {
       throw new Error('Wrong magic');
     }
     this.version = bytestringToString(version).replace(/\0+$/, ''); // Strip off the '\0' paddings.
+    if (primaryURL) {
+      this.b1PrimaryURL = asString(primaryURL);
+    }
     const sectionLengths = asArray(
       CBOR.decode(asBytestring(sectionLengthsCBOR))
     );
@@ -65,28 +82,97 @@ export class Bundle {
     }
   }
 
+  get manifestURL(): string | null {
+    // the manifest section is not part of the b2 spec but it might have been defined anyway
+    if (this.sections['manifest']) {
+      return asString(this.sections['manifest']);
+    }
+    return null;
+  }
+
   get urls(): string[] {
     return Object.keys(this.indexSection);
   }
 
+  get primaryURL(): string | null {
+    if (this.version === 'b1') {
+      return this.b1PrimaryURL;
+    } else {
+      // TODO format version does not support a primary URL, should we throw an error?
+      return null;
+    }
+  }
+
   getResponse(url: string): Response {
-    const indexEntry = asArray(this.indexSection[url]);
-    if (!indexEntry) {
-      throw new Error('No entry for ' + url);
-    }
-    const [offset, length] = indexEntry;
-    if (indexEntry.length !== 2) {
-      throw new Error('Unexpected length of index entry for ' + url);
-    }
-    const resp = this.responses[asNumber(offset)];
-    if (!resp) {
-      throw new Error(`Response for ${url} is not found (broken index)`);
-    }
-    return resp;
+    return this.compatAdapter.getResponse(url);
   }
 
   private get indexSection(): { [key: string]: unknown } {
     return asMap(this.sections['index']);
+  }
+
+  // Behaviour that is specific to particular versions of the format.
+  private createCompatAdapter(formatVersion: string): CompatAdapter {
+    if (formatVersion === 'b1') {
+      // format version b1
+      return new class implements CompatAdapter {
+        wbnLength: number = 6;
+
+        constructor(private bundle: Bundle) {
+        }
+
+        getResponse(url: string): Response {
+          const indexEntry = asArray(this.bundle.indexSection[url]);
+          if (!indexEntry) {
+            throw new Error('No entry for ' + url);
+          }
+          const [variants, offset, length] = indexEntry;
+          if (asBytestring(variants).length !== 0) {
+            throw new Error('Variants are not supported');
+          }
+          if (indexEntry.length !== 3) {
+            throw new Error('Unexpected length of index entry for ' + url);
+          }
+          const resp = this.bundle.responses[asNumber(offset)];
+          if (!resp) {
+            throw new Error(`Response for ${url} is not found (broken index)`);
+          }
+          return resp;
+        }
+
+        destructureBundle(wbn: unknown[]): [any, any, any, any, any, any] {
+          return [wbn[0], wbn[1], wbn[2], wbn[3], wbn[4], wbn[5]];
+        }
+      }(this);
+    } else {
+      // format version b2
+      return new class implements CompatAdapter {
+        wbnLength: number = 5;
+
+        constructor(private bundle: Bundle) {
+        }
+
+        getResponse(url: string): Response {
+          const indexEntry = asArray(this.bundle.indexSection[url]);
+          if (!indexEntry) {
+            throw new Error('No entry for ' + url);
+          }
+          const [offset, length] = indexEntry;
+          if (indexEntry.length !== 2) { // this.compatAdapter.responseEntryLength
+            throw new Error('Unexpected length of index entry for ' + url);
+          }
+          const resp = this.bundle.responses[asNumber(offset)];
+          if (!resp) {
+            throw new Error(`Response for ${url} is not found (broken index)`);
+          }
+          return resp;
+        }
+
+        destructureBundle(wbn: unknown[]): [any, any, any, any, any, any] {
+          return [wbn[0], wbn[1], null, wbn[2], wbn[3], wbn[4]];
+        }
+      }(this);
+    }
   }
 }
 

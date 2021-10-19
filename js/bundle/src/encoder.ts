@@ -19,12 +19,13 @@ interface Headers {
 }
 
 interface CompatAdapter {
-  getFormatVersion(): string;
+  formatVersion: string;
   onBundleBuilderCreated(): void;
+  onCreateBundle(): void;
   setManifestURL(url: string): BundleBuilder;
   setIndexEntry(url: string, responseLength: number): void;
   updateIndexValues(responsesHeaderSize: number): Map<string, any[]>;
-  onCreateBundle(): void;
+  createTopLevel(): unknown;
 }
 
 export class BundleBuilder {
@@ -34,11 +35,11 @@ export class BundleBuilder {
   private currentResponsesOffset = 0;
   private compatAdapter: CompatAdapter;
 
-  constructor(private formatVersion: string = 'b2', private primaryURL: string = '') {
+  constructor(formatVersion: string = 'b2', private primaryURL: string = '') {
     if (formatVersion != 'b1' && formatVersion != 'b2') {
       throw new Error(`Invalid webbundle format version`);
     }
-    this.compatAdapter = this.createCompatAdapter();
+    this.compatAdapter = this.createCompatAdapter(formatVersion);
 
     this.compatAdapter.onBundleBuilderCreated();
   }
@@ -163,34 +164,34 @@ export class BundleBuilder {
   }
 
   private createTopLevel(): CBORValue {
-    const sectionLengths: Array<string | number> = [];
-    for (const s of this.sectionLengths) {
-      sectionLengths.push(s.name, s.length);
-    }
-    return [
-      byteString('🌐📦'),
-      byteString(`${this.compatAdapter.getFormatVersion()}\0\0`),
-      new Uint8Array(encodeCanonical(sectionLengths)),
-      this.sections,
-      new Uint8Array(8), // Length (to be filled in later)
-    ];
+    return this.compatAdapter.createTopLevel();
   }
 
-  private createCompatAdapter(): CompatAdapter {
-    if (this.formatVersion === 'b1') {
+  get formatVersion(): string {
+    return this.compatAdapter.formatVersion;
+  }
+
+  // Behaviour that is specific to particular versions of the format.
+  private createCompatAdapter(formatVersion: string): CompatAdapter {
+    if (formatVersion === 'b1') {
       // format version b1
       return new class implements CompatAdapter {
+        formatVersion: string = 'b1';
         private index: Map<string, [Uint8Array, number, number]> = new Map();
 
         constructor(private bundleBuilder: BundleBuilder) {
         }
 
-        getFormatVersion(): string {
-          return 'b1';
-        }
-
         onBundleBuilderCreated(): void {
           validateExchangeURL(this.bundleBuilder.primaryURL);
+        }
+
+        onCreateBundle(): void {
+          if (!this.index.has(this.bundleBuilder.primaryURL)) {
+            throw new Error(
+              `Exchange for primary URL (${this.bundleBuilder.primaryURL}) does not exist`
+            );
+          }
         }
 
         setManifestURL(url: string): BundleBuilder {
@@ -215,27 +216,35 @@ export class BundleBuilder {
           return this.index;
         }
 
-        onCreateBundle(): void {
-          if (!this.index.has(this.bundleBuilder.primaryURL)) {
-            throw new Error(
-              `Exchange for primary URL (${this.bundleBuilder.primaryURL}) does not exist`
-            );
+        createTopLevel(): unknown {
+          const sectionLengths: Array<string | number> = [];
+          for (const s of this.bundleBuilder.sectionLengths) {
+            sectionLengths.push(s.name, s.length);
           }
+          return [
+            byteString('🌐📦'),
+            byteString(`${formatVersion}\0\0`),
+            this.bundleBuilder.primaryURL,
+            new Uint8Array(encodeCanonical(sectionLengths)),
+            this.bundleBuilder.sections,
+            new Uint8Array(8), // Length (to be filled in later)
+          ];
         }
       }(this);
     } else {
       // format version b2
       return new class implements CompatAdapter {
+        formatVersion: string = 'b2';
         private index: Map<string, [number, number]> = new Map();
 
         constructor(private bundleBuilder: BundleBuilder) {
         }
 
-        getFormatVersion(): string {
-          return 'b2';
+        onBundleBuilderCreated(): void {
+          // not used
         }
 
-        onBundleBuilderCreated(): void {
+        onCreateBundle(): void {
           // not used
         }
 
@@ -258,8 +267,18 @@ export class BundleBuilder {
           return this.index;
         }
 
-        onCreateBundle(): void {
-          // not used
+        createTopLevel(): unknown {
+          const sectionLengths: Array<string | number> = [];
+          for (const s of this.bundleBuilder.sectionLengths) {
+            sectionLengths.push(s.name, s.length);
+          }
+          return [
+            byteString('🌐📦'),
+            byteString(`${formatVersion}\0\0`),
+            new Uint8Array(encodeCanonical(sectionLengths)),
+            this.bundleBuilder.sections,
+            new Uint8Array(8), // Length (to be filled in later)
+          ];
         }
       }(this);
     }

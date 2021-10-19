@@ -2,11 +2,12 @@ const wbn = require('../lib/wbn');
 const fs = require('fs');
 const path = require('path');
 
-// Tests for webbundle format version b2
+// Backwards compatibility tests for webbundle format version b1
 
 describe('Bundle', () => {
   const bundleBuffer = (() => {
-    const builder = new wbn.BundleBuilder();
+    const builder = new wbn.BundleBuilder('b1', 'https://example.com/');
+    builder.setManifestURL('https://example.com/manifest.json');
     builder.addExchange(
       'https://example.com/',
       200,
@@ -24,6 +25,9 @@ describe('Bundle', () => {
 
   it('has expected fields', () => {
     const b = new wbn.Bundle(bundleBuffer);
+    expect(b.version).toBe('b1');
+    expect(b.primaryURL).toBe('https://example.com/');
+    expect(b.manifestURL).toBe('https://example.com/manifest.json');
     expect(b.urls).toEqual(['https://example.com/', 'https://example.com/ja/']);
   });
 
@@ -52,8 +56,10 @@ describe('Bundle', () => {
   });
 
   it('parses pregenerated bundle', () => {
-    const buf = fs.readFileSync(path.resolve(__dirname, 'testdata/hello_b2.wbn'));
+    const buf = fs.readFileSync(path.resolve(__dirname, 'testdata/hello_b1.wbn'));
     const b = new wbn.Bundle(buf);
+    expect(b.primaryURL).toBe('https://example.com/hello.html');
+    expect(b.manifestURL).toBe(null);
     expect(b.urls).toEqual(['https://example.com/hello.html']);
     const resp = b.getResponse('https://example.com/hello.html');
     expect(resp.status).toBe(200);
@@ -64,7 +70,7 @@ describe('Bundle', () => {
   });
 
   it('throws if an unknown section is marked as critical', () => {
-    const builder = new wbn.BundleBuilder();
+    const builder = new wbn.BundleBuilder('b1', 'https://example.com/');
     builder.addExchange(
       'https://example.com/',
       200,
@@ -77,7 +83,8 @@ describe('Bundle', () => {
   });
 
   it('does not throw if all names in the critical section are known', () => {
-    const builder = new wbn.BundleBuilder();
+    const builder = new wbn.BundleBuilder('b1', 'https://example.com/');
+    expect(builder.formatVersion).toBe('b1');
     builder.addExchange(
       'https://example.com/',
       200,
@@ -87,6 +94,7 @@ describe('Bundle', () => {
     builder.addSection('critical', [
       'critical',
       'index',
+      'manifest',
       'responses',
       'signatures',
     ]);
