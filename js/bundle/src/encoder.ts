@@ -2,7 +2,7 @@ import * as CBOR from 'cbor';
 import * as fs from 'fs';
 import * as mime from 'mime';
 import * as path from 'path';
-import {URL} from 'url';
+import { URL } from 'url';
 
 declare module 'cbor' {
   // TODO: upstream these to @types/cbor
@@ -18,27 +18,35 @@ interface Headers {
   [key: string]: string;
 }
 
+interface CompatAdapter {
+  getFormatVersion(): string;
+  onBundleBuilderCreated(): void;
+  setManifestURL(url: string): BundleBuilder;
+  setIndexEntry(url: string, responseLength: number): void;
+  updateIndexValues(responsesHeaderSize: number): Map<string, any[]>;
+  onCreateBundle(): void;
+}
+
 export class BundleBuilder {
-  private formatVersion: string = 'b2';
   private sectionLengths: Array<{ name: string; length: number }> = [];
   private sections: CBORValue[] = [];
   private responses: Uint8Array[][] = [];
-  private index: Map<string, [number, number]> = new Map();
   private currentResponsesOffset = 0;
+  private compatAdapter: CompatAdapter;
 
-  constructor() {
-  }
-
-  setFormatVersion(newFormatVersion: string) {
-    if (newFormatVersion === 'b1' || newFormatVersion === 'b2') {
-      this.formatVersion = newFormatVersion;
-    } else {
+  constructor(private formatVersion: string = 'b2', private primaryURL: string = '') {
+    if (formatVersion != 'b1' && formatVersion != 'b2') {
       throw new Error(`Invalid webbundle format version`);
     }
+    this.compatAdapter = this.createCompatAdapter();
+
+    this.compatAdapter.onBundleBuilderCreated();
   }
 
   // TODO: Provide async version of this.
   createBundle(): Buffer {
+    this.compatAdapter.onCreateBundle();
+
     this.addSection('index', this.fixupIndex());
     this.addSection('responses', this.responses);
 
@@ -103,6 +111,10 @@ export class BundleBuilder {
     return this;
   }
 
+  setManifestURL(url: string): BundleBuilder {
+    return this.compatAdapter.setManifestURL(url);
+  }
+
   private addSection(name: string, content: CBORValue) {
     if (this.sectionLengths.some(s => s.name === name)) {
       throw new Error('Duplicated section: ' + name);
@@ -140,20 +152,14 @@ export class BundleBuilder {
   }
 
   private addIndexEntry(url: string, responseLength: number) {
-    this.index.set(url, [
-      this.currentResponsesOffset,
-      responseLength,
-    ]);
+    this.compatAdapter.setIndexEntry(url, responseLength);
     this.currentResponsesOffset += responseLength;
   }
 
   private fixupIndex() {
     // Adjust the offsets by the length of the response section's CBOR header.
     const responsesHeaderSize = encodedLength(this.responses.length);
-    for (const value of this.index.values()) {
-      value[0] += responsesHeaderSize;
-    }
-    return this.index;
+    return this.compatAdapter.updateIndexValues(responsesHeaderSize);
   }
 
   private createTopLevel(): CBORValue {
@@ -163,11 +169,100 @@ export class BundleBuilder {
     }
     return [
       byteString('🌐📦'),
-      byteString(`${this.formatVersion}\0\0`),
+      byteString(`${this.compatAdapter.getFormatVersion()}\0\0`),
       new Uint8Array(encodeCanonical(sectionLengths)),
       this.sections,
       new Uint8Array(8), // Length (to be filled in later)
     ];
+  }
+
+  private createCompatAdapter(): CompatAdapter {
+    if (this.formatVersion === 'b1') {
+      // format version b1
+      return new class implements CompatAdapter {
+        private index: Map<string, [Uint8Array, number, number]> = new Map();
+
+        constructor(private bundleBuilder: BundleBuilder) {
+        }
+
+        getFormatVersion(): string {
+          return 'b1';
+        }
+
+        onBundleBuilderCreated(): void {
+          validateExchangeURL(this.bundleBuilder.primaryURL);
+        }
+
+        setManifestURL(url: string): BundleBuilder {
+          validateExchangeURL(url);
+          this.bundleBuilder.addSection('manifest', url);
+          return this.bundleBuilder;
+        }
+
+        setIndexEntry(url: string,
+          responseLength: number): void {
+          this.index.set(url, [
+            new Uint8Array(0), // variants-value
+            this.bundleBuilder.currentResponsesOffset,
+            responseLength,
+          ]);
+        }
+
+        updateIndexValues(responsesHeaderSize: number): Map<string, any[]> {
+          for (const value of this.index.values()) {
+            value[1] += responsesHeaderSize;
+          }
+          return this.index;
+        }
+
+        onCreateBundle(): void {
+          if (!this.index.has(this.bundleBuilder.primaryURL)) {
+            throw new Error(
+              `Exchange for primary URL (${this.bundleBuilder.primaryURL}) does not exist`
+            );
+          }
+        }
+      }(this);
+    } else {
+      // format version b2
+      return new class implements CompatAdapter {
+        private index: Map<string, [number, number]> = new Map();
+
+        constructor(private bundleBuilder: BundleBuilder) {
+        }
+
+        getFormatVersion(): string {
+          return 'b2';
+        }
+
+        onBundleBuilderCreated(): void {
+          // not used
+        }
+
+        setManifestURL(url: string): BundleBuilder {
+          throw new Error('setManifestURL(): wrong format version');
+        }
+
+        setIndexEntry(url: string,
+          responseLength: number): void {
+          this.index.set(url, [
+            this.bundleBuilder.currentResponsesOffset,
+            responseLength,
+          ]);
+        }
+
+        updateIndexValues(responsesHeaderSize: number): Map<string, any[]> {
+          for (const value of this.index.values()) {
+            value[0] += responsesHeaderSize;
+          }
+          return this.index;
+        }
+
+        onCreateBundle(): void {
+          // not used
+        }
+      }(this);
+    }
   }
 }
 
