@@ -24,6 +24,7 @@ describe('Bundle', () => {
 
   it('has expected fields', () => {
     const b = new wbn.Bundle(bundleBuffer);
+    expect(b.version).toBe('b2');
     expect(b.urls).toEqual(['https://example.com/', 'https://example.com/ja/']);
   });
 
