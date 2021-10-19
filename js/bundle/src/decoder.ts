@@ -158,7 +158,7 @@ export class Bundle {
             throw new Error('No entry for ' + url);
           }
           const [offset, length] = indexEntry;
-          if (indexEntry.length !== 2) { // this.compatAdapter.responseEntryLength
+          if (indexEntry.length !== 2) {
             throw new Error('Unexpected length of index entry for ' + url);
           }
           const resp = this.bundle.responses[asNumber(offset)];

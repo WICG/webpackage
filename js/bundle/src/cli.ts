@@ -25,7 +25,7 @@ if (options.formatVersion === undefined || options.formatVersion === 'b2') {
 } else if (options.formatVersion === 'b1') {
   // webbundle format version b1
   const primaryURL = options.primaryURL || options.baseURL;
-  const builder = new BundleBuilder(primaryURL);
+  const builder = new BundleBuilder('b1', primaryURL);
   if (options.manifestURL) {
     builder.setManifestURL(options.manifestURL);
   }
