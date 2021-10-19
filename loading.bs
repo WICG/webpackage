@@ -1566,8 +1566,8 @@ A [=request=] |browserRequest| <dfn lt="matches the stored exchange|doesn't matc
     [=response/header list=] contains a [=header=] [=header/named=] \``Vary`\`,
     then:
 
-    1. Let |fieldValues| be the [=list=] containing the elements corresponding to
-        the [=http/field-names=] in the [=Vary=] header field value.
+    1. Let |fieldValues| be the [=list=] of [=http/field-names=] in the
+        [=Vary=] header field value.
 
     1. [=list/For each=] |fieldValue| of |fieldValues|:
 
