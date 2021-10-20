@@ -20,8 +20,8 @@ interface Headers {
 
 interface CompatAdapter {
   formatVersion: string;
-  onBundleBuilderCreated(): void;
   onCreateBundle(): void;
+  setPrimaryURL(url: string): BundleBuilder;
   setManifestURL(url: string): BundleBuilder;
   setIndexEntry(url: string, responseLength: number): void;
   updateIndexValues(responsesHeaderSize: number): Map<string, any[]>;
@@ -35,13 +35,11 @@ export class BundleBuilder {
   private currentResponsesOffset = 0;
   private compatAdapter: CompatAdapter;
 
-  constructor(formatVersion: string = 'b2', private primaryURL: string = '') {
+  constructor(formatVersion: string = 'b2') {
     if (formatVersion != 'b1' && formatVersion != 'b2') {
       throw new Error(`Invalid webbundle format version`);
     }
     this.compatAdapter = this.createCompatAdapter(formatVersion);
-
-    this.compatAdapter.onBundleBuilderCreated();
   }
 
   // TODO: Provide async version of this.
@@ -112,6 +110,10 @@ export class BundleBuilder {
     return this;
   }
 
+  setPrimaryURL(url: string): BundleBuilder {
+    return this.compatAdapter.setPrimaryURL(url);
+  }
+
   setManifestURL(url: string): BundleBuilder {
     return this.compatAdapter.setManifestURL(url);
   }
@@ -178,20 +180,29 @@ export class BundleBuilder {
       return new class implements CompatAdapter {
         formatVersion: string = 'b1';
         private index: Map<string, [Uint8Array, number, number]> = new Map();
+        private primaryURL: string | null = null;
 
         constructor(private bundleBuilder: BundleBuilder) {
         }
 
-        onBundleBuilderCreated(): void {
-          validateExchangeURL(this.bundleBuilder.primaryURL);
-        }
-
         onCreateBundle(): void {
-          if (!this.index.has(this.bundleBuilder.primaryURL)) {
+          if (this.primaryURL === null) {
+            throw new Error('Primary URL is not set');
+          }
+          if (!this.index.has(this.primaryURL)) {
             throw new Error(
-              `Exchange for primary URL (${this.bundleBuilder.primaryURL}) does not exist`
+              `Exchange for primary URL (${this.primaryURL}) does not exist`
             );
           }
+        }
+
+        setPrimaryURL(url: string): BundleBuilder {
+          if (this.primaryURL !== null) {
+            throw new Error('Primary URL is already set')
+          }
+          validateExchangeURL(url);
+          this.primaryURL = url;
+          return this.bundleBuilder;
         }
 
         setManifestURL(url: string): BundleBuilder {
@@ -224,7 +235,7 @@ export class BundleBuilder {
           return [
             byteString('🌐📦'),
             byteString(`${formatVersion}\0\0`),
-            this.bundleBuilder.primaryURL,
+            this.primaryURL,
             new Uint8Array(encodeCanonical(sectionLengths)),
             this.bundleBuilder.sections,
             new Uint8Array(8), // Length (to be filled in later)
@@ -240,12 +251,14 @@ export class BundleBuilder {
         constructor(private bundleBuilder: BundleBuilder) {
         }
 
-        onBundleBuilderCreated(): void {
+        onCreateBundle(): void {
           // not used
         }
 
-        onCreateBundle(): void {
-          // not used
+        setPrimaryURL(url: string): BundleBuilder {
+          validateExchangeURL(url);
+          this.bundleBuilder.addSection('primary', url);
+          return this.bundleBuilder;
         }
 
         setManifestURL(url: string): BundleBuilder {

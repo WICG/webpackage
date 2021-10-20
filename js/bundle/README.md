@@ -72,11 +72,11 @@ This module supports creating and parsing Web Bundles that follow different draf
 - version `b2` follows [the latest version of the Web Bundles spec](https://datatracker.ietf.org/doc/html/draft-yasskin-wpack-bundled-exchanges-04) (default)
 - version `b1` follows [the previous version of the Web Bundles spec](https://datatracker.ietf.org/doc/html/draft-yasskin-wpack-bundled-exchanges-03)
 
-To create a new bundle with the `b1` format, pass the version value and the primary URL to the constructor:
+To create a new bundle with the `b1` format, pass the version value to the constructor:
 
 ```javascript
-const primaryURL = 'https://example.com/';
-const builder = (new wbn.BundleBuilder('b1', primaryURL))
+const builder = (new wbn.BundleBuilder('b1'))
+  .setPrimaryURL('https://example.com/')
   .setManifestURL('https://example.com/manifest.json')
   .addExchange(...);
 

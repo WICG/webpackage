@@ -6,7 +6,8 @@ const path = require('path');
 
 describe('Bundle', () => {
   const bundleBuffer = (() => {
-    const builder = new wbn.BundleBuilder('b1', 'https://example.com/');
+    const builder = new wbn.BundleBuilder('b1');
+    builder.setPrimaryURL('https://example.com/');
     builder.setManifestURL('https://example.com/manifest.json');
     builder.addExchange(
       'https://example.com/',
@@ -70,7 +71,8 @@ describe('Bundle', () => {
   });
 
   it('throws if an unknown section is marked as critical', () => {
-    const builder = new wbn.BundleBuilder('b1', 'https://example.com/');
+    const builder = new wbn.BundleBuilder('b1');
+    builder.setPrimaryURL('https://example.com/');
     builder.addExchange(
       'https://example.com/',
       200,
@@ -83,7 +85,8 @@ describe('Bundle', () => {
   });
 
   it('does not throw if all names in the critical section are known', () => {
-    const builder = new wbn.BundleBuilder('b1', 'https://example.com/');
+    const builder = new wbn.BundleBuilder('b1');
+    builder.setPrimaryURL('https://example.com/');
     expect(builder.formatVersion).toBe('b1');
     builder.addExchange(
       'https://example.com/',

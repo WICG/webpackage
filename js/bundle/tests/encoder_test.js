@@ -128,6 +128,28 @@ describe('Bundle Builder', () => {
     });
   });
 
+  describe('setPrimaryURL', () => {
+    it('returns the builder itself', () => {
+      const builder = new wbn.BundleBuilder();
+      expect(builder.setPrimaryURL(exampleURL)).toBe(builder);
+    });
+
+    it('rejects invalid URLs', () => {
+      const builder = new wbn.BundleBuilder();
+      invalidURLs.forEach(url => {
+        expect(() => builder.setPrimaryURL(url)).toThrowError();
+      });
+    });
+
+    it('rejects double call', () => {
+      const builder = new wbn.BundleBuilder();
+      builder.setPrimaryURL(exampleURL);
+      expect(() =>
+        builder.setPrimaryURL(exampleURL)
+      ).toThrowError();
+    });
+  });
+
   it('builds large bundle', () => {
     const builder = new wbn.BundleBuilder();
     builder.addExchange(exampleURL, 200, defaultHeaders, new Uint8Array(1024 * 1024));

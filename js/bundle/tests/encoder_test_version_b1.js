@@ -17,29 +17,26 @@ describe('Bundle Builder', () => {
   ];
 
   it('builds', () => {
-    const builder = new wbn.BundleBuilder('b1', primaryURL);
+    const builder = new wbn.BundleBuilder('b1');
+    builder.setPrimaryURL(primaryURL);
     builder.addExchange(primaryURL, 200, defaultHeaders, defaultContent);
     const buf = builder.createBundle();
     // Just checks the result is a valid CBOR array.
     expect(CBOR.decode(buf)).toBeInstanceOf(Array);
   });
 
-  it('rejects invalid primary URLs', () => {
-    invalidURLs.forEach(url => {
-      expect(() => new wbn.BundleBuilder('b1', url)).toThrowError();
-    });
-  });
-
   describe('addExchange', () => {
     it('returns the builder itself', () => {
-      const builder = new wbn.BundleBuilder('b1', primaryURL);
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(primaryURL);
       expect(
         builder.addExchange(primaryURL, 200, defaultHeaders, defaultContent)
       ).toBe(builder);
     });
 
     it('rejects invalid URLs', () => {
-      const builder = new wbn.BundleBuilder('b1', primaryURL);
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(primaryURL);
       invalidURLs.forEach(url => {
         expect(() =>
           builder.addExchange(url, 200, defaultHeaders, defaultContent)
@@ -48,7 +45,8 @@ describe('Bundle Builder', () => {
     });
 
     it('requires content-type for non-empty resources', () => {
-      const builder = new wbn.BundleBuilder('b1', primaryURL);
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(primaryURL);
       expect(() =>
         builder.addExchange(primaryURL, 200, {}, defaultContent)
       ).toThrowError();
@@ -59,17 +57,20 @@ describe('Bundle Builder', () => {
   describe('addFile', () => {
     it('returns the builder itself', () => {
       const file = path.resolve(__dirname, 'testdata/encoder_test/index.html');
-      const builder = new wbn.BundleBuilder('b1', primaryURL);
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(primaryURL);
       expect(builder.addFile(primaryURL, file)).toBe(builder);
     });
 
     it('adds an exchange as expected', () => {
       const file = path.resolve(__dirname, 'testdata/encoder_test/index.html');
-      const builder = new wbn.BundleBuilder('b1', primaryURL);
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(primaryURL);
       builder.addFile(primaryURL, file);
       const generated = builder.createBundle();
 
-      const refBuilder = new wbn.BundleBuilder('b1', primaryURL);
+      const refBuilder = new wbn.BundleBuilder('b1');
+      refBuilder.setPrimaryURL(primaryURL);
       refBuilder.addExchange(
         primaryURL,
         200,
@@ -83,7 +84,8 @@ describe('Bundle Builder', () => {
 
     it('throws on nonexistent file', () => {
       const file = path.resolve(__dirname, 'testdata/hello/nonexistent.html');
-      const builder = new wbn.BundleBuilder('b1', primaryURL);
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(primaryURL);
       expect(() => builder.addFile(primaryURL, file)).toThrowError();
     });
   });
@@ -91,7 +93,8 @@ describe('Bundle Builder', () => {
   describe('addFilesRecursively', () => {
     it('returns the builder itself', () => {
       const dir = path.resolve(__dirname, 'testdata/encoder_test');
-      const builder = new wbn.BundleBuilder('b1', primaryURL);
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(primaryURL);
       expect(builder.addFilesRecursively(primaryURL, dir)).toBe(builder);
     });
 
@@ -99,11 +102,13 @@ describe('Bundle Builder', () => {
       const dir = path.resolve(__dirname, 'testdata/encoder_test');
       const baseURL = 'https://example.com/';
 
-      const builder = new wbn.BundleBuilder('b1', baseURL);
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(baseURL);
       builder.addFilesRecursively(baseURL, dir);
       const generated = builder.createBundle();
 
-      const refBuilder = new wbn.BundleBuilder('b1', baseURL);
+      const refBuilder = new wbn.BundleBuilder('b1');
+      refBuilder.setPrimaryURL(baseURL);
       refBuilder.addExchange(
         baseURL,
         200,
@@ -130,26 +135,59 @@ describe('Bundle Builder', () => {
     it('throws if baseURL does not end with a slash', () => {
       const dir = path.resolve(__dirname, 'testdata/hello');
       const url = 'https://example.com/hello.html';
-      const builder = new wbn.BundleBuilder('b1', url);
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(url);
       expect(() => builder.addFilesRecursively(url, dir)).toThrowError();
+    });
+  });
+
+  describe('setPrimaryURL', () => {
+    it('returns the builder itself', () => {
+      const builder = new wbn.BundleBuilder('b1');
+      expect(builder.setPrimaryURL(primaryURL)).toBe(builder);
+    });
+
+    it('must be called before createBundle', () => {
+      invalidURLs.forEach(url => {
+        const builder = new wbn.BundleBuilder('b1');
+        expect(() => builder.createBundle()).toThrowError();
+      });
+    });
+
+    it('rejects invalid URLs', () => {
+      invalidURLs.forEach(url => {
+        const builder = new wbn.BundleBuilder('b1');
+        expect(() => builder.setPrimaryURL(url)).toThrowError();
+      });
+    });
+
+    it('rejects double call', () => {
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(primaryURL);
+      expect(() =>
+        builder.setPrimaryURL(primaryURL)
+      ).toThrowError();
     });
   });
 
   describe('setManifestURL', () => {
     it('returns the builder itself', () => {
-      const builder = new wbn.BundleBuilder('b1', primaryURL);
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(primaryURL);
       expect(builder.setManifestURL(primaryURL)).toBe(builder);
     });
 
     it('rejects invalid URLs', () => {
-      const builder = new wbn.BundleBuilder('b1', primaryURL);
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(primaryURL);
       invalidURLs.forEach(url => {
         expect(() => builder.setManifestURL(url)).toThrowError();
       });
     });
 
     it('rejects double call', () => {
-      const builder = new wbn.BundleBuilder('b1', primaryURL);
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(primaryURL);
       builder.setManifestURL('https://example.com/manifest.json');
       expect(() =>
         builder.setManifestURL('https://example.com/manifest.json')
@@ -158,7 +196,8 @@ describe('Bundle Builder', () => {
   });
 
   it('builds large bundle', () => {
-    const builder = new wbn.BundleBuilder('b1', primaryURL);
+    const builder = new wbn.BundleBuilder('b1');
+    builder.setPrimaryURL(primaryURL);
     builder.addExchange(primaryURL, 200, defaultHeaders, new Uint8Array(1024 * 1024));
     const buf = builder.createBundle();
     // Just checks the result is a valid CBOR array.
