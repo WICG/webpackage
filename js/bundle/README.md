@@ -20,11 +20,9 @@ Creating a Bundle:
 const wbn = require('wbn');
 const fs = require('fs');
 
-const primaryURL = 'https://example.com/';
-const builder = (new wbn.BundleBuilder(primaryURL))
-  .setManifestURL('https://example.com/manifest.json')
-  .addExchange(
-    primaryURL,                          // URL
+const builder = new wbn.BundleBuilder();
+builder.addExchange(
+    exampleURL,                          // URL
     200,                                 // response code
     {'Content-Type': 'text/html'},       // response headers
     '<html>Hello, Web Bundle!</html>');  // response body (string or Uint8Array)
@@ -52,8 +50,6 @@ for (const url of bundle.urls) {
 }
 console.log(JSON.stringify({
   version: bundle.version,  // format version
-  primaryURL: bundle.primaryURL,
-  manifestURL: bundle.manifestURL,
   exchanges
 }, null, 2));
 ```
@@ -68,6 +64,28 @@ $ wbn --dir static \
 Run `wbn --help` for full options.
 
 Note: currently this CLI only covers a subset of the functionality offered by [`gen-bundle`](https://github.com/WICG/webpackage/tree/master/go/bundle#gen-bundle) Go tool.
+
+### Backwards compatibility
+
+This module supports creating and parsing Web Bundles that follow different draft versions of the format specification. In particular:
+
+- version `b2` follows [the latest version of the Web Bundles spec](https://datatracker.ietf.org/doc/html/draft-yasskin-wpack-bundled-exchanges-04) (default)
+- version `b1` follows [the previous version of the Web Bundles spec](https://datatracker.ietf.org/doc/html/draft-yasskin-wpack-bundled-exchanges-03)
+
+To create a new bundle with the `b1` format, pass the version value and the primary URL to the constructor:
+
+```javascript
+const primaryURL = 'https://example.com/';
+const builder = (new wbn.BundleBuilder('b1', primaryURL))
+  .setManifestURL('https://example.com/manifest.json')
+  .addExchange(...);
+
+fs.writeFileSync('out_b1.wbn', builder.createBundle());
+```
+
+Likewise, the `wbn` command can optionally take a `--formatVersion b1` parameter when creating a new Web Bundle.
+
+This module also takes care of selecting the right format version automatically when reading a bundle. Check the property `bundle.version` to know the decoded bundle's format version.
 
 ## Using Bundles
 Generated bundles can be opened with web browsers supporting web bundles.

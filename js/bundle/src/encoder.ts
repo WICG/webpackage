@@ -2,7 +2,7 @@ import * as CBOR from 'cbor';
 import * as fs from 'fs';
 import * as mime from 'mime';
 import * as path from 'path';
-import {URL} from 'url';
+import { URL } from 'url';
 
 declare module 'cbor' {
   // TODO: upstream these to @types/cbor
@@ -18,31 +18,42 @@ interface Headers {
   [key: string]: string;
 }
 
+interface CompatAdapter {
+  formatVersion: string;
+  onBundleBuilderCreated(): void;
+  onCreateBundle(): void;
+  setManifestURL(url: string): BundleBuilder;
+  setIndexEntry(url: string, responseLength: number): void;
+  updateIndexValues(responsesHeaderSize: number): Map<string, any[]>;
+  createTopLevel(): unknown;
+}
+
 export class BundleBuilder {
   private sectionLengths: Array<{ name: string; length: number }> = [];
   private sections: CBORValue[] = [];
   private responses: Uint8Array[][] = [];
-  private index: Map<string, [Uint8Array, number, number]> = new Map();
   private currentResponsesOffset = 0;
+  private compatAdapter: CompatAdapter;
 
-  constructor(private primaryURL: string) {
-    validateExchangeURL(primaryURL);
+  constructor(formatVersion: string = 'b2', private primaryURL: string = '') {
+    if (formatVersion != 'b1' && formatVersion != 'b2') {
+      throw new Error(`Invalid webbundle format version`);
+    }
+    this.compatAdapter = this.createCompatAdapter(formatVersion);
+
+    this.compatAdapter.onBundleBuilderCreated();
   }
 
   // TODO: Provide async version of this.
   createBundle(): Buffer {
-    if (!this.index.has(this.primaryURL)) {
-      throw new Error(
-        `Exchange for primary URL (${this.primaryURL}) does not exist`
-      );
-    }
+    this.compatAdapter.onCreateBundle();
 
     this.addSection('index', this.fixupIndex());
     this.addSection('responses', this.responses);
 
     const estimatedBundleSize = this.sectionLengths.reduce(
       (size, s) => size + s.length,
-      16384 // For headers (including primary URL)
+      16384 // For headers
     );
     const wbn = encodeCanonical(this.createTopLevel(), estimatedBundleSize);
 
@@ -102,9 +113,7 @@ export class BundleBuilder {
   }
 
   setManifestURL(url: string): BundleBuilder {
-    validateExchangeURL(url);
-    this.addSection('manifest', url);
-    return this;
+    return this.compatAdapter.setManifestURL(url);
   }
 
   private addSection(name: string, content: CBORValue) {
@@ -144,36 +153,135 @@ export class BundleBuilder {
   }
 
   private addIndexEntry(url: string, responseLength: number) {
-    this.index.set(url, [
-      new Uint8Array(0), // variants-value
-      this.currentResponsesOffset,
-      responseLength,
-    ]);
+    this.compatAdapter.setIndexEntry(url, responseLength);
     this.currentResponsesOffset += responseLength;
   }
 
   private fixupIndex() {
     // Adjust the offsets by the length of the response section's CBOR header.
     const responsesHeaderSize = encodedLength(this.responses.length);
-    for (const value of this.index.values()) {
-      value[1] += responsesHeaderSize;
-    }
-    return this.index;
+    return this.compatAdapter.updateIndexValues(responsesHeaderSize);
   }
 
   private createTopLevel(): CBORValue {
-    const sectionLengths: Array<string | number> = [];
-    for (const s of this.sectionLengths) {
-      sectionLengths.push(s.name, s.length);
+    return this.compatAdapter.createTopLevel();
+  }
+
+  get formatVersion(): string {
+    return this.compatAdapter.formatVersion;
+  }
+
+  // Behaviour that is specific to particular versions of the format.
+  private createCompatAdapter(formatVersion: string): CompatAdapter {
+    if (formatVersion === 'b1') {
+      // format version b1
+      return new class implements CompatAdapter {
+        formatVersion: string = 'b1';
+        private index: Map<string, [Uint8Array, number, number]> = new Map();
+
+        constructor(private bundleBuilder: BundleBuilder) {
+        }
+
+        onBundleBuilderCreated(): void {
+          validateExchangeURL(this.bundleBuilder.primaryURL);
+        }
+
+        onCreateBundle(): void {
+          if (!this.index.has(this.bundleBuilder.primaryURL)) {
+            throw new Error(
+              `Exchange for primary URL (${this.bundleBuilder.primaryURL}) does not exist`
+            );
+          }
+        }
+
+        setManifestURL(url: string): BundleBuilder {
+          validateExchangeURL(url);
+          this.bundleBuilder.addSection('manifest', url);
+          return this.bundleBuilder;
+        }
+
+        setIndexEntry(url: string,
+          responseLength: number): void {
+          this.index.set(url, [
+            new Uint8Array(0), // variants-value
+            this.bundleBuilder.currentResponsesOffset,
+            responseLength,
+          ]);
+        }
+
+        updateIndexValues(responsesHeaderSize: number): Map<string, any[]> {
+          for (const value of this.index.values()) {
+            value[1] += responsesHeaderSize;
+          }
+          return this.index;
+        }
+
+        createTopLevel(): unknown {
+          const sectionLengths: Array<string | number> = [];
+          for (const s of this.bundleBuilder.sectionLengths) {
+            sectionLengths.push(s.name, s.length);
+          }
+          return [
+            byteString('🌐📦'),
+            byteString(`${formatVersion}\0\0`),
+            this.bundleBuilder.primaryURL,
+            new Uint8Array(encodeCanonical(sectionLengths)),
+            this.bundleBuilder.sections,
+            new Uint8Array(8), // Length (to be filled in later)
+          ];
+        }
+      }(this);
+    } else {
+      // format version b2
+      return new class implements CompatAdapter {
+        formatVersion: string = 'b2';
+        private index: Map<string, [number, number]> = new Map();
+
+        constructor(private bundleBuilder: BundleBuilder) {
+        }
+
+        onBundleBuilderCreated(): void {
+          // not used
+        }
+
+        onCreateBundle(): void {
+          // not used
+        }
+
+        setManifestURL(url: string): BundleBuilder {
+          throw new Error('setManifestURL(): wrong format version');
+        }
+
+        setIndexEntry(url: string,
+          responseLength: number): void {
+          this.index.set(url, [
+            this.bundleBuilder.currentResponsesOffset,
+            responseLength,
+          ]);
+        }
+
+        updateIndexValues(responsesHeaderSize: number): Map<string, any[]> {
+          for (const value of this.index.values()) {
+            value[0] += responsesHeaderSize;
+          }
+          return this.index;
+        }
+
+        createTopLevel(): unknown {
+          const sectionLengths: Array<string | number> = [];
+          for (const s of this.bundleBuilder.sectionLengths) {
+            sectionLengths.push(s.name, s.length);
+          }
+          return [
+            byteString('🌐📦'),
+            byteString(`${formatVersion}\0\0`),
+            new Uint8Array(encodeCanonical(sectionLengths)),
+            this.bundleBuilder.sections,
+            new Uint8Array(8), // Length (to be filled in later)
+          ];
+        }
+      }(this);
     }
-    return [
-      byteString('🌐📦'),
-      byteString('b1\0\0'),
-      this.primaryURL,
-      new Uint8Array(encodeCanonical(sectionLengths)),
-      this.sections,
-      new Uint8Array(8), // Length (to be filled in later)
-    ];
   }
 }
 
