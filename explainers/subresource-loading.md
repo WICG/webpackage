@@ -174,31 +174,29 @@ using document's [base URL](https://html.spec.whatwg.org/#document-base-url).
 
 ## Request's mode and credentials mode
 
-[Issue 640](https://github.com/WICG/webpackage/issues/670): Update this section for `<script>`-based API.
-
-With the `<link>`-based API, a
-[request](https://fetch.spec.whatwg.org/#concept-request) for a bundle
+A [request](https://fetch.spec.whatwg.org/#concept-request) for a bundle
 will have its [mode][request mode] set to "`cors`" and its
 [credentials mode][credentials mode] set to "`same-origin`" unless a
-[crossorigin][crossorigin attribute] attribute is specified.
+`credentials` is specified in its JSON as follows:
 
-If a [crossorigin][crossorigin attribute] attribute is specified,
-the request's [mode][request mode] and [credentials mode][credentials mode]
-will be set as the [CORS settings attributes][cors settings attribute]
-section describes.
+``` html
+<script type="webbundle">
+{
+  source: "https://example.com/dir/subresources.wbn",
+  credentials: "omit",
+  resources: ["https://example.com/dir/a.js", "https://example.com/dir/b.js", "https://example.com/dir/c.png"]
+}
+</script>
+```
 
-The following table is the summary.
+A possible value is "`omit`", "`same-origin`", or "`include"`. See [the fetch spec][credentials mode] for details.
+If other values are specified, a [credentials mode][credentials mode] is set to "`same-origin`" .
 
-| State           | [mode][request mode] | [credentials mode][credentials mode] |
-| --------------- | -----------          | ----------------                     |
-| No CORS         | "`cors`"             | "`same-origin`"                      |
-| Anonymous       | "`cors`"             | "`same-origin`"                      |
-| Use credentials | "`cors`"             | "`include`"                          |
+Note: `<script>` element's [crossorigin][crossorigin attribute] attribute is not used.
 
 [crossorigin attribute]: https://html.spec.whatwg.org/multipage/semantics.html#attr-link-crossorigin
 [request mode]: https://fetch.spec.whatwg.org/#concept-request-mode
 [credentials mode]: https://fetch.spec.whatwg.org/#concept-request-credentials-mode
-[cors settings attribute]: https://html.spec.whatwg.org/multipage/urls-and-fetching.html#cors-settings-attribute
 
 ## Request's destination
 
