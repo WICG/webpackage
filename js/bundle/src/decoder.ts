@@ -8,6 +8,7 @@ const knownSections = [
   'critical',
   'index',
   'manifest', // only defined in version b1, might be present anyway
+  'primary',
   'responses',
   'signatures',
 ];
@@ -97,10 +98,11 @@ export class Bundle {
   get primaryURL(): string | null {
     if (this.version === 'b1') {
       return this.b1PrimaryURL;
-    } else {
-      // TODO format version does not support a primary URL, should we throw an error?
-      return null;
     }
+    if (this.sections['primary']) {
+      return asString(this.sections['primary']);
+    }
+    return null;
   }
 
   getResponse(url: string): Response {

@@ -20,12 +20,16 @@ if (!options.baseURL.endsWith('/')) {
 if (options.formatVersion === undefined || options.formatVersion === 'b2') {
   // webbundle format version b2
   const builder = new BundleBuilder();
+  if (options.primaryURL) {
+    builder.setPrimaryURL(options.primaryURL);
+  }
   builder.addFilesRecursively(options.baseURL, options.dir);
   fs.writeFileSync(options.output, builder.createBundle());
 } else if (options.formatVersion === 'b1') {
   // webbundle format version b1
   const primaryURL = options.primaryURL || options.baseURL;
-  const builder = new BundleBuilder('b1', primaryURL);
+  const builder = new BundleBuilder('b1');
+  builder.setPrimaryURL(primaryURL);
   if (options.manifestURL) {
     builder.setManifestURL(options.manifestURL);
   }

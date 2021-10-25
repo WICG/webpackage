@@ -7,6 +7,7 @@ const path = require('path');
 describe('Bundle', () => {
   const bundleBuffer = (() => {
     const builder = new wbn.BundleBuilder();
+    builder.setPrimaryURL('https://example.com/');
     builder.addExchange(
       'https://example.com/',
       200,
@@ -26,6 +27,7 @@ describe('Bundle', () => {
     const b = new wbn.Bundle(bundleBuffer);
     expect(b.version).toBe('b2');
     expect(b.urls).toEqual(['https://example.com/', 'https://example.com/ja/']);
+    expect(b.primaryURL).toBe('https://example.com/');
   });
 
   describe('getResponse', () => {
@@ -55,6 +57,7 @@ describe('Bundle', () => {
   it('parses pregenerated bundle', () => {
     const buf = fs.readFileSync(path.resolve(__dirname, 'testdata/hello_b2.wbn'));
     const b = new wbn.Bundle(buf);
+    expect(b.primaryURL).toBe(null);
     expect(b.urls).toEqual(['https://example.com/hello.html']);
     const resp = b.getResponse('https://example.com/hello.html');
     expect(resp.status).toBe(200);
