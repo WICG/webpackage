@@ -90,4 +90,11 @@ This module also takes care of selecting the right format version automatically 
 ## Using Bundles
 Generated bundles can be opened with web browsers supporting web bundles.
 
-Chrome (79+) experimentally supports Web Bundles with some limitations. See [this document](https://chromium.googlesource.com/chromium/src/+/refs/heads/master/content/browser/web_package/using_web_bundles.md) for more details.
+Chrome (79+) experimentally supports navigation to Web Bundles with some limitations. See [this document](https://chromium.googlesource.com/chromium/src/+/refs/heads/master/content/browser/web_package/using_web_bundles.md) for more details.
+
+Chrome (90+) experimentally supports subresource loading with Web Bundles. See [this document](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/content/browser/web_package/subresource_loading_origin_trial.md) for more details.
+
+## Release Notes
+
+### 0.0.6
+- Now BundleBuilder generates bundles of format `b2` by default. See [Backwards compatibility](#backwards-compatibility) section above.
