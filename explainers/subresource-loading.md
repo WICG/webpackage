@@ -172,7 +172,10 @@ using document's [base URL](https://html.spec.whatwg.org/#document-base-url).
 
 `<script type="webbundle">` doesn't support `src=` attribute. The rule must be inline.
 
-`<script type="webbundle">` doesn't fire a `load` event.
+`<script type="webbundle">` doesn't fire a `load` event nor an `event` event.
+
+Note: We could fire `load` and `error` events if we wanted to. See [issue
+#697](https://github.com/WICG/webpackage/issues/697)
 
 Note that neither `<script type=importmaps>` nor `<script type=speculationrules>`
 fires a `load` event for an inline rule.
