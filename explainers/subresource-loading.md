@@ -165,10 +165,13 @@ protocol
 handler](https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler)
 for its scheme.
 
-A URL in `source` and `resources` can be a [relative
-URL](https://url.spec.whatwg.org/#syntax-url-relative) to a document.
-A browser must [parse a URL](https://html.spec.whatwg.org/#parse-a-url)
-using document's [base URL](https://html.spec.whatwg.org/#document-base-url).
+A URL in `source` can be a [relative
+URL](https://url.spec.whatwg.org/#syntax-url-relative) and must be resolved on
+document's [base URL](https://html.spec.whatwg.org/#document-base-url).
+
+A URL in `resources` can be a [relative
+URL](https://url.spec.whatwg.org/#syntax-url-relative) and must be resolved on
+the bundle's URL.
 
 `<script type="webbundle">` doesn't support `src=` attribute. The rule must be inline.
 
