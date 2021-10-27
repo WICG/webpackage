@@ -169,7 +169,7 @@ A URL in `source` can be a [relative
 URL](https://url.spec.whatwg.org/#syntax-url-relative) and must be resolved on
 document's [base URL](https://html.spec.whatwg.org/#document-base-url).
 
-A URL in `resources` can be a [relative
+A URL in `resources` and `scopes` can be a [relative
 URL](https://url.spec.whatwg.org/#syntax-url-relative) and must be resolved on
 the bundle's URL.
 
