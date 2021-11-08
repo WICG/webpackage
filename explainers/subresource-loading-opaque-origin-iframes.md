@@ -1,6 +1,6 @@
 # Subresource loading with Web Bundles: Support opaque origin iframes
 
-Last updated: Sep 2021
+Last updated: Nov 2021
 
 This is an extension to [Subresource loading with Web Bundles]. This extension
 allows a bundle to include `uuid-in-package:` URL resources, which will be used to
@@ -27,7 +27,7 @@ Where `<UUID>` is a UUID as specified in
 [RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122).
 
 In addition to the same origin subresource explained in the
-[`<link>`-based API](https://github.com/WICG/webpackage/blob/main/explainers/subresource-loading.md#link-based-api)
+[`<script>`-based API](https://github.com/WICG/webpackage/blob/main/explainers/subresource-loading.md#script-based-api)
 section in the explainer, this extension allows a bundle to include a
 `uuid-in-package:` URL subresource.
 
@@ -56,11 +56,12 @@ Suppose that the bundle, `subresources.wbn`, includes the following resources:
 ### The main document
 
 ```html
-<link
-  rel="webbundle"
-  href="https://example.com/dir/subresources.wbn"
-  resources="uuid-in-package:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
-/>
+<script type="webbundle">
+{
+  source: "https://example.com/dir/subresources.wbn",
+  resources: ["uuid-in-package:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"]
+}
+</script>
 
 <iframe src="uuid-in-package:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"></iframe>
 ```
@@ -72,9 +73,9 @@ iframe.
 
 Note:
 
-- `uuid-in-package:` resource must be explicitly specified in `resources` attribute in
-  `<link>` elements, similar to other subresources. `scopes` attribute can be
-  also used for `uuid-in-package:` resources. For example, `scopes=uuid-in-package:` allows all
+- `uuid-in-package:` resource must be explicitly specified in `resources` in
+  `<script>` elements, similar to other subresources. `scopes` can be
+  also used for `uuid-in-package:` resources. For example, `scopes: ["uuid-in-package:"]` allows all
   `uuid-in-package:` resources.
 
 ### Content Security Policy (CSP) for `uuid-in-package` resources
@@ -96,11 +97,13 @@ the page can load `uuid-in-package` resources in web bundles served from
 `https://cdn.example`.
 
 ```
-<link rel="webbundle"
-  href="https://cdn.example/subresources.wbn"
-  resources="uuid-in-package:429fcc4e-0696-4bad-b099-ee9175f023ae
-             uuid-in-package:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
-/>
+<script type="webbundle">
+{
+  source: "https://cdn.example/subresources.wbn",
+  resources: ["uuid-in-package:429fcc4e-0696-4bad-b099-ee9175f023ae",
+              "uuid-in-package:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"]
+}
+</script>
 
 <script src="uuid-in-package:429fcc4e-0696-4bad-b099-ee9175f023ae"></script>
 <iframe src="uuid-in-package:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"></iframe>
