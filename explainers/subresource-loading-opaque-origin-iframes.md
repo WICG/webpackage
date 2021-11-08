@@ -59,7 +59,7 @@ Suppose that the bundle, `subresources.wbn`, includes the following resources:
 <script type="webbundle">
 {
   source: "https://example.com/dir/subresources.wbn",
-  resources: ["uuid-in-package:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"],
+  resources: ["uuid-in-package:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"]
 }
 </script>
 
@@ -101,7 +101,7 @@ the page can load `uuid-in-package` resources in web bundles served from
 {
   source: "https://cdn.example/subresources.wbn",
   resources: ["uuid-in-package:429fcc4e-0696-4bad-b099-ee9175f023ae",
-              "uuid-in-package:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"],
+              "uuid-in-package:f81d4fae-7dec-11d0-a765-00a0c91e6bf6"]
 }
 </script>
 
