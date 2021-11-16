@@ -80,6 +80,10 @@ give us a better chance of designing the right API.
 This feature is a powerful feature that can replace any subresources in the
 page. So we limit the use of this feature only in [secure contexts](https://www.w3.org/TR/powerful-features/).
 
+This feature is NOT related to [Signed
+Exchanges](https://web.dev/signed-exchanges/), that is a common
+misunderstanding. The bundle doesn't have to be signed.
+
 ## `<script>`-based API
 
 Note that this syntax is still tentative.
