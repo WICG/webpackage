@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/asn1"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -115,6 +116,12 @@ func (ac *AugmentedCertificate) CertSha256() []byte {
 	return sum[:]
 }
 
+// CertSha256 returns SHA-256 hash of the DER-encoded SubjectPublicKeyInfo.
+func (ac *AugmentedCertificate) SPKISha256() []byte {
+	sum := sha256.Sum256(ac.Cert.RawSubjectPublicKeyInfo)
+	return sum[:]
+}
+
 // ReadCertChain parses the application/cert-chain+cbor format.
 func ReadCertChain(r io.Reader) (CertChain, error) {
 	dec := cbor.NewDecoder(r)
@@ -188,6 +195,7 @@ func (chain CertChain) PrettyPrint(w io.Writer) {
 		fmt.Fprintln(w, "  Valid from:", item.Cert.NotBefore)
 		fmt.Fprintln(w, "  Valid until:", item.Cert.NotAfter)
 		fmt.Fprintln(w, "  Issuer:", item.Cert.Issuer.CommonName)
+		fmt.Fprintln(w, "  SubjectPublicKeyInfo hash:", base64.StdEncoding.EncodeToString(item.SPKISha256()))
 		prettyPrintSCTFromCert(w, item.Cert)
 
 		if i == 0 {
