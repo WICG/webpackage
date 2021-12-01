@@ -81,6 +81,9 @@ For example,
   | ------------ | -------------- | --------- |
   | ./foo.js     | ./dir/foo.wbn  | preload   |
 
+- We probably want to support a glob pattern, such as `dir/**/*.js`, as a
+  `resource URL`.
+
 # Usage
 
 Suppose that a web site has two top pages, `main1.html` and `main2.html`. They
