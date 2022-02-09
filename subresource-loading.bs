@@ -1,0 +1,37 @@
+<pre class="metadata">
+Title: Subresource Loading with WebBundles
+Shortname: web-package-subresource-loading
+Level: none
+Status: CG-DRAFT
+Group: WICG
+Repository: WICG/webpackage
+URL: https://wicg.github.io/webpackage/subresource-loading.html
+Editor: Hayato Ito, Google Inc. https://google.com/, hayato@google.com
+Abstract: How UAs load subresources from Web Bundles.
+
+Complain About: accidental-2119 yes, missing-example-ids yes
+Markup Shorthands: markdown yes, css no
+Assume Explicit For: yes
+</pre>
+<pre class="link-defaults">
+spec:fetch; type:dfn; for:/; text:response
+spec:html; type:element; text:link
+</pre>
+
+<section class="non-normative">
+
+# Introduction # {#intro}
+
+<em>This section is non-normative.</em>
+
+The Subresource Loading with Web Bundles specification describes a way to load a
+large number of resources efficiently using a format that allows a format that
+allows multiple resources to be bundled,
+[Web Bundles](https://web.dev/web-bundles/). This specification describes how
+web browsers load those resources. It is expressed as several monkeypatches to
+the [[HTML]] and [[FETCH]] specification which call algorithms defined here.
+
+<p class="note">
+  This specification is under construct. See
+  <a href="https://github.com/WICG/webpackage/issues/708">#708</a>.
+</p>
