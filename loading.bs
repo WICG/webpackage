@@ -111,6 +111,8 @@ spec: RFC6960; urlPrefix: https://tools.ietf.org/html/rfc6960#
     text: OCSPResponse; type: dfn; url: section-4.2.1
 spec: RFC6962; urlPrefix: https://tools.ietf.org/html/rfc6962#
     text: SignedCertificateTimestampList; type: dfn; url: section-3.3
+spec: RFC9162; urlPrefix: https://tools.ietf.org/html/rfc9162#
+    text: TransItemList; type: dfn; url: section-6.3
 spec: RFC7231; urlPrefix: https://tools.ietf.org/html/rfc7231#
     type: dfn
         text: HTTP media type; url: section-3.1.1.1
@@ -854,7 +856,8 @@ An augmented certificate is a [=tuple=] with the following items:
     DER-encoded [=OCSPResponse=] for the [=augmented certificate/certificate=].
 1. <dfn>SCT</dfn>, a [=byte sequence=] that's expected to hold a
     [=SignedCertificateTimestampList=] for the [=augmented
-    certificate/certificate=].
+    certificate/certificate=] <span class="note">(note, not a v2
+    [=TransItemList=])</span>.
 
 </ol>
 
@@ -1399,8 +1402,8 @@ leaf|does not have a trusted leaf">has a trusted leaf</dfn> for an [=origin=]
         * An X.509 extension in |leaf|'s [=augmented certificate/certificate=].
 
     as input, using [[!RFC5280]] and any other conventions used in making TLS
-    ([[!RFC8446]]) connections. The UA SHOULD support Certificate Transparency
-    ([[RFC6962]]) for this check. (See [[#seccons-ct]].) The UA MUST check that
+    ([[!RFC8446]]) connections. The UA SHOULD support Certificate Transparency v1
+    ([[RFC6962 obsolete]]) for this check. (See [[#seccons-ct]].) The UA MUST check that
     it has evidence the |leaf|'s [=augmented certificate/certificate=] was not
     revoked 7 or more days ago (for example using the |leaf|'s [=augmented
     certificate/OCSP response=]). If no such path can be built, return
