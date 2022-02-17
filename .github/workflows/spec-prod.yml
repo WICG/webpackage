@@ -7,11 +7,17 @@ jobs:
   main:
     name: Build, Validate and Deploy
     runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        include:
+          - source: loading.bs
+          - source: subresource-loading.bs
     steps:
       - uses: actions/checkout@v2
       - uses: w3c/spec-prod@v2
         with:
           GH_PAGES_BRANCH: gh-pages
           TOOLCHAIN: bikeshed
-          SOURCE: loading.bs
+          SOURCE: ${{ matrix.source }}
           BUILD_FAIL_ON: warning
