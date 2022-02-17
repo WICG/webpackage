@@ -25,11 +25,11 @@ spec:html; type:element; text:link
 <em>This section is non-normative.</em>
 
 The Subresource Loading with Web Bundles specification describes a way to load a
-large number of resources efficiently using a format that allows a format that
-allows multiple resources to be bundled,
-[Web Bundles](https://web.dev/web-bundles/). This specification describes how
-web browsers load those resources. It is expressed as several monkeypatches to
-the [[HTML]] and [[FETCH]] specification which call algorithms defined here.
+large number of resources efficiently using a format that allows multiple
+resources to be bundled, [Web Bundles](https://web.dev/web-bundles/). This
+specification describes how web browsers load those resources. It is expressed
+as several monkeypatches to the [[HTML]] and [[FETCH]] specification which call
+algorithms defined here.
 
 <p class="note">
   This specification is under construct. See
