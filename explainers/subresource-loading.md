@@ -1,6 +1,6 @@
 # Explainer: Subresource loading with Web Bundles
 
-Last updated: Apr 2021
+Last updated: Feb 2022
 
 We propose a new approach to load a large number of resources efficiently using
 a format that allows multiple resources to be bundled, e.g.
@@ -93,8 +93,8 @@ Developers will write
 ```html
 <script type="webbundle">
 {
-   source: "https://example.com/dir/subresources.wbn",
-   resources: ["https://example.com/dir/a.js", "https://example.com/dir/b.js", "https://example.com/dir/c.png"]
+   "source": "https://example.com/dir/subresources.wbn",
+   "resources": ["https://example.com/dir/a.js", "https://example.com/dir/b.js", "https://example.com/dir/c.png"]
 }
 </script>
 ```
@@ -151,8 +151,8 @@ using bundle's URL.
 ```html
 <script type="webbundle">
 {
-  source: "https://example.com/dir/subresources.wbn",
-  resources: ["https://example.com/dir/a.js", "https://example.com/dir/b.js", "https://example.com/dir/c.png"]
+  "source": "https://example.com/dir/subresources.wbn",
+  "resources": ["https://example.com/dir/a.js", "https://example.com/dir/b.js", "https://example.com/dir/c.png"]
 }
 </script>
 
@@ -197,9 +197,9 @@ will have its [mode][request mode] set to "`cors`" and its
 ``` html
 <script type="webbundle">
 {
-  source: "https://example.com/dir/subresources.wbn",
-  credentials: "omit",
-  resources: ["https://example.com/dir/a.js", "https://example.com/dir/b.js", "https://example.com/dir/c.png"]
+  "source": "https://example.com/dir/subresources.wbn",
+  "credentials": "omit",
+  "resources": ["https://example.com/dir/a.js", "https://example.com/dir/b.js", "https://example.com/dir/c.png"]
 }
 </script>
 ```
@@ -249,9 +249,9 @@ In the following, `a.js` will be loaded, but `b.js` will be blocked:
 ```
 <script type="webbundle">
 {
-  source: "https://example.com/subresources.wbn",
-  resources: ["https://example.com/script/a.js",
-              "https://example.com/b.js"]
+  "source": "https://example.com/subresources.wbn",
+  "resources": ["https://example.com/script/a.js",
+                "https://example.com/b.js"]
 }
 </script>
 
@@ -266,10 +266,10 @@ Instead of including a list of resources, the `<script>` defines a `scopes`.
 ```html
 <script type="webbundle">
 {
-  source: "https://example.com/dir/subresources.wbn",
-  scopes: ["https://example.com/dir/js/",
-           "https://example.com/dir/img/",
-           "https://example.com/dir/css/"]
+  "source": "https://example.com/dir/subresources.wbn",
+  "scopes": ["https://example.com/dir/js/",
+             "https://example.com/dir/img/",
+             "https://example.com/dir/css/"]
 }
 </script>
 ```
