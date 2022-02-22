@@ -18,6 +18,7 @@ a format that allows multiple resources to be bundled, e.g.
 - [Request's destination](#requests-destination)
 - [CORS and CORP for subresource requests](#cors-and-corp-for-subresource-requests)
 - [Content Security Policy (CSP)](#content-security-policy-csp)
+- [Serving constraints](#serving-constraints)
 - [Extensions](#extensions)
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
 - [Compressed list of resources](#compressed-list-of-resources)
@@ -276,6 +277,10 @@ Instead of including a list of resources, the `<script>` defines a `scopes`.
 
 Any subresource under the `scopes` will be fetched from the bundle.
 
+## Serving constraints
+
+See the [Serving constraints](https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html#name-serving-constraints)
+for response headers which MUST be included when serving Web Bundles over HTTP.
 
 ## Extensions
 
@@ -326,9 +331,6 @@ API. See [issue #580](https://github.com/WICG/webpackage/issues/580)
 for the motivation. Note that some of the following alternate designs
 were proposed at the era of `<link>`-based API. This explainer doesn't
 rewrite them with `<script>`-based API yet.
-
-Note that Chromium's experimental implementation currently supports
-only `<link>`-based API as of M95.
 
 ### Resource Bundles
 
