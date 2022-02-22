@@ -251,7 +251,7 @@ In the following, `a.js` will be loaded, but `b.js` will be blocked:
 {
   "source": "https://example.com/subresources.wbn",
   "resources": ["https://example.com/script/a.js",
-              "https://example.com/b.js"]
+                "https://example.com/b.js"]
 }
 </script>
 
@@ -268,8 +268,8 @@ Instead of including a list of resources, the `<script>` defines a `scopes`.
 {
   "source": "https://example.com/dir/subresources.wbn",
   "scopes": ["https://example.com/dir/js/",
-           "https://example.com/dir/img/",
-           "https://example.com/dir/css/"]
+             "https://example.com/dir/img/",
+             "https://example.com/dir/css/"]
 }
 </script>
 ```
