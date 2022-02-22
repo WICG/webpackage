@@ -18,7 +18,7 @@ a format that allows multiple resources to be bundled, e.g.
 - [Request's destination](#requests-destination)
 - [CORS and CORP for subresource requests](#cors-and-corp-for-subresource-requests)
 - [Content Security Policy (CSP)](#content-security-policy-csp)
-- [Contnent-Type and nosniff](#content-type-and-nosniff)
+- [Serving constraints](#serving-constraints)
 - [Extensions](#extensions)
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
 - [Compressed list of resources](#compressed-list-of-resources)
@@ -277,15 +277,10 @@ Instead of including a list of resources, the `<script>` defines a `scopes`.
 
 Any subresource under the `scopes` will be fetched from the bundle.
 
-## Contnent-Type and nosniff
+## Serving constraints
 
-Note that Chromium's experimental implementation currently requires
-the following response headers for Web Bundles.
-
-```
-Content-Type: application/webbundle
-X-Content-Type-Options: nosniff
-```
+See the [Serving constraints](https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html#name-serving-constraints)
+for response headers which MUST be included when serving Web Bundles over HTTP.
 
 ## Extensions
 
