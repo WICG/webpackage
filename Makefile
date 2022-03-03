@@ -1,4 +1,4 @@
-GHPAGES_EXTRA := loading.html
+GHPAGES_EXTRA := loading.html subresource-loading.html
 
 LIBDIR := lib
 include $(LIBDIR)/main.mk
@@ -11,6 +11,3 @@ else
 	git clone -q --depth 10 $(CLONE_ARGS) \
 	    -b main https://github.com/martinthomson/i-d-template $(LIBDIR)
 endif
-
-%.html: %.bs
-	bikeshed spec $<

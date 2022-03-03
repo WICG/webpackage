@@ -39,6 +39,13 @@ jobs:
     - name: "Build Drafts"
       uses: martinthomson/i-d-template@v1
 
+    - name: "Build Extra Pages"
+      run: |
+        pip3 install bikeshed
+        bikeshed update
+        bikeshed spec loading.bs
+        bikeshed spec subresource-loading.bs
+
     - name: "Update GitHub Pages"
       uses: martinthomson/i-d-template@v1
       if: ${{ github.event_name == 'push' }}
