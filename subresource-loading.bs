@@ -1,5 +1,5 @@
 <pre class="metadata">
-Title: Subresource Loading with WebBundles
+Title: Subresource Loading with Web Bundles
 Shortname: web-package-subresource-loading
 Level: none
 Status: CG-DRAFT
@@ -14,8 +14,8 @@ Assume Explicit For: yes
 </pre>
 <pre class='biblio'>
 {
-  "draft-yasskin-wpack-bundled-exchanges": {
-    "href": "https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html",
+  "draft-ietf-wpack-bundled-responses-latest": {
+    "href": "https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html",
     "title": "Web Bundles"
   }
 }
@@ -43,12 +43,12 @@ specification describes how web browsers load those resources. It is expressed
 as several monkeypatches to the [[HTML]] and [[FETCH]] specification which call
 algorithms defined here.
 
-Note: This specification is under construct. See <a href="https://github.com/WICG/webpackage/issues/708">#708</a>.
+Note: This specification is under construction. See <a href="https://github.com/WICG/webpackage/issues/708">#708</a>.
 
 # Structures # {#structures}
 
 A <dfn>fetched web bundle</dfn> is a representation of a web bundle format
-defined in [[draft-yasskin-wpack-bundled-exchanges]].
+defined in [[draft-ietf-wpack-bundled-responses-latest]].
 
 A <dfn>bundle rule</dfn> is a [=struct=] with the following
 [=struct/items=]:
@@ -76,7 +76,7 @@ Note: TODO. This section uses [=fetch web bundle=].
 
 In <a spec="fetch">HTTP-network-or-cache fetch</a>, before
 
-> 8.22. Set httpCache to the result of determining the HTTP cache partition, given|httpRequest|.
+> 8.22. Set httpCache to the result of determining the HTTP cache partition, given |httpRequest|.
 
 add the following steps:
 
@@ -99,20 +99,20 @@ To <dfn id="concept-fetch-web-bundle">fetch web bundle</dfn> given [=web bundle=
 
 1. Let |request| be |fetch params|'s [=request=].
 
-1. Let |request|'s [=request/url=] is |web bundle|'s [=web bundle/rule=]'s [=bundle rule/source=].
+1. Set |request|'s [=request/url=] to |web bundle|'s [=web bundle/rule=]'s [=bundle rule/source=].
 
      Note: Source URL is resolved on document's base URL.
 
-1. Let |request|'s [=request/destination=] is "webbundle",
+1. Set |request|'s [=request/destination=] to "webbundle",
 
-1. Let |request|'s [=request/mode=] is "cors",
+1. Set |request|'s [=request/mode=] to "cors",
 
-1. Let |request|'s [=request/credentials mode=] be |web bundle|'s [=web bundle/rule=]'s [=bundle rule/credentials=] if [=bundle rule/credentials=] is non-null. Otherwise "same-origin".
+1. Set |request|'s [=request/credentials mode=] to |web bundle|'s [=web bundle/rule=]'s [=bundle rule/credentials=].
 
 1. Append a [=header=], a tuple of ("Accept", "application/webbundle;v=1"), to |request|'s [=request/header list=].
 
     Note: Chromium's experimental implementation uses "application/webbundle;v=b2" as a header value.
-    Once the web bundle format ([[draft-yasskin-wpack-bundled-exchanges]]) goes RFC, Chromium would use "1" as a version number.
+    Once the web bundle format ([[draft-ietf-wpack-bundled-responses-latest]]) goes RFC, Chromium would use "1" as a version number.
 
 1. Let |response| be the result of running <a spec="fetch">HTTP-network-or-cache fetch</a> given |fetch params|.
 
@@ -121,12 +121,12 @@ To <dfn id="concept-fetch-web-bundle">fetch web bundle</dfn> given [=web bundle=
 
 1. If |response|'s [=response/status=] is 200,
 
-    1. Let |web bundle|'s [=web bundle/fetched bundle=] be the result of parsing |response|'s body ([[draft-yasskin-wpack-bundled-exchanges]]) and |web bundle|'s [=web bundle/state=] be "fetched". If parsing fails, or any other conformance is violated, let [=web bundle/fetched bundle=] be null and [=web bundle/state=] be "failed".
+    1. Set |web bundle|'s [=web bundle/fetched bundle=] to the result of parsing |response|'s body ([[draft-ietf-wpack-bundled-responses-latest]]) and |web bundle|'s [=web bundle/state=] be "fetched". If parsing fails, or any other conformance is violated, set [=web bundle/fetched bundle=] to null and [=web bundle/state=] to "failed".
 
-        Note: In parsing, Chromium's experimental implementation only accepts "b2" as a web bundle format version number ([[draft-yasskin-wpack-bundled-exchanges]]).
+        Note: In parsing, Chromium's experimental implementation only accepts "b2" as a web bundle format version number ([[draft-ietf-wpack-bundled-responses-latest]]).
         Once the web bundle format goes RFC, Chromium would accept "1" as a web bundle format version number.
 
-1. Otherwise, let |web bundle|'s [=web bundle/state=] be "failed".
+1. Otherwise, set |web bundle|'s [=web bundle/state=] to "failed".
 
 ## Fetch from web bundle ## {#fetch-from-web-bundle}
 
@@ -172,4 +172,4 @@ To <dfn id="concept-get-response-from-web-bundle">get response from web bundle</
 
 3. Assert: |web bundle|'s [=web bundle/fetched bundle=] is non-null.
 
-4. Returns [=response=] from |web bundle|'s [=web bundle/fetched bundle=] given |url| ([[draft-yasskin-wpack-bundled-exchanges]]).  If a representation of |url| is not found in [=web bundle/fetched bundle=], return null.
+4. Returns [=response=] from |web bundle|'s [=web bundle/fetched bundle=] given |url| ([[draft-ietf-wpack-bundled-responses-latest]]).  If a representation of |url| is not found in [=web bundle/fetched bundle=], return null.
