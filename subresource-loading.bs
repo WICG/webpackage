@@ -9,6 +9,7 @@ URL: https://wicg.github.io/webpackage/subresource-loading.html
 Editor: Hayato Ito, Google Inc. https://google.com/, hayato@google.com
 Abstract: How UAs load subresources from Web Bundles.
 Complain About: accidental-2119 yes, missing-example-ids yes
+Indent: 2
 Markup Shorthands: markdown yes, css no
 Assume Explicit For: yes
 </pre>
@@ -22,8 +23,8 @@ Assume Explicit For: yes
 </pre>
 <pre class='anchors'>
 spec: fetch; urlPrefix: https://fetch.spec.whatwg.org/#
-    type: dfn
-        text: fetch params; url: fetch-params
+  type: dfn
+    text: fetch params; url: fetch-params
 </pre>
 <pre class="link-defaults">
 spec:fetch; type:dfn; for:/; text:request
@@ -43,15 +44,15 @@ specification describes how web browsers load those resources. It is expressed
 as several monkeypatches to the [[HTML]] and [[FETCH]] specification which call
 algorithms defined here.
 
-Note: This specification is under construction. See <a href="https://github.com/WICG/webpackage/issues/708">#708</a>.
+Note: This specification is under construction. See
+<a href="https://github.com/WICG/webpackage/issues/708">#708</a>.
 
 # Structures # {#structures}
 
 A <dfn>fetched web bundle</dfn> is a representation of a web bundle format
 defined in [[draft-ietf-wpack-bundled-responses-latest]].
 
-A <dfn>bundle rule</dfn> is a [=struct=] with the following
-[=struct/items=]:
+A <dfn>bundle rule</dfn> is a [=struct=] with the following [=struct/items=]:
 
 - <dfn for="bundle rule">source</dfn>, a [=URL=].
 - <dfn for="bundle rule">credentials</dfn>, a [=request/mode=].
@@ -62,11 +63,13 @@ A <dfn>web bundle</dfn> is a [=struct=] with the following [=struct/items=]:
 
 - <dfn for="web bundle">fetched bundle</dfn>, a [=fetched web bundle=] or null.
 - <dfn for="web bundle">rule</dfn>, a [=bundle rule=].
-- <dfn for="web bundle">state</dfn>, an internal state which is "fetching", "fetched", or "failed". Initially "fetching".
+- <dfn for="web bundle">state</dfn>, an internal state which is "fetching",
+  "fetched", or "failed". Initially "fetching".
 
-A {{Document}} has a <dfn for=document>web bundle list</dfn>, which is a list of [=web bundles=].
+A {{Document}} has a <dfn for=document>web bundle list</dfn>, which is a list of
+[=web bundles=].
 
-# HTML monkeypatches  # {#html-monkeypatches}
+# HTML monkeypatches # {#html-monkeypatches}
 
 Note: TODO. This section uses [=fetch web bundle=].
 
@@ -76,100 +79,124 @@ Note: TODO. This section uses [=fetch web bundle=].
 
 In <a spec="fetch">HTTP-network-or-cache fetch</a>, before
 
-> 8.22. Set httpCache to the result of determining the HTTP cache partition, given |httpRequest|.
+> 8.22. Set httpCache to the result of determining the HTTP cache partition,
+> given |httpRequest|.
 
 add the following steps:
 
-22.  Set the |response| to the result of [=fetch from web bundle=], given |httpRequest|.
+22. Set the |response| to the result of [=fetch from web bundle=], given
+    |httpRequest|.
 
     1. If |response| is [=network error=], return [=network error=].
 
     2. If |response| is non-null, skip the steps 8.22-8.24 and goto the step 9.
 
-        Note: That means a subresource from a webbundle never interacts with HttpCache.
-        We plan to support HttpCache as a feature enhancement in the future.
+       Note: That means a subresource from a webbundle never interacts with
+       HttpCache. We plan to support HttpCache as a feature enhancement in the
+       future.
 
 # Algorithms # {#algorithms}
 
 ## Fetch web bundle ## {#fetch-web-bundle}
 
-To <dfn id="concept-fetch-web-bundle">fetch web bundle</dfn> given [=web bundle=] |web bundle| and [=fetch params=] |fetch params|:
+To <dfn id="concept-fetch-web-bundle">fetch web bundle</dfn> given [=web
+bundle=] |web bundle| and [=fetch params=] |fetch params|:
 
-1. Assert:  |web bundle|'s [=web bundle/state=] is "fetching".
+1. Assert: |web bundle|'s [=web bundle/state=] is "fetching".
 
 1. Let |request| be |fetch params|'s [=request=].
 
-1. Set |request|'s [=request/url=] to |web bundle|'s [=web bundle/rule=]'s [=bundle rule/source=].
+1. Set |request|'s [=request/url=] to |web bundle|'s [=web bundle/rule=]'s
+   [=bundle rule/source=].
 
-     Note: Source URL is resolved on document's base URL.
+   Note: Source URL is resolved on document's base URL.
 
 1. Set |request|'s [=request/destination=] to "webbundle",
 
 1. Set |request|'s [=request/mode=] to "cors",
 
-1. Set |request|'s [=request/credentials mode=] to |web bundle|'s [=web bundle/rule=]'s [=bundle rule/credentials=].
+1. Set |request|'s [=request/credentials mode=] to |web bundle|'s [=web
+   bundle/rule=]'s [=bundle rule/credentials=].
 
-1. Append a [=header=], a tuple of ("Accept", "application/webbundle;v=1"), to |request|'s [=request/header list=].
+1. Append a [=header=], a tuple of ("Accept", "application/webbundle;v=b2"), to
+   |request|'s [=request/header list=].
 
-    Note: Chromium's experimental implementation uses "application/webbundle;v=b2" as a header value.
-    Once the web bundle format ([[draft-ietf-wpack-bundled-responses-latest]]) goes RFC, Chromium would use "1" as a version number.
+   Note: The final [draft-yasskin-http-origin-signed-responses] will use a
+   version of `1`, but this specification tracks what’s actually implemented in
+   browsers, which still uses draft versions.
 
-1. Let |response| be the result of running <a spec="fetch">HTTP-network-or-cache fetch</a> given |fetch params|.
+1. Let |response| be the result of running <a spec="fetch">HTTP-network-or-cache
+   fetch</a> given |fetch params|.
 
-    Note: Chromium's current implementation doesn't allow a *nested bundle*.
-    A Web bundle is never fetched from other web bundles.
+   Note: Chromium's current implementation doesn't allow a _nested bundle_. A
+   Web bundle is never fetched from other web bundles.
 
 1. If |response|'s [=response/status=] is 200,
 
-    1. Set |web bundle|'s [=web bundle/fetched bundle=] to the result of parsing |response|'s body ([[draft-ietf-wpack-bundled-responses-latest]]) and |web bundle|'s [=web bundle/state=] be "fetched". If parsing fails, or any other conformance is violated, set [=web bundle/fetched bundle=] to null and [=web bundle/state=] to "failed".
+   1. Set |web bundle|'s [=web bundle/fetched bundle=] to the result of parsing
+      |response|'s body ([[draft-ietf-wpack-bundled-responses-latest]]) and |web
+      bundle|'s [=web bundle/state=] be "fetched". If parsing fails, or any
+      other conformance is violated, set [=web bundle/fetched bundle=] to null
+      and [=web bundle/state=] to "failed".
 
-        Note: In parsing, Chromium's experimental implementation only accepts "b2" as a web bundle format version number ([[draft-ietf-wpack-bundled-responses-latest]]).
-        Once the web bundle format goes RFC, Chromium would accept "1" as a web bundle format version number.
+      Note: In parsing, Chromium's experimental implementation only accepts "b2"
+      as a web bundle format version number
+      ([[draft-ietf-wpack-bundled-responses-latest]]).
 
 1. Otherwise, set |web bundle|'s [=web bundle/state=] to "failed".
 
 ## Fetch from web bundle ## {#fetch-from-web-bundle}
 
-To <dfn id="concept-fetch-from-web-bundle">fetch from web bundle</dfn> given [=request=] |httpRequest|:
+To <dfn id="concept-fetch-from-web-bundle">fetch from web bundle</dfn> given
+[=request=] |httpRequest|:
 
- 1. For each |web bundle| of [=document=]'s [=document/web bundle list=]:
+1. For each |web bundle| of [=document=]'s [=document/web bundle list=]:
 
-    1. If the result of running [=match url with web bundle=] given |httpRequest|'s [=request/url=] and |web bundle| is true:
+   1. If the result of running [=match url with web bundle=] given
+      |httpRequest|'s [=request/url=] and |web bundle| is true:
 
-        1. Let |response| be the result of [=get response from web bundle=] given |httpRequest|'s [=request/url=] and |web bundle|.
+      1. Let |response| be the result of [=get response from web bundle=] given
+         |httpRequest|'s [=request/url=] and |web bundle|.
 
-        2. If |response| is null, return a [=network error=].
+      2. If |response| is null, return a [=network error=].
 
-            Note: This means a browser does not fallback to fetch a subresource from network.
+         Note: This means a browser does not fallback to fetch a subresource
+         from network.
 
-        3. Otherwise, return |response|.
+      3. Otherwise, return |response|.
 
 2. Return null.
 
 ## Match url with web bundle ## {#match-url-with-web-bundle}
 
-To <dfn id="concept-match-url-with-web-bundle">match url with web bundle</dfn> given [=url=] |url| and [=web bundle=] |web bundle|:
+To <dfn id="concept-match-url-with-web-bundle">match url with web bundle</dfn>
+given [=url=] |url| and [=web bundle=] |web bundle|:
 
-1. If |url| doesn't meet a path restriction rule, given |web bundle|'s [=web bundle/rule=]'s [=bundle rule/source=], then return false.
+1. If |url| doesn't meet a path restriction rule, given |web bundle|'s [=web
+   bundle/rule=]'s [=bundle rule/source=], then return false.
 
-    Issue: Clarify path restriction rule in algorithm.
+   Issue: Clarify path restriction rule in algorithm.
 
+2. If |url| matches any of |web bundle|'s [=web bundle/rule=]'s [=bundle
+   rule/resources=], then return true.
 
-2. If |url| matches any of |web bundle|'s [=web bundle/rule=]'s [=bundle rule/resources=], then return true.
-
-3. If |url|'s prefix matches any of |web bundle|'s [=web bundle/rule=]'s [=bundle rule/scopes=], then return true.
+3. If |url|'s prefix matches any of |web bundle|'s [=web bundle/rule=]'s
+   [=bundle rule/scopes=], then return true.
 
 4. Otherwise, return false.
 
-
 ## Get response from web bundle ## {#get-response-from-web-bundle}
 
-To <dfn id="concept-get-response-from-web-bundle">get response from web bundle</dfn> given [=url=] |url| and [=web bundle=] |web bundle|:
+To <dfn id="concept-get-response-from-web-bundle">get response from web
+bundle</dfn> given [=url=] |url| and [=web bundle=] |web bundle|:
 
-1. If |web bundle|'s [=web bundle/state=] is "fetching", await until [=web bundle/state=] becomes "fetched" or "failed" asynchronously.
+1. If |web bundle|'s [=web bundle/state=] is "fetching", await until [=web
+   bundle/state=] becomes "fetched" or "failed" asynchronously.
 
 2. If |web bundle|'s [=web bundle/state=] is "failed", return null.
 
 3. Assert: |web bundle|'s [=web bundle/fetched bundle=] is non-null.
 
-4. Returns [=response=] from |web bundle|'s [=web bundle/fetched bundle=] given |url| ([[draft-ietf-wpack-bundled-responses-latest]]).  If a representation of |url| is not found in [=web bundle/fetched bundle=], return null.
+4. Returns [=response=] from |web bundle|'s [=web bundle/fetched bundle=] given
+   |url| ([[draft-ietf-wpack-bundled-responses-latest]]). If a representation of
+   |url| is not found in [=web bundle/fetched bundle=], return null.
