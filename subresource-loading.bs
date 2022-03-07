@@ -121,14 +121,14 @@ bundle=] |web bundle| and [=fetch params=] |fetch params|:
 1. Append a [=header=], a tuple of ("Accept", "application/webbundle;v=b2"), to
    |request|'s [=request/header list=].
 
-   Note: The final [draft-yasskin-http-origin-signed-responses] will use a
+   Note: The final [[draft-yasskin-http-origin-signed-responses]] will use a
    version of `1`, but this specification tracks what’s actually implemented in
    browsers, which still uses draft versions.
 
 1. Let |response| be the result of running <a spec="fetch">HTTP-network-or-cache
    fetch</a> given |fetch params|.
 
-   Note: Chromium's current implementation doesn't allow a _nested bundle_. A
+   Note: Chromium's current implementation doesn't allow a *nested bundle*. A
    Web bundle is never fetched from other web bundles.
 
 1. If |response|'s [=response/status=] is 200,
