@@ -54,10 +54,10 @@ defined in [[draft-ietf-wpack-bundled-responses-latest]].
 
 A <dfn>bundle rule</dfn> is a [=struct=] with the following [=struct/items=]:
 
-- <dfn for="bundle rule">source</dfn>, a [=URL=].
-- <dfn for="bundle rule">credentials</dfn>, a [=request/mode=].
-- <dfn for="bundle rule">resources</dfn>, a list of [=URLs=].
-- <dfn for="bundle rule">scopes</dfn>, a list of [=URLs=].
+- <dfn for="bundle rule">source</dfn>, a [=URL=] of a web bundle.
+- <dfn for="bundle rule">credentials</dfn>, a [=request/credentials mode=].
+- <dfn for="bundle rule">resources</dfn>, a [=list=] of [=URLs=].
+- <dfn for="bundle rule">scopes</dfn>, a [=list=] of [=URLs=].
 
 A <dfn>web bundle</dfn> is a [=struct=] with the following [=struct/items=]:
 
@@ -66,8 +66,23 @@ A <dfn>web bundle</dfn> is a [=struct=] with the following [=struct/items=]:
 - <dfn for="web bundle">state</dfn>, an internal state which is "fetching",
   "fetched", or "failed". Initially "fetching".
 
-A {{Document}} has a <dfn for=document>web bundle list</dfn>, which is a list of
-[=web bundles=].
+Each [=environment settings object=] will get a
+<dfn for="environment settings object">web bundle list</dfn> algorithm, which
+returns a [=list=] of [=web bundles=].
+
+A {{Document}} has a <dfn for=Document>web bundle list</dfn>, which is a
+[=list=] of [=web bundles=]. It is initially empty.
+
+In <a spec="html">set up a window environment settings object</a>,
+<var ignore>settings object</var>'s [=environment settings object/web bundle
+list=] returns the [=Document/web bundle list=] of <var ignore>window</var>'s
+<a>associated <code>Document</code></a>.
+
+In <a spec="html">set up a worker environment settings object</a>,
+<var ignore>settings object</var>'s [=environment settings object/web bundle
+list=] returns an empty [=list=].
+
+ISSUE: Not supported for workers.
 
 # HTML monkeypatches # {#html-monkeypatches}
 
@@ -150,10 +165,12 @@ bundle=] |web bundle| and [=fetch params=] |fetch params|:
 To <dfn id="concept-fetch-from-web-bundle">fetch from web bundle</dfn> given
 [=request=] |httpRequest|:
 
-1. For each |web bundle| of [=document=]'s [=document/web bundle list=]:
+1. For each |web bundle| of |httpRequest|'s [=request/client=]'s [=environment
+   settings object/web bundle list=]:
 
    1. If the result of running [=match url with web bundle=] given
-      |httpRequest|'s [=request/url=] and |web bundle| is true:
+      |httpRequest|'s [=request/url=] and |web bundle|'s [=web bundle/rule=] is
+      true:
 
       1. Let |response| be the result of [=get response from web bundle=] given
          |httpRequest|'s [=request/url=] and |web bundle|.
@@ -167,21 +184,26 @@ To <dfn id="concept-fetch-from-web-bundle">fetch from web bundle</dfn> given
 
 2. Return null.
 
+Note: Returning null here can fallback to HTTP cache and ordinal network fetch,
+unlike returning a [=network error=] above.
+
 ## Match url with web bundle ## {#match-url-with-web-bundle}
 
 To <dfn id="concept-match-url-with-web-bundle">match url with web bundle</dfn>
-given [=url=] |url| and [=web bundle=] |web bundle|:
+given [=url=] |url| and [=bundle rule=] |rule|:
 
-1. If |url| doesn't meet a path restriction rule, given |web bundle|'s [=web
-   bundle/rule=]'s [=bundle rule/source=], then return false.
+1. If |url| doesn't meet a path restriction rule, given |rule|'s [=bundle
+   rule/source=], then return false.
 
    Issue: Clarify path restriction rule in algorithm.
 
-2. If |url| matches any of |web bundle|'s [=web bundle/rule=]'s [=bundle
-   rule/resources=], then return true.
+2. If |rule|'s [=bundle rule/resources=] [=list/contains=] |url|, then return
+   true.
 
-3. If |url|'s prefix matches any of |web bundle|'s [=web bundle/rule=]'s
-   [=bundle rule/scopes=], then return true.
+3. If |url|'s prefix matches any of |rule|'s [=bundle rule/scopes=], then return
+   true.
+
+   Issue: Clarify prefix match rule in algorithm.
 
 4. Otherwise, return false.
 
