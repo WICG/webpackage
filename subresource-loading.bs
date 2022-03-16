@@ -90,6 +90,18 @@ Note: TODO. This section uses [=fetch web bundle=].
 
 # Fetch monkeypatches # {#fetch-monkeypatches}
 
+## Monkeypatch fetch scheme ## {#monkeypatch-fetch-scheme}
+
+Add "`uuid-in-package`" to the schemes listed in <a spec="fetch">fetch
+scheme</a>.
+
+Note: This ensures that the <a spec="html">navigate</a> algorithm uses the
+<a spec="html">process a navigate fetch</a> algorithm for `uuid-in-package:`
+URLs.
+
+Note: The [=url/origin=] of a URL whose scheme is "`uuid-in-package`" is an
+opaque origin.
+
 ## Monkeypatch HTTP-network-or-cache fetch ## {#monkeypatch-http-network-or-cache-fetch}
 
 In <a spec="fetch">HTTP-network-or-cache fetch</a>, before
