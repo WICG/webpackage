@@ -236,25 +236,22 @@ bundle=] |web bundle| and [=fetch params=] |fetch params|:
 To <dfn id="concept-fetch-from-web-bundle">fetch from web bundle</dfn> given
 [=request=] |httpRequest|:
 
-1. For each |web bundle| of |httpRequest|'s [=request/client=]'s [=environment
-   settings object/web bundle list=]:
+1. Let |web bundle| be the result of running [=find matching web bundle=] given
+   |httpRequest|.
 
-   1. Let |web bundle| be the result of running [=find matching web bundle=]
-      given |httpRequest|.
+2. If |web bundle| is not null:
 
-   2. If |web bundle| is not null:
+   1. Let |response| be the result of [=get response from web bundle=] given
+      |httpRequest|'s [=request/url=] and |web bundle|.
 
-      1. Let |response| be the result of [=get response from web bundle=] given
-         |httpRequest|'s [=request/url=] and |web bundle|.
+   2. If |response| is null, return a [=network error=].
 
-      2. If |response| is null, return a [=network error=].
+      Note: This means a browser does not fallback to fetch a subresource from
+      network.
 
-         Note: This means a browser does not fallback to fetch a subresource
-         from network.
+   3. Otherwise, return |response|.
 
-      3. Otherwise, return |response|.
-
-2. Return null.
+3. Return null.
 
 Note: Returning null here can fallback to HTTP cache and ordinal network fetch,
 unlike returning a [=network error=] above.
