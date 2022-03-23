@@ -25,6 +25,9 @@ Assume Explicit For: yes
 spec: fetch; urlPrefix: https://fetch.spec.whatwg.org/#
   type: dfn
     text: fetch params; url: fetch-params
+spec: csp; urlPrefix: https://w3c.github.io/webappsec-csp/#
+  type: dfn
+    text: policy; url: content-security-policy-object
 </pre>
 <pre class="link-defaults">
 spec:fetch; type:dfn; for:/; text:request
@@ -41,8 +44,8 @@ The Subresource Loading with Web Bundles specification describes a way to load a
 large number of resources efficiently using a format that allows multiple
 resources to be bundled, [Web Bundles](https://web.dev/web-bundles/). This
 specification describes how web browsers load those resources. It is expressed
-as several monkeypatches to the [[HTML]] and [[FETCH]] specification which call
-algorithms defined here.
+as several monkeypatches to the [[HTML]], [[FETCH]] and [[CSP]] specification
+which call algorithms defined here.
 
 Note: This specification is under construction. See
 <a href="https://github.com/WICG/webpackage/issues/708">#708</a>.
@@ -122,6 +125,62 @@ add the following steps:
        HttpCache. We plan to support HttpCache as a feature enhancement in the
        future.
 
+# CSP monkeypatches # {#csp-monkeypatches}
+
+## Monkeypatch Does request match source list? ## {#monkeypatch-match-request-to-source-list}
+
+Rewrite
+<a href="https://w3c.github.io/webappsec-csp/#match-request-to-source-list">Does
+|request| match |source list|?</a> to run these steps:
+
+1. Let |url| be |request|'s [=request/current url=].
+
+2. If |url|'s [=url/scheme=] is "`uuid-in-package`", then:
+
+   1. Let |web bundle| be the result of running [=find matching web bundle=]
+      given |request|.
+
+   2. If |web bundle| is not null, then set |url| to |web bundle|'s [=web
+      bundle/rule=]'s [=bundle rule/source=].
+
+3. Returns the result of executing
+   <a href="https://w3c.github.io/webappsec-csp/#match-url-to-source-list">Does
+   url match source list in origin with redirect count?</a> on |url|, |source
+   list|, |policy|'s [=policy/self-origin=], and |request|'s [=request/redirect
+   count=].
+
+Note: This means that CSP restrictions are evaluated against the bundle's URL
+instead of to the `uuid-in-package:` URL. See
+<a href="https://github.com/WICG/webpackage/issues/651">#651</a> for the
+detailed motivation.
+
+## Monkeypatch Does response to request match source list? ## {#monkeypatch-match-response-to-source-list}
+
+Rewrite
+<a href="https://w3c.github.io/webappsec-csp/#match-response-to-source-list">Does
+|response| to |request| match |source list|?</a> to run these steps:
+
+1. Let |url| be |response|'s [=response/url=].
+
+2. If |url|'s [=url/scheme=] is "`uuid-in-package`", then:
+
+   1. Let |web bundle| be the result of running [=find matching web bundle=]
+      given |request|.
+
+   2. If |web bundle| is not null, then set |url| to |web bundle|'s [=web
+      bundle/rule=]'s [=bundle rule/source=].
+
+3. Returns the result of executing
+   <a href="https://w3c.github.io/webappsec-csp/#match-url-to-source-list">Does
+   url match source list in origin with redirect count?</a> on |url|, |source
+   list|, |policy|'s [=policy/self-origin=], and |request|'s [=request/redirect
+   count=].
+
+Note: This means that CSP restrictions are evaluated against the bundle's URL
+instead of to the `uuid-in-package:` URL. See
+<a href="https://github.com/WICG/webpackage/issues/651">#651</a> for the
+detailed motivation.
+
 # Algorithms # {#algorithms}
 
 ## Fetch web bundle ## {#fetch-web-bundle}
@@ -180,9 +239,10 @@ To <dfn id="concept-fetch-from-web-bundle">fetch from web bundle</dfn> given
 1. For each |web bundle| of |httpRequest|'s [=request/client=]'s [=environment
    settings object/web bundle list=]:
 
-   1. If the result of running [=match url with web bundle=] given
-      |httpRequest|'s [=request/url=] and |web bundle|'s [=web bundle/rule=] is
-      true:
+   1. Let |web bundle| be the result of running [=find matching web bundle=]
+      given |httpRequest|.
+
+   2. If |web bundle| is not null:
 
       1. Let |response| be the result of [=get response from web bundle=] given
          |httpRequest|'s [=request/url=] and |web bundle|.
@@ -199,25 +259,32 @@ To <dfn id="concept-fetch-from-web-bundle">fetch from web bundle</dfn> given
 Note: Returning null here can fallback to HTTP cache and ordinal network fetch,
 unlike returning a [=network error=] above.
 
-## Match url with web bundle ## {#match-url-with-web-bundle}
+## Find matching web bundle ## {#find-matching-web-bundle}
 
-To <dfn id="concept-match-url-with-web-bundle">match url with web bundle</dfn>
-given [=url=] |url| and [=bundle rule=] |rule|:
+To <dfn id="concept-find-matching-web-bundle">find matching web bundle</dfn>
+given [=request=] |httpRequest|:
 
-1. If |url| doesn't meet a path restriction rule, given |rule|'s [=bundle
-   rule/source=], then return false.
+1. Let |url| be |httpRequest|'s [=request/url=].
 
-   Issue: Clarify path restriction rule in algorithm.
+2. For each |web bundle| of |httpRequest|'s [=request/client=]'s [=environment
+   settings object/web bundle list=]:
 
-2. If |rule|'s [=bundle rule/resources=] [=list/contains=] |url|, then return
-   true.
+   1. Let |rule| be |web bundle|'s [=web bundle/rule=].
 
-3. If |url|'s prefix matches any of |rule|'s [=bundle rule/scopes=], then return
-   true.
+   2. If |url| doesn't meet a path restriction rule, given |rule|'s [=bundle
+      rule/source=], then return false.
 
-   Issue: Clarify prefix match rule in algorithm.
+      Issue: Clarify path restriction rule in algorithm.
 
-4. Otherwise, return false.
+   3. If |rule|'s [=bundle rule/resources=] [=list/contains=] |url|, then return
+      |web bundle|.
+
+   4. If |url|'s prefix matches any of |rule|'s [=bundle rule/scopes=], then
+      return |web bundle|.
+
+      Issue: Clarify prefix match rule in algorithm.
+
+3. Return null.
 
 ## Get response from web bundle ## {#get-response-from-web-bundle}
 
