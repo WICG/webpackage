@@ -25,6 +25,8 @@ Assume Explicit For: yes
 spec: fetch; urlPrefix: https://fetch.spec.whatwg.org/#
   type: dfn
     text: fetch params; url: fetch-params
+  type: dfn
+    text: processResponse; url: process-response
 spec: csp; urlPrefix: https://w3c.github.io/webappsec-csp/#
   type: dfn
     text: policy; url: content-security-policy-object
@@ -211,10 +213,16 @@ bundle=] |web bundle| and [=fetch params=] |fetch params|:
    version of `1`, but this specification tracks what’s actually implemented in
    browsers, which still uses draft versions.
 
-1. Let |response| be the result of running [=fetch=] given |request|.
+1. [=Fetch=] |request| with [=processResponse=] algorithm set to [=process web
+   bundle response=] which is partially applied with |web bundle|.
 
    Note: Chromium's current implementation doesn't allow a *nested bundle*. A
    Web bundle is never fetched from other web bundles.
+
+## Process web bundle response ## {#process-web-bundle-response}
+
+To <dfn id="concept-process-web-bundle-response">process web bundle
+response</dfn> given [=web bundle=] |web bundle| and [=response=] |response|:
 
 1. If |response|'s [=response/status=] is an [=ok status=],
 
