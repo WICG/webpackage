@@ -217,7 +217,7 @@ bundle=] |web bundle| and [=fetch params=] |fetch params|:
    Note: Chromium's current implementation doesn't allow a *nested bundle*. A
    Web bundle is never fetched from other web bundles.
 
-1. If |response|'s [=response/status=] is 200,
+1. If |response|'s [=response/status=] is an [=ok status=],
 
    1. Set |web bundle|'s [=web bundle/fetched bundle=] to the result of parsing
       |response|'s body ([[draft-ietf-wpack-bundled-responses-latest]]) and |web
