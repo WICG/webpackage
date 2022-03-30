@@ -211,8 +211,7 @@ bundle=] |web bundle| and [=fetch params=] |fetch params|:
    version of `1`, but this specification tracks what’s actually implemented in
    browsers, which still uses draft versions.
 
-1. Let |response| be the result of running <a spec="fetch">HTTP-network-or-cache
-   fetch</a> given |fetch params|.
+1. Let |response| be the result of running [=fetch=] given |request|.
 
    Note: Chromium's current implementation doesn't allow a *nested bundle*. A
    Web bundle is never fetched from other web bundles.
