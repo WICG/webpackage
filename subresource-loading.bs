@@ -28,7 +28,7 @@ spec: fetch; urlPrefix: https://fetch.spec.whatwg.org/#
   type: dfn
     text: processResponse; url: process-response
   type: dfn
-    text: incrementally read; url: body-incrementally-read
+    text: incrementally reading; url: body-incrementally-read
 spec: csp; urlPrefix: https://w3c.github.io/webappsec-csp/#
   type: dfn
     text: policy; url: content-security-policy-object
@@ -228,21 +228,24 @@ response</dfn> given [=web bundle=] |web bundle| and [=response=] |response|:
 
 1. If |response|'s [=response/status=] is an [=ok status=],
 
-   1. Set |web bundle|'s [=web bundle/fetched bundle=] to the result of parsing
-      |response|'s body ([[draft-ietf-wpack-bundled-responses-latest]]) and |web
-      bundle|'s [=web bundle/state=] be "fetched". If parsing fails, or any
-      other conformance is violated, set [=web bundle/fetched bundle=] to null
-      and [=web bundle/state=] to "failed".
+   1. Parse |response|'s [=response/body=] as a Web Bundle
+      ([[draft-ietf-wpack-bundled-responses-latest]]).
 
       Note: |response|'s body might not be fully available at this moment. UA
-      might parse the bundle by [=incrementally read=] a body to serve a
-      subresource as early as possible.
+      might parse the bundle by [=incrementally reading=] a body asynchronously
+      in order to serve a subresource as early as possible.
 
       Note: In parsing, Chromium's experimental implementation only accepts "b2"
       as a web bundle format version number
       ([[draft-ietf-wpack-bundled-responses-latest]]).
 
-1. Otherwise, set |web bundle|'s [=web bundle/state=] to "failed".
+   2. When the parse algorithm asynchronously completes, set |web bundle|'s
+      [=web bundle/fetched bundle=] to the result of parsing and |web bundle|'s
+      [=web bundle/state=] be "fetched". If parsing fails, or any other
+      conformance is violated, set [=web bundle/fetched bundle=] to null and
+      [=web bundle/state=] to "failed".
+
+2. Otherwise, set |web bundle|'s [=web bundle/state=] to "failed".
 
 ## Fetch from web bundle ## {#fetch-from-web-bundle}
 
