@@ -218,7 +218,7 @@ bundle=] |web bundle| and [=fetch params=] |fetch params|:
 1. [=Fetch=] |request| with [=processResponse=] algorithm set to [=process web
    bundle response=] which is partially applied with |web bundle|.
 
-   Note: Chromium's current implementation doesn't allow a _nested bundle_. A
+   Note: Chromium's current implementation doesn't allow a nested bundle. A
    Web bundle is never fetched from other web bundles.
 
 ## Process web bundle response ## {#process-web-bundle-response}
