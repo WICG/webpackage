@@ -85,7 +85,7 @@ func ParseMagicBytes(r io.Reader) (Version, error) {
 
 func (v Version) MiceEncoding() mice.Encoding {
 	switch v {
-	case VersionB1:
+	case VersionB1, VersionB2:
 		return mice.Draft03Encoding
 	default:
 		panic("not reached")
