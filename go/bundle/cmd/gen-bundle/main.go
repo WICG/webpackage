@@ -24,7 +24,7 @@ func (h *headerArgs) Set(value string) error {
 }
 
 var (
-	flagVersion      = flag.String("version", string(version.VersionB1), "The webbundle format version. Possible values are: 'b1' and 'b2'")
+	flagVersion      = flag.String("version", string(version.VersionB2), "The webbundle format version. Possible values are: 'b1' and 'b2'")
 	flagHar          = flag.String("har", "", "HTTP Archive (HAR) input file")
 	flagDir          = flag.String("dir", "", "Input directory")
 	flagBaseURL      = flag.String("baseURL", "", "Base URL (used with -dir)")
