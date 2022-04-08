@@ -5,7 +5,6 @@ import (
 	"crypto"
 	"crypto/rand"
 	"errors"
-	"io"
 	"net/url"
 	"time"
 
@@ -17,10 +16,10 @@ import (
 )
 
 type Signer struct {
-	Version version.Version
-	Certs   certurl.CertChain
-	PrivKey crypto.PrivateKey
-	Rand    io.Reader
+	Version   version.Version
+	Certs     certurl.CertChain
+	PrivKey   crypto.PrivateKey
+	Algorithm signingalgorithm.SigningAlgorithm
 	SignedSubset
 }
 
@@ -99,7 +98,6 @@ func NewSigner(ver version.Version, certs certurl.CertChain, privKey crypto.Priv
 		Version: ver,
 		Certs:   certs,
 		PrivKey: privKey,
-		Rand:    rand.Reader,
 		SignedSubset: SignedSubset{
 			ValidityUrl:  validityUrl,
 			AuthSha256:   authSha256,
@@ -163,12 +161,15 @@ func (s *Signer) UpdateSignatures(signatures *bundle.Signatures) (*bundle.Signat
 }
 
 func (s *Signer) sign(signed []byte) ([]byte, error) {
-	alg, err := signingalgorithm.SigningAlgorithmForPrivateKey(s.PrivKey, s.Rand)
-	if err != nil {
-		return nil, err
+	if s.Algorithm == nil {
+		var err error
+		s.Algorithm, err = signingalgorithm.SigningAlgorithmForPrivateKey(s.PrivKey, rand.Reader)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return alg.Sign(generateSignedMessage(signed, s.Version))
+	return s.Algorithm.Sign(generateSignedMessage(signed, s.Version))
 }
 
 // https://github.com/WICG/webpackage/issues/472#issuecomment-520080192
