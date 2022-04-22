@@ -457,12 +457,12 @@ To <dfn>parse a web bundle string</dfn>, given a [=string=] |sourceText| and a
 1.  If |parsed|["`resources`"] [=map/exists=], then:
     1. If |parsed|["`resources`"] is not a [=list=], then throw a {{TypeError}}.
     1. Set |resources| to the result of [=parsing a url list=] given
-       |parsed|["`resources`"] and |baseURL|.
+       |parsed|["`resources`"] and |source|.
 1.  Let |scopes| be an empty [=list=].
 1.  If |parsed|["`scopes`"] [=map/exists=], then:
     1. If |parsed|["`scopes`"] is not a [=list=], then throw a {{TypeError}}.
     1. Set |scopes| to the result of [=parsing a url list=] given
-       |parsed|["`scopes`"] and |baseURL|.
+       |parsed|["`scopes`"] and |source|.
 1.  If |parsed|'s [=map/get the keys|keys=] [=set/contains=] any items besides
     "`source`", "`credentials`", "`resources`" or "`scopes`", [=report a warning
     to the console=] that an invalid top-level key was present in the web bundle
