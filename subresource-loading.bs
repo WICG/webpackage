@@ -438,15 +438,55 @@ detailed motivation.
 To <dfn>parse a web bundle string</dfn>, given a [=string=] |sourceText| and a
 [=URL=] |baseURL|:
 
-1. Let |parsed| be the result of [=parse JSON into Infra values|parsing JSON
-   into Infra values=] given |sourceText|.
-1. If |parsed| is not a [=map=], then throw a {{TypeError}} indicating that the
-   top-level value needs to be a JSON object.
-1. Create a [=web bundle parse result=] from |parsed| and |baseURL|, and return
-   the [=web bundle parse result=].
+1.  Let |parsed| be the result of [=parse JSON into Infra values|parsing JSON
+    into Infra values=] given |sourceText|.
+1.  If |parsed| is not a [=map=], then throw a {{TypeError}} indicating that the
+    top-level value needs to be a JSON object.
+1.  If |parsed|["`source`"] does not [=map/exist=], then throw a {{TypeError}}.
+1.  If |parsed|["`source`"] is not a [=string=], then throw a {{TypeError}}.
+1.  Let |source| be the result of [=URL parser|parsing=] |parsed|["`source`"]
+    with |baseURL| as the base URL.
+1.  If |source| is null, then throw a {{TypeError}}.
+1.  Let |credentials| be "`same-origin`".
+1.  If |parsed|["`credentials`"] [=map/exists=], then:
+    1. If |parsed|["`credentials`"] is "`omit`", then set |credentials| to
+       "`omit`".
+    1. Otherwise, if |parsed|["`credentials`"] is "`include`", then set
+       |credentials| to "`include`".
+1.  Let |resources| be an empty [=list=].
+1.  If |parsed|["`resources`"] [=map/exists=], then:
+    1. If |parsed|["`resources`"] is not a [=list=], then throw a {{TypeError}}.
+    1. Set |resources| to the result of [=parsing a url list=] given
+       |parsed|["`resources`"] and |baseURL|.
+1.  Let |scopes| be an empty [=list=].
+1.  If |parsed|["`scopes`"] [=map/exists=], then:
+    1. If |parsed|["`scopes`"] is not a [=list=], then throw a {{TypeError}}.
+    1. Set |scopes| to the result of [=parsing a url list=] given
+       |parsed|["`scopes`"] and |baseURL|.
+1.  If |parsed|'s [=map/get the keys|keys=] [=set/contains=] any items besides
+    "`source`", "`credentials`", "`resources`" or "`scopes`", [=report a warning
+    to the console=] that an invalid top-level key was present in the web bundle
+    string.
 
-ISSUE: Specify the details. Throw a {{TypeError}} etc. on a parse error.
-Relative URLs are resolved on |baseURL|.
+    Note: This can help detect typos. It is not an error, because that would
+    prevent any future extensions from being added backward-compatibly.
+
+1.  Let |rule| be [=bundle rule=] whose [=bundle rule/resources=] are
+    |resources| and whose [=bundle rule/scopes=] are |scopes|.
+1.  Return the [=web bundle parse result=] whose [=web bundle parse
+    result/source=] is |source|, whose [=web bundle parse result/credentials=]
+    are |credentials| and whose [=web bundle parse result/rule=] is |rule| .
+
+To <dfn>parse a URL list</dfn>, given a [=list=] |originalList| and a [=URL=]
+|baseURL|:
+
+1. Let |parsed URL list| be an empty [=list=].
+1. [=list/For each=] |item| of |originalList|,
+   1. If |item| is a [=string=], then
+      1. Let |URL| be the result of [=URL parser|parsing=] |item| with |baseURL|
+         as the base URL.
+      1. If |URL| is not null, [=list/append=] |URL| to |parsed URL list|.
+1. Return |parsed URL list|.
 
 ## Fetching a web bundle ## {#fetching-web-bundle}
 
