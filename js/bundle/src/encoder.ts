@@ -323,11 +323,11 @@ class HeaderMap extends Map<string, string> {
   }
 }
 
-// Throws an error if `urlString` is not a valid exchange URL, i.e. it must:
-// - be absolute, and
-// - have no credentials (user:password@) or hash (#fragment).
+// Throws an error if `urlString` is not a valid exchange URL, i.e. it must not
+// have credentials (user:password@) or hash (#fragment).
 function validateExchangeURL(urlString: string): void {
-  const url = new URL(urlString);  // This throws if urlString is not an absolute URL.
+  // `urlString` can be relative, so try parsing it with a dummy base URL.
+  const url = new URL(urlString, 'https://webbundle.example/');
   if (url.username !== '' || url.password !== '') {
     throw new Error('Exchange URL must not have credentials: ' + urlString);
   }

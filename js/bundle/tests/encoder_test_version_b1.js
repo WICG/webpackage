@@ -6,14 +6,17 @@ const path = require('path');
 // Backwards compatibility tests for webbundle format version b1
 
 describe('Bundle Builder', () => {
-  const primaryURL = 'https://example.com/';
   const defaultHeaders = { 'Content-Type': 'text/plain' };
   const defaultContent = 'Hello, world!';
-  const invalidURLs = [
+  const validURLs = [
+    'https://example.com/',
+    'relative/url',
     '',
+  ]
+  const primaryURL = validURLs[0];
+  const invalidURLs = [
     'https://example.com/#fragment',
     'https://user:pass@example.com/',
-    'relative/url',
   ];
 
   it('builds', () => {
@@ -32,6 +35,16 @@ describe('Bundle Builder', () => {
       expect(
         builder.addExchange(primaryURL, 200, defaultHeaders, defaultContent)
       ).toBe(builder);
+    });
+
+    it('accepts valid URLs', () => {
+      const builder = new wbn.BundleBuilder('b1');
+      builder.setPrimaryURL(primaryURL);
+      validURLs.forEach(url => {
+        expect(
+          builder.addExchange(url, 200, defaultHeaders, defaultContent)
+        ).toBe(builder);
+      });
     });
 
     it('rejects invalid URLs', () => {
