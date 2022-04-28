@@ -68,10 +68,15 @@ The specifications come in several layers:
    specification has an initial draft in a PR, but isn't finished yet. This work
    may proceed through either the IETF or the W3C/WHATWG.
 1. [Loading](https://wicg.github.io/webpackage/loading.html): A description of
-   how browsers load signed and bundled exchanges. This is initially specified
+   how browsers load signed exchanges. This is initially specified
    here, and will eventually merge into the appropriate specs, e.g.
    [Fetch](https://fetch.spec.whatwg.org/), that live in either the W3C or
    WHATWG. Currently this only covers signed exchanges.
+1. [Subresource Loading](https://wicg.github.io/webpackage/subresource-loading.html):
+   A description of how browsers load a large number of resources
+   efficiently with Web Bundles (unsigned). This is initially
+   specified here, and will eventually merge into the appropriate
+   specs.
 
 A previous draft of the format combined layers 1 and 2 into a single format for
 signed packages:

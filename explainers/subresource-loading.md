@@ -1,6 +1,6 @@
 # Explainer: Subresource loading with Web Bundles
 
-Last updated: Feb 2022
+Last updated: Apr 2022
 
 We propose a new approach to load a large number of resources efficiently using
 a format that allows multiple resources to be bundled, e.g.
@@ -18,6 +18,7 @@ a format that allows multiple resources to be bundled, e.g.
 - [Request's destination](#requests-destination)
 - [CORS and CORP for subresource requests](#cors-and-corp-for-subresource-requests)
 - [Content Security Policy (CSP)](#content-security-policy-csp)
+- [Defining the scopes](#defining-the-scopes)
 - [Serving constraints](#serving-constraints)
 - [Extensions](#extensions)
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
@@ -26,7 +27,6 @@ a format that allows multiple resources to be bundled, e.g.
   - [`<link>`-based API](#link-based-api)
   - [Resource Bundles](#resource-bundles)
   - [Summarizing the contents of the bundle](#summarizing-the-contents-of-the-bundle)
-    - [Defining the scope](#defining-the-scope)
     - [Approximate Membership Query datastructure](#approximate-membership-query-datastructure)
     - [No declarative scope](#no-declarative-scope)
   - [Naming](#naming)
@@ -87,8 +87,6 @@ misunderstanding. The bundle doesn't have to be signed.
 
 ## `<script>`-based API
 
-Note that this syntax is still tentative.
-
 Developers will write
 
 ```html
@@ -110,7 +108,8 @@ When the browser parses such a `script` element, it:
 2. Records the `resources` and _delays_ fetching a subresource specified there if
    a subresource's origin is the [same origin](https://html.spec.whatwg.org/#same-origin)
    as the bundle's origin and its [path](https://url.spec.whatwg.org/#concept-url-path)
-   contains the bundle's path as a prefix.
+   contains the bundle's [shortened](https://url.spec.whatwg.org/#shorten-a-urls-path)
+   path as a prefix.
 
 3. As the bundle arrives, the browser fulfills those pending subresource
    fetches from the bundle's contents.
@@ -164,12 +163,6 @@ using bundle's URL.
 Then, a browser must fetch the bundle, `subresources.wbn`, and load
 subresources, `a.js`, `b.js`, and `c.png`, from the bundle.
 
-If a URL is available from an attached bundle, the browser must
-retrieve it from the bundle, instead of using any [registered custom
-protocol
-handler](https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler)
-for its scheme.
-
 A URL in `source` can be a [relative
 URL](https://url.spec.whatwg.org/#syntax-url-relative) and must be resolved on
 document's [base URL](https://html.spec.whatwg.org/#document-base-url).
@@ -179,14 +172,6 @@ URL](https://url.spec.whatwg.org/#syntax-url-relative) and must be resolved on
 the bundle's URL.
 
 `<script type="webbundle">` doesn't support `src=` attribute. The rule must be inline.
-
-`<script type="webbundle">` doesn't fire a `load` event nor an `error` event.
-
-Note: We could fire `load` and `error` events if we wanted to. See [issue
-#697](https://github.com/WICG/webpackage/issues/697)
-
-Note that neither `<script type=importmaps>` nor `<script type=speculationrules>`
-fires a `load` event for an inline rule.
 
 ## Request's mode and credentials mode
 
@@ -260,7 +245,7 @@ In the following, `a.js` will be loaded, but `b.js` will be blocked:
 <script src=”https://example.com/b.js”></script>
 ```
 
-#### Defining the scopes
+## Defining the scopes
 
 Instead of including a list of resources, the `<script>` defines a `scopes`.
 
