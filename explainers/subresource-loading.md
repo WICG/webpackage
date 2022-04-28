@@ -163,12 +163,6 @@ using bundle's URL.
 Then, a browser must fetch the bundle, `subresources.wbn`, and load
 subresources, `a.js`, `b.js`, and `c.png`, from the bundle.
 
-If a URL is available from an attached bundle, the browser must
-retrieve it from the bundle, instead of using any [registered custom
-protocol
-handler](https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler)
-for its scheme.
-
 A URL in `source` can be a [relative
 URL](https://url.spec.whatwg.org/#syntax-url-relative) and must be resolved on
 document's [base URL](https://html.spec.whatwg.org/#document-base-url).
