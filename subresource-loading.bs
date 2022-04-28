@@ -605,18 +605,16 @@ To <dfn>find a matching web bundle registration</dfn> given [=request=]
 
    1. Let |rule| be |registration|'s [=web bundle registration/rule=].
 
-   2. If |url| doesn't meet a path restriction rule, given |registration|'s
-      [=web bundle registration/fetch entry=]'s [=web bundle fetch
-      entry/source=], then return null.
+   2. Let |allowed path| be the result of [shortening]
+      (https://url.spec.whatwg.org/#shorten-a-urls-path) |registration|'s [=web
+      bundle registration/fetch entry=]'s [=web bundle fetch entry/source=].
 
-      Issue: Clarify path restriction rule in algorithm.
+   3. If |url| doesn't start with |allowed path|, then return null.
 
-   3. If |rule|'s [=bundle rule/resources=] [=list/contains=] |url|, then return
+   4. If |rule|'s [=bundle rule/resources=] [=list/contains=] |url|, then return
       |registration|.
 
-   4. If |url|'s prefix matches any of |rule|'s [=bundle rule/scopes=], then
-      return |registration|.
-
-      Issue: Clarify prefix match rule in algorithm.
+   5. If |url| starts with any of |rule|'s [=bundle rule/scopes=], then return
+      |registration|.
 
 3. Return null.
