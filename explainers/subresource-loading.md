@@ -18,7 +18,7 @@ a format that allows multiple resources to be bundled, e.g.
 - [Request's destination](#requests-destination)
 - [CORS and CORP for subresource requests](#cors-and-corp-for-subresource-requests)
 - [Content Security Policy (CSP)](#content-security-policy-csp)
-- [Defining the scope](#defining-the-scope)
+- [Defining the scopes](#defining-the-scopes)
 - [Serving constraints](#serving-constraints)
 - [Extensions](#extensions)
 - [Subsequent loading and Caching](#subsequent-loading-and-caching)
@@ -178,21 +178,6 @@ URL](https://url.spec.whatwg.org/#syntax-url-relative) and must be resolved on
 the bundle's URL.
 
 `<script type="webbundle">` doesn't support `src=` attribute. The rule must be inline.
-
-Although this explainer's title is "Subresource Loading with Web Bundles", a
-resource in a bundle can be used as `<iframe>`'s `src`, as follows:
-
-``` html
-<script type="webbundle">
-{
-  "source": "./resources.wbn",
-  "resources": ["./iframe1.html", "./iframe2.html"]
-}
-</script>
-
-<iframe src="iframe1.html">
-<iframe src="iframe2.html">
-```
 
 ## Request's mode and credentials mode
 
