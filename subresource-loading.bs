@@ -33,6 +33,12 @@ spec: fetch; urlPrefix: https://fetch.spec.whatwg.org/#
 spec: csp; urlPrefix: https://w3c.github.io/webappsec-csp/#
   type: dfn
     text: policy; url: content-security-policy-object
+spec: url; urlPrefix: https://url.spec.whatwg.org/#
+  type: dfn
+    text: shortening; url: shorten-a-urls-path
+spec: infra; urlPrefix: https://infra.spec.whatwg.org/#
+  type: dfn
+    text: continue; url: iteration-continue
 </pre>
 <pre class="link-defaults">
 spec:fetch; type:dfn; for:/; text:request
@@ -605,18 +611,18 @@ To <dfn>find a matching web bundle registration</dfn> given [=request=]
 
    1. Let |rule| be |registration|'s [=web bundle registration/rule=].
 
-   2. If |url| doesn't meet a path restriction rule, given |registration|'s
-      [=web bundle registration/fetch entry=]'s [=web bundle fetch
-      entry/source=], then return null.
+   2. If |url|'s [=url/scheme=] is not "`uuid-in-package`", then
 
-      Issue: Clarify path restriction rule in algorithm.
+      1. Let |allowed path| be the result of [=shortening=] |registration|'s
+         [=web bundle registration/fetch entry=]'s [=web bundle fetch
+         entry/source=].
+
+      2. If |url| doesn't start with |allowed path|, then [=continue=].
 
    3. If |rule|'s [=bundle rule/resources=] [=list/contains=] |url|, then return
       |registration|.
 
-   4. If |url|'s prefix matches any of |rule|'s [=bundle rule/scopes=], then
-      return |registration|.
-
-      Issue: Clarify prefix match rule in algorithm.
+   4. If |url| starts with any of |rule|'s [=bundle rule/scopes=], then return
+      |registration|.
 
 3. Return null.
