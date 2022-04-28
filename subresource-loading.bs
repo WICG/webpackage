@@ -36,6 +36,9 @@ spec: csp; urlPrefix: https://w3c.github.io/webappsec-csp/#
 spec: url; urlPrefix: https://url.spec.whatwg.org/#
   type: dfn
     text: shortening; url: shorten-a-urls-path
+spec: infra; urlPrefix: https://infra.spec.whatwg.org/#
+  type: dfn
+    text: continue; url: iteration-continue
 </pre>
 <pre class="link-defaults">
 spec:fetch; type:dfn; for:/; text:request
@@ -614,7 +617,7 @@ To <dfn>find a matching web bundle registration</dfn> given [=request=]
          [=web bundle registration/fetch entry=]'s [=web bundle fetch
          entry/source=].
 
-      2. If |url| doesn't start with |allowed path|, then return null.
+      2. If |url| doesn't start with |allowed path|, then [=continue=].
 
    3. If |rule|'s [=bundle rule/resources=] [=list/contains=] |url|, then return
       |registration|.
