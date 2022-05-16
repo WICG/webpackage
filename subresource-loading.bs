@@ -349,6 +349,20 @@ from the document</a>, user agents must run the following algorithm:
 
 # Fetch monkeypatches # {#fetch-monkeypatches}
 
+## Monkeypatch fetch ## {#monkeypatch-fetch}
+
+In <a spec="fetch">fetch</a>, before
+
+> 2. Let |taskDestination| be null.
+
+add the following step:
+
+2. If the result of [=find a matching web bundle registration=] given |request|
+   is null, set |request|'s [=request/service-workers mode=] to "`none`".
+
+Note: This means that no service workers will get events for a subresource
+loading from a webbundle.
+
 ## Monkeypatch fetch scheme ## {#monkeypatch-fetch-scheme}
 
 Add "`uuid-in-package`" to the schemes listed in <a spec="fetch">fetch
@@ -514,6 +528,8 @@ and [=fetch params=] |fetch params|:
 
 1. Set |request|'s [=request/credentials mode=] to |fetch entry|'s [=web bundle
    fetch entry/credentials=].
+
+1. Set |request|'s [=request/service-workers mode=] to "`none`".
 
 1. Append a [=header=], a tuple of ("Accept", "application/webbundle;v=b2"), to
    |request|'s [=request/header list=].
