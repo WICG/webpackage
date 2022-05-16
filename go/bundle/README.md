@@ -20,10 +20,10 @@ You are also welcome to use the code as golang lib (e.g. `import "github.com/WIC
 golang environment needs to be set up in prior to using the tool. We are testing the tool on latest golang. Please refer to [Go Getting Started documentation](https://golang.org/doc/install) for the details.
 
 ### Installation
-We recommend using `go get` to install the command-line tool.
+We recommend using `go install` to install the command-line tool.
 
 ```
-go get -u github.com/WICG/webpackage/go/bundle/cmd/...
+go install github.com/WICG/webpackage/go/bundle/cmd/...@latest
 ```
 
 ## Usage
