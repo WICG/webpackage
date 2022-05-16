@@ -16,10 +16,10 @@ You are also welcome to use the code as a Go lib (e.g. `import "github.com/WICG/
 The Go environment needs to be set up in prior to using the tool. We are testing the tool on the latest version of Go. Please refer to the [Go Getting Started documentation](https://golang.org/doc/install) for the details.
 
 ### Installation
-We recommend using `go get` to install the command-line tool.
+We recommend using `go install` to install the command-line tool.
 
 ```
-go get -u github.com/WICG/webpackage/go/signedexchange/cmd/...
+go install github.com/WICG/webpackage/go/signedexchange/cmd/...@latest
 ```
 
 ### Creating our first signed exchange
@@ -106,7 +106,7 @@ Your signed exchange needs to be signed with a certificate with the ["CanSignHtt
 
    1. Install a tool to submit certificates to log servers.
       ```
-      go get github.com/grahamedgecombe/ct-submit
+      go install github.com/grahamedgecombe/ct-submit@latest
       ```
    2. Submit your cert chain to logs as appropriate, and write out SCTs:
       ```
