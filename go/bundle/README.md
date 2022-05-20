@@ -33,8 +33,9 @@ go install github.com/WICG/webpackage/go/bundle/cmd/...@latest
 
 These command-line flags are common to all the three options:
 
-- `-primaryURL` specifies the bundle's main resource URL. This URL is also used as the fallback destination when browser cannot process the bundle. This option is required.
-- `-manifestURL` specifies the bundle's [manifest](https://www.w3.org/TR/appmanifest/) URL. This option is optional and can be omitted.
+- `-version` specifies WebBundle format version. Possible values are: `b2` (default) and `b1`.
+- `-primaryURL` specifies the bundle's main resource URL. This URL is also used as the fallback destination when browser cannot process the bundle. If bundle format is `b1`, this option is required.
+- `-manifestURL` specifies the bundle's [manifest](https://www.w3.org/TR/appmanifest/) URL. This option can be specified only for bundle version `b1`.
 - `-o` specifies name of the output bundle file. Default file name if unspecified is `out.wbn`.
 - `-headerOverride` adds additional response header to all bundled responses. Existing values of the header are overwritten.
 
@@ -61,7 +62,6 @@ gen-bundle -har foo.har -o foo.wbn -primaryURL https://example.com/
 ```
 # A line starting with '#' is a comment.
 https://example.com/
-https://example.com/manifest.webmanifest
 https://example.com/style.css
 https://example.com/script.js
 ```
@@ -69,7 +69,6 @@ then run:
 ```
 gen-bundle -URLList urls.txt \
            -primaryURL https://example.com/ \
-           -manifestURL https://example.com/manifest.webmanifest \
            -o example_com.wbn
 ```
 
@@ -81,6 +80,8 @@ You can also create a bundle from a local directory. For example, if you have th
 ```
 gen-bundle -dir static -baseURL https://example.com/ -o foo.wbn -primaryURL https://example.com/
 ```
+
+If `-baseURL` flag is not specified, resources will have relative URLs in the generated bundle file.
 
 ### sign-bundle
 `sign-bundle` updates a bundle attaching a cryptographic signature of its exchanges. To use this tool, you need a pair of a private key and a certificate in the `application/cert-chain+cbor` format. See [go/signedexchange](../signedexchange/README.md) for more information on how to create a key and certificate pair.
