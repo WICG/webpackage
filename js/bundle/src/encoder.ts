@@ -88,8 +88,8 @@ export class BundleBuilder {
   }
 
   addFilesRecursively(baseURL: string, dir: string): BundleBuilder {
-    if (!baseURL.endsWith('/')) {
-      throw new Error("baseURL must end with '/'.");
+    if (baseURL !== '' && !baseURL.endsWith('/')) {
+      throw new Error("Non-empty baseURL must end with '/'.");
     }
     const files = fs.readdirSync(dir);
     files.sort(); // Sort entries for reproducibility.

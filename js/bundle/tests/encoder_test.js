@@ -132,6 +132,69 @@ describe('Bundle Builder', () => {
       expect(expected.equals(generated)).toBeTrue();
     });
 
+    it('accepts relative base URL', () => {
+      const dir = path.resolve(__dirname, 'testdata/encoder_test');
+      const baseURL = 'assets/';
+
+      const builder = new wbn.BundleBuilder();
+      builder.addFilesRecursively(baseURL, dir);
+      const generated = builder.createBundle();
+
+      const refBuilder = new wbn.BundleBuilder();
+      refBuilder.addExchange(
+        baseURL,
+        200,
+        { 'Content-Type': 'text/html' },
+        fs.readFileSync(path.resolve(dir, 'index.html'))
+      );
+      refBuilder.addExchange(
+        baseURL + 'index.html',
+        301,
+        { Location: './' },
+        ''
+      );
+      refBuilder.addExchange(
+        baseURL + 'resources/style.css',
+        200,
+        { 'Content-Type': 'text/css' },
+        fs.readFileSync(path.resolve(dir, 'resources/style.css'))
+      );
+      const expected = refBuilder.createBundle();
+
+      expect(expected.equals(generated)).toBeTrue();
+    });
+
+    it('accepts empty base URL', () => {
+      const dir = path.resolve(__dirname, 'testdata/encoder_test');
+
+      const builder = new wbn.BundleBuilder();
+      builder.addFilesRecursively('', dir);
+      const generated = builder.createBundle();
+
+      const refBuilder = new wbn.BundleBuilder();
+      refBuilder.addExchange(
+        '',
+        200,
+        { 'Content-Type': 'text/html' },
+        fs.readFileSync(path.resolve(dir, 'index.html'))
+      );
+      refBuilder.addExchange(
+        'index.html',
+        301,
+        { Location: './' },
+        ''
+      );
+      refBuilder.addExchange(
+        'resources/style.css',
+        200,
+        { 'Content-Type': 'text/css' },
+        fs.readFileSync(path.resolve(dir, 'resources/style.css'))
+      );
+      const expected = refBuilder.createBundle();
+
+      expect(expected.equals(generated)).toBeTrue();
+    });
+
     it('throws if baseURL does not end with a slash', () => {
       const dir = path.resolve(__dirname, 'testdata/hello');
       const url = 'https://example.com/hello.html';
