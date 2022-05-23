@@ -6,14 +6,17 @@ const path = require('path');
 // Tests for webbundle format version b2
 
 describe('Bundle Builder', () => {
-  const exampleURL = 'https://example.com/';
   const defaultHeaders = { 'Content-Type': 'text/plain' };
   const defaultContent = 'Hello, world!';
+  const validURLs = [
+    'https://example.com/',
+    'relative/url',
+    '',  // An empty string is a valid relative URL.
+  ];
+  const exampleURL = validURLs[0];
   const invalidURLs = [
-    '',
     'https://example.com/#fragment',
     'https://user:pass@example.com/',
-    'relative/url',
   ];
 
   it('builds', () => {
@@ -29,6 +32,15 @@ describe('Bundle Builder', () => {
       expect(
         builder.addExchange(exampleURL, 200, defaultHeaders, defaultContent)
       ).toBe(builder);
+    });
+
+    it('accepts valid URLs', () => {
+      const builder = new wbn.BundleBuilder();
+      validURLs.forEach(url => {
+        expect(
+          builder.addExchange(url, 200, defaultHeaders, defaultContent)
+        ).toBe(builder);
+      });
     });
 
     it('rejects invalid URLs', () => {
@@ -111,6 +123,69 @@ describe('Bundle Builder', () => {
       );
       refBuilder.addExchange(
         baseURL + 'resources/style.css',
+        200,
+        { 'Content-Type': 'text/css' },
+        fs.readFileSync(path.resolve(dir, 'resources/style.css'))
+      );
+      const expected = refBuilder.createBundle();
+
+      expect(expected.equals(generated)).toBeTrue();
+    });
+
+    it('accepts relative base URL', () => {
+      const dir = path.resolve(__dirname, 'testdata/encoder_test');
+      const baseURL = 'assets/';
+
+      const builder = new wbn.BundleBuilder();
+      builder.addFilesRecursively(baseURL, dir);
+      const generated = builder.createBundle();
+
+      const refBuilder = new wbn.BundleBuilder();
+      refBuilder.addExchange(
+        baseURL,
+        200,
+        { 'Content-Type': 'text/html' },
+        fs.readFileSync(path.resolve(dir, 'index.html'))
+      );
+      refBuilder.addExchange(
+        baseURL + 'index.html',
+        301,
+        { Location: './' },
+        ''
+      );
+      refBuilder.addExchange(
+        baseURL + 'resources/style.css',
+        200,
+        { 'Content-Type': 'text/css' },
+        fs.readFileSync(path.resolve(dir, 'resources/style.css'))
+      );
+      const expected = refBuilder.createBundle();
+
+      expect(expected.equals(generated)).toBeTrue();
+    });
+
+    it('accepts empty base URL', () => {
+      const dir = path.resolve(__dirname, 'testdata/encoder_test');
+
+      const builder = new wbn.BundleBuilder();
+      builder.addFilesRecursively('', dir);
+      const generated = builder.createBundle();
+
+      const refBuilder = new wbn.BundleBuilder();
+      refBuilder.addExchange(
+        '',
+        200,
+        { 'Content-Type': 'text/html' },
+        fs.readFileSync(path.resolve(dir, 'index.html'))
+      );
+      refBuilder.addExchange(
+        'index.html',
+        301,
+        { Location: './' },
+        ''
+      );
+      refBuilder.addExchange(
+        'resources/style.css',
         200,
         { 'Content-Type': 'text/css' },
         fs.readFileSync(path.resolve(dir, 'resources/style.css'))
