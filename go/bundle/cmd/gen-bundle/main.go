@@ -82,14 +82,12 @@ func main() {
 		}
 		b.Exchanges = es
 	} else if *flagDir != "" {
-		if *flagBaseURL == "" {
-			fmt.Fprintln(os.Stderr, "Please specify -baseURL.")
-			flag.Usage()
-			return
-		}
-		parsedBaseURL, err := url.Parse(*flagBaseURL)
-		if err != nil {
-			log.Fatalf("Failed to parse base URL. err: %v", err)
+		var parsedBaseURL *url.URL
+		if len(*flagBaseURL) > 0 {
+			parsedBaseURL, err = url.Parse(*flagBaseURL)
+			if err != nil {
+				log.Fatalf("Failed to parse base URL. err: %v", err)
+			}
 		}
 		es, err := fromDir(*flagDir, parsedBaseURL)
 		if err != nil {
