@@ -353,7 +353,7 @@ from the document</a>, user agents must run the following algorithm:
 
 In <a spec="fetch">fetch</a>, before
 
-> 2. Let |taskDestination| be null.
+> 2. Let taskDestination be null.
 
 add the following step:
 
