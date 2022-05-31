@@ -17,16 +17,17 @@ Please be aware that the API is not yet stable and is subject to change any time
 
 Creating a Bundle:
 ```javascript
-const wbn = require('wbn');
 const fs = require('fs');
+const wbn = require('wbn');
 
 const builder = new wbn.BundleBuilder();
 builder.addExchange(
-    exampleURL,                          // URL
-    200,                                 // response code
-    {'Content-Type': 'text/html'},       // response headers
-    '<html>Hello, Web Bundle!</html>');  // response body (string or Uint8Array)
-// Have as many builder.addExchange() for resource URLs as needed for the package.
+  "https://example.com/",              // URL
+  200,                                 // response code
+  {'Content-Type': 'text/html'},       // response headers
+  '<html>Hello, Web Bundle!</html>',   // response body (string or Uint8Array)
+);  
+builder.setPrimaryURL('https://example.com/');  // entry point URL
 
 fs.writeFileSync('out.wbn', builder.createBundle());
 ```
