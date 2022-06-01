@@ -3,6 +3,7 @@ package signingalgorithm
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -53,6 +54,8 @@ func parsePrivateKeyBlock(derKey []byte) (crypto.PrivateKey, error) {
 	if keyInterface, err := x509.ParsePKCS8PrivateKey(derKey); err == nil {
 		switch typedKey := keyInterface.(type) {
 		case *ecdsa.PrivateKey:
+			return typedKey, nil
+		case ed25519.PrivateKey:
 			return typedKey, nil
 		default:
 			return nil, fmt.Errorf("signingalgorithm: unknown private key type in PKCS#8: %T", typedKey)

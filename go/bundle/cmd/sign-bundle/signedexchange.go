@@ -2,6 +2,8 @@ package main
 
 import (
 	"crypto"
+	"crypto/ecdsa"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -73,6 +75,10 @@ func addSignature(b *bundle.Bundle, signer *signature.Signer) error {
 }
 
 func SignExchanges(privKey crypto.PrivateKey) error {
+	if _, ok := privKey.(ecdsa.PrivateKey); !ok {
+		return errors.New("Private key is not ECDSA type.")
+	}
+
 	certs, err := readCertChainFromFile(*flagCertificate)
 	if err != nil {
 		return fmt.Errorf("%s: %v", *flagCertificate, err)
