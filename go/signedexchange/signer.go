@@ -10,8 +10,8 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/WICG/webpackage/go/internal/cbor"
 	"github.com/WICG/webpackage/go/internal/signingalgorithm"
-	"github.com/WICG/webpackage/go/signedexchange/cbor"
 	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
 	"github.com/WICG/webpackage/go/signedexchange/structuredheader"
 	"github.com/WICG/webpackage/go/signedexchange/version"
@@ -210,13 +210,13 @@ func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
 	pi := structuredheader.ParameterisedIdentifier{
 		Label: "label",
 		Params: structuredheader.Parameters{
-			"sig": sig,
+			"sig":          sig,
 			"validity-url": s.ValidityUrl.String(),
-			"integrity": e.Version.MiceEncoding().IntegrityIdentifier(),
-			"cert-url": s.CertUrl.String(),
-			"cert-sha256": calculateCertSha256(s.Certs),
-			"date": s.Date.Unix(),
-			"expires": s.Expires.Unix(),
+			"integrity":    e.Version.MiceEncoding().IntegrityIdentifier(),
+			"cert-url":     s.CertUrl.String(),
+			"cert-sha256":  calculateCertSha256(s.Certs),
+			"date":         s.Date.Unix(),
+			"expires":      s.Expires.Unix(),
 		}}
 	return pi.String()
 }

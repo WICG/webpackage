@@ -10,8 +10,8 @@ import (
 
 	"github.com/WICG/webpackage/go/bundle"
 	"github.com/WICG/webpackage/go/bundle/version"
+	"github.com/WICG/webpackage/go/internal/cbor"
 	"github.com/WICG/webpackage/go/internal/signingalgorithm"
-	"github.com/WICG/webpackage/go/signedexchange/cbor"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 

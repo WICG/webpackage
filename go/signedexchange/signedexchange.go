@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/WICG/webpackage/go/signedexchange/cbor"
+	"github.com/WICG/webpackage/go/internal/cbor"
 	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
 	"github.com/WICG/webpackage/go/signedexchange/version"
 )

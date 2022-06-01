@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/WICG/webpackage/go/bundle/version"
-	"github.com/WICG/webpackage/go/signedexchange/cbor"
+	"github.com/WICG/webpackage/go/internal/cbor"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
@@ -620,7 +620,7 @@ func loadResponse(req requestEntryWithOffset, bs []byte) (Response, error) {
 	res := Response{
 		Status: nstatus,
 		Header: headers,
-		Body: body,
+		Body:   body,
 	}
 
 	return res, nil
