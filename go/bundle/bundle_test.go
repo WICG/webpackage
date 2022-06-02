@@ -9,7 +9,7 @@ import (
 
 	. "github.com/WICG/webpackage/go/bundle"
 	"github.com/WICG/webpackage/go/bundle/version"
-	"github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/internal/signingalgorithm"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
@@ -95,7 +95,7 @@ func createTestBundleWithVariants(ver version.Version) *Bundle {
 }
 
 func createTestCerts(t *testing.T) []*certurl.AugmentedCertificate {
-	certs, err := signedexchange.ParseCertificates([]byte(pemCerts))
+	certs, err := signingalgorithm.ParseCertificates([]byte(pemCerts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,6 @@ func TestWriteAndReadWithVariants(t *testing.T) {
 		}
 	}
 }
-
 
 func TestB2BundleWithSpecifiedManifestURLShouldFail(t *testing.T) {
 	bundle := createTestBundle(t, version.VersionB2)

@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/WICG/webpackage/go/internal/signingalgorithm"
 	"github.com/WICG/webpackage/go/internal/testhelper"
-	"github.com/WICG/webpackage/go/signedexchange"
 	. "github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
@@ -15,7 +15,7 @@ func createCertChain(t *testing.T) CertChain {
 	if err != nil {
 		t.Fatalf("Cannot read test-cert.pem: %v", err)
 	}
-	certs, err := signedexchange.ParseCertificates(in)
+	certs, err := signingalgorithm.ParseCertificates(in)
 	if err != nil {
 		t.Fatalf("Cannot parse test-cert.pem: %v", err)
 	}

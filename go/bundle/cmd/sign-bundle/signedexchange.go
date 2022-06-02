@@ -10,7 +10,7 @@ import (
 
 	"github.com/WICG/webpackage/go/bundle"
 	"github.com/WICG/webpackage/go/bundle/signature"
-	"github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/internal/signingalgorithm"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
@@ -28,7 +28,7 @@ func readPrivateKeyFromFile(path string) (crypto.PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return signedexchange.ParsePrivateKey(privkeytext)
+	return signingalgorithm.ParsePrivateKey(privkeytext)
 }
 
 func readBundleFromFile(path string) (*bundle.Bundle, error) {

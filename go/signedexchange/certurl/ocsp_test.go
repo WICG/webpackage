@@ -1,11 +1,12 @@
 package certurl_test
 
 import (
-	"github.com/WICG/webpackage/go/signedexchange"
-	. "github.com/WICG/webpackage/go/signedexchange/certurl"
-	"golang.org/x/crypto/ocsp"
 	"io/ioutil"
 	"testing"
+
+	"github.com/WICG/webpackage/go/internal/signingalgorithm"
+	. "github.com/WICG/webpackage/go/signedexchange/certurl"
+	"golang.org/x/crypto/ocsp"
 )
 
 func TestCreateOCSPRequestSmall(t *testing.T) {
@@ -15,7 +16,7 @@ func TestCreateOCSPRequestSmall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot read test-cert.pem: %v", err)
 	}
-	certs, err := signedexchange.ParseCertificates(pem)
+	certs, err := signingalgorithm.ParseCertificates(pem)
 	if err != nil {
 		t.Fatalf("Cannot parse test-cert.pem: %v", err)
 	}
@@ -51,7 +52,7 @@ func TestCreateOCSPRequestLarge(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot read test-cert-long.pem: %v", err)
 	}
-	certs, err := signedexchange.ParseCertificates(pem)
+	certs, err := signingalgorithm.ParseCertificates(pem)
 	if err != nil {
 		t.Fatalf("Cannot parse test-cert-long.pem: %v", err)
 	}

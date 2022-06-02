@@ -12,7 +12,6 @@ import (
 	. "github.com/WICG/webpackage/go/bundle/signature"
 	"github.com/WICG/webpackage/go/bundle/version"
 	"github.com/WICG/webpackage/go/internal/signingalgorithm"
-	"github.com/WICG/webpackage/go/signedexchange"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
@@ -58,7 +57,7 @@ func urlMustParse(rawurl string) *url.URL {
 }
 
 func createTestCertChain(t *testing.T) certurl.CertChain {
-	certs, err := signedexchange.ParseCertificates([]byte(pemCerts))
+	certs, err := signingalgorithm.ParseCertificates([]byte(pemCerts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +71,7 @@ func createTestCertChain(t *testing.T) certurl.CertChain {
 func createTestSigner(t *testing.T) *Signer {
 	certChain := createTestCertChain(t)
 
-	privKey, err := signedexchange.ParsePrivateKey([]byte(pemPrivateKey))
+	privKey, err := signingalgorithm.ParsePrivateKey([]byte(pemPrivateKey))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,9 +149,9 @@ func TestSignatureGeneration(t *testing.T) {
 	}
 	expectedSigned, err := (&SignedSubset{
 		ValidityUrl: urlMustParse(validityURL),
-		AuthSha256: expectedCerts[0].CertSha256(),
-		Date: signatureDate,
-		Expires: signatureDate.Add(signatureDuration),
+		AuthSha256:  expectedCerts[0].CertSha256(),
+		Date:        signatureDate,
+		Expires:     signatureDate.Add(signatureDuration),
 		SubsetHashes: map[string]*ResponseHashes{
 			e.Request.URL.String(): &ResponseHashes{
 				VariantsValue: nil,
