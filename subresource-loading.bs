@@ -150,7 +150,7 @@ Note: Because we don't make [=web bundle result=] a new subclass of
 <a href="https://html.spec.whatwg.org/multipage/webappapis.html#concept-script">script</a>,
 other script execution-related specs are left unaffected.
 
-## Prepare a script ## {#integration-prepare-a-script}
+## Prepare a script ## {#prepare-a-script}
 
 Inside the <a spec="html">prepare a script</a> algorithm, we make the following
 changes:
