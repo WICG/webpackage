@@ -2,7 +2,9 @@ package integrityblock
 
 import (
 	"bytes"
+	"crypto/sha512"
 	"fmt"
+	"io"
 
 	"github.com/WICG/webpackage/go/internal/cbor"
 )
@@ -105,4 +107,19 @@ func GetLastSignatureAttributes(integrityBlock *IntegrityBlock) map[string][]byt
 		signatureAttributes = (*integrityBlock.SignatureStack[0]).SignatureAttributes
 	}
 	return signatureAttributes
+}
+
+// ComputeWebBundleSha512 computes the SHA-512 hash over the given web bundle file.
+func ComputeWebBundleSha512(bundleFile io.ReadSeeker, offset int64) ([]byte, error) {
+	h := sha512.New()
+
+	// Move the file pointer to the start of the web bundle bytes.
+	bundleFile.Seek(offset, io.SeekStart)
+
+	// io.Copy() will do chunked read/write under the hood
+	_, err := io.Copy(h, bundleFile)
+	if err != nil {
+		return nil, err
+	}
+	return h.Sum(nil), nil
 }
