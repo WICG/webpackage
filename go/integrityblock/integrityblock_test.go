@@ -29,19 +29,12 @@ func TestEmptyIntegrityBlock(t *testing.T) {
 	}
 }
 
-func TestIntegrityBlockWithOneSignature(t *testing.T) {
+func TestAddNewSignatureToIntegrityBlock(t *testing.T) {
+	integrityBlock := generateEmptyIntegrityBlock()
 	attributes := map[string][]byte{"ed25519PublicKey": []byte("publickey")}
+	signature := []byte("signature")
 
-	integritySignatures := []*IntegritySignature{{
-		SignatureAttributes: attributes,
-		Signature:           []byte("signature"),
-	}}
-
-	integrityBlock := &IntegrityBlock{
-		Magic:          IntegrityBlockMagic,
-		Version:        VersionB1,
-		SignatureStack: integritySignatures,
-	}
+	integrityBlock.AddNewSignatureToIntegrityBlock(attributes, signature)
 
 	integrityBlockBytes, err := integrityBlock.CborBytes()
 	if err != nil {

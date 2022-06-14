@@ -153,6 +153,15 @@ func ObtainIntegrityBlock(bundleFile *os.File) (*IntegrityBlock, int64, error) {
 	return integrityBlock, integrityBlockLen, nil
 }
 
+func (integrityBlock *IntegrityBlock) AddNewSignatureToIntegrityBlock(signatureAttributes map[string][]byte, signature []byte) {
+	is := []*IntegritySignature{{
+		SignatureAttributes: signatureAttributes,
+		Signature:           signature,
+	}}
+
+	integrityBlock.SignatureStack = append(is, integrityBlock.SignatureStack...)
+}
+
 // getLastSignatureAttributes returns the signature attributes from the newest (the first)
 // signature stack or a new empty map if the signature stack is empty.
 func GetLastSignatureAttributes(integrityBlock *IntegrityBlock) map[string][]byte {
