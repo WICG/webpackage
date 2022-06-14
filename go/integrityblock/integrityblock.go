@@ -2,6 +2,7 @@ package integrityblock
 
 import (
 	"bytes"
+	"crypto/ed25519"
 	"crypto/sha512"
 	"encoding/binary"
 	"errors"
@@ -199,4 +200,14 @@ func GenerateDataToBeSigned(webBundleHash, integrityBlockBytes []byte, signature
 	binary.Write(&buf, binary.BigEndian, uint64(len(attributesBytes)))
 	buf.Write(attributesBytes)
 	return buf.Bytes(), nil
+}
+
+func ComputeEd25519Signature(ed25519privKey ed25519.PrivateKey, dataToBeSigned []byte) ([]byte, error) {
+	signature := ed25519.Sign(ed25519privKey, dataToBeSigned)
+	// Verification is done to ensure that the signing was successful and that the obtained public key is not corrupted and corresponds to the private key used for signing.
+	signatureOk := ed25519.Verify(ed25519privKey.Public().(ed25519.PublicKey), dataToBeSigned, signature)
+	if !signatureOk {
+		return nil, errors.New("integrityblock: Signature verification failed.")
+	}
+	return signature, nil
 }
