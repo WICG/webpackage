@@ -10,7 +10,7 @@ import (
 )
 
 func TestEmptyIntegrityBlock(t *testing.T) {
-	integrityBlock := GenerateEmptyIntegrityBlock()
+	integrityBlock := generateEmptyIntegrityBlock()
 
 	integrityBlockBytes, err := integrityBlock.CborBytes()
 	if err != nil {
@@ -84,7 +84,7 @@ func TestIntegritySignature(t *testing.T) {
 }
 
 func TestGetLastSignatureAttributesWithEmptySingatureStack(t *testing.T) {
-	got := GetLastSignatureAttributes(GenerateEmptyIntegrityBlock())
+	got := GetLastSignatureAttributes(generateEmptyIntegrityBlock())
 	if len(got) != 0 {
 		t.Error("integrityblock: GetLastSignatureAttributes is not empty.")
 	}
