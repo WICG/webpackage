@@ -38,10 +38,20 @@ func SignIntegrityBlock(privKey crypto.PrivateKey) error {
 	signatureAttributes := integrityblock.GetLastSignatureAttributes(integrityBlock)
 	signatureAttributes[integrityblock.Ed25519publicKeyAttributeName] = []byte(ed25519publicKey)
 
-	// TODO(sonkkeli): Remove debug prints.
 	integrityBlockBytes, err := integrityBlock.CborBytes()
-	fmt.Println(hex.EncodeToString(integrityBlockBytes))
-	fmt.Println(hex.EncodeToString(webBundleHash))
+	if err != nil {
+		return err
+	}
+
+	// TODO(sonkkeli): Check deterministicy of integrityBlockBytes.
+
+	dataToBeSigned, err := integrityblock.GenerateDataToBeSigned(webBundleHash, integrityBlockBytes, signatureAttributes)
+	if err != nil {
+		return err
+	}
+
+	// TODO(sonkkeli): Remove debug prints.
+	fmt.Println(hex.EncodeToString(dataToBeSigned))
 
 	// TODO(sonkkeli): Rest of the signing process.
 
