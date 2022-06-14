@@ -38,7 +38,7 @@ func readWebBundlePayloadLength(bundleFile *os.File) (int64, error) {
 // value marks the offset from which point onwards we need to copy the web bundle bytes from. It will be
 // needed later in the signing process (TODO) because we cannot rely on the integrity block length, because
 // we don't know if the integrity block already existed or not.
-func obtainIntegrityBlock(bundleFile *os.File) (*integrityblock.IntegrityBlock, int, error) {
+func obtainIntegrityBlock(bundleFile *os.File) (*integrityblock.IntegrityBlock, int64, error) {
 	webBundleLen, err := readWebBundlePayloadLength(bundleFile)
 	if err != nil {
 		return nil, 0, err
@@ -48,9 +48,10 @@ func obtainIntegrityBlock(bundleFile *os.File) (*integrityblock.IntegrityBlock, 
 		return nil, 0, err
 	}
 
-	// Unlike web bundle length, integrity block length cannot be more than max int.
-	integrityBlockLen := int(fileStats.Size() - webBundleLen)
-
+	integrityBlockLen := fileStats.Size() - webBundleLen
+	if integrityBlockLen < 0 {
+		return nil, -1, errors.New("Integrity block length should never be negative. Web bundle length big endian seems to be bigger than the size of the file.")
+	}
 	if integrityBlockLen != 0 {
 		// Read existing integrity block. Not supported in v1.
 		return nil, integrityBlockLen, errors.New("Web bundle already contains an integrity block. Please provide an unsigned web bundle.")
@@ -73,7 +74,12 @@ func SignIntegrityBlock(privKey crypto.PrivateKey) error {
 	}
 	defer bundleFile.Close()
 
-	integrityBlock, _, err := obtainIntegrityBlock(bundleFile)
+	integrityBlock, offset, err := obtainIntegrityBlock(bundleFile)
+	if err != nil {
+		return err
+	}
+
+	webBundleHash, err := integrityblock.ComputeWebBundleSha512(bundleFile, offset)
 	if err != nil {
 		return err
 	}
@@ -84,6 +90,7 @@ func SignIntegrityBlock(privKey crypto.PrivateKey) error {
 	// TODO(sonkkeli): Remove debug prints.
 	integrityBlockBytes, err := integrityBlock.CborBytes()
 	fmt.Println(hex.EncodeToString(integrityBlockBytes))
+	fmt.Println(hex.EncodeToString(webBundleHash))
 
 	// TODO(sonkkeli): Rest of the signing process.
 

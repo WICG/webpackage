@@ -2,6 +2,8 @@ package integrityblock
 
 import (
 	"bytes"
+	"encoding/hex"
+	"os"
 	"testing"
 
 	"github.com/WICG/webpackage/go/internal/testhelper"
@@ -109,5 +111,26 @@ func TestGetLastSignatureAttributesWithOneSingatureInTheStack(t *testing.T) {
 	}
 	if !bytes.Equal(got[Ed25519publicKeyAttributeName], pubKey) {
 		t.Errorf("integrityblock: got: %s\nwant: %s", got, pubKey)
+	}
+}
+
+func TestComputeWebBundleSha512(t *testing.T) {
+	bundleFile, err := os.Open("./testfile.wbn")
+	if err != nil {
+		t.Error("Failed to open the test file")
+	}
+	defer bundleFile.Close()
+
+	want, err := hex.DecodeString("95f8713d382ffefb8f1e4f464e39a2bf18280c8b26434d2fcfc08d7d710c8919ace5a652e25e66f9292cda424f20e4b53bf613bf9488140272f56a455393f7e6")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := ComputeWebBundleSha512(bundleFile, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("integrityblock: got: %s\nwant: %s", got, want)
 	}
 }
