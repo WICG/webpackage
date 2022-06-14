@@ -1,6 +1,7 @@
 package integrityblock
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/WICG/webpackage/go/internal/testhelper"
@@ -21,7 +22,7 @@ func TestEmptyIntegrityBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got != want {
-		t.Errorf("got: %s\nwant: %s", got, want)
+		t.Errorf("integrityblock: got: %s\nwant: %s", got, want)
 	}
 }
 
@@ -51,7 +52,7 @@ func TestIntegrityBlockWithOneSignature(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got != want {
-		t.Errorf("got: %s\nwant: %s", got, want)
+		t.Errorf("integrityblock: got: %s\nwant: %s", got, want)
 	}
 }
 
@@ -76,6 +77,37 @@ func TestIntegritySignature(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got != want {
-		t.Errorf("got: %s\nwant: %s", got, want)
+		t.Errorf("integrityblock: got: %s\nwant: %s", got, want)
+	}
+}
+
+func TestGetLastSignatureAttributesWithEmptySingatureStack(t *testing.T) {
+	got := GetLastSignatureAttributes(GenerateEmptyIntegrityBlock())
+	if len(got) != 0 {
+		t.Error("integrityblock: GetLastSignatureAttributes is not empty.")
+	}
+}
+
+func TestGetLastSignatureAttributesWithOneSingatureInTheStack(t *testing.T) {
+	pubKey := []byte("publickey")
+	attributes := map[string][]byte{Ed25519publicKeyAttributeName: pubKey}
+
+	integritySignatures := []*IntegritySignature{{
+		SignatureAttributes: attributes,
+		Signature:           []byte("signature"),
+	}}
+
+	integrityBlock := &IntegrityBlock{
+		Magic:          IntegrityBlockMagic,
+		Version:        VersionB1,
+		SignatureStack: integritySignatures,
+	}
+
+	got := GetLastSignatureAttributes(integrityBlock)
+	if len(got) != 1 {
+		t.Error("integrityblock: GetLastSignatureAttributes is either empty or contains other attributes.")
+	}
+	if !bytes.Equal(got[Ed25519publicKeyAttributeName], pubKey) {
+		t.Errorf("integrityblock: got: %s\nwant: %s", got, pubKey)
 	}
 }

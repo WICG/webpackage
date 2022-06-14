@@ -18,6 +18,10 @@ type IntegrityBlock struct {
 	SignatureStack []*IntegritySignature
 }
 
+const (
+	Ed25519publicKeyAttributeName = "ed25519PublicKey"
+)
+
 var IntegrityBlockMagic = []byte{0xf0, 0x9f, 0x96, 0x8b, 0xf0, 0x9f, 0x93, 0xa6}
 
 // "b1" as bytes and 2 empty bytes
@@ -89,4 +93,16 @@ func GenerateEmptyIntegrityBlock() *IntegrityBlock {
 		SignatureStack: integritySignatures,
 	}
 	return integrityBlock
+}
+
+// getLastSignatureAttributes returns the signature attributes from the newest (the first)
+// signature stack or a new empty map if the signature stack is empty.
+func GetLastSignatureAttributes(integrityBlock *IntegrityBlock) map[string][]byte {
+	var signatureAttributes map[string][]byte
+	if len(integrityBlock.SignatureStack) == 0 {
+		signatureAttributes = make(map[string][]byte, 1)
+	} else {
+		signatureAttributes = (*integrityBlock.SignatureStack[0]).SignatureAttributes
+	}
+	return signatureAttributes
 }
