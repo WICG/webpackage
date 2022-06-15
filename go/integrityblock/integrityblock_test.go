@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/WICG/webpackage/go/internal/cbor"
 	"github.com/WICG/webpackage/go/internal/testhelper"
 )
 
@@ -44,7 +45,7 @@ func TestIntegrityBlockWithOneSignature(t *testing.T) {
 
 	integrityBlockBytes, err := integrityBlock.CborBytes()
 	if err != nil {
-		t.Errorf("integritySignature.CborBytes. err: %v", err)
+		t.Errorf("integrityBlock.CborBytes. err: %v", err)
 	}
 
 	want := `["🖋📦" "1b\x00\x00" [[map["ed25519PublicKey":"publickey"] "signature"]]]`
@@ -67,14 +68,15 @@ func TestIntegritySignature(t *testing.T) {
 		Signature:           []byte("signature"),
 	}
 
-	integritySignatureBytes, err := integritySignature.CborBytes()
-	if err != nil {
-		t.Errorf("integritySignature.CborBytes. err: %v", err)
+	var integritySignatureBuf bytes.Buffer
+	enc := cbor.NewEncoder(&integritySignatureBuf)
+	if err := integritySignature.cborBytes(enc); err != nil {
+		t.Errorf("integritySignature.cborBytes. err: %v", err)
 	}
 
 	want := `[map["ed25519PublicKey":"publickey"] "signature"]`
 
-	got, err := testhelper.CborBinaryToReadableString(integritySignatureBytes)
+	got, err := testhelper.CborBinaryToReadableString(integritySignatureBuf.Bytes())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,6 +133,52 @@ func TestComputeWebBundleSha512(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(got, want) {
+		t.Errorf("integrityblock: got: %s\nwant: %s", got, want)
+	}
+}
+
+func TestGenerateDataToBeSigned(t *testing.T) {
+	signatureAttributes := make(map[string][]byte, 1)
+	signatureAttributes["key"] = []byte("value")
+
+	var attributesBytesBuf bytes.Buffer
+	enc := cbor.NewEncoder(&attributesBytesBuf)
+	if err := cborEncodeSignatureAttributesMap(signatureAttributes, enc); err != nil {
+		t.Fatal(err)
+	}
+
+	h := []byte{0xf0, 0x9f, 0x96, 0x8b}
+	ib := []byte{0xf0, 0x9f, 0x96, 0x8b, 0xf0, 0x9f, 0x93, 0xa6}
+
+	got, err := GenerateDataToBeSigned(h, ib, signatureAttributes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want, _ := hex.DecodeString("0000000000000004" + hex.EncodeToString(h) + "0000000000000008" + hex.EncodeToString(ib) + "000000000000000b" + hex.EncodeToString(attributesBytesBuf.Bytes()))
+
+	if !bytes.Equal(got, want) {
+		t.Errorf("integrityblock: got: %s\nwant: %s", hex.EncodeToString(got), hex.EncodeToString(want))
+	}
+}
+
+func TestCborBytesForSignatureAttributesMap(t *testing.T) {
+	signatureAttributes := make(map[string][]byte, 1)
+	signatureAttributes["key"] = []byte("value")
+
+	var attributesBytesBuf bytes.Buffer
+	enc := cbor.NewEncoder(&attributesBytesBuf)
+	if err := cborEncodeSignatureAttributesMap(signatureAttributes, enc); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := testhelper.CborBinaryToReadableString(attributesBytesBuf.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `map["key":"value"]`
+
+	if got != want {
 		t.Errorf("integrityblock: got: %s\nwant: %s", got, want)
 	}
 }
