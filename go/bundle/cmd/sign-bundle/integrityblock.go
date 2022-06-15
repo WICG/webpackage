@@ -59,7 +59,9 @@ func SignIntegrityBlock(privKey crypto.PrivateKey) error {
 		return err
 	}
 
-	// TODO(sonkkeli): Check deterministicy of integrityBlockBytes.
+	// Ensure the CBOR on the integrity block follows the deterministic principles.
+	// TODO(sonkkeli): Enable when all data types are supported.
+	// err := cbor.Deterministic(integrityBlockBytes)
 
 	dataToBeSigned, err := integrityblock.GenerateDataToBeSigned(webBundleHash, integrityBlockBytes, signatureAttributes)
 	if err != nil {
@@ -79,7 +81,8 @@ func SignIntegrityBlock(privKey crypto.PrivateKey) error {
 		return err
 	}
 
-	// TODO(sonkkeli): Check deterministicy of integrityBlockBytes.
+	// TODO(sonkkeli): Enable when all data types are supported.
+	// err = cbor.Deterministic(integrityBlockBytes)
 
 	signedBundleFile, err := os.Create(*flagOutput)
 	if err != nil {
