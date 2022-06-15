@@ -44,7 +44,7 @@ for (const url of bundle.urls) {
     url,
     status: resp.status,
     headers: resp.headers,
-    body: resp.body.toString('utf-8')
+    body: new TextDecoder('utf-8').decode(resp.body)
   });
 }
 console.log(JSON.stringify({

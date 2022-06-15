@@ -1,4 +1,5 @@
-import * as CBOR from 'cbor';
+import * as cborg from 'cborg';
+import { encodedLength } from 'cborg/length'
 
 interface Headers {
   [key: string]: string;
@@ -27,8 +28,8 @@ export class Bundle {
   private responses: { [key: number]: Response } = {}; // Offset-in-responses -> resp
   private compatAdapter: CompatAdapter;
 
-  constructor(buffer: Buffer) {
-    const wbn = asArray(CBOR.decode(buffer));
+  constructor(buffer: Uint8Array) {
+    const wbn = asArray(cborg.decode(buffer, {useMaps: true}));
 
     let peekVersion = bytestringToString(wbn[1]).replace(/\0+$/, '');
     this.compatAdapter = this.createCompatAdapter(peekVersion);
@@ -52,7 +53,7 @@ export class Bundle {
       this.b1PrimaryURL = asString(primaryURL);
     }
     const sectionLengths = asArray(
-      CBOR.decode(asBytestring(sectionLengthsCBOR))
+      cborg.decode(asBytestring(sectionLengthsCBOR), {useMaps: true})
     );
     const sectionsArray = asArray(sections);
     if (sectionLengths.length !== sectionsArray.length * 2) {
@@ -92,7 +93,7 @@ export class Bundle {
   }
 
   get urls(): string[] {
-    return Object.keys(this.indexSection);
+    return Array.from(this.indexSection.keys());
   }
 
   get primaryURL(): string | null {
@@ -109,7 +110,7 @@ export class Bundle {
     return this.compatAdapter.getResponse(url);
   }
 
-  private get indexSection(): { [key: string]: unknown } {
+  private get indexSection(): Map<string, unknown> {
     return asMap(this.sections['index']);
   }
 
@@ -124,7 +125,7 @@ export class Bundle {
         }
 
         getResponse(url: string): Response {
-          const indexEntry = asArray(this.bundle.indexSection[url]);
+          const indexEntry = asArray(this.bundle.indexSection.get(url));
           if (!indexEntry) {
             throw new Error('No entry for ' + url);
           }
@@ -155,7 +156,7 @@ export class Bundle {
         }
 
         getResponse(url: string): Response {
-          const indexEntry = asArray(this.bundle.indexSection[url]);
+          const indexEntry = asArray(this.bundle.indexSection.get(url));
           if (!indexEntry) {
             throw new Error('No entry for ' + url);
           }
@@ -182,7 +183,7 @@ export class Bundle {
 export class Response {
   status: number;
   headers: Headers;
-  body: Buffer;
+  body: Uint8Array;
 
   constructor(responsesSectionItem: unknown[]) {
     if (responsesSectionItem.length !== 2) {
@@ -197,12 +198,8 @@ export class Response {
   }
 }
 
-function encodedLength(value: unknown): number {
-  return CBOR.encode(value).byteLength;
-}
-
-function decodeResponseMap(cbor: Buffer): { status: number; headers: Headers } {
-  const decoded = CBOR.decode(cbor);
+function decodeResponseMap(cbor: Uint8Array): { status: number; headers: Headers } {
+  const decoded = cborg.decode(cbor, {useMaps: true});
   if (!(decoded instanceof Map)) {
     throw new Error('Wrong header map structure');
   }
@@ -234,9 +231,9 @@ function asArray(x: unknown): unknown[] {
   throw new Error('Array expected, but got ' + typeof x);
 }
 
-function asMap(x: unknown): { [key: string]: unknown } {
-  if (typeof x === 'object' && x !== null && !(x instanceof Array)) {
-    return x as { [key: string]: unknown };
+function asMap(x: unknown): Map<string, unknown> {
+  if (x instanceof Map) {
+    return x as Map<string, unknown>;
   }
   throw new Error('Map expected, but got ' + typeof x);
 }
@@ -255,16 +252,16 @@ function asString(x: unknown): string {
   throw new Error('String expected, but got ' + typeof x);
 }
 
-function asBytestring(x: unknown): Buffer {
-  if (x instanceof Buffer) {
+function asBytestring(x: unknown): Uint8Array {
+  if (x instanceof Uint8Array) {
     return x;
   }
   throw new Error('Bytestring expected, but got ' + typeof x);
 }
 
 function bytestringToString(bstr: unknown): string {
-  if (!(bstr instanceof Buffer)) {
+  if (!(bstr instanceof Uint8Array)) {
     throw new Error('Bytestring expected');
   }
-  return bstr.toString('utf-8');
+  return new TextDecoder('utf-8').decode(bstr);
 }

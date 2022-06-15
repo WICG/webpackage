@@ -44,8 +44,8 @@ describe('Bundle', () => {
         'content-type': 'text/plain',
         'content-language': 'ja',
       });
-      expect(resp1.body.toString('utf-8')).toBe('Hello, world!');
-      expect(resp2.body.toString('utf-8')).toBe('こんにちは世界');
+      expect(new TextDecoder('utf-8').decode(resp1.body)).toBe('Hello, world!');
+      expect(new TextDecoder('utf-8').decode(resp2.body)).toBe('こんにちは世界');
     });
 
     it('throws if URL is not found', () => {
@@ -65,7 +65,7 @@ describe('Bundle', () => {
     const resp = b.getResponse('https://example.com/hello.html');
     expect(resp.status).toBe(200);
     expect(resp.headers['content-type']).toBe('text/html; charset=utf-8');
-    expect(resp.body.toString('utf-8')).toBe(
+    expect(new TextDecoder('utf-8').decode(resp.body)).toBe(
       '<html>Hello, Web Bundle!</html>\n'
     );
   });
