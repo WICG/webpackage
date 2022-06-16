@@ -1,7 +1,5 @@
 const wbn = require('../lib/wbn');
 const cborg = require('cborg');
-const fs = require('fs');
-const path = require('path');
 
 // Backwards compatibility tests for webbundle format version b1
 
@@ -64,93 +62,6 @@ describe('Bundle Builder', () => {
         builder.addExchange(primaryURL, 200, {}, defaultContent)
       ).toThrowError();
       builder.addExchange(primaryURL, 200, {}, ''); // This is accepted
-    });
-  });
-
-  describe('addFile', () => {
-    it('returns the builder itself', () => {
-      const file = path.resolve(__dirname, 'testdata/encoder_test/index.html');
-      const builder = new wbn.BundleBuilder('b1');
-      builder.setPrimaryURL(primaryURL);
-      expect(builder.addFile(primaryURL, file)).toBe(builder);
-    });
-
-    it('adds an exchange as expected', () => {
-      const file = path.resolve(__dirname, 'testdata/encoder_test/index.html');
-      const builder = new wbn.BundleBuilder('b1');
-      builder.setPrimaryURL(primaryURL);
-      builder.addFile(primaryURL, file);
-      const generated = builder.createBundle();
-
-      const refBuilder = new wbn.BundleBuilder('b1');
-      refBuilder.setPrimaryURL(primaryURL);
-      refBuilder.addExchange(
-        primaryURL,
-        200,
-        { 'Content-Type': 'text/html' },
-        fs.readFileSync(file)
-      );
-      const expected = refBuilder.createBundle();
-
-      expect(expected.equals(generated)).toBeTrue();
-    });
-
-    it('throws on nonexistent file', () => {
-      const file = path.resolve(__dirname, 'testdata/hello/nonexistent.html');
-      const builder = new wbn.BundleBuilder('b1');
-      builder.setPrimaryURL(primaryURL);
-      expect(() => builder.addFile(primaryURL, file)).toThrowError();
-    });
-  });
-
-  describe('addFilesRecursively', () => {
-    it('returns the builder itself', () => {
-      const dir = path.resolve(__dirname, 'testdata/encoder_test');
-      const builder = new wbn.BundleBuilder('b1');
-      builder.setPrimaryURL(primaryURL);
-      expect(builder.addFilesRecursively(primaryURL, dir)).toBe(builder);
-    });
-
-    it('adds exchanges as expected', () => {
-      const dir = path.resolve(__dirname, 'testdata/encoder_test');
-      const baseURL = 'https://example.com/';
-
-      const builder = new wbn.BundleBuilder('b1');
-      builder.setPrimaryURL(baseURL);
-      builder.addFilesRecursively(baseURL, dir);
-      const generated = builder.createBundle();
-
-      const refBuilder = new wbn.BundleBuilder('b1');
-      refBuilder.setPrimaryURL(baseURL);
-      refBuilder.addExchange(
-        baseURL,
-        200,
-        { 'Content-Type': 'text/html' },
-        fs.readFileSync(path.resolve(dir, 'index.html'))
-      );
-      refBuilder.addExchange(
-        baseURL + 'index.html',
-        301,
-        { Location: './' },
-        ''
-      );
-      refBuilder.addExchange(
-        baseURL + 'resources/style.css',
-        200,
-        { 'Content-Type': 'text/css' },
-        fs.readFileSync(path.resolve(dir, 'resources/style.css'))
-      );
-      const expected = refBuilder.createBundle();
-
-      expect(Buffer.compare(expected, generated)).toBe(0);
-    });
-
-    it('throws if baseURL does not end with a slash', () => {
-      const dir = path.resolve(__dirname, 'testdata/hello');
-      const url = 'https://example.com/hello.html';
-      const builder = new wbn.BundleBuilder('b1');
-      builder.setPrimaryURL(url);
-      expect(() => builder.addFilesRecursively(url, dir)).toThrowError();
     });
   });
 

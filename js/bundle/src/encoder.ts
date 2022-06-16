@@ -1,9 +1,5 @@
 import * as cborg from 'cborg';
 import { encodedLength } from 'cborg/length'
-import * as fs from 'fs';
-import * as mime from 'mime';
-import * as path from 'path';
-import { URL } from 'url';
 
 type CBORValue = unknown;
 interface Headers {
@@ -63,37 +59,6 @@ export class BundleBuilder {
       url,
       this.addResponse(new HeaderMap(status, headers), payload)
     );
-    return this;
-  }
-
-  addFile(url: string, file: string): BundleBuilder {
-    const headers = {
-      'Content-Type': mime.getType(file) || 'application/octet-stream',
-    };
-    this.addExchange(url, 200, headers, fs.readFileSync(file));
-    return this;
-  }
-
-  addFilesRecursively(baseURL: string, dir: string): BundleBuilder {
-    if (baseURL !== '' && !baseURL.endsWith('/')) {
-      throw new Error("Non-empty baseURL must end with '/'.");
-    }
-    const files = fs.readdirSync(dir);
-    files.sort(); // Sort entries for reproducibility.
-    for (const file of files) {
-      const filePath = path.join(dir, file);
-      if (fs.statSync(filePath).isDirectory()) {
-        this.addFilesRecursively(baseURL + file + '/', filePath);
-      } else if (file === 'index.html') {
-        // If the file name is 'index.html', create an entry for baseURL itself
-        // and another entry for baseURL/index.html which redirects to baseURL.
-        // This matches the behavior of gen-bundle.
-        this.addFile(baseURL, filePath);
-        this.addExchange(baseURL + file, 301, { Location: './' }, '');
-      } else {
-        this.addFile(baseURL + file, filePath);
-      }
-    }
     return this;
   }
 

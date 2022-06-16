@@ -1,2 +1,4 @@
 #!/usr/bin/env node
-require('../lib/cli.js');
+const cli = require('../lib/cli.js');
+
+cli.main();
