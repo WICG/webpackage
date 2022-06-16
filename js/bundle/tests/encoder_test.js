@@ -1,5 +1,5 @@
 const wbn = require('../lib/wbn');
-const CBOR = require('cbor');
+const cborg = require('cborg');
 const fs = require('fs');
 const path = require('path');
 
@@ -23,7 +23,7 @@ describe('Bundle Builder', () => {
     const builder = new wbn.BundleBuilder();
     const buf = builder.createBundle();
     // Just checks the result is a valid CBOR array.
-    expect(CBOR.decode(buf)).toBeInstanceOf(Array);
+    expect(cborg.decode(buf)).toBeInstanceOf(Array);
   });
 
   describe('addExchange', () => {
@@ -83,7 +83,7 @@ describe('Bundle Builder', () => {
       );
       const expected = refBuilder.createBundle();
 
-      expect(expected.equals(generated)).toBeTrue();
+      expect(Buffer.compare(expected, generated)).toBe(0);
     });
 
     it('throws on nonexistent file', () => {
@@ -129,7 +129,7 @@ describe('Bundle Builder', () => {
       );
       const expected = refBuilder.createBundle();
 
-      expect(expected.equals(generated)).toBeTrue();
+      expect(Buffer.compare(expected, generated)).toBe(0);
     });
 
     it('accepts relative base URL', () => {
@@ -161,7 +161,7 @@ describe('Bundle Builder', () => {
       );
       const expected = refBuilder.createBundle();
 
-      expect(expected.equals(generated)).toBeTrue();
+      expect(Buffer.compare(expected, generated)).toBe(0);
     });
 
     it('accepts empty base URL', () => {
@@ -192,7 +192,7 @@ describe('Bundle Builder', () => {
       );
       const expected = refBuilder.createBundle();
 
-      expect(expected.equals(generated)).toBeTrue();
+      expect(Buffer.compare(expected, generated)).toBe(0);
     });
 
     it('throws if baseURL does not end with a slash', () => {
@@ -230,6 +230,6 @@ describe('Bundle Builder', () => {
     builder.addExchange(exampleURL, 200, defaultHeaders, new Uint8Array(1024 * 1024));
     const buf = builder.createBundle();
     // Just checks the result is a valid CBOR array.
-    expect(CBOR.decode(buf)).toBeInstanceOf(Array);
+    expect(cborg.decode(buf)).toBeInstanceOf(Array);
   });
 });
