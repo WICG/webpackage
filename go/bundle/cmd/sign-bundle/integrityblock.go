@@ -50,10 +50,13 @@ func SignIntegrityBlock(privKey crypto.PrivateKey) error {
 		return err
 	}
 
-	// TODO(sonkkeli): Remove debug prints.
-	fmt.Println(hex.EncodeToString(dataToBeSigned))
+	signature, err := integrityblock.ComputeEd25519Signature(ed25519privKey, dataToBeSigned)
+	if err != nil {
+		return err
+	}
 
-	// TODO(sonkkeli): Rest of the signing process.
+	// TODO(sonkkeli): Remove debug prints.
+	fmt.Println(hex.EncodeToString(signature))
 
 	return nil
 }
