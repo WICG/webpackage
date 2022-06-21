@@ -3,14 +3,20 @@
   "version": "0.0.7",
   "description": "Generator and parser for the application/webbundle format, defined in draft-yasskin-wpack-bundled-exchanges-01.",
   "homepage": "https://github.com/WICG/webpackage/tree/main/js/bundle",
-  "main": "./lib/wbn.js",
+  "main": "./lib/wbn.cjs",
+  "type": "module",
+  "exports": {
+    "import": "./lib/wbn.js",
+    "require": "./lib/wbn.cjs"
+  },
   "types": "./lib/wbn.d.js",
   "scripts": {
     "build": "tsc",
+    "build-cjs": "esbuild --bundle --format=cjs --external:cborg --outfile=lib/wbn.cjs src/wbn.ts",
     "test": "jasmine tests/*.js"
   },
   "bin": {
-    "wbn": "./bin/wbn"
+    "wbn": "./bin/wbn.js"
   },
   "repository": {
     "type": "git",
@@ -32,10 +38,11 @@
   "devDependencies": {
     "@types/mime": "^2.0.1",
     "@types/node": "^12.7.11",
-    "jasmine": "^3.5.0",
+    "esbuild": "^0.14.47",
+    "jasmine": "^4.2.1",
     "typescript": "^4.7.3"
   },
   "engines": {
-    "node": ">= 8.0.0"
+    "node": ">= 12.0.0"
   }
 }

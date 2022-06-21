@@ -1,7 +1,9 @@
-const wbn = require('../lib/wbn');
-const cli = require('../lib/cli');
-const fs = require('fs');
-const path = require('path');
+import * as wbn from '../lib/wbn.js';
+import * as cli from '../lib/cli.js';
+import * as fs from 'fs';
+import * as path from 'path';
+import url from "url";
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 describe('CLI', () => {
   const exampleURL = 'https://example.com/';

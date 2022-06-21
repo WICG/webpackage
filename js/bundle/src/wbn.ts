@@ -1,2 +1,2 @@
-export { Bundle, Response } from './decoder';
-export { BundleBuilder } from './encoder';
+export { Bundle, Response } from './decoder.js';
+export { BundleBuilder } from './encoder.js';
