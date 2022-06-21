@@ -3,9 +3,7 @@ package main
 import (
 	"crypto"
 	"crypto/ed25519"
-	"encoding/hex"
 	"errors"
-	"fmt"
 
 	"os"
 
@@ -56,7 +54,11 @@ func SignIntegrityBlock(privKey crypto.PrivateKey) error {
 	}
 
 	// TODO(sonkkeli): Remove debug prints.
-	fmt.Println(hex.EncodeToString(signature))
+	integrityBlock.AddNewSignatureToIntegrityBlock(signatureAttributes, signature)
+
+	// TODO(sonkkeli): Check deterministicy of integrityBlockBytes.
+
+	// TODO(sonkkeli): Write to file new integrity block + web bundle bytes.
 
 	return nil
 }
