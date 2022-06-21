@@ -73,6 +73,12 @@ func SignIntegrityBlock(privKey crypto.PrivateKey) error {
 
 	integrityBlock.AddNewSignatureToIntegrityBlock(signatureAttributes, signature)
 
+	// Update the integrity block bytes after editing the integrity block.
+	integrityBlockBytes, err = integrityBlock.CborBytes()
+	if err != nil {
+		return err
+	}
+
 	// TODO(sonkkeli): Check deterministicy of integrityBlockBytes.
 
 	signedBundleFile, err := os.Create(*flagOutput)
