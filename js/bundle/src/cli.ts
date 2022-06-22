@@ -1,8 +1,8 @@
-import * as commander from 'commander';
-import { BundleBuilder } from './encoder';
+import commander from 'commander';
+import { BundleBuilder } from './encoder.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as mime from 'mime';
+import mime from 'mime';
 
 export function addFile(builder: BundleBuilder, url: string, file: string) {
   const headers = {
@@ -35,7 +35,6 @@ export function addFilesRecursively(builder: BundleBuilder, baseURL: string, dir
 
 export function main() {
   const options = commander
-    .version(require('../package.json').version)
     .requiredOption('-d, --dir <directory>', 'input root directory (required)')
     .option('-b, --baseURL <URL>', 'base URL')
     .option('-f, --formatVersion <formatVersion>', 'webbundle format version, possible values are "b1" and "b2" (default: "b2")', 'b2')
