@@ -12,11 +12,14 @@ jobs:
 
   javascript:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12, 14, 16]
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
-          node-version: 'lts/*'
+          node-version: ${{ matrix.node-version }}
       - run: npm --prefix ./js/bundle ci
       - run: npm --prefix ./js/bundle run build
       - run: npm --prefix ./js/bundle test
