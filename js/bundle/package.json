@@ -11,9 +11,10 @@
   },
   "types": "./lib/wbn.d.js",
   "scripts": {
-    "build": "tsc",
-    "build-cjs": "esbuild --bundle --format=cjs --external:cborg --outfile=lib/wbn.cjs src/wbn.ts",
-    "test": "jasmine tests/*.js"
+    "build": "npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc",
+    "build:cjs": "esbuild --bundle --format=cjs --external:cborg --outfile=lib/wbn.cjs src/wbn.ts",
+    "test": "jasmine tests/*.js tests/*.cjs"
   },
   "bin": {
     "wbn": "./bin/wbn.js"

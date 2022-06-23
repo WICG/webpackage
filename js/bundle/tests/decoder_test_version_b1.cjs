@@ -1,8 +1,6 @@
-import * as wbn from '../lib/wbn.js';
-import * as fs from 'fs';
-import * as path from 'path';
-import url from "url";
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const wbn = require('../lib/wbn.cjs');
+const fs = require('fs');
+const path = require('path');
 
 // Backwards compatibility tests for webbundle format version b1
 
