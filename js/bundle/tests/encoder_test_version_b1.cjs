@@ -1,5 +1,5 @@
-import * as wbn from '../lib/wbn.js';
-import * as cborg from 'cborg';
+const wbn = require('../lib/wbn.cjs');
+const cborg = require('cborg');
 
 // Backwards compatibility tests for webbundle format version b1
 
