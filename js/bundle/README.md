@@ -15,8 +15,8 @@ Please be aware that the API is not yet stable and is subject to change any time
 
 Creating a Bundle:
 ```javascript
-const fs = require('fs');
-const wbn = require('wbn');
+import * as fs from 'fs';
+import * as wbn from 'wbn';
 
 const builder = new wbn.BundleBuilder();
 builder.addExchange(
@@ -32,8 +32,8 @@ fs.writeFileSync('out.wbn', builder.createBundle());
 
 Reading a Bundle:
 ```javascript
-const wbn = require('wbn');
-const fs = require('fs');
+import * as fs from 'fs';
+import * as wbn from 'wbn';
 
 const buf = fs.readFileSync('out.wbn');
 const bundle = new wbn.Bundle(buf);
@@ -94,6 +94,11 @@ Chrome (79+) experimentally supports navigation to Web Bundles with some limitat
 Chrome (104+) supports [`<script type=webbundle>`](https://github.com/WICG/webpackage/blob/main/explainers/subresource-loading.md).
 
 ## Release Notes
+
+### 0.0.8
+- Now `wbn` package provides both ES modules and CommonJS exports.
+- Dependency on the Node.js API has been removed from the `wbn` module, making
+  it easier to use the module in browsers.
 
 ### 0.0.7
 - Now BundleBuilder accepts relative resource URLs. Relative URLs can be used in [`<script type=webbundle>`](https://github.com/WICG/webpackage/blob/main/explainers/subresource-loading.md) where relative URLs are resolved using the bundle's URL as base URL.
