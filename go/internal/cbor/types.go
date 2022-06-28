@@ -13,3 +13,9 @@ const (
 	TypeTag         = 0xc0
 	TypeOther       = 0xe0
 )
+
+// getMajorType returns the first 3 bits of the first byte representing cbor's major type.
+// https://www.rfc-editor.org/rfc/rfc8949.html#name-major-types
+func getMajorType(b byte) Type {
+	return Type(b & 0b11100000)
+}
