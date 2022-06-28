@@ -47,10 +47,11 @@ func deterministicRec(input []byte) (int, error) {
 		return length + 1, nil
 
 	case TypeArray:
-		// TODO(sonkkeli):
-		// length, err := arrayDeterministic(input[index:])
-
-		return 0, nil
+		length, err := arrayDeterministic(input)
+		if err != nil {
+			return 0, err
+		}
+		return length, nil
 
 	case TypeMap:
 		// TODO(sonkkeli):
@@ -76,7 +77,7 @@ func unsignedIntegerDeterministic(input []byte) (int, uint64, error) {
 
 	lengthInBytes := ainfo.getAdditionalInfoLength()
 	limit := ainfo.getAdditionalInfoValueLowerLimit()
-	value := getUnsignedIntegerValue(input[0:], ainfo)
+	value := getUnsignedIntegerValue(input, ainfo)
 
 	if value < limit {
 		return -1, value, fmt.Errorf("When following CBOR deterministic principles, %v should not be represented with %v bytes.", value, len(input)-1)
@@ -112,7 +113,7 @@ func getUnsignedIntegerValue(input []byte, ainfo AdditionalInfo) uint64 {
 // textOrByteStringDeterministic returns length of the text or byte string element in bytes for which its deterministicy has been ensured
 func textOrByteStringDeterministic(input []byte) (int, error) {
 	// uintLen is the length of the number representing the length of the text/byte string.
-	uintLen, stringLen, err := unsignedIntegerDeterministic(input[0:])
+	uintLen, stringLen, err := unsignedIntegerDeterministic(input)
 	if err != nil {
 		return 0, err
 	}
@@ -122,4 +123,28 @@ func textOrByteStringDeterministic(input []byte) (int, error) {
 	}
 
 	return uintLen + int(stringLen), nil
+}
+
+// arrayDeterministic returns length of the CBOR array in bytes and checks that each item on it follows the deterministic principles.
+func arrayDeterministic(input []byte) (int, error) {
+	lenOfNumOfItems, numOfItems, err := unsignedIntegerDeterministic(input)
+	if err != nil {
+		return 0, err
+	}
+
+	// Skip the starter byte and the bytes stating the amount of elements the array has.
+	startIndexOfNextElement := 1 + lenOfNumOfItems
+
+	for arrElementIndex := 0; arrElementIndex < int(numOfItems); arrElementIndex++ {
+		if startIndexOfNextElement >= len(input) {
+			panic("Number of items on CBOR array is less than the number of items it claims.")
+		}
+		itemLength, err := deterministicRec(input[startIndexOfNextElement:])
+		if err != nil {
+			return 0, err
+		}
+		startIndexOfNextElement += itemLength
+	}
+
+	return startIndexOfNextElement, nil
 }
