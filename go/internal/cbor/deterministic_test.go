@@ -236,6 +236,63 @@ func TestArrayContainsNonDeterministicCbor(t *testing.T) {
 	}
 }
 
+func TestMapIsDeterministic(t *testing.T) {
+	hello := multiappend([]byte{0b01100101}, []byte("hello"))
+	hello2 := multiappend([]byte{0b01100110}, []byte("hello2"))
+	testMap := multiappend([]byte{0b10100010}, hello, uint24, hello2, uint4294967295)
+	cborSequenceMap := multiappend(testMap, testMap)
+
+	for _, testCase := range [][]byte{testMap, cborSequenceMap} {
+		err := Deterministic(testCase)
+		if err != nil {
+			t.Error("Deterministically encoded CBOR map should not return false for deterministicy.")
+		}
+	}
+}
+
+func TestMapWithDuplicateKeysIsNotDeterministic(t *testing.T) {
+	hello := multiappend([]byte{0b01100101}, []byte("hello"))
+	testMap := multiappend([]byte{0b10100010}, hello, uint24, hello, uint4294967295)
+
+	err := Deterministic(testMap)
+	if err == nil {
+		t.Error("CBOR map with duplicate keys should not return true for deterministicy.")
+	}
+}
+
+func TestMapWithUnorderedKeysIsNotDeterministic(t *testing.T) {
+	hello := multiappend([]byte{0b01100101}, []byte("hello"))
+	hello2 := multiappend([]byte{0b01100110}, []byte("hello2"))
+
+	// 0b01100101 (0x65) should become before 0b01100110 (0x66), so this doesn't follow the lexicographical order.
+	testMap := multiappend([]byte{0b10100010}, hello2, uint24, hello, uint4294967295)
+
+	err := Deterministic(testMap)
+	if err == nil {
+		t.Error("CBOR map with unordered keys should not return true for deterministicy.")
+	}
+}
+
+func TestMapWithDuplicateNotSequentialKeysIsNotDeterministic(t *testing.T) {
+	hello := multiappend([]byte{0b01100101}, []byte("hello"))
+	hello2 := multiappend([]byte{0b01100110}, []byte("hello2"))
+	testMap := multiappend([]byte{0b10100011}, hello, uint24, hello2, uint4294967295, hello, uint18446744073709551615)
+
+	err := Deterministic(testMap)
+	if err == nil {
+		t.Error("CBOR map with duplicate keys (which are not following each other) should not return true for deterministicy.")
+	}
+}
+
+func TestMapsNumberOfItemsIsWrong(t *testing.T) {
+	// There is one item too little. The additional information claims that there are
+	// 2 pairs (=4 items) but there are only 1 pair and 1 item (3 items).
+	testMap := multiappend([]byte{0b10100010}, uint23, uint24, uint45)
+	shouldPanic(t, func() {
+		Deterministic(testMap)
+	})
+}
+
 // Helper functions:
 
 func convertToNonDeterministicUintHelper(deterministicUintBytes []byte, firstByte byte) []byte {

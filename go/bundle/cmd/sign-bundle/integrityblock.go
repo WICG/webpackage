@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/WICG/webpackage/go/integrityblock"
+	"github.com/WICG/webpackage/go/internal/cbor"
 )
 
 func writeOutput(bundleFile io.ReadSeeker, integrityBlockBytes []byte, originalIntegrityBlockOffset int64, signedBundleFile *os.File) error {
@@ -63,8 +64,10 @@ func SignWithIntegrityBlock(privKey crypto.PrivateKey) error {
 	}
 
 	// Ensure the CBOR on the integrity block follows the deterministic principles.
-	// TODO(sonkkeli): Enable when all data types are supported.
-	// err := cbor.Deterministic(integrityBlockBytes)
+	err = cbor.Deterministic(integrityBlockBytes)
+	if err != nil {
+		return err
+	}
 
 	dataToBeSigned, err := integrityblock.GenerateDataToBeSigned(webBundleHash, integrityBlockBytes, signatureAttributes)
 	if err != nil {
@@ -84,8 +87,10 @@ func SignWithIntegrityBlock(privKey crypto.PrivateKey) error {
 		return err
 	}
 
-	// TODO(sonkkeli): Enable when all data types are supported.
-	// err = cbor.Deterministic(integrityBlockBytes)
+	err = cbor.Deterministic(integrityBlockBytes)
+	if err != nil {
+		return err
+	}
 
 	signedBundleFile, err := os.Create(*flagOutput)
 	if err != nil {

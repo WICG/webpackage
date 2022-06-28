@@ -1,6 +1,7 @@
 package cbor
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -13,9 +14,6 @@ func Deterministic(input []byte) error {
 	index := 0
 
 	for index < len(input) {
-		// TODO(sonkkeli): Remove debug print.
-		fmt.Printf("index=%v\n", index)
-
 		length, err := deterministicRec(input[index:])
 		if err != nil {
 			return err
@@ -54,10 +52,11 @@ func deterministicRec(input []byte) (int, error) {
 		return length, nil
 
 	case TypeMap:
-		// TODO(sonkkeli):
-		// length, err := mapDeterministic(input[index:])
-
-		return 0, nil
+		length, err := mapDeterministic(input)
+		if err != nil {
+			return 0, err
+		}
+		return length, nil
 
 	default:
 		return 0, errors.New("Missing implementation for major type.")
@@ -143,6 +142,54 @@ func arrayDeterministic(input []byte) (int, error) {
 		if err != nil {
 			return 0, err
 		}
+		startIndexOfNextElement += itemLength
+	}
+
+	return startIndexOfNextElement, nil
+}
+
+// mapDeterministic returns length of the CBOR map in bytes and checks that each item on it
+// follows the deterministic principles. Additionally to ensure deterministicy of a map:
+// 1) It cannot have duplicate keys.
+// 2) Keys must be sorted in the bytewise lexicographic order of their deterministic encodings as
+// described here: https://www.rfc-editor.org/rfc/rfc8949#section-4.2.1. In our use case it
+// doesn't matter whether the ordering would instead follow the "length-first" map key ordering,
+// because we don't have any use case where we would mix keys with different major types.
+func mapDeterministic(input []byte) (int, error) {
+	lenOfNumOfItemPairs, numOfItemPairs, err := unsignedIntegerDeterministic(input[0:])
+	if err != nil {
+		return 0, err
+	}
+
+	// Skip the starter byte and the bytes stating the amount of element pairs the map has.
+	startIndexOfNextElement := 1 + lenOfNumOfItemPairs
+	lastSeenKey := []byte{}
+
+	for mapItemIndex := 0; mapItemIndex < int(numOfItemPairs)*2; mapItemIndex++ {
+		if startIndexOfNextElement >= len(input) {
+			panic("Number of items on CBOR map is less than the number of items it claims.")
+		}
+
+		itemLength, err := deterministicRec(input[startIndexOfNextElement:])
+		if err != nil {
+			return 0, err
+		}
+
+		// Every even item on the CBOR map is a key, which has to be unique and ordered.
+		if mapItemIndex%2 == 0 {
+			keyCborBytes := input[startIndexOfNextElement : startIndexOfNextElement+itemLength]
+
+			// To be lexicographically ordered, the previous key must have been lexicographically smaller
+			// than the current key. If the keys are equal (and ordered), their comparison returns 0.
+			ordering := bytes.Compare(lastSeenKey, keyCborBytes)
+			if ordering == 0 {
+				return 0, errors.New("CBOR map contains duplicate keys.")
+			} else if ordering > 0 {
+				return 0, errors.New("CBOR map keys are not in lexicographical order.")
+			}
+			lastSeenKey = keyCborBytes
+		}
+
 		startIndexOfNextElement += itemLength
 	}
 
