@@ -40,10 +40,11 @@ func deterministicRec(input []byte) (int, error) {
 		return length + 1, nil
 
 	case TypeBytes, TypeText:
-		// TODO(sonkkeli):
-		// length, err := textOrBytesDeterministic(input[index:])
-
-		return 0, nil
+		length, err := textOrByteStringDeterministic(input)
+		if err != nil {
+			return 0, err
+		}
+		return length + 1, nil
 
 	case TypeArray:
 		// TODO(sonkkeli):
@@ -106,4 +107,19 @@ func getUnsignedIntegerValue(input []byte, ainfo AdditionalInfo) uint64 {
 	default:
 		panic("getUnsignedIntegerValue() should never be called with: " + fmt.Sprint(ainfo))
 	}
+}
+
+// textOrByteStringDeterministic returns length of the text or byte string element in bytes for which its deterministicy has been ensured
+func textOrByteStringDeterministic(input []byte) (int, error) {
+	// uintLen is the length of the number representing the length of the text/byte string.
+	uintLen, stringLen, err := unsignedIntegerDeterministic(input[0:])
+	if err != nil {
+		return 0, err
+	}
+
+	if (uintLen + int(stringLen)) >= len(input) {
+		panic("Text or byte string's length cannot exceed the length of the input byte array.")
+	}
+
+	return uintLen + int(stringLen), nil
 }

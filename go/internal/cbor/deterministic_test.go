@@ -141,6 +141,53 @@ func TestAdditionalInfoConversion(t *testing.T) {
 	}
 }
 
+func TestByteStringIsDeterministic(t *testing.T) {
+	testBytes := []byte{0b01000011, 0x1A, 0x2B, 0x3C}
+	testBytesAsCborSequence := multiappend(testBytes, testBytes)
+
+	for _, testCase := range [][]byte{testBytes, testBytesAsCborSequence} {
+		err := Deterministic(testCase)
+		if err != nil {
+			t.Error("Deterministically encoded byte string should not return false for deterministicy.")
+		}
+	}
+}
+
+func TestLongTextAndByteStringIsDeterministic(t *testing.T) {
+	longStr := "olipakerrankilpikonnajakissajotkajuoksivatkilpaajakilpikonnavoitti"
+	testBytesAsByteString := multiappend([]byte{0b01011000 /*btstr + one byte*/}, []byte{byte(len(longStr))}, []byte(longStr))
+	testBytesAsTextString := multiappend([]byte{0b01111000 /*tstr + one byte*/}, []byte{byte(len(longStr))}, []byte(longStr))
+
+	for _, testCase := range [][]byte{testBytesAsByteString, testBytesAsTextString} {
+		err := Deterministic(testCase)
+		if err != nil {
+			t.Error("Deterministically encoded text or byte string should not return false for deterministicy.")
+		}
+	}
+}
+
+func TestTextStringIsDeterministic(t *testing.T) {
+	hello := multiappend([]byte{0b01100101}, []byte("hello"))
+	hello2 := multiappend([]byte{0b01100110}, []byte("hello2"))
+	combinedHellos := multiappend(hello, hello2)
+
+	for _, testCase := range [][]byte{hello, hello2, combinedHellos} {
+		err := Deterministic(testCase)
+		if err != nil {
+			t.Error("Deterministically encoded text string should not return false for deterministicy.")
+		}
+	}
+}
+
+func TestByteStringIsNotDeterministic(t *testing.T) {
+	// Byte string claiming it would be followed by 3 bytes but there are only 2.
+	testBytes := []byte{0b01000011, 0x1A, 0x2B}
+
+	shouldPanic(t, func() {
+		textOrByteStringDeterministic(testBytes)
+	})
+}
+
 // Helper functions:
 
 func convertToNonDeterministicUintHelper(deterministicUintBytes []byte, firstByte byte) ([]byte, error) {
