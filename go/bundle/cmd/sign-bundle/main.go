@@ -35,7 +35,7 @@ func run() error {
 		return SignExchanges(privKey)
 
 	} else if *flagSignType == signTypeIntegrityBlock {
-		return SignIntegrityBlock(privKey)
+		return SignWithIntegrityBlock(privKey)
 
 	} else {
 		return errors.New("Unknown signType, approved flag values are \"signedexchange\" or \"integrityblock\".")
