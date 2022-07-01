@@ -32,8 +32,7 @@ var (
 
 func TestUintDeterministic(t *testing.T) {
 	for _, testCase := range uint64TestCasesAsBytes {
-		err := Deterministic(testCase)
-		if err != nil {
+		if err := Deterministic(testCase); err != nil {
 			t.Error("Deterministically encoded unsigned integers should not return error.")
 		}
 	}
@@ -41,8 +40,7 @@ func TestUintDeterministic(t *testing.T) {
 
 func TestUintCborSequenceDeterministic(t *testing.T) {
 	concatenatedTestCases := multiappend(uint64TestCasesAsBytes...)
-	err := Deterministic(concatenatedTestCases)
-	if err != nil {
+	if err := Deterministic(concatenatedTestCases); err != nil {
 		t.Error("Deterministically encoded unsigned integers should not return false for deterministicy.")
 	}
 }
@@ -95,8 +93,7 @@ func TestUnsupportedAdditionalInformationValues(t *testing.T) {
 			ainfo.getAdditionalInfoLength()
 		})
 
-		err := Deterministic([]byte{b})
-		if err == nil {
+		if err := Deterministic([]byte{b}); err == nil {
 			t.Error("Using AdditionalInfoReserved and AdditionalInfoInfinite should not return true for deterministicy.")
 		}
 	}
@@ -140,8 +137,7 @@ func TestByteStringIsDeterministic(t *testing.T) {
 	testBytesAsCborSequence := multiappend(testBytes, testBytes)
 
 	for _, testCase := range [][]byte{testBytes, testBytesAsCborSequence} {
-		err := Deterministic(testCase)
-		if err != nil {
+		if err := Deterministic(testCase); err != nil {
 			t.Error("Deterministically encoded byte string should not return false for deterministicy.")
 		}
 	}
@@ -153,8 +149,7 @@ func TestLongTextAndByteStringIsDeterministic(t *testing.T) {
 	testBytesAsTextString := multiappend([]byte{toCborHeader(TypeText, 24)}, []byte{byte(len(longStr))}, []byte(longStr))
 
 	for _, testCase := range [][]byte{testBytesAsByteString, testBytesAsTextString} {
-		err := Deterministic(testCase)
-		if err != nil {
+		if err := Deterministic(testCase); err != nil {
 			t.Error("Deterministically encoded text or byte string should not return false for deterministicy.")
 		}
 	}
@@ -166,8 +161,7 @@ func TestTextStringIsDeterministic(t *testing.T) {
 	combinedHellos := multiappend(hello, hello2)
 
 	for _, testCase := range [][]byte{hello, hello2, combinedHellos} {
-		err := Deterministic(testCase)
-		if err != nil {
+		if err := Deterministic(testCase); err != nil {
 			t.Error("Deterministically encoded text string should not return false for deterministicy.")
 		}
 	}
@@ -243,8 +237,7 @@ func TestMapIsDeterministic(t *testing.T) {
 	cborSequenceMap := multiappend(testMap, testMap)
 
 	for _, testCase := range [][]byte{testMap, cborSequenceMap} {
-		err := Deterministic(testCase)
-		if err != nil {
+		if err := Deterministic(testCase); err != nil {
 			t.Error("Deterministically encoded CBOR map should not return false for deterministicy.")
 		}
 	}
@@ -254,8 +247,7 @@ func TestMapWithDuplicateKeysIsNotDeterministic(t *testing.T) {
 	hello := multiappend([]byte{toCborHeader(TypeBytes, 5)}, []byte("hello"))
 	testMap := multiappend([]byte{toCborHeader(TypeMap, 2)}, hello, uint24, hello, uint4294967295)
 
-	err := Deterministic(testMap)
-	if err == nil {
+	if err := Deterministic(testMap); err == nil {
 		t.Error("CBOR map with duplicate keys should not return true for deterministicy.")
 	}
 }
@@ -267,8 +259,7 @@ func TestMapWithUnorderedKeysIsNotDeterministic(t *testing.T) {
 	// 0b01100101 (0x65) should become before 0b01100110 (0x66), so this doesn't follow the lexicographical order.
 	testMap := multiappend([]byte{toCborHeader(TypeMap, 2)}, hello2, uint24, hello, uint4294967295)
 
-	err := Deterministic(testMap)
-	if err == nil {
+	if err := Deterministic(testMap); err == nil {
 		t.Error("CBOR map with unordered keys should not return true for deterministicy.")
 	}
 }
@@ -278,8 +269,7 @@ func TestMapWithDuplicateNotSequentialKeysIsNotDeterministic(t *testing.T) {
 	hello2 := multiappend([]byte{toCborHeader(TypeBytes, 6)}, []byte("hello2"))
 	testMap := multiappend([]byte{toCborHeader(TypeMap, 3)}, hello, uint24, hello2, uint4294967295, hello, uint18446744073709551615)
 
-	err := Deterministic(testMap)
-	if err == nil {
+	if err := Deterministic(testMap); err == nil {
 		t.Error("CBOR map with duplicate keys (which are not following each other) should not return true for deterministicy.")
 	}
 }
