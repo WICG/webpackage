@@ -175,3 +175,25 @@ func TestCborBytesForSignatureAttributesMap(t *testing.T) {
 		t.Errorf("integrityblock: got: %s\nwant: %s", got, want)
 	}
 }
+
+func TestIntegrityBlockGeneratedWithTheToolIsDeterministic(t *testing.T) {
+	integrityBlock := generateEmptyIntegrityBlock()
+	integrityBlockBytes, err := integrityBlock.CborBytes()
+	if err := cbor.Deterministic(integrityBlockBytes); err != nil {
+		t.Error("Empty integrity block generated using our tool should be deterministic.")
+	}
+
+	attributes := map[string][]byte{"ed25519PublicKey": []byte("publickey")}
+	signature := []byte("signature")
+
+	integrityBlock.AddNewSignatureToIntegrityBlock(attributes, signature)
+
+	integrityBlockBytes, err = integrityBlock.CborBytes()
+	if err != nil {
+		t.Errorf("integrityBlock.CborBytes. err: %v", err)
+	}
+
+	if err := cbor.Deterministic(integrityBlockBytes); err != nil {
+		t.Error("Integrity block with one signature generated using our tool should be deterministic.")
+	}
+}
