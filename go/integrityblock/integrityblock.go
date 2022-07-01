@@ -220,3 +220,23 @@ func ComputeEd25519Signature(ed25519privKey ed25519.PrivateKey, dataToBeSigned [
 	}
 	return signature, nil
 }
+
+// WebBundleHasIntegrityBlock is a helper function that can be called with any file path to check if it has
+// an integrtiy block. Basically this checks if the bytes fileBytes[2:10] match with the magic bytes.
+func WebBundleHasIntegrityBlock(bundleFile io.ReadSeeker) (bool, error) {
+	bundleFile.Seek(2, io.SeekStart)
+
+	possibleMagic := make([]byte, len(IntegrityBlockMagic))
+	numBytesRead, err := io.ReadFull(bundleFile, possibleMagic)
+	if err != nil {
+		return false, err
+	}
+	if numBytesRead != len(IntegrityBlockMagic) {
+		return false, nil
+	}
+
+	// Return to the start of the file.
+	bundleFile.Seek(0, io.SeekStart)
+
+	return bytes.Compare(IntegrityBlockMagic, possibleMagic) == 0, nil
+}
