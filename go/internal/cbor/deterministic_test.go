@@ -64,11 +64,7 @@ func TestUintNotDeterministic(t *testing.T) {
 				continue
 			}
 
-			nonDeterministicBytes, err := convertToNonDeterministicUintHelper(testCase, firstByte)
-			if err != nil {
-				t.Error(err)
-			}
-
+			nonDeterministicBytes := convertToNonDeterministicUintHelper(testCase, firstByte)
 			valueOfOriginalByteArr := getUnsignedIntegerValue(testCase, convertToAdditionalInfo(testCase[0]))
 			valueOfNonDeterministicByteArr := getUnsignedIntegerValue(nonDeterministicBytes, convertToAdditionalInfo(nonDeterministicBytes[0]))
 
@@ -76,8 +72,7 @@ func TestUintNotDeterministic(t *testing.T) {
 				t.Error("valueOfOriginalByteArr and valueOfNonDeterministicByteArr should match.")
 			}
 
-			err = Deterministic(nonDeterministicBytes)
-			if err == nil {
+			if err := Deterministic(nonDeterministicBytes); err == nil {
 				t.Error("Non-deterministically encoded unsigned integers should not return true for deterministicy.")
 			}
 		}
@@ -85,8 +80,7 @@ func TestUintNotDeterministic(t *testing.T) {
 }
 
 func TestEmptyByteArrayIsDeterministic(t *testing.T) {
-	err := Deterministic([]byte{})
-	if err != nil {
+	if err := Deterministic([]byte{}); err != nil {
 		t.Error("Empty byte array should return true.")
 	}
 }
@@ -188,9 +182,63 @@ func TestByteStringIsNotDeterministic(t *testing.T) {
 	})
 }
 
+func TestArrayIsDeterministic(t *testing.T) {
+	arr := multiappend([]byte{0b10000101}, uint23, uint24, uint45, uint4294967295, uint18446744073709551615)
+	cborSequenceArray := multiappend(arr, arr)
+
+	for _, testCase := range [][]byte{arr, cborSequenceArray} {
+		if err := Deterministic(testCase); err != nil {
+			t.Error("Deterministically encoded CBOR array should not return false for deterministicy.")
+		}
+	}
+}
+
+func TestEmptyArrayIsDeterministic(t *testing.T) {
+	if err := Deterministic([]byte{0b10000000}); err != nil {
+		t.Error("Empty array should not return false for deterministicy.")
+	}
+}
+
+func TestLongArrayIsDeterministic(t *testing.T) {
+	const numOfItems = 24
+	longArr := make([]byte, 2 /*=num of startBytes*/ +len(uint45)*numOfItems)
+	longArr[0] = 0b10011000 // ARR (4) + ONE_BYTE (24)
+	longArr[1] = byte(numOfItems)
+
+	// Fill in the byte array with 24 times uint45 bytes.
+	for i := 2; i < len(longArr); i += len(uint45) {
+		for j := 0; j < len(uint45); j++ {
+			longArr[i+j] = uint45[j]
+		}
+	}
+
+	cborSequenceArray := multiappend(longArr, longArr)
+
+	for _, testCase := range [][]byte{longArr, cborSequenceArray} {
+		if err := Deterministic(testCase); err != nil {
+			t.Error("Deterministically encoded CBOR array should not return false for deterministicy.")
+		}
+	}
+}
+
+func TestArraysNumberOfItemsIsWrong(t *testing.T) {
+	// There is one item too little. The additional information claims that there are 5 but there are only 4.
+	arr := multiappend([]byte{0b10000101}, uint23, uint24, uint45, uint4294967295)
+	shouldPanic(t, func() {
+		Deterministic(arr)
+	})
+}
+
+func TestArrayContainsNonDeterministicCbor(t *testing.T) {
+	arr := multiappend([]byte{0b10000101}, uint23, uint24, uint45, convertToNonDeterministicUintHelper(uint255, 0x19), uint4294967295)
+	if err := Deterministic(arr); err == nil {
+		t.Error("Deterministically encoded CBOR array should not return true for deterministicy.")
+	}
+}
+
 // Helper functions:
 
-func convertToNonDeterministicUintHelper(deterministicUintBytes []byte, firstByte byte) ([]byte, error) {
+func convertToNonDeterministicUintHelper(deterministicUintBytes []byte, firstByte byte) []byte {
 	newLength := convertToAdditionalInfo(firstByte).getAdditionalInfoLength()
 	shift := 0
 	if convertToAdditionalInfo(deterministicUintBytes[0]) != AdditionalInfoDirect {
@@ -200,7 +248,7 @@ func convertToNonDeterministicUintHelper(deterministicUintBytes []byte, firstByt
 
 	emptyExtraBytes := make([]byte, newLength-len(deterministicUintBytes)+shift)
 
-	return multiappend([]byte{firstByte}, emptyExtraBytes, deterministicUintBytes[shift:]), nil
+	return multiappend([]byte{firstByte}, emptyExtraBytes, deterministicUintBytes[shift:])
 }
 
 func multiappend(inputs ...[]byte) []byte {
