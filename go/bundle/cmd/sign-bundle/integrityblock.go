@@ -24,7 +24,10 @@ func writeOutput(bundleFile io.ReadSeeker, integrityBlockBytes []byte, originalI
 	return nil
 }
 
-func SignIntegrityBlock(privKey crypto.PrivateKey) error {
+// SignWithIntegrityBlock creates a CBOR integrity block and prepends that to the web bundle containing
+// a signature of the hash of the web bundle. Finally it writes the new signed web bundle into file.
+// More details can be found in the [explainer](https://github.com/WICG/webpackage/blob/main/explainers/integrity-signature.md).
+func SignWithIntegrityBlock(privKey crypto.PrivateKey) error {
 	if *flagInput == *flagOutput {
 		return errors.New("SignIntegrityBlock: Input and output file cannot be the same.")
 	}
