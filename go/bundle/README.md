@@ -8,7 +8,7 @@ We currently provide three command-line tools: `gen-bundle`, `sign-bundle` and `
 
 `gen-bundle` command is a bundle generator tool. `gen-bundle` consumes a set of http exchanges (currently in the form of [HAR format](https://w3c.github.io/web-performance/specs/HAR/Overview.html), URL list file, or static files in a local directory), and emits a web bundle.
 
-`sign-bundle` command attaches a signature to a bundle. `sign-bundle` takes an existing bundle file, a certificate and a private key, and emits a new bundle file with cryptographic signature for the bundled resources added.
+`sign-bundle` command attaches a signature to a bundle. There are two supported ways to sign: using signatures section or integrity block. `sign-bundle` takes an existing bundle file, a private key and possibly a certificate, and emits a new bundle file with cryptographic signature added.
 
 `dump-bundle` command is a bundle inspector tool. `dump-bundle` dumps the enclosed http exchanges of a given web bundle file in a human readable form.
 
@@ -84,7 +84,14 @@ gen-bundle -dir static -baseURL https://example.com/ -o foo.wbn -primaryURL http
 If `-baseURL` flag is not specified, resources will have relative URLs in the generated bundle file.
 
 ### sign-bundle
-`sign-bundle` updates a bundle attaching a cryptographic signature of its exchanges. To use this tool, you need a pair of a private key and a certificate in the `application/cert-chain+cbor` format. See [go/signedexchange](../signedexchange/README.md) for more information on how to create a key and certificate pair.
+
+There are two supported ways to sign: using signatures section or integrity block, which can be separated using `-signType` `signaturessection` or `integrityblock` flag values. Without the signType flag, the default is `signaturessection`. 
+
+#### Using Signatures Section
+
+`sign-bundle -signType signaturessection` takes an existing bundle file, a certificate and a private key, and emits a new bundle file with cryptographic signature for the bundled resources added.
+
+`sign-bundle` updates a bundle attaching a cryptographic signature of its exchanges. To use this tool, you need a pair of a private key and a certificate in the `application/cert-chain+cbor` format. See [signatures-section extension](./../extensions/signatures-section.md) and [go/signedexchange](../signedexchange/README.md) for more information on how to create a key and certificate pair.
 
 Assuming you have a key and certificate pair for `example.org`, this command will sign all exchanges in `unsigned.wbn` whose URL's hostname is `example.org`, and writes a new bundle to `signed.wbn`.
 
@@ -97,12 +104,30 @@ sign-bundle \
   -o signed.wbn
 ```
 
+#### Using Integrity Block
+
+`sign-bundle -signType integrityblock` takes an existing bundle file, an ed25519 private key, and emits a new bundle file with cryptographic signature added to the integrity block.
+
+`sign-bundle` updates a bundle prepending the web bundle with an integrity block containing a stack of signatures over the hash of the web bundle. To use this tool, you need an ed25519 private key in .pem format, which can be generated with: `openssl genpkey -algorithm Ed25519 -out ed25519key.pem`. 
+
+```
+sign-bundle \
+  -signType integrityblock \
+  -i unsigned.wbn \
+  -privateKey privkey.pem \
+  -o signed.wbn
+```
+
+See [integrityblock-explainer](../../explainers/integrity-signature.md) for more information about what an integrity block is.
+
 ### dump-bundle
 `dump-bundle` dumps the content of a web bundle in a human readable form. To
 display content of a bundle file, invoke:
 ```
 dump-bundle -i foo.wbn
 ```
+
+`dump-bundle` doesn't support web bundles signed with integrity block.
 
 ## Using Bundles
 Bundles generated with `gen-bundle` can be opened with web browsers supporting web bundles.
