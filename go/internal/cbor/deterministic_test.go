@@ -32,8 +32,7 @@ var (
 
 func TestUintDeterministic(t *testing.T) {
 	for _, testCase := range uint64TestCasesAsBytes {
-		err := Deterministic(testCase)
-		if err != nil {
+		if err := Deterministic(testCase); err != nil {
 			t.Error("Deterministically encoded unsigned integers should not return error.")
 		}
 	}
@@ -41,8 +40,7 @@ func TestUintDeterministic(t *testing.T) {
 
 func TestUintCborSequenceDeterministic(t *testing.T) {
 	concatenatedTestCases := multiappend(uint64TestCasesAsBytes...)
-	err := Deterministic(concatenatedTestCases)
-	if err != nil {
+	if err := Deterministic(concatenatedTestCases); err != nil {
 		t.Error("Deterministically encoded unsigned integers should not return false for deterministicy.")
 	}
 }
@@ -95,8 +93,7 @@ func TestUnsupportedAdditionalInformationValues(t *testing.T) {
 			ainfo.getAdditionalInfoLength()
 		})
 
-		err := Deterministic([]byte{b})
-		if err == nil {
+		if err := Deterministic([]byte{b}); err == nil {
 			t.Error("Using AdditionalInfoReserved and AdditionalInfoInfinite should not return true for deterministicy.")
 		}
 	}
@@ -136,12 +133,11 @@ func TestAdditionalInfoConversion(t *testing.T) {
 }
 
 func TestByteStringIsDeterministic(t *testing.T) {
-	testBytes := []byte{0b01000011, 0x1A, 0x2B, 0x3C}
+	testBytes := []byte{toCborHeader(TypeBytes, 3), 0x1A, 0x2B, 0x3C}
 	testBytesAsCborSequence := multiappend(testBytes, testBytes)
 
 	for _, testCase := range [][]byte{testBytes, testBytesAsCborSequence} {
-		err := Deterministic(testCase)
-		if err != nil {
+		if err := Deterministic(testCase); err != nil {
 			t.Error("Deterministically encoded byte string should not return false for deterministicy.")
 		}
 	}
@@ -149,33 +145,31 @@ func TestByteStringIsDeterministic(t *testing.T) {
 
 func TestLongTextAndByteStringIsDeterministic(t *testing.T) {
 	longStr := "olipakerrankilpikonnajakissajotkajuoksivatkilpaajakilpikonnavoitti"
-	testBytesAsByteString := multiappend([]byte{0b01011000 /*btstr + one byte*/}, []byte{byte(len(longStr))}, []byte(longStr))
-	testBytesAsTextString := multiappend([]byte{0b01111000 /*tstr + one byte*/}, []byte{byte(len(longStr))}, []byte(longStr))
+	testBytesAsByteString := multiappend([]byte{toCborHeader(TypeBytes, 24)}, []byte{byte(len(longStr))}, []byte(longStr))
+	testBytesAsTextString := multiappend([]byte{toCborHeader(TypeText, 24)}, []byte{byte(len(longStr))}, []byte(longStr))
 
 	for _, testCase := range [][]byte{testBytesAsByteString, testBytesAsTextString} {
-		err := Deterministic(testCase)
-		if err != nil {
+		if err := Deterministic(testCase); err != nil {
 			t.Error("Deterministically encoded text or byte string should not return false for deterministicy.")
 		}
 	}
 }
 
 func TestTextStringIsDeterministic(t *testing.T) {
-	hello := multiappend([]byte{0b01100101}, []byte("hello"))
-	hello2 := multiappend([]byte{0b01100110}, []byte("hello2"))
+	hello := multiappend([]byte{toCborHeader(TypeText, 5)}, []byte("hello"))
+	hello2 := multiappend([]byte{toCborHeader(TypeText, 6)}, []byte("hello2"))
 	combinedHellos := multiappend(hello, hello2)
 
 	for _, testCase := range [][]byte{hello, hello2, combinedHellos} {
-		err := Deterministic(testCase)
-		if err != nil {
+		if err := Deterministic(testCase); err != nil {
 			t.Error("Deterministically encoded text string should not return false for deterministicy.")
 		}
 	}
 }
 
 func TestByteStringIsNotDeterministic(t *testing.T) {
-	// Byte string claiming it would be followed by 3 bytes but there are only 2.
-	testBytes := []byte{0b01000011, 0x1A, 0x2B}
+	// Claiming it would be followed by 3 bytes but there are only 2.
+	testBytes := []byte{toCborHeader(TypeBytes, 3), 0x1A, 0x2B}
 
 	shouldPanic(t, func() {
 		textOrByteStringDeterministic(testBytes)
@@ -183,7 +177,7 @@ func TestByteStringIsNotDeterministic(t *testing.T) {
 }
 
 func TestArrayIsDeterministic(t *testing.T) {
-	arr := multiappend([]byte{0b10000101}, uint23, uint24, uint45, uint4294967295, uint18446744073709551615)
+	arr := multiappend([]byte{toCborHeader(TypeArray, 5)}, uint23, uint24, uint45, uint4294967295, uint18446744073709551615)
 	cborSequenceArray := multiappend(arr, arr)
 
 	for _, testCase := range [][]byte{arr, cborSequenceArray} {
@@ -194,7 +188,7 @@ func TestArrayIsDeterministic(t *testing.T) {
 }
 
 func TestEmptyArrayIsDeterministic(t *testing.T) {
-	if err := Deterministic([]byte{0b10000000}); err != nil {
+	if err := Deterministic([]byte{toCborHeader(TypeArray, 0)}); err != nil {
 		t.Error("Empty array should not return false for deterministicy.")
 	}
 }
@@ -202,7 +196,7 @@ func TestEmptyArrayIsDeterministic(t *testing.T) {
 func TestLongArrayIsDeterministic(t *testing.T) {
 	const numOfItems = 24
 	longArr := make([]byte, 2 /*=num of startBytes*/ +len(uint45)*numOfItems)
-	longArr[0] = 0b10011000 // ARR (4) + ONE_BYTE (24)
+	longArr[0] = toCborHeader(TypeArray, 24) // ARR (4) + ONE_BYTE (24)
 	longArr[1] = byte(numOfItems)
 
 	// Fill in the byte array with 24 times uint45 bytes.
@@ -223,63 +217,59 @@ func TestLongArrayIsDeterministic(t *testing.T) {
 
 func TestArraysNumberOfItemsIsWrong(t *testing.T) {
 	// There is one item too little. The additional information claims that there are 5 but there are only 4.
-	arr := multiappend([]byte{0b10000101}, uint23, uint24, uint45, uint4294967295)
+	arr := multiappend([]byte{toCborHeader(TypeArray, 5)}, uint23, uint24, uint45, uint4294967295)
 	shouldPanic(t, func() {
 		Deterministic(arr)
 	})
 }
 
 func TestArrayContainsNonDeterministicCbor(t *testing.T) {
-	arr := multiappend([]byte{0b10000101}, uint23, uint24, uint45, convertToNonDeterministicUintHelper(uint255, 0x19), uint4294967295)
+	arr := multiappend([]byte{toCborHeader(TypeArray, 5)}, uint23, uint24, uint45, convertToNonDeterministicUintHelper(uint255, 0x19), uint4294967295)
 	if err := Deterministic(arr); err == nil {
 		t.Error("Deterministically encoded CBOR array should not return true for deterministicy.")
 	}
 }
 
 func TestMapIsDeterministic(t *testing.T) {
-	hello := multiappend([]byte{0b01100101}, []byte("hello"))
-	hello2 := multiappend([]byte{0b01100110}, []byte("hello2"))
-	testMap := multiappend([]byte{0b10100010}, hello, uint24, hello2, uint4294967295)
+	hello := multiappend([]byte{toCborHeader(TypeBytes, 5)}, []byte("hello"))
+	hello2 := multiappend([]byte{toCborHeader(TypeBytes, 6)}, []byte("hello2"))
+	testMap := multiappend([]byte{toCborHeader(TypeMap, 2)}, hello, uint24, hello2, uint4294967295)
 	cborSequenceMap := multiappend(testMap, testMap)
 
 	for _, testCase := range [][]byte{testMap, cborSequenceMap} {
-		err := Deterministic(testCase)
-		if err != nil {
+		if err := Deterministic(testCase); err != nil {
 			t.Error("Deterministically encoded CBOR map should not return false for deterministicy.")
 		}
 	}
 }
 
 func TestMapWithDuplicateKeysIsNotDeterministic(t *testing.T) {
-	hello := multiappend([]byte{0b01100101}, []byte("hello"))
-	testMap := multiappend([]byte{0b10100010}, hello, uint24, hello, uint4294967295)
+	hello := multiappend([]byte{toCborHeader(TypeBytes, 5)}, []byte("hello"))
+	testMap := multiappend([]byte{toCborHeader(TypeMap, 2)}, hello, uint24, hello, uint4294967295)
 
-	err := Deterministic(testMap)
-	if err == nil {
+	if err := Deterministic(testMap); err == nil {
 		t.Error("CBOR map with duplicate keys should not return true for deterministicy.")
 	}
 }
 
 func TestMapWithUnorderedKeysIsNotDeterministic(t *testing.T) {
-	hello := multiappend([]byte{0b01100101}, []byte("hello"))
-	hello2 := multiappend([]byte{0b01100110}, []byte("hello2"))
+	hello := multiappend([]byte{toCborHeader(TypeBytes, 5)}, []byte("hello"))
+	hello2 := multiappend([]byte{toCborHeader(TypeBytes, 6)}, []byte("hello2"))
 
 	// 0b01100101 (0x65) should become before 0b01100110 (0x66), so this doesn't follow the lexicographical order.
-	testMap := multiappend([]byte{0b10100010}, hello2, uint24, hello, uint4294967295)
+	testMap := multiappend([]byte{toCborHeader(TypeMap, 2)}, hello2, uint24, hello, uint4294967295)
 
-	err := Deterministic(testMap)
-	if err == nil {
+	if err := Deterministic(testMap); err == nil {
 		t.Error("CBOR map with unordered keys should not return true for deterministicy.")
 	}
 }
 
 func TestMapWithDuplicateNotSequentialKeysIsNotDeterministic(t *testing.T) {
-	hello := multiappend([]byte{0b01100101}, []byte("hello"))
-	hello2 := multiappend([]byte{0b01100110}, []byte("hello2"))
-	testMap := multiappend([]byte{0b10100011}, hello, uint24, hello2, uint4294967295, hello, uint18446744073709551615)
+	hello := multiappend([]byte{toCborHeader(TypeBytes, 5)}, []byte("hello"))
+	hello2 := multiappend([]byte{toCborHeader(TypeBytes, 6)}, []byte("hello2"))
+	testMap := multiappend([]byte{toCborHeader(TypeMap, 3)}, hello, uint24, hello2, uint4294967295, hello, uint18446744073709551615)
 
-	err := Deterministic(testMap)
-	if err == nil {
+	if err := Deterministic(testMap); err == nil {
 		t.Error("CBOR map with duplicate keys (which are not following each other) should not return true for deterministicy.")
 	}
 }
@@ -287,7 +277,7 @@ func TestMapWithDuplicateNotSequentialKeysIsNotDeterministic(t *testing.T) {
 func TestMapsNumberOfItemsIsWrong(t *testing.T) {
 	// There is one item too little. The additional information claims that there are
 	// 2 pairs (=4 items) but there are only 1 pair and 1 item (3 items).
-	testMap := multiappend([]byte{0b10100010}, uint23, uint24, uint45)
+	testMap := multiappend([]byte{toCborHeader(TypeMap, 2)}, uint23, uint24, uint45)
 	shouldPanic(t, func() {
 		Deterministic(testMap)
 	})
@@ -321,4 +311,11 @@ func shouldPanic(t *testing.T, f func()) {
 	defer func() { _ = recover() }()
 	f()
 	t.Errorf("should have panicked")
+}
+
+func toCborHeader(majorType Type, ainfoValue int) byte {
+	if ainfoValue < 0 || ainfoValue > 27 {
+		panic("The value of the additional information should be between 0 and 27 inclusive.")
+	}
+	return byte(majorType) | byte(ainfoValue)
 }
