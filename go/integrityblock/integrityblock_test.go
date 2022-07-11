@@ -197,3 +197,30 @@ func TestIntegrityBlockGeneratedWithTheToolIsDeterministic(t *testing.T) {
 		t.Error("Integrity block with one signature generated using our tool should be deterministic.")
 	}
 }
+
+func TestUnsignedWebBundleDoesntHaveIntegrityBlock(t *testing.T) {
+	bundleFile, err := os.Open("./testfile.wbn")
+	if err != nil {
+		t.Error("Error opening testfile.wbn")
+	}
+	defer bundleFile.Close()
+
+	hasIntegrityBlock, err := WebBundleHasIntegrityBlock(bundleFile)
+	if err != nil {
+		t.Error(err)
+	} else if hasIntegrityBlock {
+		t.Error("Unsigned web bundle should not have an integrity block.")
+	}
+}
+
+func TestSignedWebBundleHasIntegrityBlockestAnother(t *testing.T) {
+	ib, err := generateEmptyIntegrityBlock().CborBytes()
+	r := bytes.NewReader(ib)
+
+	hasIntegrityBlock, err := WebBundleHasIntegrityBlock(r)
+	if err != nil {
+		t.Error(err)
+	} else if !hasIntegrityBlock {
+		t.Error("Signed web bundle should have an integrity block.")
+	}
+}
