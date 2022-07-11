@@ -1,6 +1,8 @@
 package cbor
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -281,6 +283,25 @@ func TestMapsNumberOfItemsIsWrong(t *testing.T) {
 	shouldPanic(t, func() {
 		Deterministic(testMap)
 	})
+}
+
+// The test web bundle have generated only contains deterministic CBOR. This test is to make
+// sure that we don't accidentally break our deterministic checker. It contains a lot of
+// nested CBOR types so it might catch something that has not been covered with other tests.
+func TestWebBundleHasDeterministicCbor(t *testing.T) {
+	bundleFile, err := os.Open("../../integrityblock/testfile.wbn")
+	if err != nil {
+		t.Error("Failed to open the test file")
+	}
+	defer bundleFile.Close()
+	bundleBytes, err := ioutil.ReadAll(bundleFile)
+	if err != nil {
+		t.Error("Failed to read the test file")
+	}
+
+	if err := Deterministic(bundleBytes); err != nil {
+		t.Error("testfile.wbn only contains deterministic CBOR and this shouldn't fail.")
+	}
 }
 
 // Helper functions:
