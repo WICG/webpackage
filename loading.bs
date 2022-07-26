@@ -178,7 +178,6 @@ spec: html; urlPrefix: https://html.spec.whatwg.org/multipage/
         text: fetch and process the linked resource; url: semantics.html#fetch-and-process-the-linked-resource
         text: linked resource fetch setup steps; url: semantics.html#linked-resource-fetch-setup-steps
         text: navigation params; url: browsing-the-web.html#navigation-params
-        text: No CORS; url: urls-and-fetching.html#attr-crossorigin-none
         text: process the linked resource; url: semantics.html#process-the-linked-resource
         text: response; for: navigation params; url: browsing-the-web.html#navigation-params-response
         text: selecting an image source; url: images.html#select-an-image-source
@@ -603,7 +602,7 @@ To [=process the linked resource|process this type of linked resource=]
         1. Let |requestForMatch| be the result of [=creating a potential-CORS
             request=] given a url of |linkTarget|, a destination of the result
             of [=destination/translating=] |asAttribute|, and a
-            corsAttributeState of [=No CORS=].
+            corsAttributeState of [=Anonymous=].
         1. If |requestForMatch| [=doesn't match the stored exchange=]
             |storedExchange|, then continue.
         1. Let |alternateSxgUrl| be the [=alternate signed exchange link
@@ -623,7 +622,7 @@ To [=process the linked resource|process this type of linked resource=]
         1. Let |sxgRequest| be the result of [=creating a potential-CORS
             request=] given a url of |alternateSxgUrl|, a destination of the
             result of [=destination/translating=] |asAttribute|, and a
-            corsAttributeState of [=No CORS=].
+            corsAttributeState of [=Anonymous=].
         1. Run the following steps [=in parallel=]:
             1. Let |sxgResponse| be the result of [=fetching=] |sxgRequest|.
             1. If |sxgResponse|'s [=response/came from a signed exchange=] is
@@ -755,7 +754,7 @@ add the following steps:
                 potential-CORS request=] given a url of |allowedSxgLink|'s
                 [=allowed signed exchange link info/target=], a destination of
                 the result of [=destination/translating=] |asAttribute|, and a
-                corsAttributeState of [=No CORS=].
+                corsAttributeState of [=Anonymous=].
             1. If |requestForMatch| [=matches the stored exchange=]
                 |storedExchange|, then:
                 1. Set |headerIntegrity| to |allowedSxgLink|'s [=allowed signed
