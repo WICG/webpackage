@@ -629,11 +629,16 @@ To <dfn>find a matching web bundle registration</dfn> given [=request=]
 
    2. If |url|'s [=url/scheme=] is not "`uuid-in-package`", then
 
+      1. If |url|'s [=url/origin=] and |registration|'s [=web bundle
+         registration/fetch entry=]'s [=web bundle fetch entry/source=]'s
+         [=url/origin=] are not [=same origin=], then [=continue=].
+
       1. Let |allowed path| be the result of [=shortening=] |registration|'s
          [=web bundle registration/fetch entry=]'s [=web bundle fetch
-         entry/source=].
+         entry/source=]'s [=url/path=].
 
-      2. If |url| doesn't start with |allowed path|, then [=continue=].
+      1. If |url|'s [=url/path=] doesn't start with |allowed path|, then
+         [=continue=].
 
    3. If |rule|'s [=bundle rule/resources=] [=list/contains=] |url|, then return
       |registration|.
