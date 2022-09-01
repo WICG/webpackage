@@ -1,5 +1,5 @@
 {
-    "src_file": "loading.bs",
+    "src_file": "subresource-loading.bs",
     "type": "bikeshed",
     "params": {
         "force": 1

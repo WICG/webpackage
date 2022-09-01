@@ -1,4 +1,5 @@
-import * as CBOR from 'cbor';
+import * as cborg from 'cborg';
+import { encodedLength } from 'cborg/length'
 
 interface Headers {
   [key: string]: string;
@@ -7,38 +8,52 @@ interface Headers {
 const knownSections = [
   'critical',
   'index',
-  'manifest',
+  'manifest', // only defined in version b1, might be present anyway
+  'primary',
   'responses',
   'signatures',
 ];
 
+interface CompatAdapter {
+  wbnLength: number;
+  getResponse(url: string): Response;
+  destructureBundle(wbn: unknown[]): [any, any, any, any, any, any];
+}
+
 /** This class represents parsed Web Bundle. */
 export class Bundle {
   version: string;
-  primaryURL: string;
+  private b1PrimaryURL: string | null = null; // only valid in format version b1
   private sections: { [key: string]: unknown } = {};
   private responses: { [key: number]: Response } = {}; // Offset-in-responses -> resp
+  private compatAdapter: CompatAdapter;
 
-  constructor(buffer: Buffer) {
-    const wbn = asArray(CBOR.decode(buffer));
-    if (wbn.length !== 6) {
-      throw new Error('Wrong toplevel structure');
+  constructor(buffer: Uint8Array) {
+    const wbn = asArray(cborg.decode(buffer, {useMaps: true}));
+
+    let peekVersion = bytestringToString(wbn[1]).replace(/\0+$/, '');
+    this.compatAdapter = this.createCompatAdapter(peekVersion);
+
+    if (wbn.length !== this.compatAdapter.wbnLength) {
+      throw new Error(`Wrong toplevel structure ${peekVersion} ${wbn.length} ${this.compatAdapter.wbnLength}`);
     }
     const [
       magic,
       version,
-      primaryURL,
+      primaryURL, // null in format version b2
       sectionLengthsCBOR,
       sections,
       length,
-    ] = wbn;
+    ] = this.compatAdapter.destructureBundle(wbn);
     if (bytestringToString(magic) !== '🌐📦') {
       throw new Error('Wrong magic');
     }
     this.version = bytestringToString(version).replace(/\0+$/, ''); // Strip off the '\0' paddings.
-    this.primaryURL = asString(primaryURL);
+    if (primaryURL) {
+      this.b1PrimaryURL = asString(primaryURL);
+    }
     const sectionLengths = asArray(
-      CBOR.decode(asBytestring(sectionLengthsCBOR))
+      cborg.decode(asBytestring(sectionLengthsCBOR), {useMaps: true})
     );
     const sectionsArray = asArray(sections);
     if (sectionLengths.length !== sectionsArray.length * 2) {
@@ -70,6 +85,7 @@ export class Bundle {
   }
 
   get manifestURL(): string | null {
+    // the manifest section is not part of the b2 spec but it might have been defined anyway
     if (this.sections['manifest']) {
       return asString(this.sections['manifest']);
     }
@@ -77,30 +93,89 @@ export class Bundle {
   }
 
   get urls(): string[] {
-    return Object.keys(this.indexSection);
+    return Array.from(this.indexSection.keys());
+  }
+
+  get primaryURL(): string | null {
+    if (this.version === 'b1') {
+      return this.b1PrimaryURL;
+    }
+    if (this.sections['primary']) {
+      return asString(this.sections['primary']);
+    }
+    return null;
   }
 
   getResponse(url: string): Response {
-    const indexEntry = asArray(this.indexSection[url]);
-    if (!indexEntry) {
-      throw new Error('No entry for ' + url);
-    }
-    const [variants, offset, length] = indexEntry;
-    if (asBytestring(variants).length !== 0) {
-      throw new Error('Variants are not supported');
-    }
-    if (indexEntry.length !== 3) {
-      throw new Error('Unexpected length of index entry for ' + url);
-    }
-    const resp = this.responses[asNumber(offset)];
-    if (!resp) {
-      throw new Error(`Response for ${url} is not found (broken index)`);
-    }
-    return resp;
+    return this.compatAdapter.getResponse(url);
   }
 
-  private get indexSection(): { [key: string]: unknown } {
+  private get indexSection(): Map<string, unknown> {
     return asMap(this.sections['index']);
+  }
+
+  // Behaviour that is specific to particular versions of the format.
+  private createCompatAdapter(formatVersion: string): CompatAdapter {
+    if (formatVersion === 'b1') {
+      // format version b1
+      return new class implements CompatAdapter {
+        wbnLength: number = 6;
+
+        constructor(private bundle: Bundle) {
+        }
+
+        getResponse(url: string): Response {
+          const indexEntry = asArray(this.bundle.indexSection.get(url));
+          if (!indexEntry) {
+            throw new Error('No entry for ' + url);
+          }
+          const [variants, offset, length] = indexEntry;
+          if (asBytestring(variants).length !== 0) {
+            throw new Error('Variants are not supported');
+          }
+          if (indexEntry.length !== 3) {
+            throw new Error('Unexpected length of index entry for ' + url);
+          }
+          const resp = this.bundle.responses[asNumber(offset)];
+          if (!resp) {
+            throw new Error(`Response for ${url} is not found (broken index)`);
+          }
+          return resp;
+        }
+
+        destructureBundle(wbn: unknown[]): [any, any, any, any, any, any] {
+          return [wbn[0], wbn[1], wbn[2], wbn[3], wbn[4], wbn[5]];
+        }
+      }(this);
+    } else {
+      // format version b2
+      return new class implements CompatAdapter {
+        wbnLength: number = 5;
+
+        constructor(private bundle: Bundle) {
+        }
+
+        getResponse(url: string): Response {
+          const indexEntry = asArray(this.bundle.indexSection.get(url));
+          if (!indexEntry) {
+            throw new Error('No entry for ' + url);
+          }
+          const [offset, length] = indexEntry;
+          if (indexEntry.length !== 2) {
+            throw new Error('Unexpected length of index entry for ' + url);
+          }
+          const resp = this.bundle.responses[asNumber(offset)];
+          if (!resp) {
+            throw new Error(`Response for ${url} is not found (broken index)`);
+          }
+          return resp;
+        }
+
+        destructureBundle(wbn: unknown[]): [any, any, any, any, any, any] {
+          return [wbn[0], wbn[1], null, wbn[2], wbn[3], wbn[4]];
+        }
+      }(this);
+    }
   }
 }
 
@@ -108,7 +183,7 @@ export class Bundle {
 export class Response {
   status: number;
   headers: Headers;
-  body: Buffer;
+  body: Uint8Array;
 
   constructor(responsesSectionItem: unknown[]) {
     if (responsesSectionItem.length !== 2) {
@@ -123,12 +198,8 @@ export class Response {
   }
 }
 
-function encodedLength(value: unknown): number {
-  return CBOR.encode(value).byteLength;
-}
-
-function decodeResponseMap(cbor: Buffer): { status: number; headers: Headers } {
-  const decoded = CBOR.decode(cbor);
+function decodeResponseMap(cbor: Uint8Array): { status: number; headers: Headers } {
+  const decoded = cborg.decode(cbor, {useMaps: true});
   if (!(decoded instanceof Map)) {
     throw new Error('Wrong header map structure');
   }
@@ -160,9 +231,9 @@ function asArray(x: unknown): unknown[] {
   throw new Error('Array expected, but got ' + typeof x);
 }
 
-function asMap(x: unknown): { [key: string]: unknown } {
-  if (typeof x === 'object' && x !== null && !(x instanceof Array)) {
-    return x as { [key: string]: unknown };
+function asMap(x: unknown): Map<string, unknown> {
+  if (x instanceof Map) {
+    return x as Map<string, unknown>;
   }
   throw new Error('Map expected, but got ' + typeof x);
 }
@@ -181,16 +252,16 @@ function asString(x: unknown): string {
   throw new Error('String expected, but got ' + typeof x);
 }
 
-function asBytestring(x: unknown): Buffer {
-  if (x instanceof Buffer) {
+function asBytestring(x: unknown): Uint8Array {
+  if (x instanceof Uint8Array) {
     return x;
   }
   throw new Error('Bytestring expected, but got ' + typeof x);
 }
 
 function bytestringToString(bstr: unknown): string {
-  if (!(bstr instanceof Buffer)) {
+  if (!(bstr instanceof Uint8Array)) {
     throw new Error('Bytestring expected');
   }
-  return bstr.toString('utf-8');
+  return new TextDecoder('utf-8').decode(bstr);
 }

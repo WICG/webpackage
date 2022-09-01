@@ -1,8 +1,9 @@
-package signedexchange
+package signingalgorithm
 
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -18,10 +19,10 @@ func ParseCertificates(text []byte) ([]*x509.Certificate, error) {
 			break
 		}
 		if block.Type != "CERTIFICATE" {
-			return nil, fmt.Errorf("signedexchange: found a block that contains %q.", block.Type)
+			return nil, fmt.Errorf("signingalgorithm: found a block that contains %q.", block.Type)
 		}
 		if len(block.Headers) > 0 {
-			return nil, fmt.Errorf("signedexchange: unexpected certificate headers: %v", block.Headers)
+			return nil, fmt.Errorf("signingalgorithm: unexpected certificate headers: %v", block.Headers)
 		}
 		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
@@ -37,7 +38,7 @@ func ParsePrivateKey(text []byte) (crypto.PrivateKey, error) {
 		var block *pem.Block
 		block, text = pem.Decode(text)
 		if block == nil {
-			return nil, errors.New("signedexchange: invalid PEM block in private key.")
+			return nil, errors.New("signingalgorithm: invalid PEM block in private key.")
 		}
 
 		privkey, err := parsePrivateKeyBlock(block.Bytes)
@@ -45,7 +46,7 @@ func ParsePrivateKey(text []byte) (crypto.PrivateKey, error) {
 			return privkey, nil
 		}
 	}
-	return nil, errors.New("signedexchange: could not find private key.")
+	return nil, errors.New("signingalgorithm: could not find private key.")
 }
 
 func parsePrivateKeyBlock(derKey []byte) (crypto.PrivateKey, error) {
@@ -54,12 +55,14 @@ func parsePrivateKeyBlock(derKey []byte) (crypto.PrivateKey, error) {
 		switch typedKey := keyInterface.(type) {
 		case *ecdsa.PrivateKey:
 			return typedKey, nil
+		case ed25519.PrivateKey:
+			return typedKey, nil
 		default:
-			return nil, fmt.Errorf("signedexchange: unknown private key type in PKCS#8: %T", typedKey)
+			return nil, fmt.Errorf("signingalgorithm: unknown private key type in PKCS#8: %T", typedKey)
 		}
 	}
 	if key, err := x509.ParseECPrivateKey(derKey); err == nil {
 		return key, nil
 	}
-	return nil, errors.New("signedexchange: couldn't parse private key.")
+	return nil, errors.New("signingalgorithm: couldn't parse private key.")
 }

@@ -98,3 +98,22 @@ func TestIndexSectionWithVariants(t *testing.T) {
 		t.Errorf("got: %s\nwant: %s", got, want)
 	}
 }
+
+func TestIndexSectionMultipleResourcesPerURL(t *testing.T) {
+	url := urlMustParse("https://example.com/")
+	is := &indexSection{}
+	is.addExchange(
+		&Exchange{
+			Request{URL: url},
+			Response{},
+		}, 10, 1)
+	is.addExchange(
+		&Exchange{
+			Request{URL: url},
+			Response{},
+		}, 20, 1)
+	err := is.Finalize(version.VersionB2)
+	if err.Error() != "This WebBundle version 'b2' does not support variants, so we cannot have multiple resources per URL." {
+		t.Fatal(err)
+	}
+}

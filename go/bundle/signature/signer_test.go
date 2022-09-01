@@ -11,7 +11,7 @@ import (
 	"github.com/WICG/webpackage/go/bundle"
 	. "github.com/WICG/webpackage/go/bundle/signature"
 	"github.com/WICG/webpackage/go/bundle/version"
-	"github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/internal/signingalgorithm"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
@@ -43,21 +43,9 @@ var signatureDate = time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
 var signatureDuration = 1 * time.Hour
 
 var expectedSig = []byte{
-	0x30, 0x44, 0x02, 0x20, 0x17, 0x2b, 0x74, 0x09, 0x99, 0x8d, 0x6a, 0x93,
-	0x3a, 0x18, 0x4f, 0xb8, 0x1b, 0xe5, 0x6c, 0x80, 0x99, 0x15, 0x77, 0xb4,
-	0xad, 0xec, 0x55, 0x94, 0x57, 0x32, 0x2f, 0xe0, 0xb6, 0x21, 0x80, 0x45,
-	0x02, 0x20, 0x4a, 0x30, 0x54, 0xeb, 0xf1, 0xda, 0x3b, 0x8a, 0xd5, 0x1e,
-	0xc3, 0x36, 0xa5, 0xcc, 0xe4, 0x61, 0x16, 0x71, 0xd6, 0xe1, 0x57, 0xb3,
-	0x1d, 0x64, 0xba, 0x0e, 0x17, 0x39, 0xd9, 0xf4, 0x43, 0x13,
-}
-
-type zeroReader struct{}
-
-func (zeroReader) Read(b []byte) (int, error) {
-	for i := range b {
-		b[i] = 0
-	}
-	return len(b), nil
+	0xc1, 0xd3, 0xcc, 0x2d, 0x42, 0x52, 0xc5, 0x6f, 0xe4, 0x3b, 0x60, 0x44,
+	0x87, 0xe6, 0xeb, 0x9c, 0x90, 0xab, 0xaa, 0x5d, 0x91, 0x55, 0x00, 0x0b,
+	0x00, 0x59, 0x04, 0x5a, 0xe4, 0xdf, 0x15, 0x15,
 }
 
 func urlMustParse(rawurl string) *url.URL {
@@ -69,7 +57,7 @@ func urlMustParse(rawurl string) *url.URL {
 }
 
 func createTestCertChain(t *testing.T) certurl.CertChain {
-	certs, err := signedexchange.ParseCertificates([]byte(pemCerts))
+	certs, err := signingalgorithm.ParseCertificates([]byte(pemCerts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +71,7 @@ func createTestCertChain(t *testing.T) certurl.CertChain {
 func createTestSigner(t *testing.T) *Signer {
 	certChain := createTestCertChain(t)
 
-	privKey, err := signedexchange.ParsePrivateKey([]byte(pemPrivateKey))
+	privKey, err := signingalgorithm.ParsePrivateKey([]byte(pemPrivateKey))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +82,6 @@ func createTestSigner(t *testing.T) *Signer {
 	if err != nil {
 		t.Fatalf("Failed to create Signer: %v", err)
 	}
-	signer.Rand = zeroReader{}
 	return signer
 }
 
@@ -111,6 +98,7 @@ func TestCanSignForURL(t *testing.T) {
 
 func TestSignatureGeneration(t *testing.T) {
 	signer := createTestSigner(t)
+	signer.Algorithm = &signingalgorithm.MockSigningAlgorithm{}
 
 	e := &bundle.Exchange{
 		bundle.Request{
@@ -161,9 +149,9 @@ func TestSignatureGeneration(t *testing.T) {
 	}
 	expectedSigned, err := (&SignedSubset{
 		ValidityUrl: urlMustParse(validityURL),
-		AuthSha256: expectedCerts[0].CertSha256(),
-		Date: signatureDate,
-		Expires: signatureDate.Add(signatureDuration),
+		AuthSha256:  expectedCerts[0].CertSha256(),
+		Date:        signatureDate,
+		Expires:     signatureDate.Add(signatureDuration),
 		SubsetHashes: map[string]*ResponseHashes{
 			e.Request.URL.String(): &ResponseHashes{
 				VariantsValue: nil,

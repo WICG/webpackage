@@ -16,10 +16,10 @@ You are also welcome to use the code as a Go lib (e.g. `import "github.com/WICG/
 The Go environment needs to be set up in prior to using the tool. We are testing the tool on the latest version of Go. Please refer to the [Go Getting Started documentation](https://golang.org/doc/install) for the details.
 
 ### Installation
-We recommend using `go get` to install the command-line tool.
+We recommend using `go install` to install the command-line tool.
 
 ```
-go get -u github.com/WICG/webpackage/go/signedexchange/cmd/...
+go install github.com/WICG/webpackage/go/signedexchange/cmd/...@latest
 ```
 
 ### Creating our first signed exchange
@@ -51,7 +51,7 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
     ```
 
 1. Host the `application/cert-chain+cbor` created in Step 3 on the HTTPS server. Configure the resource to be served with `Content-Type: application/cert-chain+cbor` HTTP header. The steps below assume the `cert.cbor` is hosted at `https://yourcdn.example.net/cert.cbor`, so substitute the URL to the actual URL in below steps.
-    - Note: If you are using [Firebase Hosting](https://firebase.google.com/docs/hosting/) as your HTTPS server, see an example config [here](https://github.com/WICG/webpackage/blob/master/examples/firebase.json).
+    - Note: If you are using [Firebase Hosting](https://firebase.google.com/docs/hosting/) as your HTTPS server, see an example config [here](https://github.com/WICG/webpackage/blob/main/examples/firebase.json).
 
 1. Generate the signed exchange using `gen-signedexchange` tool.
     ```
@@ -66,7 +66,7 @@ Here, we assume that you have an access to an HTTPS server capable of serving st
     ```
 
 1. Host the signed exchange file `example.org.hello.sxg` on the HTTPS server. Configure the resource to be served with `Content-Type: application/signed-exchange;v=b3` HTTP header.
-    - Note: If you are using [Firebase Hosting](https://firebase.google.com/docs/hosting/) as your HTTPS server, see an example config [here](https://github.com/WICG/webpackage/blob/master/examples/firebase.json).
+    - Note: If you are using [Firebase Hosting](https://firebase.google.com/docs/hosting/) as your HTTPS server, see an example config [here](https://github.com/WICG/webpackage/blob/main/examples/firebase.json).
 
 1. Navigate to the signed exchange URL using a web browser supporting signed exchanges.
     - Chrome: To ignore certificate errors of the self-signed certificate:
@@ -87,9 +87,6 @@ In this section, you will create a signed exchange using a certificate issued by
 
 Your signed exchange needs to be signed with a certificate with the ["CanSignHttpExchanges" extension](https://wicg.github.io/webpackage/draft-yasskin-http-origin-signed-responses.html#cross-origin-cert-req).
 
-For testing purposes, Chrome M73+ will accept the signed exchanges without the "CanSignHttpExchanges" extention with the following flag enabled:
-- chrome://flags/#allow-sxg-certs-without-extension
-
 1. Get a certificate from a CA. You have to use prime256v1 ecdsa keys, as you did in the previous section. Please follow the CA's instructions. (For example, [DigiCert](https://www.digicert.com/account/ietf/http-signed-exchange.php) offers the right kind of certificates.)
 
    Assume you got a server certificate `server.pem` and an intermediate certificate `intermediates.pem`. The tools need all certificates in a single file, so concatenate them.
@@ -109,7 +106,7 @@ For testing purposes, Chrome M73+ will accept the signed exchanges without the "
 
    1. Install a tool to submit certificates to log servers.
       ```
-      go get github.com/grahamedgecombe/ct-submit
+      go install github.com/grahamedgecombe/ct-submit@latest
       ```
    2. Submit your cert chain to logs as appropriate, and write out SCTs:
       ```

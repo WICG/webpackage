@@ -10,8 +10,43 @@ website. A full list of use cases and resulting requirements is available in
 [draft-yasskin-wpack-use-cases](https://wicg.github.io/webpackage/draft-yasskin-wpack-use-cases.html)
 ([IETF
 draft](https://tools.ietf.org/html/draft-yasskin-wpack-use-cases)).
-The [explainer](explainer.md) walks through how to use these specs to
+
+<!-- TOC -->
+
+- [Explainers](#explainers)
+  - [Use cases](#use-cases)
+  - [Maintaining security and privacy constraints](#maintaining-security-and-privacy-constraints)
+- [Specifications](#specifications)
+- [Building this repository](#building-this-repository)
+  - [Building the Draft](#building-the-draft)
+  - [Packaging tools](#packaging-tools)
+    - [Signed HTTP Exchanges](#signed-http-exchanges)
+    - [Web Bundles](#web-bundles)
+
+<!-- /TOC -->
+
+## Explainers
+
+The [explainers](explainers/) walk through how to use these specs to
 achieve the use cases.
+
+### Use cases
+
+* [Packaging whole pages or sites](explainers/authoritative-site-sharing.md): can be
+  signed or unsigned.
+   * [Serving signed subresources of a signed top-level HTML
+     page](explainers/signed-exchange-subresource-substitution.md)
+   * [Navigating to top-level unsigned pages](explainers/navigation-to-unsigned-bundles.md)
+* [Packaging subresources](explainers/subresource-loading.md). This can include groups of
+  JS modules, stylesheets, images, or fonts. This is also getting fleshed out at
+  https://github.com/littledan/resource-bundles/
+
+### Maintaining security and privacy constraints
+
+* [How to avoid third-party tracking](explainers/anti-tracking.md)
+* [What origin does an unsigned bundle have?](explainers/bundle-urls-and-origins.md)
+
+## Specifications
 
 The specifications come in several layers:
 
@@ -26,17 +61,25 @@ The specifications come in several layers:
      is an Internet Draft, and a [draft of the next
      snapshot](https://wicg.github.io/webpackage/draft-yasskin-httpbis-origin-signed-exchanges-impl.html)
      is in this repository.
-1. [Web Bundles (previously called Bundled HTTP exchanges)](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html)
-   ([IETF draft](https://tools.ietf.org/html/draft-yasskin-wpack-bundled-exchanges)):
+1. Web Bundles (previously called Bundled HTTP exchanges):
    A collection of HTTP resources, each of which could be signed or unsigned, with
    some metadata describing how to interpret the bundle as a whole. This
    specification has an initial draft in a PR, but isn't finished yet. This work
    may proceed through either the IETF or the W3C/WHATWG.
+
+   *Update*: This work was moved to the [wpack-wg/bundled-responses](https://github.com/wpack-wg/bundled-responses)
+    repository ([Web Bundles (IETF draft)](https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html)) .
 1. [Loading](https://wicg.github.io/webpackage/loading.html): A description of
-   how browsers load signed and bundled exchanges. This is initially specified
+   how browsers load signed exchanges. This is initially specified
    here, and will eventually merge into the appropriate specs, e.g.
    [Fetch](https://fetch.spec.whatwg.org/), that live in either the W3C or
    WHATWG. Currently this only covers signed exchanges.
+1. [Subresource Loading](https://wicg.github.io/webpackage/subresource-loading.html)
+   ([Explainer](https://github.com/WICG/webpackage/blob/main/explainers/subresource-loading.md)):
+   A description of how browsers load a large number of resources efficiently with
+   [Web Bundles](https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html).
+   This is initially specified here, and will eventually merge into
+   the appropriate specs.
 
 A previous draft of the format combined layers 1 and 2 into a single format for
 signed packages:
@@ -57,7 +100,7 @@ $ make
 ```
 
 This requires that you have software installed as described in
-https://github.com/martinthomson/i-d-template/blob/master/doc/SETUP.md.
+https://github.com/martinthomson/i-d-template/blob/main/doc/SETUP.md.
 
 ### Packaging tools
 
@@ -69,6 +112,23 @@ See [go/signedexchange](go/signedexchange) for the usage of the tool.
 
 #### Web Bundles
 
-Install this with `go install github.com/WICG/webpackage/go/bundle/cmd/...`.
+There are several tools.
 
-See [go/bundle](go/bundle) for the usage of the tool.
+- Go (Reference Implementation)
+
+  Install this with `go install github.com/WICG/webpackage/go/bundle/cmd/...`.
+
+  See [go/bundle](go/bundle) for the usage of the tool.
+
+- Node
+
+  There is a npm package, [wbn](https://www.npmjs.com/package/wbn).
+
+- Plugin for bundlers (Experimental)
+
+  - [Rollup plugin](https://github.com/GoogleChromeLabs/rollup-plugin-webbundle)
+  - [Webpack plugin](https://github.com/GoogleChromeLabs/webbundle-webpack-plugin)
+
+- Rust (Experimental)
+
+  - [google/webbundle](https://github.com/google/webbundle)

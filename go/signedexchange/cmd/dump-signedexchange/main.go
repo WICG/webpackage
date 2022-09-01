@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -33,15 +35,16 @@ func (h *headerArgs) Set(value string) error {
 var latestVersion = string(version.AllVersions[len(version.AllVersions)-1])
 
 var (
-	flagCert      = flag.String("cert", "", "Certificate CBOR file. If specified, used instead of fetching from signature's cert-url")
-	flagHeaders   = flag.Bool("headers", true, "Print headers")
-	flagFilename  = flag.String("i", "", "Signed-exchange input file")
-	flagJSON      = flag.Bool("json", false, "Print output as JSON")
-	flagPayload   = flag.Bool("payload", true, "Print payload")
-	flagSignature = flag.Bool("signature", false, "Print only signature value")
-	flagURI       = flag.String("uri", "", "Signed-exchange uri")
-	flagVerify    = flag.Bool("verify", false, "Perform signature verification")
-	flagVersion   = flag.String("version", latestVersion, "Signed exchange version")
+	flagCert            = flag.String("cert", "", "Certificate CBOR file. If specified, used instead of fetching from signature's cert-url")
+	flagHeaderIntegrity = flag.Bool("headerIntegrity", false, "Print only header-integrity, for use with subresource substitution")
+	flagHeaders         = flag.Bool("headers", true, "Print headers")
+	flagFilename        = flag.String("i", "", "Signed-exchange input file")
+	flagJSON            = flag.Bool("json", false, "Print output as JSON")
+	flagPayload         = flag.Bool("payload", true, "Print payload")
+	flagSignature       = flag.Bool("signature", false, "Print only signature value")
+	flagURI             = flag.String("uri", "", "Signed-exchange uri")
+	flagVerify          = flag.Bool("verify", false, "Perform signature verification")
+	flagVersion         = flag.String("version", latestVersion, "Signed exchange version")
 
 	flagRequestHeader = headerArgs{}
 )
@@ -114,26 +117,43 @@ func run() error {
 		return jsonPrintHeaders(e, certFetcher, verificationTime, os.Stdout)
 	}
 
+	if *flagHeaderIntegrity {
+		// Print header-integrity value needed for including this SXG as an
+		// allowed-alt-sxg, per
+		// https://github.com/WICG/webpackage/blob/main/explainers/signed-exchange-subresource-substitution.md.
+		var header bytes.Buffer
+		if err := e.DumpExchangeHeaders(&header); err != nil {
+			return err
+		}
+		hash := sha256.New()
+		if _, err := hash.Write(header.Bytes()); err != nil {
+			return err
+		}
+		fmt.Println("sha256-" + base64.StdEncoding.EncodeToString(hash.Sum(nil)))
+		return nil
+	}
+
 	if *flagSignature {
 		fmt.Println(e.SignatureHeaderValue)
-	} else {
-		if *flagHeaders {
-			e.PrettyPrintHeaders(os.Stdout)
-			if err = e.PrettyPrintHeaderIntegrity(os.Stdout); err != nil {
-				return err
-			}
-		}
+		return nil
+	}
 
-		if *flagVerify {
-			fmt.Println()
-			if err := verify(e, certFetcher, verificationTime); err != nil {
-				return err
-			}
+	if *flagHeaders {
+		e.PrettyPrintHeaders(os.Stdout)
+		if err = e.PrettyPrintHeaderIntegrity(os.Stdout); err != nil {
+			return err
 		}
+	}
 
-		if *flagPayload {
-			e.PrettyPrintPayload(os.Stdout)
+	if *flagVerify {
+		fmt.Println()
+		if err := verify(e, certFetcher, verificationTime); err != nil {
+			return err
 		}
+	}
+
+	if *flagPayload {
+		e.PrettyPrintPayload(os.Stdout)
 	}
 
 	return nil
@@ -162,8 +182,9 @@ func verify(e *signedexchange.Exchange, certFetcher signedexchange.CertFetcher, 
 	if decodedPayload, ok := e.Verify(verificationTime, certFetcher, log.New(os.Stdout, "", 0)); ok {
 		e.Payload = decodedPayload
 		fmt.Println("The exchange has a valid signature.")
+                return nil
 	}
-	return nil
+	return fmt.Errorf("The exchange has an invalid signature.")
 }
 
 func jsonPrintHeaders(e *signedexchange.Exchange, certFetcher signedexchange.CertFetcher, verificationTime time.Time, w io.Writer) error {

@@ -1,0 +1,25 @@
+name: build
+on: [push, pull_request]
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.16.6'
+      - run: go test -v ./go/...
+
+  javascript:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12, 14, 16]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm --prefix ./js/bundle ci
+      - run: npm --prefix ./js/bundle run build
+      - run: npm --prefix ./js/bundle test

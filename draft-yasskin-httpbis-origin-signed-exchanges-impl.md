@@ -94,15 +94,6 @@ This document describes checkpoints of
 draft-yasskin-http-origin-signed-responses to synchronize implementation between
 clients, intermediates, and publishers.
 
---- note_Note_to_Readers
-
-Discussion of this draft takes place on the HTTP working group mailing list
-(ietf-http-wg@w3.org), which is archived
-at <https://lists.w3.org/Archives/Public/ietf-http-wg/>.
-
-The source code and issues list for this draft can be found
-in <https://github.com/WICG/webpackage>.
-
 --- middle
 
 # Introduction

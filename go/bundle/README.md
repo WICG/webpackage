@@ -8,7 +8,7 @@ We currently provide three command-line tools: `gen-bundle`, `sign-bundle` and `
 
 `gen-bundle` command is a bundle generator tool. `gen-bundle` consumes a set of http exchanges (currently in the form of [HAR format](https://w3c.github.io/web-performance/specs/HAR/Overview.html), URL list file, or static files in a local directory), and emits a web bundle.
 
-`sign-bundle` command attaches a signature to a bundle. `sign-bundle` takes an existing bundle file, a certificate and a private key, and emits a new bundle file with cryptographic signature for the bundled resources added.
+`sign-bundle` command attaches a signature to a bundle. There are two supported ways to sign: using signatures section or integrity block. `sign-bundle` takes an existing bundle file, a private key and possibly a certificate, and emits a new bundle file with cryptographic signature added.
 
 `dump-bundle` command is a bundle inspector tool. `dump-bundle` dumps the enclosed http exchanges of a given web bundle file in a human readable form.
 
@@ -20,10 +20,10 @@ You are also welcome to use the code as golang lib (e.g. `import "github.com/WIC
 golang environment needs to be set up in prior to using the tool. We are testing the tool on latest golang. Please refer to [Go Getting Started documentation](https://golang.org/doc/install) for the details.
 
 ### Installation
-We recommend using `go get` to install the command-line tool.
+We recommend using `go install` to install the command-line tool.
 
 ```
-go get -u github.com/WICG/webpackage/go/bundle/cmd/...
+go install github.com/WICG/webpackage/go/bundle/cmd/...@latest
 ```
 
 ## Usage
@@ -33,15 +33,22 @@ go get -u github.com/WICG/webpackage/go/bundle/cmd/...
 
 These command-line flags are common to all the three options:
 
-- `-primaryURL` specifies the bundle's main resource URL. This URL is also used as the fallback destination when browser cannot process the bundle. This option is required.
-- `-manifestURL` specifies the bundle's [manifest](https://www.w3.org/TR/appmanifest/) URL. This option is optional and can be omitted.
+- `-version` specifies WebBundle format version. Possible values are: `b2` (default) and `b1`.
+- `-primaryURL` specifies the bundle's main resource URL. This URL is also used as the fallback destination when browser cannot process the bundle. If bundle format is `b1`, this option is required.
+- `-manifestURL` specifies the bundle's [manifest](https://www.w3.org/TR/appmanifest/) URL. This option can be specified only for bundle version `b1`.
 - `-o` specifies name of the output bundle file. Default file name if unspecified is `out.wbn`.
 - `-headerOverride` adds additional response header to all bundled responses. Existing values of the header are overwritten.
 
 #### From a HAR file
 
-One convenient way to generate HAR file is via Chrome Devtools. Navigate to "Network" panel, and right-click on any resource and select "Save as HAR with content".
-![generating har with devtools](https://raw.githubusercontent.com/WICG/webpackage/master/go/bundle/har-devtools.png)
+One convenient way to generate HAR file is via Chrome Devtools:
+
+1. Open DevTools, navigate to Network panel.
+2. Make sure that "Disable cache" box is checked.
+3. Reload the page.
+4. Right click on any resource and select "Save as HAR with content".
+
+![generating har with devtools](https://raw.githubusercontent.com/WICG/webpackage/main/go/bundle/har-devtools.png)
 
 Once you have the har file, generate the web bundle via:
 ```
@@ -55,7 +62,6 @@ gen-bundle -har foo.har -o foo.wbn -primaryURL https://example.com/
 ```
 # A line starting with '#' is a comment.
 https://example.com/
-https://example.com/manifest.webmanifest
 https://example.com/style.css
 https://example.com/script.js
 ```
@@ -63,7 +69,6 @@ then run:
 ```
 gen-bundle -URLList urls.txt \
            -primaryURL https://example.com/ \
-           -manifestURL https://example.com/manifest.webmanifest \
            -o example_com.wbn
 ```
 
@@ -76,8 +81,17 @@ You can also create a bundle from a local directory. For example, if you have th
 gen-bundle -dir static -baseURL https://example.com/ -o foo.wbn -primaryURL https://example.com/
 ```
 
+If `-baseURL` flag is not specified, resources will have relative URLs in the generated bundle file.
+
 ### sign-bundle
-`sign-bundle` updates a bundle attaching a cryptographic signature of its exchanges. To use this tool, you need a pair of a private key and a certificate in the `application/cert-chain+cbor` format. See [go/signedexchange](../signedexchange/README.md) for more information on how to create a key and certificate pair.
+
+There are two supported ways to sign: using signatures section or integrity block, which can be separated using `-signType` `signaturessection` or `integrityblock` flag values. Without the signType flag, the default is `signaturessection`. 
+
+#### Using Signatures Section
+
+`sign-bundle -signType signaturessection` takes an existing bundle file, a certificate and a private key, and emits a new bundle file with cryptographic signature for the bundled resources added.
+
+`sign-bundle` updates a bundle attaching a cryptographic signature of its exchanges. To use this tool, you need a pair of a private key and a certificate in the `application/cert-chain+cbor` format. See [signatures-section extension](./../extensions/signatures-section.md) and [go/signedexchange](../signedexchange/README.md) for more information on how to create a key and certificate pair.
 
 Assuming you have a key and certificate pair for `example.org`, this command will sign all exchanges in `unsigned.wbn` whose URL's hostname is `example.org`, and writes a new bundle to `signed.wbn`.
 
@@ -90,12 +104,30 @@ sign-bundle \
   -o signed.wbn
 ```
 
+#### Using Integrity Block
+
+`sign-bundle -signType integrityblock` takes an existing bundle file, an ed25519 private key, and emits a new bundle file with cryptographic signature added to the integrity block.
+
+`sign-bundle` updates a bundle prepending the web bundle with an integrity block containing a stack of signatures over the hash of the web bundle. To use this tool, you need an ed25519 private key in .pem format, which can be generated with: `openssl genpkey -algorithm Ed25519 -out ed25519key.pem`. 
+
+```
+sign-bundle \
+  -signType integrityblock \
+  -i unsigned.wbn \
+  -privateKey privkey.pem \
+  -o signed.wbn
+```
+
+See [integrityblock-explainer](../../explainers/integrity-signature.md) for more information about what an integrity block is.
+
 ### dump-bundle
 `dump-bundle` dumps the content of a web bundle in a human readable form. To
 display content of a bundle file, invoke:
 ```
 dump-bundle -i foo.wbn
 ```
+
+`dump-bundle` doesn't support web bundles signed with integrity block.
 
 ## Using Bundles
 Bundles generated with `gen-bundle` can be opened with web browsers supporting web bundles.

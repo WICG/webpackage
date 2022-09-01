@@ -1,11 +1,15 @@
-const wbn = require('../lib/wbn');
-const fs = require('fs');
-const path = require('path');
+import * as wbn from '../lib/wbn.js';
+import * as fs from 'fs';
+import * as path from 'path';
+import url from "url";
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+
+// Tests for webbundle format version b2
 
 describe('Bundle', () => {
   const bundleBuffer = (() => {
-    const builder = new wbn.BundleBuilder('https://example.com/');
-    builder.setManifestURL('https://example.com/manifest.json');
+    const builder = new wbn.BundleBuilder();
+    builder.setPrimaryURL('https://example.com/');
     builder.addExchange(
       'https://example.com/',
       200,
@@ -23,9 +27,9 @@ describe('Bundle', () => {
 
   it('has expected fields', () => {
     const b = new wbn.Bundle(bundleBuffer);
-    expect(b.primaryURL).toBe('https://example.com/');
-    expect(b.manifestURL).toBe('https://example.com/manifest.json');
+    expect(b.version).toBe('b2');
     expect(b.urls).toEqual(['https://example.com/', 'https://example.com/ja/']);
+    expect(b.primaryURL).toBe('https://example.com/');
   });
 
   describe('getResponse', () => {
@@ -40,8 +44,8 @@ describe('Bundle', () => {
         'content-type': 'text/plain',
         'content-language': 'ja',
       });
-      expect(resp1.body.toString('utf-8')).toBe('Hello, world!');
-      expect(resp2.body.toString('utf-8')).toBe('こんにちは世界');
+      expect(new TextDecoder('utf-8').decode(resp1.body)).toBe('Hello, world!');
+      expect(new TextDecoder('utf-8').decode(resp2.body)).toBe('こんにちは世界');
     });
 
     it('throws if URL is not found', () => {
@@ -53,21 +57,20 @@ describe('Bundle', () => {
   });
 
   it('parses pregenerated bundle', () => {
-    const buf = fs.readFileSync(path.resolve(__dirname, 'testdata/hello.wbn'));
+    const buf = fs.readFileSync(path.resolve(__dirname, 'testdata/hello_b2.wbn'));
     const b = new wbn.Bundle(buf);
-    expect(b.primaryURL).toBe('https://example.com/hello.html');
-    expect(b.manifestURL).toBe(null);
+    expect(b.primaryURL).toBe(null);
     expect(b.urls).toEqual(['https://example.com/hello.html']);
     const resp = b.getResponse('https://example.com/hello.html');
     expect(resp.status).toBe(200);
     expect(resp.headers['content-type']).toBe('text/html; charset=utf-8');
-    expect(resp.body.toString('utf-8')).toBe(
+    expect(new TextDecoder('utf-8').decode(resp.body)).toBe(
       '<html>Hello, Web Bundle!</html>\n'
     );
   });
 
   it('throws if an unknown section is marked as critical', () => {
-    const builder = new wbn.BundleBuilder('https://example.com/');
+    const builder = new wbn.BundleBuilder();
     builder.addExchange(
       'https://example.com/',
       200,
@@ -80,7 +83,7 @@ describe('Bundle', () => {
   });
 
   it('does not throw if all names in the critical section are known', () => {
-    const builder = new wbn.BundleBuilder('https://example.com/');
+    const builder = new wbn.BundleBuilder();
     builder.addExchange(
       'https://example.com/',
       200,
@@ -90,7 +93,6 @@ describe('Bundle', () => {
     builder.addSection('critical', [
       'critical',
       'index',
-      'manifest',
       'responses',
       'signatures',
     ]);
