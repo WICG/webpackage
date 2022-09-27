@@ -91,7 +91,7 @@ There are two supported ways to sign: using signatures section or integrity bloc
 
 `sign-bundle -signType signaturessection` takes an existing bundle file, a certificate and a private key, and emits a new bundle file with cryptographic signature for the bundled resources added.
 
-`sign-bundle` updates a bundle attaching a cryptographic signature of its exchanges. To use this tool, you need a pair of a private key and a certificate in the `application/cert-chain+cbor` format. See [signatures-section extension](./../extensions/signatures-section.md) and [go/signedexchange](../signedexchange/README.md) for more information on how to create a key and certificate pair.
+`sign-bundle` updates a bundle attaching a cryptographic signature of its exchanges. To use this tool, you need a pair of a private key and a certificate in the `application/cert-chain+cbor` format. See [signatures-section extension](../../extensions/signatures-section.md) and [go/signedexchange](../signedexchange/README.md) for more information on how to create a key and certificate pair.
 
 Assuming you have a key and certificate pair for `example.org`, this command will sign all exchanges in `unsigned.wbn` whose URL's hostname is `example.org`, and writes a new bundle to `signed.wbn`.
 
