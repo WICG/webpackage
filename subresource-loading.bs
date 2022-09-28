@@ -162,6 +162,12 @@ other script execution-related specs are left unaffected.
 Inside the <a spec="html">prepare the script element</a> algorithm, we make the
 following changes:
 
+- Insert the following step to <a spec="html">prepare the script element</a>
+  step 10:
+
+  - If the script block's type string is an [=ASCII case-insensitive=] match for
+    the string "`webbundle`", then set el's type to "`webbundle`".
+
 - Insert the following case to <a spec="html">prepare the script element</a>
   step 26.7:
 
