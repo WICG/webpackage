@@ -39,6 +39,13 @@ spec: url; urlPrefix: https://url.spec.whatwg.org/#
 spec: infra; urlPrefix: https://infra.spec.whatwg.org/#
   type: dfn
     text: continue; url: iteration-continue
+spec: html; urlPrefix: https://html.spec.whatwg.org/#
+  type: dfn
+    text: the script's type; url: concept-script-type
+  type: dfn
+    text: the script's result; url: concept-script-result
+  type: dfn
+    text: delay the load event; url: delay-the-load-event
 </pre>
 <pre class="link-defaults">
 spec:fetch; type:dfn; for:/; text:request
@@ -130,37 +137,39 @@ ISSUE: Not supported for workers.
 
 # HTML monkeypatches # {#html-monkeypatches}
 
-To process web bundles in the <a spec="html">prepare a script</a> algorithm
-consistently with existing script types (i.e. classic or module), we make the
-following changes:
+To process web bundles in the <a spec="html">prepare the script element</a>
+algorithm consistently with existing script types (i.e. classic or module), we
+make the following changes:
 
+- <a spec="html">the script's type</a> should be either "classic", "module", or
+  "webbundle"
 - Introduce <dfn>web bundle result</dfn>, which is a [=struct=] with two
   [=struct/items=]:
   - a <dfn for="web bundle result">registration</dfn>, a [=web bundle
     registration=]; and
   - an <dfn for="web bundle result">error to rethrow</dfn>, a JavaScript value
     representing a parse error when non-null.
-- Add "`webbundle`" to a possible value of <a spec="html">the script's type</a>.
-- Rename <a spec="html">the script's script</a> to <dfn>the script's
-  result</dfn>, which can be either a
-  <a href="https://html.spec.whatwg.org/multipage/webappapis.html#concept-script">script</a>
+- <a spec="html">the script's result</a> is either "uninitiated", null,
+  <a href="https://html.spec.whatwg.org/multipage/webappapis.html#concept-script">script</a>,
   or a [=web bundle result=].
 
 Note: Because we don't make [=web bundle result=] a new subclass of
 <a href="https://html.spec.whatwg.org/multipage/webappapis.html#concept-script">script</a>,
 other script execution-related specs are left unaffected.
 
-## Prepare a script ## {#integration-prepare-a-script}
+## Prepare the script element ## {#prepare-the-script-element}
 
-Inside the <a spec="html">prepare a script</a> algorithm, we make the following
-changes:
+Inside the <a spec="html">prepare the script element</a> algorithm, we make the
+following changes:
 
-- Insert the following step to [=prepare a script=] step 8, under "Determine the
-  script's type as follows:":
+- Insert the following step to <a spec="html">prepare the script element</a>
+  step 10:
+
   - If the script block's type string is an [=ASCII case-insensitive=] match for
-    the string "`webbundle`", <a spec="html">the script's type</a> is
-    "`webbundle`".
-- Insert the following case to <a spec="html">prepare a script</a> step 26.7:
+    the string "`webbundle`", then set el's type to "`webbundle`".
+
+- Insert the following case to <a spec="html">prepare the script element</a>
+  step 26.7:
 
   - "`webbundle`":
 
@@ -171,24 +180,26 @@ changes:
        specific requirements for the error handling here, so currently an
        `error` event is fired similarly to the case of an empty `src` attribute.
 
-- Insert the following case to <a spec="html">prepare a script</a> step 27.2:
+- Insert the following case to <a spec="html">prepare the script element</a>
+  step 27.2:
 
   - "`webbundle`":
 
     1. [=Prepare a web bundle=] given <var ignore>element</var>,
        <var ignore>source text</var> and <var ignore>base URL</var>.
 
-- Insert the following case to <a spec="html">prepare a script</a> step 28:
+- Insert the following case to <a spec="html">prepare the script element</a>
+  step 28:
 
   - If <a spec="html">the script's type</a> is "`webbundle`":
 
-    1. Assert: <a spec="html">the script is ready</a>.
+    1. Assert: script's <a spec="html">ready to be parser-executed</a> is true.
     1. [=In parallel=], [=process events for a web bundle=] given
        <var ignore>element</var>.
 
 NOTE: CSPs are applied to inline web bundles at Step 15 of
-<a spec="html">prepare a script</a>, just like applied to classic/module
-scripts.
+<a spec="html">prepare the script element</a>, just like applied to
+classic/module scripts.
 
 To <dfn>prepare a web bundle</dfn>, given an {{HTMLScriptElement}} |element|, a
 [=string=] |sourceText| and a [=URL=] |baseURL|:
@@ -199,7 +210,7 @@ To <dfn>prepare a web bundle</dfn>, given an {{HTMLScriptElement}} |element|, a
    1. Set [=the script's result=] to a new [=web bundle result=] with its [=web
       bundle result/registration=] is null and its [=web bundle result/error to
       rethrow=] is the exception thrown.
-   1. <a spec="html">The script is ready</a>.
+   1. <a spec="html">Mark as ready</a>.
    1. Return.
 1. Let |document| be |element|'s <a spec="html">node document</a>.
 1. Set |fetch entry| to null.
@@ -239,17 +250,18 @@ To <dfn>prepare a web bundle</dfn>, given an {{HTMLScriptElement}} |element|, a
 1. Set [=the script's result=] to a new [=web bundle result=] with its [=web
    bundle result/registration=] is |registration| and its [=web bundle
    result/error to rethrow=] is null.
-1. <a spec="html">The script is ready</a>.
+1. <a spec="html">Mark as ready</a>.
 
 ## Firing events ## {#firing-events}
 
-In <a spec="html">execute a script block</a>, add the following case to Step 6:
+In <a spec="html">execute the script element</a>, add the following case to Step
+6:
 
 - "`webbundle`":
 
       1. Assert: Never reached.
 
-         Note: Web bundles are processed by [=process events for a web bundle=] instead of <a spec="html">execute a script block</a>.
+         Note: Web bundles are processed by [=process events for a web bundle=] instead of <a spec="html">execute the script element</a>.
 
 To <dfn>process events for a web bundle</dfn> given an {{HTMLScriptElement}}
 |element|:
@@ -266,9 +278,9 @@ To <dfn>process events for a web bundle</dfn> given an {{HTMLScriptElement}}
 
    Note: Unlike other script types, we wait asynchronously here for [=fetch web
    bundle=] before firing `load` events at {{HTMLScriptElement}}. We don't
-   <a spec="html">delay the load event</a> here, because <a spec="html">the
-   script is ready</a> synchronously in [=prepare a script=]. This is
-   intentional because [=fetch a web bundle=] is similar to preloading.
+   <a spec="html">delay the load event</a> here, because we <a spec="html">mark
+   as ready</a> synchronously in <a spec="html">prepare the script element</a>.
+   This is intentional because [=fetch a web bundle=] is similar to preloading.
 
 1. If [=the script's result=] of |element| is null, then return.
 
