@@ -37,7 +37,6 @@ func SignWithIntegrityBlock(privKey crypto.PrivateKey) error {
 	if !ok {
 		return errors.New("SignIntegrityBlock: Private key is not Ed25519 type.")
 	}
-	ed25519publicKey := ed25519privKey.Public().(ed25519.PublicKey)
 
 	bundleFile, err := os.Open(*flagInput)
 	if err != nil {
@@ -55,34 +54,13 @@ func SignWithIntegrityBlock(privKey crypto.PrivateKey) error {
 		return err
 	}
 
-	// Signature attributes used in data to be signed is always freshly generated.
-	signatureAttributes := map[string][]byte{integrityblock.Ed25519publicKeyAttributeName: []byte(ed25519publicKey)}
+	err = integrityBlock.SignAndAddNewSignature(ed25519privKey, webBundleHash, map[string][]byte{})
+	if err != nil {
+		return err
+	}
 
+	// Update the integrity block bytes with the new integrity block.
 	integrityBlockBytes, err := integrityBlock.CborBytes()
-	if err != nil {
-		return err
-	}
-
-	// Ensure the CBOR on the integrity block follows the deterministic principles.
-	err = cbor.Deterministic(integrityBlockBytes)
-	if err != nil {
-		return err
-	}
-
-	dataToBeSigned, err := integrityblock.GenerateDataToBeSigned(webBundleHash, integrityBlockBytes, signatureAttributes)
-	if err != nil {
-		return err
-	}
-
-	signature, err := integrityblock.ComputeEd25519Signature(ed25519privKey, dataToBeSigned)
-	if err != nil {
-		return err
-	}
-
-	integrityBlock.AddNewSignatureToIntegrityBlock(signatureAttributes, signature)
-
-	// Update the integrity block bytes after editing the integrity block.
-	integrityBlockBytes, err = integrityBlock.CborBytes()
 	if err != nil {
 		return err
 	}
