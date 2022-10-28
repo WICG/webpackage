@@ -162,18 +162,6 @@ func (integrityBlock *IntegrityBlock) AddNewSignatureToIntegrityBlock(signatureA
 	integrityBlock.SignatureStack = append(is, integrityBlock.SignatureStack...)
 }
 
-// getLastSignatureAttributes returns the signature attributes from the newest (the first)
-// signature stack or a new empty map if the signature stack is empty.
-func GetLastSignatureAttributes(integrityBlock *IntegrityBlock) map[string][]byte {
-	var signatureAttributes map[string][]byte
-	if len(integrityBlock.SignatureStack) == 0 {
-		signatureAttributes = make(map[string][]byte, 1)
-	} else {
-		signatureAttributes = (*integrityBlock.SignatureStack[0]).SignatureAttributes
-	}
-	return signatureAttributes
-}
-
 // ComputeWebBundleSha512 computes the SHA-512 hash over the given web bundle file.
 func ComputeWebBundleSha512(bundleFile io.ReadSeeker, offset int64) ([]byte, error) {
 	h := sha512.New()

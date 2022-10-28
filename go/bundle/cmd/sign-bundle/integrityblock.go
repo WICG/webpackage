@@ -55,8 +55,8 @@ func SignWithIntegrityBlock(privKey crypto.PrivateKey) error {
 		return err
 	}
 
-	signatureAttributes := integrityblock.GetLastSignatureAttributes(integrityBlock)
-	signatureAttributes[integrityblock.Ed25519publicKeyAttributeName] = []byte(ed25519publicKey)
+	// Signature attributes used in data to be signed is always freshly generated.
+	signatureAttributes := map[string][]byte{integrityblock.Ed25519publicKeyAttributeName: []byte(ed25519publicKey)}
 
 	integrityBlockBytes, err := integrityBlock.CborBytes()
 	if err != nil {

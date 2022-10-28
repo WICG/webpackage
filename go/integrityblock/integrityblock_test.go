@@ -78,37 +78,6 @@ func TestIntegritySignature(t *testing.T) {
 	}
 }
 
-func TestGetLastSignatureAttributesWithEmptySingatureStack(t *testing.T) {
-	got := GetLastSignatureAttributes(generateEmptyIntegrityBlock())
-	if len(got) != 0 {
-		t.Error("integrityblock: GetLastSignatureAttributes is not empty.")
-	}
-}
-
-func TestGetLastSignatureAttributesWithOneSingatureInTheStack(t *testing.T) {
-	pubKey := []byte("publickey")
-	attributes := map[string][]byte{Ed25519publicKeyAttributeName: pubKey}
-
-	integritySignatures := []*IntegritySignature{{
-		SignatureAttributes: attributes,
-		Signature:           []byte("signature"),
-	}}
-
-	integrityBlock := &IntegrityBlock{
-		Magic:          IntegrityBlockMagic,
-		Version:        VersionB1,
-		SignatureStack: integritySignatures,
-	}
-
-	got := GetLastSignatureAttributes(integrityBlock)
-	if len(got) != 1 {
-		t.Error("integrityblock: GetLastSignatureAttributes is either empty or contains other attributes.")
-	}
-	if !bytes.Equal(got[Ed25519publicKeyAttributeName], pubKey) {
-		t.Errorf("integrityblock: got: %s\nwant: %s", got, pubKey)
-	}
-}
-
 func TestComputeWebBundleSha512(t *testing.T) {
 	bundleFile, err := os.Open("./testfile.wbn")
 	if err != nil {
