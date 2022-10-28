@@ -2,6 +2,8 @@ package integrityblock
 
 import (
 	"bytes"
+	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/hex"
 	"os"
 	"testing"
@@ -34,7 +36,7 @@ func TestAddNewSignatureToIntegrityBlock(t *testing.T) {
 	attributes := map[string][]byte{"ed25519PublicKey": []byte("publickey")}
 	signature := []byte("signature")
 
-	integrityBlock.AddNewSignatureToIntegrityBlock(attributes, signature)
+	integrityBlock.addNewSignatureToIntegrityBlock(attributes, signature)
 
 	integrityBlockBytes, err := integrityBlock.CborBytes()
 	if err != nil {
@@ -112,7 +114,7 @@ func TestGenerateDataToBeSigned(t *testing.T) {
 	h := []byte{0xf0, 0x9f, 0x96, 0x8b}
 	ib := []byte{0xf0, 0x9f, 0x96, 0x8b, 0xf0, 0x9f, 0x93, 0xa6}
 
-	got, err := GenerateDataToBeSigned(h, ib, signatureAttributes)
+	got, err := generateDataToBeSigned(h, ib, signatureAttributes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +157,7 @@ func TestIntegrityBlockGeneratedWithTheToolIsDeterministic(t *testing.T) {
 	attributes := map[string][]byte{"ed25519PublicKey": []byte("publickey")}
 	signature := []byte("signature")
 
-	integrityBlock.AddNewSignatureToIntegrityBlock(attributes, signature)
+	integrityBlock.addNewSignatureToIntegrityBlock(attributes, signature)
 
 	integrityBlockBytes, err = integrityBlock.CborBytes()
 	if err != nil {
@@ -192,4 +194,121 @@ func TestSignedWebBundleHasIntegrityBlockestAnother(t *testing.T) {
 	} else if !hasIntegrityBlock {
 		t.Error("Signed web bundle should have an integrity block.")
 	}
+}
+
+func TestGetIntegrityBlockWithNewSignature(t *testing.T) {
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Error("Failed to generate test keys")
+	}
+
+	bundleFile, err := os.Open("./testfile.wbn")
+	if err != nil {
+		t.Error("Failed to open the test file")
+	}
+	defer bundleFile.Close()
+
+	webBundleHash, err := ComputeWebBundleSha512(bundleFile, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	integrityBlock := generateEmptyIntegrityBlock()
+	err = integrityBlock.SignAndAddNewSignature(priv, webBundleHash, map[string][]byte{})
+
+	integrityBlockBytes, err := integrityBlock.CborBytes()
+	if err != nil {
+		t.Errorf("integrityBlock.CborBytes. err: %v", err)
+	}
+
+	publicKeyAsReadableCborString, err := bytesToCborAndToReadableStringHelper(pub)
+	if err != nil {
+		t.Errorf("integrityBlock.CborBytes. err: %v", err)
+	}
+
+	signatureAsReadableCborString, err := bytesToCborAndToReadableStringHelper(integrityBlock.SignatureStack[0].Signature)
+	if err != nil {
+		t.Errorf("integrityBlock.CborBytes. err: %v", err)
+	}
+
+	want := `["🖋📦" "1b\x00\x00" [[map["ed25519PublicKey":` + publicKeyAsReadableCborString + `] ` + signatureAsReadableCborString + `]]]`
+
+	got, err := testhelper.CborBinaryToReadableString(integrityBlockBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Errorf("integrityblock: got: %s\nwant: %s", got, want)
+	}
+}
+
+// Test GetIntegrityBlockWithNewSignature when there is an existing signature
+// already in the stack. Signature attributes should always be "freshly" made.
+func TestGetIntegrityBlockWithExistingSignature(t *testing.T) {
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Error("Failed to generate test keys")
+	}
+
+	bundleFile, err := os.Open("./testfile.wbn")
+	if err != nil {
+		t.Error("Failed to open the test file")
+	}
+	defer bundleFile.Close()
+
+	webBundleHash, err := ComputeWebBundleSha512(bundleFile, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	integrityBlock := generateEmptyIntegrityBlock()
+	err = integrityBlock.SignAndAddNewSignature(priv, webBundleHash, map[string][]byte{"hello": []byte("world")})
+	err = integrityBlock.SignAndAddNewSignature(priv, webBundleHash, map[string][]byte{})
+
+	integrityBlockBytes, err := integrityBlock.CborBytes()
+	if err != nil {
+		t.Errorf("integrityBlock.CborBytes. err: %v", err)
+	}
+
+	publicKeyAsReadableCborString, err := bytesToCborAndToReadableStringHelper(pub)
+	if err != nil {
+		t.Errorf("integrityBlock.CborBytes. err: %v", err)
+	}
+
+	signatureAsReadableCborString1, err := bytesToCborAndToReadableStringHelper(integrityBlock.SignatureStack[0].Signature)
+	if err != nil {
+		t.Errorf("integrityBlock.CborBytes. err: %v", err)
+	}
+	signatureAsReadableCborString2, err := bytesToCborAndToReadableStringHelper(integrityBlock.SignatureStack[1].Signature)
+	if err != nil {
+		t.Errorf("integrityBlock.CborBytes. err: %v", err)
+	}
+
+	integritySignatureObject1 := `[map["ed25519PublicKey":` + publicKeyAsReadableCborString + `] ` + signatureAsReadableCborString1 + `]`
+	integritySignatureObject2 := `[map["ed25519PublicKey":` + publicKeyAsReadableCborString + ` "hello":"world"] ` + signatureAsReadableCborString2 + `]`
+	want := `["🖋📦" "1b\x00\x00" [` + integritySignatureObject1 + ` ` + integritySignatureObject2 + `]]`
+
+	got, err := testhelper.CborBinaryToReadableString(integrityBlockBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Errorf("integrityblock: got: %s\nwant: %s", got, want)
+	}
+}
+
+func bytesToCborAndToReadableStringHelper(bts []byte) (string, error) {
+	var buf bytes.Buffer
+	enc := cbor.NewEncoder(&buf)
+
+	err := enc.EncodeByteString(bts)
+	if err != nil {
+		return "", err
+	}
+
+	cborAsString, err := testhelper.CborBinaryToReadableString(buf.Bytes())
+	if err != nil {
+		return "", err
+	}
+	return cborAsString, nil
 }
