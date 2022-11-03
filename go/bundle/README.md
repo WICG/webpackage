@@ -115,7 +115,7 @@ sign-bundle \
   -signType integrityblock \
   -i unsigned.wbn \
   -privateKey privkey.pem \
-  -o signed.wbn
+  -o signed.swbn
 ```
 
 See [integrityblock-explainer](../../explainers/integrity-signature.md) for more information about what an integrity block is.
