@@ -1,0 +1,53 @@
+{
+  "name": "wbn-sign",
+  "version": "0.0.0",
+  "description": "Signing tool to sign a web bundle with integrity block",
+  "homepage": "https://github.com/WICG/webpackage/tree/main/js/sign",
+  "main": "./lib/wbn-sign.cjs",
+  "type": "module",
+  "exports": {
+    "import": "./lib/wbn-sign.js",
+    "require": "./lib/wbn-sign.cjs"
+  },
+  "types": "./lib/wbn-sign.d.js",
+  "scripts": {
+    "build": "npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc",
+    "build:cjs": "esbuild --bundle --format=cjs --external:cborg --outfile=lib/wbn-sign.cjs src/wbn-sign.ts --platform=node",
+    "test": "jasmine tests/*.js tests/*.cjs"
+  },
+  "bin": {
+    "wbn-sign": "./bin/wbn-sign.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WICG/webpackage.git",
+    "directory": "js/sign"
+  },
+  "keywords": [
+    "web bundles",
+    "webpackage",
+    "integrity-block"
+  ],
+  "author": "Sonja Laurila <laurila@google.com>",
+  "license": "W3C-20150513",
+  "dependencies": {
+    "cborg": "^1.9.4",
+    "commander": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^12.7.11",
+    "esbuild": "^0.14.47",
+    "jasmine": "^4.2.1",
+    "typescript": "^4.7.3"
+  },
+  "engines": {
+    "node": ">= 14.0.0"
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "semi": true,
+    "singleQuote": true,
+    "printWidth": 80
+  }
+}
