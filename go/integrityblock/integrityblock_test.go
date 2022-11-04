@@ -102,8 +102,7 @@ func TestComputeWebBundleSha512(t *testing.T) {
 }
 
 func TestGenerateDataToBeSigned(t *testing.T) {
-	signatureAttributes := make(map[string][]byte, 1)
-	signatureAttributes["key"] = []byte("value")
+	signatureAttributes := map[string][]byte{"key": []byte("value")}
 
 	var attributesBytesBuf bytes.Buffer
 	enc := cbor.NewEncoder(&attributesBytesBuf)
@@ -111,15 +110,27 @@ func TestGenerateDataToBeSigned(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := []byte{0xf0, 0x9f, 0x96, 0x8b}
-	ib := []byte{0xf0, 0x9f, 0x96, 0x8b, 0xf0, 0x9f, 0x93, 0xa6}
+	hashBytes := []byte("hash")
+	integrityBlockBytes := []byte("integrityblock")
 
-	got, err := generateDataToBeSigned(h, ib, signatureAttributes)
+	// The numbers to display as big endian numbers
+	hashLen := []byte{0, 0, 0, 0, 0, 0, 0, 0x04}           // 4
+	integrityBlockLen := []byte{0, 0, 0, 0, 0, 0, 0, 0x0e} // 14
+	attributesLen := []byte{0, 0, 0, 0, 0, 0, 0, 0x0b}     // 11
+
+	got, err := generateDataToBeSigned(hashBytes, integrityBlockBytes, signatureAttributes)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	want, _ := hex.DecodeString("0000000000000004" + hex.EncodeToString(h) + "0000000000000008" + hex.EncodeToString(ib) + "000000000000000b" + hex.EncodeToString(attributesBytesBuf.Bytes()))
+	var buf bytes.Buffer
+	buf.Write(hashLen)
+	buf.Write(hashBytes)
+	buf.Write(integrityBlockLen)
+	buf.Write(integrityBlockBytes)
+	buf.Write(attributesLen)
+	buf.Write(attributesBytesBuf.Bytes())
+	want := buf.Bytes()
 
 	if !bytes.Equal(got, want) {
 		t.Errorf("integrityblock: got: %s\nwant: %s", hex.EncodeToString(got), hex.EncodeToString(want))
