@@ -3,6 +3,13 @@ import { BundleBuilder } from './encoder.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import mime from 'mime';
+import {
+  APPROVED_VERSIONS,
+  B1,
+  B2,
+  DEFAULT_VERSION,
+  FormatVersion,
+} from './constants.js';
 
 export function addFile(builder: BundleBuilder, url: string, file: string) {
   const headers = {
@@ -37,55 +44,89 @@ export function addFilesRecursively(
   }
 }
 
-export function main() {
-  const options = commander
+function readOptions() {
+  return commander
     .requiredOption('-d, --dir <directory>', 'input root directory (required)')
     .option('-b, --baseURL <URL>', 'base URL')
     .option(
       '-f, --formatVersion <formatVersion>',
-      'webbundle format version, possible values are "b1" and "b2" (default: "b2")',
-      'b2'
+      'webbundle format version, possible values are ' +
+        APPROVED_VERSIONS.map((v) => `"${v}"`).join(' and ') +
+        ' (default: "' +
+        DEFAULT_VERSION +
+        '")',
+      DEFAULT_VERSION
     )
     .option(
       '-p, --primaryURL <URL>',
-      'primary URL (defaults to base URL, only valid with format version "b1")'
+      'primary URL (defaults to base URL, only valid with format version "' +
+        B1 +
+        '")'
     )
     .option(
       '-m, --manifestURL <URL>',
-      'manifest URL (only valid with format version "b1")'
+      'manifest URL (only valid with format version "' + B1 + '")'
     )
     .option('-o, --output <file>', 'webbundle output file', 'out.wbn')
     .parse(process.argv);
+}
 
+function validateOptions(options: any): string | null {
   if (options.baseURL && !options.baseURL.endsWith('/')) {
-    console.error("error: baseURL must end with '/'.");
+    return "error: baseURL must end with '/'.";
+  }
+
+  if (
+    options.formatVersion !== undefined &&
+    !APPROVED_VERSIONS.includes(options.formatVersion)
+  ) {
+    return (
+      'error: invalid format version (must be ' +
+      APPROVED_VERSIONS.map((val) => `"${val}"`).join(' or ') +
+      ').'
+    );
+  }
+
+  if (
+    options.formatVersion === B1 &&
+    !(options.primaryURL || options.baseURL)
+  ) {
+    return 'error: Primary URL is required.';
+  }
+
+  return null;
+}
+
+export function main() {
+  const options = readOptions();
+  const errorMsg = validateOptions(options);
+  if (errorMsg) {
+    console.error(errorMsg);
     process.exit(1);
   }
 
-  if (options.formatVersion === undefined || options.formatVersion === 'b2') {
-    // webbundle format version b2
-    const builder = new BundleBuilder();
-    if (options.primaryURL) {
-      builder.setPrimaryURL(options.primaryURL);
-    }
-    addFilesRecursively(builder, options.baseURL || '', options.dir);
-    fs.writeFileSync(options.output, builder.createBundle());
-  } else if (options.formatVersion === 'b1') {
-    // webbundle format version b1
-    const primaryURL = options.primaryURL || options.baseURL;
-    if (!primaryURL) {
-      console.error('error: Primary URL is required.');
-      process.exit(1);
-    }
-    const builder = new BundleBuilder('b1');
-    builder.setPrimaryURL(primaryURL);
-    if (options.manifestURL) {
-      builder.setManifestURL(options.manifestURL);
-    }
-    addFilesRecursively(builder, options.baseURL || '', options.dir);
-    fs.writeFileSync(options.output, builder.createBundle());
-  } else {
-    console.error('error: invalid format version (must be "b1" or "b2").');
-    process.exit(1);
+  const version: FormatVersion =
+    options.formatVersion === undefined
+      ? DEFAULT_VERSION
+      : options.formatVersion;
+
+  const builder = new BundleBuilder(version);
+
+  switch (version) {
+    case B1:
+      builder.setPrimaryURL(options.primaryURL || options.baseURL);
+      if (options.manifestURL) {
+        builder.setManifestURL(options.manifestURL);
+      }
+      break;
+
+    case B2:
+      if (options.primaryURL) {
+        builder.setPrimaryURL(options.primaryURL);
+      }
+      break;
   }
+
+  addFilesRecursively(builder, options.baseURL || '', options.dir);
+  fs.writeFileSync(options.output, builder.createBundle());
 }

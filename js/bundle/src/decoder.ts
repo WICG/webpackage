@@ -1,5 +1,6 @@
 import * as cborg from 'cborg';
 import { encodedLength } from 'cborg/length';
+import { B1, FormatVersion, isApprovedVersion } from './constants.js';
 
 interface Headers {
   [key: string]: string;
@@ -22,7 +23,7 @@ interface CompatAdapter {
 
 /** This class represents parsed Web Bundle. */
 export class Bundle {
-  version: string;
+  version: FormatVersion;
   private b1PrimaryURL: string | null = null; // only valid in format version b1
   private sections: { [key: string]: unknown } = {};
   private responses: { [key: number]: Response } = {}; // Offset-in-responses -> resp
@@ -32,6 +33,9 @@ export class Bundle {
     const wbn = asArray(cborg.decode(buffer, { useMaps: true }));
 
     let peekVersion = bytestringToString(wbn[1]).replace(/\0+$/, '');
+    if (!isApprovedVersion(peekVersion)) {
+      throw new Error('Unsupported web bundle version.');
+    }
     this.compatAdapter = this.createCompatAdapter(peekVersion);
 
     if (wbn.length !== this.compatAdapter.wbnLength) {
@@ -50,7 +54,12 @@ export class Bundle {
     if (bytestringToString(magic) !== '🌐📦') {
       throw new Error('Wrong magic');
     }
-    this.version = bytestringToString(version).replace(/\0+$/, ''); // Strip off the '\0' paddings.
+    const tempVersion = bytestringToString(version).replace(/\0+$/, ''); // Strip off the '\0' paddings.
+    if (!isApprovedVersion(tempVersion)) {
+      throw new Error('Unsupported web bundle version.');
+    }
+    this.version = tempVersion;
+
     if (primaryURL) {
       this.b1PrimaryURL = asString(primaryURL);
     }
@@ -99,7 +108,7 @@ export class Bundle {
   }
 
   get primaryURL(): string | null {
-    if (this.version === 'b1') {
+    if (this.version === B1) {
       return this.b1PrimaryURL;
     }
     if (this.sections['primary']) {
@@ -117,8 +126,8 @@ export class Bundle {
   }
 
   // Behaviour that is specific to particular versions of the format.
-  private createCompatAdapter(formatVersion: string): CompatAdapter {
-    if (formatVersion === 'b1') {
+  private createCompatAdapter(formatVersion: FormatVersion): CompatAdapter {
+    if (formatVersion === B1) {
       // format version b1
       return new (class implements CompatAdapter {
         wbnLength: number = 6;

@@ -1,5 +1,12 @@
 import * as cborg from 'cborg';
 import { encodedLength } from 'cborg/length';
+import {
+  isApprovedVersion,
+  B1,
+  B2,
+  DEFAULT_VERSION,
+  FormatVersion,
+} from './constants.js';
 
 type CBORValue = unknown;
 interface Headers {
@@ -7,7 +14,7 @@ interface Headers {
 }
 
 interface CompatAdapter {
-  formatVersion: string;
+  formatVersion: FormatVersion;
   onCreateBundle(): void;
   setPrimaryURL(url: string): BundleBuilder;
   setManifestURL(url: string): BundleBuilder;
@@ -23,8 +30,8 @@ export class BundleBuilder {
   private currentResponsesOffset = 0;
   private compatAdapter: CompatAdapter;
 
-  constructor(formatVersion: string = 'b2') {
-    if (formatVersion != 'b1' && formatVersion != 'b2') {
+  constructor(formatVersion: FormatVersion = DEFAULT_VERSION) {
+    if (!isApprovedVersion(formatVersion)) {
       throw new Error(`Invalid webbundle format version`);
     }
     this.compatAdapter = this.createCompatAdapter(formatVersion);
@@ -106,16 +113,16 @@ export class BundleBuilder {
     return this.compatAdapter.createTopLevel();
   }
 
-  get formatVersion(): string {
+  get formatVersion(): FormatVersion {
     return this.compatAdapter.formatVersion;
   }
 
   // Behaviour that is specific to particular versions of the format.
-  private createCompatAdapter(formatVersion: string): CompatAdapter {
-    if (formatVersion === 'b1') {
+  private createCompatAdapter(formatVersion: FormatVersion): CompatAdapter {
+    if (formatVersion === B1) {
       // format version b1
       return new (class implements CompatAdapter {
-        formatVersion: string = 'b1';
+        formatVersion: FormatVersion = B1;
         private index: Map<string, [Uint8Array, number, number]> = new Map();
         private primaryURL: string | null = null;
 
@@ -180,7 +187,7 @@ export class BundleBuilder {
     } else {
       // format version b2
       return new (class implements CompatAdapter {
-        formatVersion: string = 'b2';
+        formatVersion: FormatVersion = B2;
         private index: Map<string, [number, number]> = new Map();
 
         constructor(private bundleBuilder: BundleBuilder) {}
