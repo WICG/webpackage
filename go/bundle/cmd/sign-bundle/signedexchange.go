@@ -75,7 +75,7 @@ func addSignature(b *bundle.Bundle, signer *signature.Signer) error {
 }
 
 func SignExchanges(privKey crypto.PrivateKey) error {
-	if _, ok := privKey.(ecdsa.PrivateKey); !ok {
+	if _, ok := privKey.(*ecdsa.PrivateKey); !ok {
 		return errors.New("Private key is not ECDSA type.")
 	}
 
