@@ -1,5 +1,5 @@
 import * as cborg from 'cborg';
-import { encodedLength } from 'cborg/length'
+import { encodedLength } from 'cborg/length';
 
 type CBORValue = unknown;
 interface Headers {
@@ -71,7 +71,7 @@ export class BundleBuilder {
   }
 
   private addSection(name: string, content: CBORValue) {
-    if (this.sectionLengths.some(s => s.name === name)) {
+    if (this.sectionLengths.some((s) => s.name === name)) {
       throw new Error('Duplicated section: ' + name);
     }
     let length = encodedLength(content);
@@ -114,13 +114,12 @@ export class BundleBuilder {
   private createCompatAdapter(formatVersion: string): CompatAdapter {
     if (formatVersion === 'b1') {
       // format version b1
-      return new class implements CompatAdapter {
+      return new (class implements CompatAdapter {
         formatVersion: string = 'b1';
         private index: Map<string, [Uint8Array, number, number]> = new Map();
         private primaryURL: string | null = null;
 
-        constructor(private bundleBuilder: BundleBuilder) {
-        }
+        constructor(private bundleBuilder: BundleBuilder) {}
 
         onCreateBundle(): void {
           if (this.primaryURL === null) {
@@ -135,7 +134,7 @@ export class BundleBuilder {
 
         setPrimaryURL(url: string): BundleBuilder {
           if (this.primaryURL !== null) {
-            throw new Error('Primary URL is already set')
+            throw new Error('Primary URL is already set');
           }
           validateExchangeURL(url);
           this.primaryURL = url;
@@ -148,8 +147,7 @@ export class BundleBuilder {
           return this.bundleBuilder;
         }
 
-        setIndexEntry(url: string,
-          responseLength: number): void {
+        setIndexEntry(url: string, responseLength: number): void {
           this.index.set(url, [
             new Uint8Array(0), // variants-value
             this.bundleBuilder.currentResponsesOffset,
@@ -178,15 +176,14 @@ export class BundleBuilder {
             new Uint8Array(8), // Length (to be filled in later)
           ];
         }
-      }(this);
+      })(this);
     } else {
       // format version b2
-      return new class implements CompatAdapter {
+      return new (class implements CompatAdapter {
         formatVersion: string = 'b2';
         private index: Map<string, [number, number]> = new Map();
 
-        constructor(private bundleBuilder: BundleBuilder) {
-        }
+        constructor(private bundleBuilder: BundleBuilder) {}
 
         onCreateBundle(): void {
           // not used
@@ -202,8 +199,7 @@ export class BundleBuilder {
           throw new Error('setManifestURL(): wrong format version');
         }
 
-        setIndexEntry(url: string,
-          responseLength: number): void {
+        setIndexEntry(url: string, responseLength: number): void {
           this.index.set(url, [
             this.bundleBuilder.currentResponsesOffset,
             responseLength,
@@ -230,7 +226,7 @@ export class BundleBuilder {
             new Uint8Array(8), // Length (to be filled in later)
           ];
         }
-      }(this);
+      })(this);
     }
   }
 }

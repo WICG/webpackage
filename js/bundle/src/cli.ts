@@ -11,7 +11,11 @@ export function addFile(builder: BundleBuilder, url: string, file: string) {
   builder.addExchange(url, 200, headers, fs.readFileSync(file));
 }
 
-export function addFilesRecursively(builder: BundleBuilder, baseURL: string, dir: string) {
+export function addFilesRecursively(
+  builder: BundleBuilder,
+  baseURL: string,
+  dir: string
+) {
   if (baseURL !== '' && !baseURL.endsWith('/')) {
     throw new Error("Non-empty baseURL must end with '/'.");
   }
@@ -37,9 +41,19 @@ export function main() {
   const options = commander
     .requiredOption('-d, --dir <directory>', 'input root directory (required)')
     .option('-b, --baseURL <URL>', 'base URL')
-    .option('-f, --formatVersion <formatVersion>', 'webbundle format version, possible values are "b1" and "b2" (default: "b2")', 'b2')
-    .option('-p, --primaryURL <URL>', 'primary URL (defaults to base URL, only valid with format version "b1")')
-    .option('-m, --manifestURL <URL>', 'manifest URL (only valid with format version "b1")')
+    .option(
+      '-f, --formatVersion <formatVersion>',
+      'webbundle format version, possible values are "b1" and "b2" (default: "b2")',
+      'b2'
+    )
+    .option(
+      '-p, --primaryURL <URL>',
+      'primary URL (defaults to base URL, only valid with format version "b1")'
+    )
+    .option(
+      '-m, --manifestURL <URL>',
+      'manifest URL (only valid with format version "b1")'
+    )
     .option('-o, --output <file>', 'webbundle output file', 'out.wbn')
     .parse(process.argv);
 
@@ -60,7 +74,7 @@ export function main() {
     // webbundle format version b1
     const primaryURL = options.primaryURL || options.baseURL;
     if (!primaryURL) {
-      console.error("error: Primary URL is required.");
+      console.error('error: Primary URL is required.');
       process.exit(1);
     }
     const builder = new BundleBuilder('b1');
