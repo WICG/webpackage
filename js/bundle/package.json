@@ -45,5 +45,11 @@
   },
   "engines": {
     "node": ">= 12.0.0"
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "semi": true,
+    "singleQuote": true,
+    "printWidth": 80
   }
 }

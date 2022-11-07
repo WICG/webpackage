@@ -1,5 +1,5 @@
 import * as cborg from 'cborg';
-import { encodedLength } from 'cborg/length'
+import { encodedLength } from 'cborg/length';
 
 interface Headers {
   [key: string]: string;
@@ -29,13 +29,15 @@ export class Bundle {
   private compatAdapter: CompatAdapter;
 
   constructor(buffer: Uint8Array) {
-    const wbn = asArray(cborg.decode(buffer, {useMaps: true}));
+    const wbn = asArray(cborg.decode(buffer, { useMaps: true }));
 
     let peekVersion = bytestringToString(wbn[1]).replace(/\0+$/, '');
     this.compatAdapter = this.createCompatAdapter(peekVersion);
 
     if (wbn.length !== this.compatAdapter.wbnLength) {
-      throw new Error(`Wrong toplevel structure ${peekVersion} ${wbn.length} ${this.compatAdapter.wbnLength}`);
+      throw new Error(
+        `Wrong toplevel structure ${peekVersion} ${wbn.length} ${this.compatAdapter.wbnLength}`
+      );
     }
     const [
       magic,
@@ -53,7 +55,7 @@ export class Bundle {
       this.b1PrimaryURL = asString(primaryURL);
     }
     const sectionLengths = asArray(
-      cborg.decode(asBytestring(sectionLengthsCBOR), {useMaps: true})
+      cborg.decode(asBytestring(sectionLengthsCBOR), { useMaps: true })
     );
     const sectionsArray = asArray(sections);
     if (sectionLengths.length !== sectionsArray.length * 2) {
@@ -118,11 +120,10 @@ export class Bundle {
   private createCompatAdapter(formatVersion: string): CompatAdapter {
     if (formatVersion === 'b1') {
       // format version b1
-      return new class implements CompatAdapter {
+      return new (class implements CompatAdapter {
         wbnLength: number = 6;
 
-        constructor(private bundle: Bundle) {
-        }
+        constructor(private bundle: Bundle) {}
 
         getResponse(url: string): Response {
           const indexEntry = asArray(this.bundle.indexSection.get(url));
@@ -146,14 +147,13 @@ export class Bundle {
         destructureBundle(wbn: unknown[]): [any, any, any, any, any, any] {
           return [wbn[0], wbn[1], wbn[2], wbn[3], wbn[4], wbn[5]];
         }
-      }(this);
+      })(this);
     } else {
       // format version b2
-      return new class implements CompatAdapter {
+      return new (class implements CompatAdapter {
         wbnLength: number = 5;
 
-        constructor(private bundle: Bundle) {
-        }
+        constructor(private bundle: Bundle) {}
 
         getResponse(url: string): Response {
           const indexEntry = asArray(this.bundle.indexSection.get(url));
@@ -174,7 +174,7 @@ export class Bundle {
         destructureBundle(wbn: unknown[]): [any, any, any, any, any, any] {
           return [wbn[0], wbn[1], null, wbn[2], wbn[3], wbn[4]];
         }
-      }(this);
+      })(this);
     }
   }
 }
@@ -198,8 +198,11 @@ export class Response {
   }
 }
 
-function decodeResponseMap(cbor: Uint8Array): { status: number; headers: Headers } {
-  const decoded = cborg.decode(cbor, {useMaps: true});
+function decodeResponseMap(cbor: Uint8Array): {
+  status: number;
+  headers: Headers;
+} {
+  const decoded = cborg.decode(cbor, { useMaps: true });
   if (!(decoded instanceof Map)) {
     throw new Error('Wrong header map structure');
   }
