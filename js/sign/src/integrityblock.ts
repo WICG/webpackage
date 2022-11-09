@@ -29,6 +29,7 @@ type IntegrityBlockSignerOptions = {
 export class IntegrityBlockSigner {
   private key: KeyObject;
   private webBundle: Uint8Array;
+  private webBundleHash: Uint8Array | undefined;
   private integrityBlock: IntegrityBlock | undefined;
 
   constructor(webBundle: Uint8Array, opts: IntegrityBlockSignerOptions) {
@@ -41,6 +42,7 @@ export class IntegrityBlockSigner {
 
   sign(): Uint8Array {
     this.integrityBlock = this.obtainIntegrityBlock().integrityBlock;
+    this.webBundleHash = this.calcWebBundleHash();
 
     // TODO(sonkkeli): All the rest of the signing logic.
     return this.integrityBlock.toCBOR();
@@ -65,6 +67,12 @@ export class IntegrityBlockSigner {
       throw new Error('Re-signing signed bundles is not supported yet.');
     }
     return { integrityBlock: new IntegrityBlock(), offset: 0 };
+  }
+
+  calcWebBundleHash(): Uint8Array {
+    var hash = crypto.createHash('sha512');
+    var data = hash.update(this.webBundle);
+    return new Uint8Array(data.digest());
   }
 }
 
