@@ -2,12 +2,12 @@ import * as wbn from '../lib/wbn.js';
 import * as cli from '../lib/cli.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import url from "url";
+import url from 'url';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 describe('CLI', () => {
   const exampleURL = 'https://example.com/';
-    describe('addFile', () => {
+  describe('addFile', () => {
     it('adds an exchange as expected', () => {
       const file = path.resolve(__dirname, 'testdata/encoder_test/index.html');
       const builder = new wbn.BundleBuilder();
@@ -112,12 +112,7 @@ describe('CLI', () => {
         { 'Content-Type': 'text/html' },
         fs.readFileSync(path.resolve(dir, 'index.html'))
       );
-      refBuilder.addExchange(
-        'index.html',
-        301,
-        { Location: './' },
-        ''
-      );
+      refBuilder.addExchange('index.html', 301, { Location: './' }, '');
       refBuilder.addExchange(
         'resources/style.css',
         200,

@@ -1,7 +1,7 @@
 import * as wbn from '../lib/wbn.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import url from "url";
+import url from 'url';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 // Tests for webbundle format version b2
@@ -45,7 +45,9 @@ describe('Bundle', () => {
         'content-language': 'ja',
       });
       expect(new TextDecoder('utf-8').decode(resp1.body)).toBe('Hello, world!');
-      expect(new TextDecoder('utf-8').decode(resp2.body)).toBe('こんにちは世界');
+      expect(new TextDecoder('utf-8').decode(resp2.body)).toBe(
+        'こんにちは世界'
+      );
     });
 
     it('throws if URL is not found', () => {
@@ -57,7 +59,9 @@ describe('Bundle', () => {
   });
 
   it('parses pregenerated bundle', () => {
-    const buf = fs.readFileSync(path.resolve(__dirname, 'testdata/hello_b2.wbn'));
+    const buf = fs.readFileSync(
+      path.resolve(__dirname, 'testdata/hello_b2.wbn')
+    );
     const b = new wbn.Bundle(buf);
     expect(b.primaryURL).toBe(null);
     expect(b.urls).toEqual(['https://example.com/hello.html']);
