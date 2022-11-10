@@ -29,7 +29,6 @@ type IntegrityBlockSignerOptions = {
 export class IntegrityBlockSigner {
   private key: KeyObject;
   private webBundle: Uint8Array;
-  private webBundleHash: Uint8Array | undefined;
   private integrityBlock: IntegrityBlock | undefined;
 
   constructor(webBundle: Uint8Array, opts: IntegrityBlockSignerOptions) {
@@ -44,19 +43,28 @@ export class IntegrityBlockSigner {
     this.integrityBlock = this.obtainIntegrityBlock().integrityBlock;
 
     const publicKey = crypto.createPublicKey(this.key);
-    // Currently this is the only way for us to get the raw 32 bytes of the public key.
-    const rawPublicKey = new Uint8Array(
-      publicKey.export({ type: 'spki', format: 'der' }).slice(-32)
-    );
 
-    // TODO(sonkkeli): Add to signatureStack.
     const newAttributes: SignatureAttributes = {
-      [ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: rawPublicKey,
+      [ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: this.getRawPublicKey(publicKey),
     };
 
-    this.webBundleHash = this.calcWebBundleHash();
+    // TODO(sonkkeli): Ensure integrity block and attributes are deterministic.
 
-    // TODO(sonkkeli): All the rest of the signing logic.
+    const dataToBeSigned = this.generateDataToBeSigned(
+      this.calcWebBundleHash(),
+      this.integrityBlock.toCBOR(),
+      cborg.encode(newAttributes)
+    );
+
+    const signature = this.signAndVerify(dataToBeSigned, this.key, publicKey);
+
+    this.integrityBlock.addIntegritySignature({
+      signature,
+      signatureAttributes: newAttributes,
+    });
+
+    // TODO(sonkkeli): Ensure integrity block and attributes are deterministic.
+
     return this.integrityBlock.toCBOR();
   }
 
@@ -86,6 +94,76 @@ export class IntegrityBlockSigner {
     var data = hash.update(this.webBundle);
     return new Uint8Array(data.digest());
   }
+
+  generateDataToBeSigned(
+    webBundleHash: Uint8Array,
+    integrityBlockCborBytes: Uint8Array,
+    newAttributesCborBytes: Uint8Array
+  ): Uint8Array {
+    // The order is critical and must be the following:
+    // (0) hash of the bundle,
+    // (1) integrity block, and
+    // (2) attributes.
+    const dataParts = [
+      { length: webBundleHash.length, bytes: webBundleHash },
+      {
+        length: integrityBlockCborBytes.length,
+        bytes: integrityBlockCborBytes,
+      },
+      { length: newAttributesCborBytes.length, bytes: newAttributesCborBytes },
+    ];
+
+    const bigEndianNumLength = 8;
+
+    const totalLength = dataParts.reduce((previous, current) => {
+      return previous + current.length;
+    }, /*one big endian num per part*/ dataParts.length * bigEndianNumLength);
+    let buffer = Buffer.alloc(totalLength);
+
+    let offset = 0;
+    dataParts.forEach((data) => {
+      buffer.writeBigInt64BE(BigInt(data.length), offset);
+      offset += bigEndianNumLength;
+
+      Buffer.from(data.bytes).copy(buffer, offset);
+      offset += data.length;
+    });
+
+    return new Uint8Array(buffer);
+  }
+
+  getRawPublicKey(publicKey: crypto.KeyObject) {
+    // Currently this is the only way for us to get the raw 32 bytes of the public key.
+    return new Uint8Array(
+      publicKey.export({ type: 'spki', format: 'der' }).slice(-32)
+    );
+  }
+
+  signAndVerify(
+    dataToBeSigned: Uint8Array,
+    privateKey: crypto.KeyObject,
+    publicKey: crypto.KeyObject
+  ): Uint8Array {
+    const signature = crypto.sign(
+      /*algorithm=*/ undefined,
+      dataToBeSigned,
+      privateKey
+    );
+
+    const isVerified = crypto.verify(
+      /*algorithm=*/ undefined,
+      dataToBeSigned,
+      publicKey,
+      signature
+    );
+
+    if (!isVerified) {
+      throw new Error(
+        'Signature cannot be verified. Your keys might be corrupted.'
+      );
+    }
+    return signature;
+  }
 }
 
 export class IntegrityBlock {
@@ -100,6 +178,14 @@ export class IntegrityBlock {
   }
 
   toCBOR(): Uint8Array {
-    return cborg.encode([this.magic, this.version, this.signatureStack]);
+    return cborg.encode([
+      this.magic,
+      this.version,
+      this.signatureStack.map((integritySig) => {
+        // The CBOR must have an array of length 2 containing the following:
+        // (0) attributes and (1) signature. The order is important.
+        return [integritySig.signatureAttributes, integritySig.signature];
+      }),
+    ]);
   }
 }
