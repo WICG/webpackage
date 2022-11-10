@@ -42,6 +42,18 @@ export class IntegrityBlockSigner {
 
   sign(): Uint8Array {
     this.integrityBlock = this.obtainIntegrityBlock().integrityBlock;
+
+    const publicKey = crypto.createPublicKey(this.key);
+    // Currently this is the only way for us to get the raw 32 bytes of the public key.
+    const rawPublicKey = new Uint8Array(
+      publicKey.export({ type: 'spki', format: 'der' }).slice(-32)
+    );
+
+    // TODO(sonkkeli): Add to signatureStack.
+    const newAttributes: SignatureAttributes = {
+      [ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: rawPublicKey,
+    };
+
     this.webBundleHash = this.calcWebBundleHash();
 
     // TODO(sonkkeli): All the rest of the signing logic.
