@@ -9,7 +9,7 @@ describe('Bundle Builder', () => {
   const validURLs = [
     'https://example.com/',
     'relative/url',
-    '',  // An empty string is a valid relative URL.
+    '', // An empty string is a valid relative URL.
   ];
   const exampleURL = validURLs[0];
   const invalidURLs = [
@@ -34,7 +34,7 @@ describe('Bundle Builder', () => {
 
     it('accepts valid URLs', () => {
       const builder = new wbn.BundleBuilder();
-      validURLs.forEach(url => {
+      validURLs.forEach((url) => {
         expect(
           builder.addExchange(url, 200, defaultHeaders, defaultContent)
         ).toBe(builder);
@@ -43,7 +43,7 @@ describe('Bundle Builder', () => {
 
     it('rejects invalid URLs', () => {
       const builder = new wbn.BundleBuilder();
-      invalidURLs.forEach(url => {
+      invalidURLs.forEach((url) => {
         expect(() =>
           builder.addExchange(url, 200, defaultHeaders, defaultContent)
         ).toThrowError();
@@ -67,7 +67,7 @@ describe('Bundle Builder', () => {
 
     it('rejects invalid URLs', () => {
       const builder = new wbn.BundleBuilder();
-      invalidURLs.forEach(url => {
+      invalidURLs.forEach((url) => {
         expect(() => builder.setPrimaryURL(url)).toThrowError();
       });
     });
@@ -75,15 +75,18 @@ describe('Bundle Builder', () => {
     it('rejects double call', () => {
       const builder = new wbn.BundleBuilder();
       builder.setPrimaryURL(exampleURL);
-      expect(() =>
-        builder.setPrimaryURL(exampleURL)
-      ).toThrowError();
+      expect(() => builder.setPrimaryURL(exampleURL)).toThrowError();
     });
   });
 
   it('builds large bundle', () => {
     const builder = new wbn.BundleBuilder();
-    builder.addExchange(exampleURL, 200, defaultHeaders, new Uint8Array(1024 * 1024));
+    builder.addExchange(
+      exampleURL,
+      200,
+      defaultHeaders,
+      new Uint8Array(1024 * 1024)
+    );
     const buf = builder.createBundle();
     // Just checks the result is a valid CBOR array.
     expect(cborg.decode(buf)).toBeInstanceOf(Array);

@@ -45,7 +45,9 @@ describe('Bundle', () => {
         'content-language': 'ja',
       });
       expect(new TextDecoder('utf-8').decode(resp1.body)).toBe('Hello, world!');
-      expect(new TextDecoder('utf-8').decode(resp2.body)).toBe('こんにちは世界');
+      expect(new TextDecoder('utf-8').decode(resp2.body)).toBe(
+        'こんにちは世界'
+      );
     });
 
     it('throws if URL is not found', () => {
@@ -57,7 +59,9 @@ describe('Bundle', () => {
   });
 
   it('parses pregenerated bundle', () => {
-    const buf = fs.readFileSync(path.resolve(__dirname, 'testdata/hello_b1.wbn'));
+    const buf = fs.readFileSync(
+      path.resolve(__dirname, 'testdata/hello_b1.wbn')
+    );
     const b = new wbn.Bundle(buf);
     expect(b.primaryURL).toBe('https://example.com/hello.html');
     expect(b.manifestURL).toBe(null);

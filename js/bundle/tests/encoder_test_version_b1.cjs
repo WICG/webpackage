@@ -6,11 +6,7 @@ const cborg = require('cborg');
 describe('Bundle Builder', () => {
   const defaultHeaders = { 'Content-Type': 'text/plain' };
   const defaultContent = 'Hello, world!';
-  const validURLs = [
-    'https://example.com/',
-    'relative/url',
-    '',
-  ]
+  const validURLs = ['https://example.com/', 'relative/url', ''];
   const primaryURL = validURLs[0];
   const invalidURLs = [
     'https://example.com/#fragment',
@@ -38,7 +34,7 @@ describe('Bundle Builder', () => {
     it('accepts valid URLs', () => {
       const builder = new wbn.BundleBuilder('b1');
       builder.setPrimaryURL(primaryURL);
-      validURLs.forEach(url => {
+      validURLs.forEach((url) => {
         expect(
           builder.addExchange(url, 200, defaultHeaders, defaultContent)
         ).toBe(builder);
@@ -48,7 +44,7 @@ describe('Bundle Builder', () => {
     it('rejects invalid URLs', () => {
       const builder = new wbn.BundleBuilder('b1');
       builder.setPrimaryURL(primaryURL);
-      invalidURLs.forEach(url => {
+      invalidURLs.forEach((url) => {
         expect(() =>
           builder.addExchange(url, 200, defaultHeaders, defaultContent)
         ).toThrowError();
@@ -72,14 +68,14 @@ describe('Bundle Builder', () => {
     });
 
     it('must be called before createBundle', () => {
-      invalidURLs.forEach(url => {
+      invalidURLs.forEach((url) => {
         const builder = new wbn.BundleBuilder('b1');
         expect(() => builder.createBundle()).toThrowError();
       });
     });
 
     it('rejects invalid URLs', () => {
-      invalidURLs.forEach(url => {
+      invalidURLs.forEach((url) => {
         const builder = new wbn.BundleBuilder('b1');
         expect(() => builder.setPrimaryURL(url)).toThrowError();
       });
@@ -88,9 +84,7 @@ describe('Bundle Builder', () => {
     it('rejects double call', () => {
       const builder = new wbn.BundleBuilder('b1');
       builder.setPrimaryURL(primaryURL);
-      expect(() =>
-        builder.setPrimaryURL(primaryURL)
-      ).toThrowError();
+      expect(() => builder.setPrimaryURL(primaryURL)).toThrowError();
     });
   });
 
@@ -104,7 +98,7 @@ describe('Bundle Builder', () => {
     it('rejects invalid URLs', () => {
       const builder = new wbn.BundleBuilder('b1');
       builder.setPrimaryURL(primaryURL);
-      invalidURLs.forEach(url => {
+      invalidURLs.forEach((url) => {
         expect(() => builder.setManifestURL(url)).toThrowError();
       });
     });
@@ -122,7 +116,12 @@ describe('Bundle Builder', () => {
   it('builds large bundle', () => {
     const builder = new wbn.BundleBuilder('b1');
     builder.setPrimaryURL(primaryURL);
-    builder.addExchange(primaryURL, 200, defaultHeaders, new Uint8Array(1024 * 1024));
+    builder.addExchange(
+      primaryURL,
+      200,
+      defaultHeaders,
+      new Uint8Array(1024 * 1024)
+    );
     const buf = builder.createBundle();
     // Just checks the result is a valid CBOR array.
     expect(cborg.decode(buf)).toBeInstanceOf(Array);
