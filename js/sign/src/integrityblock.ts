@@ -1,4 +1,5 @@
 import crypto, { KeyObject } from 'crypto';
+import * as cborg from 'cborg';
 import {
   ED25519_PK_SIGNATURE_ATTRIBUTE_NAME,
   INTEGRITY_BLOCK_MAGIC,
@@ -19,12 +20,6 @@ type SignatureAttributes = { [SignatureAttributeKey: string]: Uint8Array };
 type IntegritySignature = {
   signatureAttributes: SignatureAttributes;
   signature: Uint8Array;
-};
-
-type IntegrityBlock = {
-  magic: Uint8Array;
-  version: Uint8Array;
-  signatureStack: IntegritySignature[];
 };
 
 type IntegrityBlockSignerOptions = {
@@ -48,7 +43,7 @@ export class IntegrityBlockSigner {
     this.integrityBlock = this.obtainIntegrityBlock().integrityBlock;
 
     // TODO(sonkkeli): All the rest of the signing logic.
-    return new Uint8Array();
+    return this.integrityBlock.toCBOR();
   }
 
   readWebBundleLength(): number {
@@ -61,14 +56,6 @@ export class IntegrityBlockSigner {
     return Number(buffer.readBigUint64BE());
   }
 
-  getEmptyIntegrityBlock = (): IntegrityBlock => {
-    return {
-      magic: INTEGRITY_BLOCK_MAGIC,
-      version: VERSION_B1,
-      signatureStack: [],
-    };
-  };
-
   obtainIntegrityBlock(): {
     integrityBlock: IntegrityBlock;
     offset: number;
@@ -77,6 +64,22 @@ export class IntegrityBlockSigner {
     if (webBundleLength !== this.webBundle.length) {
       throw new Error('Re-signing signed bundles is not supported yet.');
     }
-    return { integrityBlock: this.getEmptyIntegrityBlock(), offset: 0 };
+    return { integrityBlock: new IntegrityBlock(), offset: 0 };
+  }
+}
+
+export class IntegrityBlock {
+  private readonly magic = INTEGRITY_BLOCK_MAGIC;
+  private readonly version = VERSION_B1;
+  private signatureStack: IntegritySignature[] = [];
+
+  constructor() {}
+
+  addIntegritySignature(is: IntegritySignature) {
+    this.signatureStack.unshift(is);
+  }
+
+  toCBOR(): Uint8Array {
+    return cborg.encode([this.magic, this.version, this.signatureStack]);
   }
 }

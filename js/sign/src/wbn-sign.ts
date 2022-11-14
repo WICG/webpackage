@@ -1,1 +1,5 @@
-export { IntegrityBlockSigner, parseStringKey } from './integrityblock.js';
+export {
+  IntegrityBlockSigner,
+  IntegrityBlock,
+  parseStringKey,
+} from './integrityblock.js';
