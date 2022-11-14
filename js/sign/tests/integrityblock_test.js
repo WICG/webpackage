@@ -7,7 +7,7 @@ import * as cborg from 'cborg';
 import url from 'url';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
-describe('Integrity Block', () => {
+describe('Integrity Block Signer', () => {
   function initSignerWithTestWebBundleAndKeys(keyType = 'ed25519') {
     const keypair = crypto.generateKeyPairSync(keyType);
     const file = path.resolve(__dirname, 'testdata/unsigned.wbn');
@@ -40,5 +40,15 @@ describe('Integrity Block', () => {
     expect(decoded[0]).toEqual(constants.INTEGRITY_BLOCK_MAGIC);
     expect(decoded[1]).toEqual(constants.VERSION_B1);
     expect(decoded[2]).toEqual([]);
+  });
+
+  it('calculates the hash of the web bundle correctly.', () => {
+    const signer = initSignerWithTestWebBundleAndKeys();
+    const hexHashString =
+      '95f8713d382ffefb8f1e4f464e39a2bf18280c8b26434d2fcfc08d7d710c8919ace5a652e25e66f9292cda424f20e4b53bf613bf9488140272f56a455393f7e6';
+
+    expect(signer.calcWebBundleHash()).toEqual(
+      Uint8Array.from(Buffer.from(hexHashString, 'hex'))
+    );
   });
 });
