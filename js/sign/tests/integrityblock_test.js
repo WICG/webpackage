@@ -109,17 +109,21 @@ describe('Integrity Block Signer', () => {
 
     const ib = cborg.decode(signer.sign());
     expect(ib.length).toEqual(3);
-    expect(ib[0]).toEqual(constants.INTEGRITY_BLOCK_MAGIC);
-    expect(ib[1]).toEqual(constants.VERSION_B1);
-    expect(ib[2].length).toEqual(1);
-    expect(ib[2][0].length).toEqual(2);
-    expect(ib[2][0][0]).toEqual(sigAttr);
+
+    const [magic, version, signatureStack] = ib;
+    expect(magic).toEqual(constants.INTEGRITY_BLOCK_MAGIC);
+    expect(version).toEqual(constants.VERSION_B1);
+    expect(signatureStack.length).toEqual(1);
+    expect(signatureStack[0].length).toEqual(2);
+
+    const [signatureAttributes, signature] = signatureStack[0];
+    expect(signatureAttributes).toEqual(sigAttr);
     expect(
       crypto.verify(
         /*algorithm=*/ undefined,
         dataToBeSigned,
         keypair.publicKey,
-        ib[2][0][1]
+        signature
       )
     ).toBeTruthy();
   });
