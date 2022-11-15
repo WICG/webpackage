@@ -105,12 +105,9 @@ export class IntegrityBlockSigner {
     // (1) integrity block, and
     // (2) attributes.
     const dataParts = [
-      { length: webBundleHash.length, bytes: webBundleHash },
-      {
-        length: integrityBlockCborBytes.length,
-        bytes: integrityBlockCborBytes,
-      },
-      { length: newAttributesCborBytes.length, bytes: newAttributesCborBytes },
+      webBundleHash,
+      integrityBlockCborBytes,
+      newAttributesCborBytes,
     ];
 
     const bigEndianNumLength = 8;
@@ -121,12 +118,12 @@ export class IntegrityBlockSigner {
     let buffer = Buffer.alloc(totalLength);
 
     let offset = 0;
-    dataParts.forEach((data) => {
-      buffer.writeBigInt64BE(BigInt(data.length), offset);
+    dataParts.forEach((d) => {
+      buffer.writeBigInt64BE(BigInt(d.length), offset);
       offset += bigEndianNumLength;
 
-      Buffer.from(data.bytes).copy(buffer, offset);
-      offset += data.length;
+      Buffer.from(d).copy(buffer, offset);
+      offset += d.length;
     });
 
     return new Uint8Array(buffer);
