@@ -126,10 +126,10 @@ describe('Deterministic check', () => {
 
 // Helper functions.
 
-const convertToNonDeterministicUintHelper = (
+function convertToNonDeterministicUintHelper(
   deterministicUintBytes,
   firstByte
-) => {
+) {
   const newLength = ainfo.getAdditionalInfoLength(
     ainfo.convertToAdditionalInfo(firstByte)
   );
@@ -150,4 +150,4 @@ const convertToNonDeterministicUintHelper = (
     ...emptyExtraBytes,
     ...deterministicUintBytes.slice(shift),
   ]);
-};
+}

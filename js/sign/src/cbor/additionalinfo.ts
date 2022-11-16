@@ -20,7 +20,7 @@ export enum AdditionalInfo {
   Indefinite, // 31
 }
 
-export const convertToAdditionalInfo = (b: number): AdditionalInfo => {
+export function convertToAdditionalInfo(b: number): AdditionalInfo {
   switch (b & 0b00011111) {
     case 24:
       return AdditionalInfo.OneByte;
@@ -39,17 +39,17 @@ export const convertToAdditionalInfo = (b: number): AdditionalInfo => {
     default:
       return AdditionalInfo.Direct;
   }
-};
+}
 
 // Returns the value of the bits following the additional info when
 // AdditionalInfo is of type Direct.
-export const getAdditionalInfoDirectValue = (b: number): number => {
+export function getAdditionalInfoDirectValue(b: number): number {
   return b & 0b00011111;
-};
+}
 
 // Returns the length of the byte array following the additional info byte from
 // which to read the unsigned integer's bytes.
-export const getAdditionalInfoLength = (info: AdditionalInfo): number => {
+export function getAdditionalInfoLength(info: AdditionalInfo): number {
   switch (info) {
     case AdditionalInfo.Direct:
       return 0;
@@ -64,15 +64,13 @@ export const getAdditionalInfoLength = (info: AdditionalInfo): number => {
     default:
       throw new Error(`${info} is not supported.`);
   }
-};
+}
 
 // Returns the unsigned integer limit which is the lowest that should be using
 // the AdditionalInfo in question. If the unsigned integer is smaller than the
 // limit, it should use less bytes than it is currently using meaning it is not
 // following the deterministic principles.
-export const getAdditionalInfoValueLowerLimit = (
-  info: AdditionalInfo
-): bigint => {
+export function getAdditionalInfoValueLowerLimit(info: AdditionalInfo): bigint {
   switch (info) {
     case AdditionalInfo.Direct:
       return 0n;
@@ -92,4 +90,4 @@ export const getAdditionalInfoValueLowerLimit = (
     default:
       throw new Error(`Invalid additional information value: ${info}`);
   }
-};
+}

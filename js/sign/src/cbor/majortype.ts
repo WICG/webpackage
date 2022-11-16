@@ -12,6 +12,6 @@ export enum MajorType {
 }
 
 // Returns the first 3 bits of the first byte representing cbor's major type.
-export const getMajorType = (b: number): MajorType => {
+export function getMajorType(b: number): MajorType {
   return (b & 0xff) >> 5;
-};
+}

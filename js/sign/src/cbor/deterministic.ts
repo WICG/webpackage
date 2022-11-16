@@ -11,17 +11,17 @@ import { getMajorType, MajorType } from './majortype.js';
 // checks that they follow the deterministic principles described here:
 // https://www.rfc-editor.org/rfc/rfc8949.html#name-deterministically-encoded-c.
 // Throws an error if non-deterministic CBOR is encountered.
-export const checkDeterministic = (input: Uint8Array) => {
+export function checkDeterministic(input: Uint8Array) {
   let index = 0;
   while (index < input.length) {
     index += deterministicRec(input, index);
   }
-};
+}
 
 // A recursively called helper function to check the deterministicity of the
 // CBOR item starting from the given index. Returns the length of the CBOR item
 // in bytes.
-const deterministicRec = (input: Uint8Array, index: number): number => {
+function deterministicRec(input: Uint8Array, index: number): number {
   const b = input[index];
 
   switch (getMajorType(b)) {
@@ -47,15 +47,15 @@ const deterministicRec = (input: Uint8Array, index: number): number => {
     default:
       throw new Error('Missing implementation for a major type.');
   }
-};
+}
 
 // unsignedIntegerDeterministic calculates the value of the unsigned integer to ensure that
 // the right amount of bytes is used in the CBOR encoding. It returns both,
 // the length of the bytes array and the value of the unsigned integer.
-const unsignedIntegerDeterministic = (
+function unsignedIntegerDeterministic(
   input: Uint8Array,
   index: number
-): { lengthInBytes: number; value: BigInt } => {
+): { lengthInBytes: number; value: BigInt } {
   const info = convertToAdditionalInfo(input[index]);
   const lengthInBytes = getAdditionalInfoLength(info);
   const value = getUnsignedIntegerValue(
@@ -71,12 +71,12 @@ const unsignedIntegerDeterministic = (
 
   // TODO(sonkkeli): Value will be needed for other than unsigned integer types.
   return { lengthInBytes, value };
-};
+}
 
-export const getUnsignedIntegerValue = (
+export function getUnsignedIntegerValue(
   input: Uint8Array,
   info: AdditionalInfo
-): bigint => {
+): bigint {
   // The additional information is on the first byte, which is not part of the
   // number to be read.
   const offset = 1;
@@ -101,4 +101,4 @@ export const getUnsignedIntegerValue = (
     default:
       throw new Error(`${info} is not supported.`);
   }
-};
+}
