@@ -31,7 +31,7 @@ const uInts = {
   ]),
 };
 
-describe('Deterministic check', () => {
+describe('Deterministic check - Unsigned Integers', () => {
   it('works for positive integers, both single and sequences.', () => {
     for (const testCase of Object.values(uInts)) {
       det.checkDeterministic(testCase);
@@ -98,7 +98,9 @@ describe('Deterministic check', () => {
       }
     }
   });
+});
 
+describe('Deterministic check - Additional information', () => {
   it('converts additional info correctly.', () => {
     for (let i = 0; i <= 23; i++) {
       expect(ainfo.convertToAdditionalInfo(i)).toEqual(
