@@ -41,7 +41,7 @@ describe('Deterministic check', () => {
   });
 
   it("doesn't throw error for empty byte array.", () => {
-    det.checkDeterministic([]);
+    det.checkDeterministic(new Uint8Array());
   });
 
   it('calculates the value of an unsigned integer correctly.', () => {
