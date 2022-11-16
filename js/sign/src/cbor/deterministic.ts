@@ -17,7 +17,9 @@ export function checkDeterministic(input: Uint8Array) {
     index += deterministicRec(input, index);
   }
   if (index > input.length) {
-    throw new Error('Last CBOR item was incomplete.');
+    throw new Error(
+      `Last CBOR item was incomplete. Index ${index} out of bounds of input of length ${input.length}`
+    );
   }
 }
 
@@ -37,8 +39,7 @@ function deterministicRec(input: Uint8Array, index: number): number {
       return textOrByteStringDeterministic(input, index) + 1;
 
     case MajorType.Array:
-      // TODO(sonkkeli): Implement.
-      throw new Error('MajorType.Array not yet implemented');
+      return arrayDeterministic(input, index);
 
     case MajorType.Map:
       // TODO(sonkkeli): Implement.
@@ -120,4 +121,23 @@ function textOrByteStringDeterministic(
   }
 
   return totalLength;
+}
+
+// Returns length of the CBOR array in bytes and checks that each item on it
+// follows the deterministic principles.
+function arrayDeterministic(input: Uint8Array, index: number): number {
+  const { lengthInBytes, value } = unsignedIntegerDeterministic(input, index);
+
+  // Skip the starter byte and the bytes stating the number of elements the array has.
+  let startIndexOfNextElement = index + 1 + lengthInBytes;
+
+  for (var /*element on the array*/ i = 0; i < Number(value); i++) {
+    if (startIndexOfNextElement >= input.length) {
+      throw new Error(
+        'Number of items on CBOR array is less than the number of items it claims.'
+      );
+    }
+    startIndexOfNextElement += deterministicRec(input, startIndexOfNextElement);
+  }
+  return startIndexOfNextElement - index;
 }
