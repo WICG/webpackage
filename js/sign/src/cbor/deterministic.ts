@@ -42,8 +42,7 @@ function deterministicRec(input: Uint8Array, index: number): number {
       return arrayDeterministic(input, index);
 
     case MajorType.Map:
-      // TODO(sonkkeli): Implement.
-      throw new Error('MajorType.Map not yet implemented');
+      return mapDeterministic(input, index);
 
     default:
       throw new Error('Missing implementation for a major type.');
@@ -139,5 +138,57 @@ function arrayDeterministic(input: Uint8Array, index: number): number {
     }
     startIndexOfNextElement += deterministicRec(input, startIndexOfNextElement);
   }
+
+  return startIndexOfNextElement - index;
+}
+
+// Returns the length of the CBOR map in bytes and checks that each item on it
+// follows the deterministic principles. Additionally to ensure deterministicity
+// of a map:
+// 1) It cannot have duplicate keys.
+// 2) Keys must be sorted in the bytewise lexicographic order of their
+// deterministic encodings as described here:
+// https://www.rfc-editor.org/rfc/rfc8949#section-4.2.1. In our use case it
+// doesn't matter whether the ordering would instead follow the "length-first"
+// map key ordering, because we don't have any use case where we would mix keys
+// with different major types.
+function mapDeterministic(input: Uint8Array, index: number): number {
+  const { lengthInBytes, value } = unsignedIntegerDeterministic(input, index);
+
+  // Skip the starter byte and the bytes stating the amount of element pairs the map has.
+  let startIndexOfNextElement = index + 1 + lengthInBytes;
+  let lastSeenKey = new Uint8Array();
+
+  for (var mapItemIndex = 0; mapItemIndex < Number(value) * 2; mapItemIndex++) {
+    if (startIndexOfNextElement >= input.length) {
+      throw new Error(
+        'Number of items on CBOR map is less than the number of items it claims.'
+      );
+    }
+
+    const itemLength = deterministicRec(input, startIndexOfNextElement);
+
+    // Every even item on the CBOR map is a key, which has to be unique and ordered.
+    if (mapItemIndex % 2 == 0) {
+      const keyCborBytes = input.slice(
+        startIndexOfNextElement,
+        startIndexOfNextElement + itemLength
+      );
+
+      // To be lexicographically ordered, the previous key must have been lexicographically smaller
+      // than the current key. If the keys are equal (and ordered), their comparison returns 0.
+      const ordering = Buffer.compare(lastSeenKey, keyCborBytes);
+      if (ordering == 0) {
+        throw new Error('CBOR map contains duplicate keys.');
+      } else if (ordering > 0) {
+        throw new Error('CBOR map keys are not in lexicographical order.');
+      }
+
+      lastSeenKey = keyCborBytes;
+    }
+
+    startIndexOfNextElement += itemLength;
+  }
+
   return startIndexOfNextElement - index;
 }
