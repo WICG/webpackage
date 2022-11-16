@@ -16,6 +16,9 @@ export function checkDeterministic(input: Uint8Array) {
   while (index < input.length) {
     index += deterministicRec(input, index);
   }
+  if (index > input.length) {
+    throw new Error('Last CBOR item was incomplete.');
+  }
 }
 
 // A recursively called helper function to check the deterministicity of the
