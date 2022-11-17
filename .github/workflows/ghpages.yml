@@ -7,12 +7,16 @@ on:
     - CONTRIBUTING.md
     - LICENSE.md
     - .gitignore
+    - "go/**"
+    - "js/**"
   pull_request:
     paths-ignore:
     - README.md
     - CONTRIBUTING.md
     - LICENSE.md
     - .gitignore
+    - "go/**"
+    - "js/**"
 
 jobs:
   build:
