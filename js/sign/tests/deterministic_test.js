@@ -252,6 +252,88 @@ describe('Deterministic check - Arrays', () => {
   });
 });
 
+describe('Deterministic check - Maps', () => {
+  const hello = new Uint8Array([0x45, ...new Uint8Array(Buffer.from('hello'))]);
+  const hello2 = new Uint8Array([
+    0x46,
+    ...new Uint8Array(Buffer.from('hello2')),
+  ]);
+
+  it('works for deterministic maps.', () => {
+    const testBytes = new Uint8Array([
+      0xa2,
+      ...hello,
+      ...uInts[24],
+      ...hello2,
+      ...uInts[4294967295],
+    ]);
+
+    det.checkDeterministic(testBytes);
+    det.checkDeterministic(new Uint8Array([...testBytes, ...testBytes]));
+  });
+
+  it('detects duplicated keys in maps.', () => {
+    const testBytes = new Uint8Array([
+      0xa2,
+      ...hello,
+      ...uInts[24],
+      ...hello,
+      ...uInts[4294967295],
+    ]);
+    expect(() => det.checkDeterministic(testBytes)).toThrowError(
+      'CBOR map contains duplicate keys.'
+    );
+  });
+
+  it('detects duplicated non-sequential keys in maps.', () => {
+    const testBytes = new Uint8Array([
+      0xa3,
+      ...hello,
+      ...uInts[24],
+      ...hello2,
+      ...uInts[4294967295],
+      ...hello,
+      ...uInts['18446744073709551615'],
+    ]);
+    // This is actually impossible to happen without the keys also being in
+    // non-lexicographical order.
+    expect(() => det.checkDeterministic(testBytes)).toThrowError(
+      'CBOR map keys are not in lexicographical order.'
+    );
+  });
+
+  it('detects unordered keys in maps.', () => {
+    // hello: 0b01100101 (0x65) should become before hello2: 0b01100110 (0x66),
+    // so this doesn't follow the lexicographical order.
+    const testBytes = new Uint8Array([
+      0xa2,
+      ...hello2,
+      ...uInts[24],
+      ...hello,
+      ...uInts[4294967295],
+    ]);
+    expect(() => det.checkDeterministic(testBytes)).toThrowError(
+      'CBOR map keys are not in lexicographical order.'
+    );
+  });
+
+  it('detects maps containing too little amount of items.', () => {
+    // The additional information claims that there are 2 pairs (=4 items) but
+    // there are only 1 pair and 1 item (3 items).
+    const testBytes = new Uint8Array([0xa2, ...hello, ...uInts[24], ...hello2]);
+    expect(() => det.checkDeterministic(testBytes)).toThrowError(
+      'Number of items on CBOR map is less than the number of items it claims.'
+    );
+
+    // The additional information claims that there are 2 pairs (=4 items) but
+    // there are only 1 pair (2 items).
+    const testBytes2 = new Uint8Array([0xa2, ...hello, ...uInts[24]]);
+    expect(() => det.checkDeterministic(testBytes2)).toThrowError(
+      'Number of items on CBOR map is less than the number of items it claims.'
+    );
+  });
+});
+
 // Helper functions.
 
 function convertToNonDeterministicUintHelper(
