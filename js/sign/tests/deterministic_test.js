@@ -126,6 +126,68 @@ describe('Deterministic check - Additional information', () => {
   });
 });
 
+describe('Deterministic check - ByteString and Text', () => {
+  it('works for byte strings.', () => {
+    const testBytes = new Uint8Array([0x43, 0x1a, 0x2b, 0x3c]);
+    det.checkDeterministic(testBytes);
+    det.checkDeterministic(new Uint8Array([...testBytes, ...testBytes]));
+  });
+
+  it('works for text.', () => {
+    const testBytes = new Uint8Array([0x63, 0x1a, 0x2b, 0x3c]);
+    det.checkDeterministic(testBytes);
+    det.checkDeterministic(new Uint8Array([...testBytes, ...testBytes]));
+  });
+
+  it('works for long text and byte strings.', () => {
+    const longStr =
+      'olipakerrankilpikonnajakissajotkajuoksivatkilpaajakilpikonnavoitti';
+
+    const testBytesAsByteString = new Uint8Array([
+      0x58,
+      longStr.length,
+      ...new Uint8Array(Buffer.from(longStr)),
+    ]);
+
+    const testBytesAsTextString = new Uint8Array([
+      0x78,
+      longStr.length,
+      ...new Uint8Array(Buffer.from(longStr)),
+    ]);
+
+    det.checkDeterministic(testBytesAsByteString);
+    det.checkDeterministic(testBytesAsTextString);
+    det.checkDeterministic(
+      new Uint8Array([...testBytesAsByteString, ...testBytesAsByteString])
+    );
+    det.checkDeterministic(
+      new Uint8Array([...testBytesAsTextString, ...testBytesAsTextString])
+    );
+  });
+
+  it('detects non-deterministic byte string and text.', () => {
+    // Claiming they would be followed by 3 bytes but there are either 2 or 4.
+    const b01000011 = 0x43;
+    const b01100011 = 0x63;
+    const twoRandomBytes = [0x1a, 0x2b];
+    const fourRandomBytes = [0x1a, 0x2b, 0x1a, 0x2b];
+
+    expect(() =>
+      det.checkDeterministic(new Uint8Array([b01000011, ...twoRandomBytes]))
+    ).toThrowError();
+    expect(() =>
+      det.checkDeterministic(new Uint8Array([b01000011, ...fourRandomBytes]))
+    ).toThrowError();
+
+    expect(() =>
+      det.checkDeterministic(new Uint8Array([b01100011, ...twoRandomBytes]))
+    ).toThrowError();
+    expect(() =>
+      det.checkDeterministic(new Uint8Array([b01100011, ...fourRandomBytes]))
+    ).toThrowError();
+  });
+});
+
 // Helper functions.
 
 function convertToNonDeterministicUintHelper(

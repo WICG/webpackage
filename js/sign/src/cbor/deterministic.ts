@@ -34,10 +34,7 @@ function deterministicRec(input: Uint8Array, index: number): number {
 
     case MajorType.ByteString:
     case MajorType.Text:
-      // TODO(sonkkeli): Implement.
-      throw new Error(
-        'MajorType.ByteString and MajorType.Text not yet implemented'
-      );
+      return textOrByteStringDeterministic(input, index) + 1;
 
     case MajorType.Array:
       // TODO(sonkkeli): Implement.
@@ -72,7 +69,6 @@ function unsignedIntegerDeterministic(
     );
   }
 
-  // TODO(sonkkeli): Value will be needed for other than unsigned integer types.
   return { lengthInBytes, value };
 }
 
@@ -104,4 +100,24 @@ export function getUnsignedIntegerValue(
     default:
       throw new Error(`${info} is not supported.`);
   }
+}
+
+// Returns length of the text or byte string element in bytes for which its
+// deterministicy has been ensured.
+function textOrByteStringDeterministic(
+  input: Uint8Array,
+  index: number
+): number {
+  // lengthInBytes is the length of the number representing the length of the
+  // text/byte string.
+  const { lengthInBytes, value } = unsignedIntegerDeterministic(input, index);
+  const totalLength = lengthInBytes + Number(value);
+
+  if (totalLength >= input.length - index) {
+    throw new Error(
+      "Text or byte string's length cannot exceed the number of bytes left on the input array."
+    );
+  }
+
+  return totalLength;
 }
