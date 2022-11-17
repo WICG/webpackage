@@ -1,7 +1,6 @@
 import commander from 'commander';
 import { IntegrityBlockSigner, parseStringKey } from './integrityblock.js';
 import * as fs from 'fs';
-import crypto, { KeyObject } from 'crypto';
 
 function readOptions() {
   return commander
@@ -30,6 +29,8 @@ export function main() {
   });
   const integrityBlock = signer.sign();
 
-  // TODO: Prepend integrity block.
-  // fs.writeFileSync(options.output, webBundle);
+  var fd = fs.openSync(options.output, 'w');
+  fs.writeSync(fd, integrityBlock);
+  fs.writeSync(fd, webBundle);
+  fs.closeSync(fd);
 }
