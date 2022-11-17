@@ -30,7 +30,6 @@ type IntegrityBlockSignerOptions = {
 export class IntegrityBlockSigner {
   private key: KeyObject;
   private webBundle: Uint8Array;
-  private integrityBlock: IntegrityBlock | undefined;
 
   constructor(webBundle: Uint8Array, opts: IntegrityBlockSignerOptions) {
     if (opts.key.asymmetricKeyType !== 'ed25519') {
@@ -41,7 +40,7 @@ export class IntegrityBlockSigner {
   }
 
   sign(): Uint8Array {
-    this.integrityBlock = this.obtainIntegrityBlock().integrityBlock;
+    const integrityBlock = this.obtainIntegrityBlock().integrityBlock;
 
     const publicKey = crypto.createPublicKey(this.key);
 
@@ -49,7 +48,7 @@ export class IntegrityBlockSigner {
       [ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: this.getRawPublicKey(publicKey),
     };
 
-    const ibCbor = this.integrityBlock.toCBOR();
+    const ibCbor = integrityBlock.toCBOR();
     const attrCbor = cborg.encode(newAttributes);
     checkDeterministic(ibCbor);
     checkDeterministic(attrCbor);
@@ -62,12 +61,12 @@ export class IntegrityBlockSigner {
 
     const signature = this.signAndVerify(dataToBeSigned, this.key, publicKey);
 
-    this.integrityBlock.addIntegritySignature({
+    integrityBlock.addIntegritySignature({
       signature,
       signatureAttributes: newAttributes,
     });
 
-    const signedIbCbor = this.integrityBlock.toCBOR();
+    const signedIbCbor = integrityBlock.toCBOR();
     checkDeterministic(signedIbCbor);
     return signedIbCbor;
   }
