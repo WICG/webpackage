@@ -5,6 +5,7 @@ import {
   INTEGRITY_BLOCK_MAGIC,
   VERSION_B1,
 } from './constants.js';
+import { checkDeterministic } from './cbor/deterministic.js';
 
 // A helper function which can be used to parse string formatted keys to
 // KeyObjects.
@@ -48,12 +49,15 @@ export class IntegrityBlockSigner {
       [ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: this.getRawPublicKey(publicKey),
     };
 
-    // TODO(sonkkeli): Ensure integrity block and attributes are deterministic.
+    const ibCbor = this.integrityBlock.toCBOR();
+    const attrCbor = cborg.encode(newAttributes);
+    checkDeterministic(ibCbor);
+    checkDeterministic(attrCbor);
 
     const dataToBeSigned = this.generateDataToBeSigned(
       this.calcWebBundleHash(),
-      this.integrityBlock.toCBOR(),
-      cborg.encode(newAttributes)
+      ibCbor,
+      attrCbor
     );
 
     const signature = this.signAndVerify(dataToBeSigned, this.key, publicKey);
@@ -63,9 +67,9 @@ export class IntegrityBlockSigner {
       signatureAttributes: newAttributes,
     });
 
-    // TODO(sonkkeli): Ensure integrity block and attributes are deterministic.
-
-    return this.integrityBlock.toCBOR();
+    const signedIbCbor = this.integrityBlock.toCBOR();
+    checkDeterministic(signedIbCbor);
+    return signedIbCbor;
   }
 
   readWebBundleLength(): number {
