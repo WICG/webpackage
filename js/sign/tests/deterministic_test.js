@@ -188,6 +188,70 @@ describe('Deterministic check - ByteString and Text', () => {
   });
 });
 
+describe('Deterministic check - Arrays', () => {
+  it('works for arrays.', () => {
+    const testBytes = new Uint8Array([
+      0x85,
+      ...uInts[23],
+      ...uInts[24],
+      ...uInts[45],
+      ...uInts[4294967295],
+      ...uInts['18446744073709551615'],
+    ]);
+
+    det.checkDeterministic(testBytes);
+    det.checkDeterministic(new Uint8Array([...testBytes, ...testBytes]));
+  });
+
+  it('works for empty arrays.', () => {
+    det.checkDeterministic(new Uint8Array([0x80]));
+  });
+
+  it('works for long arrays.', () => {
+    const numOfItems = 24;
+    let buffer = Buffer.alloc(2 + numOfItems * uInts[45].length);
+    buffer[0] = 0x98; // ARR (4) + ONE_BYTE (24)
+    buffer[1] = numOfItems;
+    for (var i = 0; i < numOfItems; i++) {
+      Buffer.from(uInts[45]).copy(buffer, /*offset=*/ 2 + i * uInts[45].length);
+    }
+    const testBytes = new Uint8Array(buffer);
+
+    det.checkDeterministic(testBytes);
+    det.checkDeterministic(new Uint8Array([...testBytes, ...testBytes]));
+  });
+
+  it('detects arrays containing non-deterministic CBOR.', () => {
+    const testBytes = new Uint8Array([
+      0x85,
+      ...uInts[23],
+      ...uInts[24],
+      ...uInts[45],
+      ...convertToNonDeterministicUintHelper(uInts[255], 0x19),
+      ...uInts['18446744073709551615'],
+    ]);
+
+    expect(() => det.checkDeterministic(testBytes)).toThrowError(
+      '255 should not be represented with 2 bytes in deterministic CBOR.'
+    );
+  });
+
+  it('detects arrays containing too little amount of items.', () => {
+    // The additional information claims that there are 5 but there are only 4.
+    const testBytes = new Uint8Array([
+      0x85,
+      ...uInts[23],
+      ...uInts[24],
+      ...uInts[45],
+      ...uInts[4294967295],
+    ]);
+
+    expect(() => det.checkDeterministic(testBytes)).toThrowError(
+      'Number of items on CBOR array is less than the number of items it claims.'
+    );
+  });
+});
+
 // Helper functions.
 
 function convertToNonDeterministicUintHelper(
