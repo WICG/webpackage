@@ -1,5 +1,9 @@
 import * as det from '../lib/cbor/deterministic.js';
 import * as ainfo from '../lib/cbor/additionalinfo.js';
+import * as fs from 'fs';
+import * as path from 'path';
+import url from 'url';
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 const uInts = {
   0: new Uint8Array([0x00]),
@@ -331,6 +335,21 @@ describe('Deterministic check - Maps', () => {
     expect(() => det.checkDeterministic(testBytes2)).toThrowError(
       'Number of items on CBOR map is less than the number of items it claims.'
     );
+  });
+});
+
+describe('Deterministic check - Complex', () => {
+  // The deterministic check is not planned to be used for the whole web bundle
+  // and this test is just there to add more "randomness" to the CBOR tests
+  // since we know the test web bundle is deterministically encoded. It contains
+  // a lot of nested CBOR types so it might catch something that has not been
+  // covered with other tests.
+  it('works for a deterministically encoded web bundle.', () => {
+    const webBundle = fs.readFileSync(
+      path.resolve(__dirname, 'testdata', 'unsigned.wbn')
+    );
+
+    det.checkDeterministic(webBundle);
   });
 });
 
