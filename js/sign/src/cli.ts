@@ -1,5 +1,9 @@
 import commander from 'commander';
-import { IntegrityBlockSigner, parsePemKey } from './integrityblock.js';
+import {
+  IntegrityBlockSigner,
+  WebBundleId,
+  parsePemKey,
+} from './integrityblock.js';
 import * as fs from 'fs';
 
 function readOptions() {
@@ -23,11 +27,20 @@ function readOptions() {
 export function main() {
   const options = readOptions();
   const webBundle = fs.readFileSync(options.input);
-
+  const parsedPrivateKey = parsePemKey(
+    fs.readFileSync(options.privateKey, 'utf-8')
+  );
   const signer = new IntegrityBlockSigner(webBundle, {
-    key: parsePemKey(fs.readFileSync(options.privateKey, 'utf-8')),
+    key: parsedPrivateKey,
   });
   const integrityBlock = signer.sign();
+
+  const consoleLogColor = { green: '\x1b[32m', reset: '\x1b[0m' };
+  console.log(
+    `${consoleLogColor.green}${new WebBundleId(parsedPrivateKey)}${
+      consoleLogColor.reset
+    }`
+  );
 
   var fd = fs.openSync(options.output, 'w');
   fs.writeSync(fd, integrityBlock);

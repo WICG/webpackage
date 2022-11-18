@@ -1,5 +1,6 @@
 import crypto, { KeyObject } from 'crypto';
 import * as cborg from 'cborg';
+import base32Encode from 'base32-encode';
 import {
   ED25519_PK_SIGNATURE_ATTRIBUTE_NAME,
   INTEGRITY_BLOCK_MAGIC,
@@ -13,6 +14,13 @@ export function parsePemKey(unparsedKey: string): KeyObject {
   return crypto.createPrivateKey({
     key: unparsedKey,
   });
+}
+
+export function getRawPublicKey(publicKey: crypto.KeyObject) {
+  // Currently this is the only way for us to get the raw 32 bytes of the public key.
+  return new Uint8Array(
+    publicKey.export({ type: 'spki', format: 'der' }).slice(-32)
+  );
 }
 
 type SignatureAttributeKey = typeof ED25519_PK_SIGNATURE_ATTRIBUTE_NAME;
@@ -45,7 +53,7 @@ export class IntegrityBlockSigner {
     const publicKey = crypto.createPublicKey(this.key);
 
     const newAttributes: SignatureAttributes = {
-      [ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: this.getRawPublicKey(publicKey),
+      [ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: getRawPublicKey(publicKey),
     };
 
     const ibCbor = integrityBlock.toCBOR();
@@ -132,13 +140,6 @@ export class IntegrityBlockSigner {
     return new Uint8Array(buffer);
   }
 
-  getRawPublicKey(publicKey: crypto.KeyObject) {
-    // Currently this is the only way for us to get the raw 32 bytes of the public key.
-    return new Uint8Array(
-      publicKey.export({ type: 'spki', format: 'der' }).slice(-32)
-    );
-  }
-
   signAndVerify(
     dataToBeSigned: Uint8Array,
     privateKey: crypto.KeyObject,
@@ -187,5 +188,45 @@ export class IntegrityBlock {
         return [integritySig.signatureAttributes, integritySig.signature];
       }),
     ]);
+  }
+}
+
+// Web Bundle ID is a base32-encoded (without padding) ed25519 public key
+// transformed to lowercase. More information:
+// https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#signed-web-bundle-ids
+export class WebBundleId {
+  // https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#suffix
+  private readonly appIdSuffix = [0x00, 0x01, 0x02];
+  private readonly scheme = 'isolated-app://';
+  private readonly key: KeyObject;
+
+  constructor(ed25519key: KeyObject) {
+    if (ed25519key.asymmetricKeyType !== 'ed25519') {
+      throw new Error('Only ed25519 keys are currently supported.');
+    }
+
+    if (ed25519key.type === 'private') {
+      this.key = crypto.createPublicKey(ed25519key);
+    } else {
+      this.key = ed25519key;
+    }
+  }
+
+  serialize() {
+    return base32Encode(
+      new Uint8Array([...getRawPublicKey(this.key), ...this.appIdSuffix]),
+      'RFC4648',
+      { padding: false }
+    ).toLowerCase();
+  }
+
+  serializeWithIsolatedWebAppOrigin() {
+    return `${this.scheme}${this.serialize()}/`;
+  }
+
+  toString() {
+    return `\
+Web Bundle ID: ${this.serialize()}
+Isolated Web App Origin: ${this.serializeWithIsolatedWebAppOrigin()}`;
   }
 }

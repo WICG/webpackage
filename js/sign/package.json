@@ -32,6 +32,7 @@
   "author": "Sonja Laurila <laurila@google.com>",
   "license": "W3C-20150513",
   "dependencies": {
+    "base32-encode": "^2.0.0",
     "cborg": "^1.9.4",
     "commander": "^4.0.1"
   },
