@@ -1,5 +1,5 @@
 export {
   IntegrityBlockSigner,
   IntegrityBlock,
-  parseStringKey,
+  parsePemKey,
 } from './integrityblock.js';
