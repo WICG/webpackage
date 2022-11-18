@@ -1,5 +1,5 @@
 import commander from 'commander';
-import { IntegrityBlockSigner, parseStringKey } from './integrityblock.js';
+import { IntegrityBlockSigner, parsePemKey } from './integrityblock.js';
 import * as fs from 'fs';
 import crypto, { KeyObject } from 'crypto';
 
@@ -26,7 +26,7 @@ export function main() {
   const webBundle = fs.readFileSync(options.input);
 
   const signer = new IntegrityBlockSigner(webBundle, {
-    key: parseStringKey(fs.readFileSync(options.privateKey, 'utf-8')),
+    key: parsePemKey(fs.readFileSync(options.privateKey, 'utf-8')),
   });
   const integrityBlock = signer.sign();
 

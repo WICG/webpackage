@@ -9,7 +9,7 @@ import { checkDeterministic } from './cbor/deterministic.js';
 
 // A helper function which can be used to parse string formatted keys to
 // KeyObjects.
-export function parseStringKey(unparsedKey: string): KeyObject {
+export function parsePemKey(unparsedKey: string): KeyObject {
   return crypto.createPrivateKey({
     key: unparsedKey,
   });
