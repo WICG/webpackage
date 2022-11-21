@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/ed25519"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 
@@ -69,6 +70,9 @@ func SignWithIntegrityBlock(privKey crypto.PrivateKey) error {
 	if err != nil {
 		return err
 	}
+
+	webBundleId := integrityblock.GetWebBundleId(ed25519privKey)
+	fmt.Println("Web Bundle ID: " + webBundleId)
 
 	signedBundleFile, err := os.Create(*flagOutput)
 	if err != nil {
