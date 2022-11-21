@@ -319,7 +319,7 @@ func parsePrimarySection(sectionContents []byte) (*url.URL, error) {
 	return primaryURL, nil
 }
 
-// https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#manifest-section
+// https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html#manifest-section
 func parseManifestSection(sectionContents []byte) (*url.URL, error) {
 	dec := cbor.NewDecoder(bytes.NewBuffer(sectionContents))
 	urlString, err := dec.DecodeTextString()
@@ -336,7 +336,7 @@ func parseManifestSection(sectionContents []byte) (*url.URL, error) {
 	return manifestURL, nil
 }
 
-// https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#signatures-section
+// https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html#signatures-section
 func parseSignaturesSection(sectionContents []byte) (*Signatures, error) {
 	// signatures = [
 	//   authorities: [*authority],

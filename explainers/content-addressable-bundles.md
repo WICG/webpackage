@@ -628,7 +628,7 @@ Not yet.
 [resource bundles]: https://github.com/WICG/resource-bundles
 [bundling for the web]: https://lowentropy.net/posts/bundles/
 [web bundles]:
-  https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html
+  https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html
 [dynamic bundle serving with web bundles]:
   https://docs.google.com/document/d/11t4Ix2bvF1_ZCV9HKfafGfWu82zbOD7aUhZ_FyDAgmA/edit
 [nixos]: https://nixos.org/

@@ -60,7 +60,7 @@ a format that allows multiple resources to be bundled, e.g.
 
 Web pages will declare that some of their subresources are provided by the
 [Web
-Bundle](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html)
+Bundle](https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html)
 at a particular URL.
 
 It's likely that the HTML parser will encounter some of the bundle's

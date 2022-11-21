@@ -55,7 +55,7 @@ type Bundle struct {
 // It returns an identifier for the "payload-integrity-header" field of the
 // "resource-integrity" structure. [1]
 //
-// [1] https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#signatures-section
+// [1] https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html#signatures-section
 func (e *Exchange) AddPayloadIntegrity(ver version.Version, recordSize int) (string, error) {
 	if e.Response.Header.Get("Digest") != "" {
 		return "", errors.New("bundle: the exchange already has the Digest: header")

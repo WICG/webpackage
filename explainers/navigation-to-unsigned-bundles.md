@@ -152,7 +152,7 @@ well for these use cases.
 ## Proposal
 
 We propose to use the [Web Bundle
-format](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html),
+format](https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html),
 without origin-trusted signatures, to give users a format they can create from
 any website they're visiting, share it using existing peer-to-peer sharing apps,
 and then have a peer load it in their browser. The IETF's [WPACK
@@ -197,7 +197,7 @@ offline use.
 When the browser navigates to an `application/webbundle;v=___` resource, or
 opens a file that the filesystem identifies as that MIME type, it first parses
 the resource enough to pull out the bundle's [primary
-URL](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#name-load-a-bundles-metadata)
+URL](https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html#name-load-a-bundles-metadata)
 and an indication of whether the responses in the bundle are expected to be
 [authoritiative responses](#authoritative), which for unsigned bundles means the
 bundle is served from the origin that its resources claim.
@@ -550,7 +550,7 @@ access](#network-access) open design question.
 #### 15. Does this specification have a "Security Considerations" and "Privacy Considerations" section?
 
 See the [security considerations in the format
-specification](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#security),
+specification](https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html#security),
 [security and privacy considerations in this
 explainer](#security-and-privacy-considerations), and the [open design questions
 in this explainer](#open-design-questions).

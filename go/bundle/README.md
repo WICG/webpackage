@@ -1,6 +1,6 @@
 # go/bundle
 This directory contains a reference implementation of the [Web
-Bundles](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html)
+Bundles](https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html)
 spec.
 
 ## Overview
