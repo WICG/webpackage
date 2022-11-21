@@ -85,18 +85,22 @@ If `-baseURL` flag is not specified, resources will have relative URLs in the ge
 
 ### sign-bundle
 
-There are two supported ways to sign: using signatures section or integrity block, which can be separated using `-signType` `signaturessection` or `integrityblock` flag values. Without the signType flag, the default is `signaturessection`. 
+`sign-bundle` is split into the following sub-commands:
 
-#### Using Signatures Section
+- `signatures-section`
+- `integrity-block`
+- `dump-id`
 
-`sign-bundle -signType signaturessection` takes an existing bundle file, a certificate and a private key, and emits a new bundle file with cryptographic signature for the bundled resources added.
+#### Using `signatures-section` sub-command
 
-`sign-bundle` updates a bundle attaching a cryptographic signature of its exchanges. To use this tool, you need a pair of a private key and a certificate in the `application/cert-chain+cbor` format. See [signatures-section extension](../../extensions/signatures-section.md) and [go/signedexchange](../signedexchange/README.md) for more information on how to create a key and certificate pair.
+`sign-bundle signatures-section` takes an existing bundle file, a certificate and a private key, and emits a new bundle file with cryptographic signature for the bundled resources added.
+
+It updates a bundle attaching a cryptographic signature of its exchanges. To use this tool, you need a pair of a private key and a certificate in the `application/cert-chain+cbor` format. See [signatures-section extension](../../extensions/signatures-section.md) and [go/signedexchange](../signedexchange/README.md) for more information on how to create a key and certificate pair.
 
 Assuming you have a key and certificate pair for `example.org`, this command will sign all exchanges in `unsigned.wbn` whose URL's hostname is `example.org`, and writes a new bundle to `signed.wbn`.
 
 ```
-sign-bundle \
+sign-bundle signatures-section \
   -i unsigned.wbn \
   -certificate cert.cbor \
   -privateKey priv.key \
@@ -104,21 +108,27 @@ sign-bundle \
   -o signed.wbn
 ```
 
-#### Using Integrity Block
+#### Using `integrity-block` sub-command
 
-`sign-bundle -signType integrityblock` takes an existing bundle file, an ed25519 private key, and emits a new bundle file with cryptographic signature added to the integrity block.
+`sign-bundle integrity-block` takes an existing bundle file, an ed25519 private key, and emits a new bundle file with cryptographic signature added to the integrity block.
 
-`sign-bundle` updates a bundle prepending the web bundle with an integrity block containing a stack of signatures over the hash of the web bundle. To use this tool, you need an ed25519 private key in .pem format, which can be generated with: `openssl genpkey -algorithm Ed25519 -out ed25519key.pem`. 
+It updates a bundle prepending the web bundle with an integrity block containing a stack of signatures over the hash of the web bundle. To use this tool, you need an ed25519 private key in .pem format, which can be generated with: `openssl genpkey -algorithm Ed25519 -out ed25519key.pem`. 
 
 ```
-sign-bundle \
-  -signType integrityblock \
+sign-bundle integrity-block \
   -i unsigned.wbn \
   -privateKey privkey.pem \
   -o signed.swbn
 ```
 
 See [integrityblock-explainer](../../explainers/integrity-signature.md) for more information about what an integrity block is.
+
+#### Using `dump-id` sub-command
+
+`sign-bundle dump-id` is a helper tool to print out the [Web Bundle ID](https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#signed-web-bundle-ids) which is corresponding to the given ed25519 key.
+The ID is base32-encoded lowercase representation of the ed25519 public key with a predefined suffix.
+
+Web Bundle ID can be used for example in the origin of an Isolated Web App.
 
 ### dump-bundle
 `dump-bundle` dumps the content of a web bundle in a human readable form. To

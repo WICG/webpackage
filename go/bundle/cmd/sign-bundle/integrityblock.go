@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto"
 	"crypto/ed25519"
 	"errors"
 	"fmt"
@@ -26,20 +25,44 @@ func writeOutput(bundleFile io.ReadSeeker, integrityBlockBytes []byte, originalI
 	return nil
 }
 
-// SignWithIntegrityBlock creates a CBOR integrity block and prepends that to the web bundle containing
-// a signature of the hash of the web bundle. Finally it writes the new signed web bundle into file.
-// More details can be found in the [explainer](https://github.com/WICG/webpackage/blob/main/explainers/integrity-signature.md).
-func SignWithIntegrityBlock(privKey crypto.PrivateKey) error {
-	if *flagInput == *flagOutput {
-		return errors.New("SignIntegrityBlock: Input and output file cannot be the same.")
+func ReadAndParseEd25519PrivateKey(path string) (ed25519.PrivateKey, error) {
+	privKey, err := readPrivateKeyFromFile(path)
+	if err != nil {
+		return nil, errors.New("SignIntegrityBlock: Unable to read the private key.")
 	}
 
 	ed25519privKey, ok := privKey.(ed25519.PrivateKey)
 	if !ok {
-		return errors.New("SignIntegrityBlock: Private key is not Ed25519 type.")
+		return nil, errors.New("SignIntegrityBlock: Private key is not Ed25519 type.")
+	}
+	return ed25519privKey, nil
+}
+
+func DumpWebBundleId() error {
+	ed25519privKey, err := ReadAndParseEd25519PrivateKey(*dumpIdFlagPrivateKey)
+	if err != nil {
+		return err
 	}
 
-	bundleFile, err := os.Open(*flagInput)
+	webBundleId := integrityblock.GetWebBundleId(ed25519privKey)
+	fmt.Printf("Web Bundle ID: %s\n", webBundleId)
+	return nil
+}
+
+// SignWithIntegrityBlock creates a CBOR integrity block and prepends that to the web bundle containing
+// a signature of the hash of the web bundle. Finally it writes the new signed web bundle into file.
+// More details can be found in the [explainer](https://github.com/WICG/webpackage/blob/main/explainers/integrity-signature.md).
+func SignWithIntegrityBlock() error {
+	if *ibFlagInput == *ibFlagOutput {
+		return errors.New("SignIntegrityBlock: Input and output file cannot be the same.")
+	}
+
+	ed25519privKey, err := ReadAndParseEd25519PrivateKey(*ibFlagPrivateKey)
+	if err != nil {
+		return err
+	}
+
+	bundleFile, err := os.Open(*ibFlagInput)
 	if err != nil {
 		return err
 	}
@@ -74,7 +97,7 @@ func SignWithIntegrityBlock(privKey crypto.PrivateKey) error {
 	webBundleId := integrityblock.GetWebBundleId(ed25519privKey)
 	fmt.Println("Web Bundle ID: " + webBundleId)
 
-	signedBundleFile, err := os.Create(*flagOutput)
+	signedBundleFile, err := os.Create(*ibFlagOutput)
 	if err != nil {
 		return err
 	}

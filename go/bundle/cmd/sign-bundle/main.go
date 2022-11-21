@@ -5,45 +5,61 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"time"
 )
 
-var (
-	flagInput        = flag.String("i", "in.wbn", "Webbundle input file")
-	flagOutput       = flag.String("o", "out.wbn", "Webbundle output file")
-	flagCertificate  = flag.String("certificate", "cert.cbor", "Certificate chain CBOR file")
-	flagPrivateKey   = flag.String("privateKey", "cert-key.pem", "Private key PEM file")
-	flagValidityUrl  = flag.String("validityUrl", "https://example.com/resource.validity.msg", "The URL where resource validity info is hosted at.")
-	flagDate         = flag.String("date", "", "Datetime for the signature in RFC3339 format (2006-01-02T15:04:05Z). (default: current time)")
-	flagExpire       = flag.Duration("expire", 1*time.Hour, "Validity duration of the signature")
-	flagMIRecordSize = flag.Int("miRecordSize", 4096, "Record size of Merkle Integrity Content Encoding")
-	flagSignType     = flag.String("signType", "signaturessection", "Type for signing: signaturessection or integrityblock. Defaulting to signaturessection.")
+const (
+	signaturesSectionSubCmdName = "signatures-section"
+	integrityBlockSubCmdName    = "integrity-block"
+	dumpWebBundleIdSubCmdName   = "dump-id"
 )
 
-const (
-	signTypeSignaturesSection = "signaturessection"
-	signTypeIntegrityBlock    = "integrityblock"
+var (
+	signedExchangesCmd = flag.NewFlagSet(signaturesSectionSubCmdName, flag.ExitOnError)
+	flagInput          = signedExchangesCmd.String("i", "in.wbn", "Webbundle input file")
+	flagOutput         = signedExchangesCmd.String("o", "out.wbn", "Webbundle output file")
+	flagCertificate    = signedExchangesCmd.String("certificate", "cert.cbor", "Certificate chain CBOR file")
+	flagPrivateKey     = signedExchangesCmd.String("privateKey", "cert-key.pem", "Private key PEM file")
+	flagValidityUrl    = signedExchangesCmd.String("validityUrl", "https://example.com/resource.validity.msg", "The URL where resource validity info is hosted at.")
+	flagDate           = signedExchangesCmd.String("date", "", "Datetime for the signature in RFC3339 format (2006-01-02T15:04:05Z). (default: current time)")
+	flagExpire         = signedExchangesCmd.Duration("expire", 1*time.Hour, "Validity duration of the signature")
+	flagMIRecordSize   = signedExchangesCmd.Int("miRecordSize", 4096, "Record size of Merkle Integrity Content Encoding")
+)
+
+var (
+	integrityBlockCmd = flag.NewFlagSet(integrityBlockSubCmdName, flag.ExitOnError)
+	ibFlagInput       = integrityBlockCmd.String("i", "in.wbn", "Webbundle input file")
+	ibFlagOutput      = integrityBlockCmd.String("o", "out.wbn", "Webbundle output file")
+	ibFlagPrivateKey  = integrityBlockCmd.String("privateKey", "privatekey.pem", "Private key PEM file")
+)
+
+var (
+	dumpWebBundleIdCmd   = flag.NewFlagSet(dumpWebBundleIdSubCmdName, flag.ExitOnError)
+	dumpIdFlagPrivateKey = dumpWebBundleIdCmd.String("privateKey", "privatekey.pem", "Private key PEM file whose corresponding Web Bundle ID is wanted.")
 )
 
 func run() error {
-	privKey, err := readPrivateKeyFromFile(*flagPrivateKey)
-	if err != nil {
-		return fmt.Errorf("%s: %v", *flagPrivateKey, err)
-	}
+	switch os.Args[1] {
 
-	if *flagSignType == signTypeSignaturesSection {
-		return SignExchanges(privKey)
+	case signaturesSectionSubCmdName:
+		signedExchangesCmd.Parse(os.Args[2:])
+		return SignExchanges()
 
-	} else if *flagSignType == signTypeIntegrityBlock {
-		return SignWithIntegrityBlock(privKey)
+	case integrityBlockSubCmdName:
+		integrityBlockCmd.Parse(os.Args[2:])
+		return SignWithIntegrityBlock()
 
-	} else {
-		return errors.New(fmt.Sprintf("Unknown signType, approved flag values are \"%v\" and \"%v\".", signTypeSignaturesSection, signTypeIntegrityBlock))
+	case dumpWebBundleIdSubCmdName:
+		dumpWebBundleIdCmd.Parse(os.Args[2:])
+		return DumpWebBundleId()
+
+	default:
+		return errors.New(fmt.Sprintf("Unknown subcommand, try '%s', '%s' or '%s'", signaturesSectionSubCmdName, integrityBlockSubCmdName, dumpWebBundleIdSubCmdName))
 	}
 }
 
 func main() {
-	flag.Parse()
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}

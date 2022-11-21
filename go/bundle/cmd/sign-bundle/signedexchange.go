@@ -74,7 +74,12 @@ func addSignature(b *bundle.Bundle, signer *signature.Signer) error {
 	return nil
 }
 
-func SignExchanges(privKey crypto.PrivateKey) error {
+func SignExchanges() error {
+	privKey, err := readPrivateKeyFromFile(*flagPrivateKey)
+	if err != nil {
+		return fmt.Errorf("%s: %v", *flagPrivateKey, err)
+	}
+
 	if _, ok := privKey.(*ecdsa.PrivateKey); !ok {
 		return errors.New("Private key is not ECDSA type.")
 	}
