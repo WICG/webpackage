@@ -33,7 +33,7 @@ export function main() {
   const signer = new IntegrityBlockSigner(webBundle, {
     key: parsedPrivateKey,
   });
-  const integrityBlock = signer.sign();
+  const { signedWebBundle } = signer.sign();
 
   const consoleLogColor = { green: '\x1b[32m', reset: '\x1b[0m' };
   console.log(
@@ -42,8 +42,5 @@ export function main() {
     }`
   );
 
-  var fd = fs.openSync(options.output, 'w');
-  fs.writeSync(fd, integrityBlock);
-  fs.writeSync(fd, webBundle);
-  fs.closeSync(fd);
+  fs.writeFileSync(options.output, signedWebBundle);
 }

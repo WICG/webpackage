@@ -128,7 +128,7 @@ describe('Integrity Block Signer', () => {
       cborg.encode(sigAttr)
     );
 
-    const ib = cborg.decode(signer.sign());
+    const ib = cborg.decode(signer.sign().integrityBlock);
     expect(ib.length).toEqual(3);
 
     const [magic, version, signatureStack] = ib;

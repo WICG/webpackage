@@ -47,7 +47,7 @@ export class IntegrityBlockSigner {
     this.webBundle = webBundle;
   }
 
-  sign(): Uint8Array {
+  sign(): { integrityBlock: Uint8Array; signedWebBundle: Uint8Array } {
     const integrityBlock = this.obtainIntegrityBlock().integrityBlock;
 
     const publicKey = crypto.createPublicKey(this.key);
@@ -76,7 +76,12 @@ export class IntegrityBlockSigner {
 
     const signedIbCbor = integrityBlock.toCBOR();
     checkDeterministic(signedIbCbor);
-    return signedIbCbor;
+    return {
+      integrityBlock: signedIbCbor,
+      signedWebBundle: new Uint8Array(
+        Buffer.concat([signedIbCbor, this.webBundle])
+      ),
+    };
   }
 
   readWebBundleLength(): number {
