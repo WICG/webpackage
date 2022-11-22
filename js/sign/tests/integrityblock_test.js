@@ -10,6 +10,27 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const TEST_WEB_BUNDLE_HASH =
   '95f8713d382ffefb8f1e4f464e39a2bf18280c8b26434d2fcfc08d7d710c8919ace5a652e25e66f9292cda424f20e4b53bf613bf9488140272f56a455393f7e6';
 const EMPTY_INTEGRITY_BLOCK_HEX = '8348f09f968bf09f93a6443162000080';
+const TEST_PRIVATE_KEY =
+  '-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIB8nP5PpWU7HiILHSfh5PYzb5GAcIfHZ+bw6tcd/LZXh\n-----END PRIVATE KEY-----';
+const TEST_WEB_BUNDLE_ID =
+  '4tkrnsmftl4ggvvdkfth3piainqragus2qbhf7rlz2a3wo3rh4wqaaic';
+const IWA_SCHEME = 'isolated-app://';
+
+describe('Web Bundle ID', () => {
+  const privateKey = wbnSign.parsePemKey(TEST_PRIVATE_KEY);
+  const testKeys = [privateKey, crypto.createPublicKey(privateKey)];
+
+  testKeys.forEach((key, index) => {
+    it(`calculates the ID and isolated web app origin correctly with key #${index}.`, () => {
+      expect(TEST_WEB_BUNDLE_ID).toEqual(
+        new wbnSign.WebBundleId(key).serialize()
+      );
+      expect(`${IWA_SCHEME}${TEST_WEB_BUNDLE_ID}/`).toEqual(
+        new wbnSign.WebBundleId(key).serializeWithIsolatedWebAppOrigin()
+      );
+    });
+  });
+});
 
 describe('Integrity Block Signer', () => {
   function initSignerWithTestWebBundleAndKeys(privateKey) {
@@ -71,7 +92,7 @@ describe('Integrity Block Signer', () => {
   it('generates the dataToBeSigned correctly.', () => {
     const keypair = crypto.generateKeyPairSync('ed25519');
     const signer = initSignerWithTestWebBundleAndKeys(keypair.privateKey);
-    const rawPubKey = signer.getRawPublicKey(keypair.publicKey);
+    const rawPubKey = wbnSign.getRawPublicKey(keypair.publicKey);
     const dataToBeSigned = signer.generateDataToBeSigned(
       signer.calcWebBundleHash(),
       new wbnSign.IntegrityBlock().toCBOR(),
@@ -97,7 +118,7 @@ describe('Integrity Block Signer', () => {
   it('generates a valid signature.', () => {
     const keypair = crypto.generateKeyPairSync('ed25519');
     const signer = initSignerWithTestWebBundleAndKeys(keypair.privateKey);
-    const rawPubKey = signer.getRawPublicKey(keypair.publicKey);
+    const rawPubKey = wbnSign.getRawPublicKey(keypair.publicKey);
     const sigAttr = {
       [constants.ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: rawPubKey,
     };
