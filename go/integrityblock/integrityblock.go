@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"crypto/sha512"
+	"encoding/base32"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/WICG/webpackage/go/internal/cbor"
 )
@@ -33,6 +35,8 @@ var IntegrityBlockMagic = []byte{0xf0, 0x9f, 0x96, 0x8b, 0xf0, 0x9f, 0x93, 0xa6}
 
 // "b1" as bytes and 2 empty bytes
 var VersionB1 = []byte{0x31, 0x62, 0x00, 0x00}
+
+var WebBundleIdSuffix = []byte{0x00, 0x01, 0x02}
 
 // cborEncodeSignatureAttributesMap writes the signature attributes map as CBOR using the given encoder so that the map's key is text string and value byte string.
 func cborEncodeSignatureAttributesMap(signatureAttributes map[string][]byte, enc *cbor.Encoder) error {
@@ -258,4 +262,15 @@ func (integrityBlock *IntegrityBlock) SignAndAddNewSignature(ed25519privKey ed25
 
 	integrityBlock.addNewSignatureToIntegrityBlock(signatureAttributes, signature)
 	return nil
+}
+
+// GetWebBundleId returns a base32-encoded (without padding) ed25519 public key
+// combined with a 3-byte long suffix and transformed to lowercase. More information:
+// https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#signed-web-bundle-ids
+func GetWebBundleId(ed25519privKey ed25519.PrivateKey) string {
+	ed25519publicKey := ed25519privKey.Public().(ed25519.PublicKey)
+	keyWithSuffix := append([]byte(ed25519publicKey), WebBundleIdSuffix...)
+
+	// StdEncoding is the standard base32 encoding, as defined in RFC 4648.
+	return strings.ToLower(base32.StdEncoding.EncodeToString(keyWithSuffix))
 }
