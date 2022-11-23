@@ -14,7 +14,8 @@
     "build": "npm run build:esm && npm run build:cjs",
     "build:esm": "tsc",
     "build:cjs": "esbuild --bundle --format=cjs --external:cborg --outfile=lib/wbn.cjs src/wbn.ts",
-    "test": "jasmine tests/*.js tests/*.cjs"
+    "test": "jasmine tests/*.js tests/*.cjs",
+    "lint": "npx prettier --write **/*.{js,ts,md} --config ./package.json"
   },
   "bin": {
     "wbn": "./bin/wbn.js"
@@ -41,6 +42,7 @@
     "@types/node": "^12.7.11",
     "esbuild": "^0.14.47",
     "jasmine": "^4.2.1",
+    "prettier": "2.8.0",
     "typescript": "^4.7.3"
   },
   "engines": {
@@ -50,6 +52,7 @@
     "tabWidth": 2,
     "semi": true,
     "singleQuote": true,
-    "printWidth": 80
+    "printWidth": 80,
+    "proseWrap": "always"
   }
 }
