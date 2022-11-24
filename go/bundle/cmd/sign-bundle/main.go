@@ -16,15 +16,15 @@ const (
 )
 
 var (
-	signedExchangesCmd = flag.NewFlagSet(signaturesSectionSubCmdName, flag.ExitOnError)
-	flagInput          = signedExchangesCmd.String("i", "in.wbn", "Webbundle input file")
-	flagOutput         = signedExchangesCmd.String("o", "out.wbn", "Webbundle output file")
-	flagCertificate    = signedExchangesCmd.String("certificate", "cert.cbor", "Certificate chain CBOR file")
-	flagPrivateKey     = signedExchangesCmd.String("privateKey", "cert-key.pem", "Private key PEM file")
-	flagValidityUrl    = signedExchangesCmd.String("validityUrl", "https://example.com/resource.validity.msg", "The URL where resource validity info is hosted at.")
-	flagDate           = signedExchangesCmd.String("date", "", "Datetime for the signature in RFC3339 format (2006-01-02T15:04:05Z). (default: current time)")
-	flagExpire         = signedExchangesCmd.Duration("expire", 1*time.Hour, "Validity duration of the signature")
-	flagMIRecordSize   = signedExchangesCmd.Int("miRecordSize", 4096, "Record size of Merkle Integrity Content Encoding")
+	signedExchangesCmd  = flag.NewFlagSet(signaturesSectionSubCmdName, flag.ExitOnError)
+	sxgFlagInput        = signedExchangesCmd.String("i", "in.wbn", "Webbundle input file")
+	sxgFlagOutput       = signedExchangesCmd.String("o", "out.wbn", "Webbundle output file")
+	sxgFlagCertificate  = signedExchangesCmd.String("certificate", "cert.cbor", "Certificate chain CBOR file")
+	sxgFlagPrivateKey   = signedExchangesCmd.String("privateKey", "cert-key.pem", "Private key PEM file")
+	sxgFlagValidityUrl  = signedExchangesCmd.String("validityUrl", "https://example.com/resource.validity.msg", "The URL where resource validity info is hosted at.")
+	sxgFlagDate         = signedExchangesCmd.String("date", "", "Datetime for the signature in RFC3339 format (2006-01-02T15:04:05Z). (default: current time)")
+	sxgFlagExpire       = signedExchangesCmd.Duration("expire", 1*time.Hour, "Validity duration of the signature")
+	sxgFlagMIRecordSize = signedExchangesCmd.Int("miRecordSize", 4096, "Record size of Merkle Integrity Content Encoding")
 )
 
 var (
