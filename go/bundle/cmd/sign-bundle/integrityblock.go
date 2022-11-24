@@ -25,7 +25,7 @@ func writeOutput(bundleFile io.ReadSeeker, integrityBlockBytes []byte, originalI
 	return nil
 }
 
-func ReadAndParseEd25519PrivateKey(path string) (ed25519.PrivateKey, error) {
+func readAndParseEd25519PrivateKey(path string) (ed25519.PrivateKey, error) {
 	privKey, err := readPrivateKeyFromFile(path)
 	if err != nil {
 		return nil, errors.New("SignIntegrityBlock: Unable to read the private key.")
@@ -39,7 +39,7 @@ func ReadAndParseEd25519PrivateKey(path string) (ed25519.PrivateKey, error) {
 }
 
 func DumpWebBundleId() error {
-	ed25519privKey, err := ReadAndParseEd25519PrivateKey(*dumpIdFlagPrivateKey)
+	ed25519privKey, err := readAndParseEd25519PrivateKey(*dumpIdFlagPrivateKey)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func SignWithIntegrityBlock() error {
 		return errors.New("SignIntegrityBlock: Input and output file cannot be the same.")
 	}
 
-	ed25519privKey, err := ReadAndParseEd25519PrivateKey(*ibFlagPrivateKey)
+	ed25519privKey, err := readAndParseEd25519PrivateKey(*ibFlagPrivateKey)
 	if err != nil {
 		return err
 	}
