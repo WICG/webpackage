@@ -57,7 +57,7 @@ func addSignature(b *bundle.Bundle, signer *signature.Signer) error {
 		if !signer.CanSignForURL(e.Request.URL) {
 			continue
 		}
-		payloadIntegrityHeader, err := e.AddPayloadIntegrity(b.Version, *flagMIRecordSize)
+		payloadIntegrityHeader, err := e.AddPayloadIntegrity(b.Version, *sxgFlagMIRecordSize)
 		if err != nil {
 			return err
 		}
@@ -74,38 +74,43 @@ func addSignature(b *bundle.Bundle, signer *signature.Signer) error {
 	return nil
 }
 
-func SignExchanges(privKey crypto.PrivateKey) error {
+func SignExchanges() error {
+	privKey, err := readPrivateKeyFromFile(*sxgFlagPrivateKey)
+	if err != nil {
+		return fmt.Errorf("%s: %v", *sxgFlagPrivateKey, err)
+	}
+
 	if _, ok := privKey.(*ecdsa.PrivateKey); !ok {
 		return errors.New("Private key is not ECDSA type.")
 	}
 
-	certs, err := readCertChainFromFile(*flagCertificate)
+	certs, err := readCertChainFromFile(*sxgFlagCertificate)
 	if err != nil {
-		return fmt.Errorf("%s: %v", *flagCertificate, err)
+		return fmt.Errorf("%s: %v", *sxgFlagCertificate, err)
 	}
 
-	validityUrl, err := url.Parse(*flagValidityUrl)
+	validityUrl, err := url.Parse(*sxgFlagValidityUrl)
 	if err != nil {
-		return fmt.Errorf("failed to parse validity URL %q: %v", *flagValidityUrl, err)
+		return fmt.Errorf("failed to parse validity URL %q: %v", *sxgFlagValidityUrl, err)
 	}
 
 	var date time.Time
-	if *flagDate == "" {
+	if *sxgFlagDate == "" {
 		date = time.Now()
 	} else {
 		var err error
-		date, err = time.Parse(time.RFC3339, *flagDate)
+		date, err = time.Parse(time.RFC3339, *sxgFlagDate)
 		if err != nil {
-			return fmt.Errorf("failed to parse date %q: %v", *flagDate, err)
+			return fmt.Errorf("failed to parse date %q: %v", *sxgFlagDate, err)
 		}
 	}
 
-	b, err := readBundleFromFile(*flagInput)
+	b, err := readBundleFromFile(*sxgFlagInput)
 	if err != nil {
-		return fmt.Errorf("%s: %v", *flagInput, err)
+		return fmt.Errorf("%s: %v", *sxgFlagInput, err)
 	}
 
-	signer, err := signature.NewSigner(b.Version, certs, privKey, validityUrl, date, *flagExpire)
+	signer, err := signature.NewSigner(b.Version, certs, privKey, validityUrl, date, *sxgFlagExpire)
 	if err != nil {
 		return err
 	}
@@ -114,8 +119,8 @@ func SignExchanges(privKey crypto.PrivateKey) error {
 		return err
 	}
 
-	if err := writeBundleToFile(b, *flagOutput); err != nil {
-		return fmt.Errorf("%s: %v", *flagOutput, err)
+	if err := writeBundleToFile(b, *sxgFlagOutput); err != nil {
+		return fmt.Errorf("%s: %v", *sxgFlagOutput, err)
 	}
 	return nil
 }
