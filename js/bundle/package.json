@@ -1,7 +1,7 @@
 {
   "name": "wbn",
   "version": "0.0.8",
-  "description": "Generator and parser for the application/webbundle format, defined in draft-yasskin-wpack-bundled-exchanges-01.",
+  "description": "Generator and parser for the application/webbundle format, defined in draft-ietf-wpack-bundled-responses-01.",
   "homepage": "https://github.com/WICG/webpackage/tree/main/js/bundle",
   "main": "./lib/wbn.cjs",
   "type": "module",
