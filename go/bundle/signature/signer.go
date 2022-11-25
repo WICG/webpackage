@@ -24,7 +24,7 @@ type Signer struct {
 }
 
 // SignedSubset represents a "signed-subset" structure.
-// https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#signatures-section
+// https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html#signatures-section
 type SignedSubset struct {
 	ValidityUrl  *url.URL
 	AuthSha256   []byte

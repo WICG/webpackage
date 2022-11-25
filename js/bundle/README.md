@@ -90,7 +90,7 @@ This module supports creating and parsing Web Bundles that follow different
 draft versions of the format specification. In particular:
 
 - version `b2` follows
-  [the latest version of the Web Bundles spec](https://datatracker.ietf.org/doc/html/draft-yasskin-wpack-bundled-exchanges-04)
+  [the latest version of the Web Bundles spec](https://datatracker.ietf.org/doc/html/draft-ietf-wpack-bundled-responses)
   (default)
 - version `b1` follows
   [the previous version of the Web Bundles spec](https://datatracker.ietf.org/doc/html/draft-yasskin-wpack-bundled-exchanges-03)

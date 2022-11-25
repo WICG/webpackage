@@ -60,7 +60,7 @@ Participate:
 ## Introduction
 
 A [web
-bundle](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html)
+bundle](https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html)
 can be fetched from a URL, and it contains a set of HTTP responses identified by
 URL. This document explains how to name those component subresources directly
 from outside of the bundle and how those names interact with the other parts of

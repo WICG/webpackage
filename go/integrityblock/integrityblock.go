@@ -111,7 +111,7 @@ func generateEmptyIntegrityBlock() *IntegrityBlock {
 }
 
 // readWebBundlePayloadLength returns the length of the web bundle parsed from the last 8 bytes of the web bundle file.
-// [Web Bundle's Trailing Length]: https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#name-trailing-length
+// [Web Bundle's Trailing Length]: https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html#name-trailing-length
 func readWebBundlePayloadLength(bundleFile *os.File) (int64, error) {
 	// Finds the offset, from which the 8 bytes containing the web bundle length start.
 	_, err := bundleFile.Seek(-8, io.SeekEnd)
