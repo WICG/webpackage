@@ -41,7 +41,9 @@ export class IntegrityBlockSigner {
 
   constructor(webBundle: Uint8Array, opts: IntegrityBlockSignerOptions) {
     if (opts.key.asymmetricKeyType !== 'ed25519') {
-      throw new Error('Only ed25519 keys are currently supported.');
+      throw new Error(
+        `IntegrityBlockSigner: Only ed25519 keys are currently supported. Your key's type is ${opts.key.asymmetricKeyType}.`
+      );
     }
     this.key = opts.key;
     this.webBundle = webBundle;
@@ -100,7 +102,9 @@ export class IntegrityBlockSigner {
   } {
     const webBundleLength = this.readWebBundleLength();
     if (webBundleLength !== this.webBundle.length) {
-      throw new Error('Re-signing signed bundles is not supported yet.');
+      throw new Error(
+        'IntegrityBlockSigner: Re-signing signed bundles is not supported yet.'
+      );
     }
     return { integrityBlock: new IntegrityBlock(), offset: 0 };
   }
@@ -165,7 +169,7 @@ export class IntegrityBlockSigner {
 
     if (!isVerified) {
       throw new Error(
-        'Signature cannot be verified. Your keys might be corrupted.'
+        'IntegrityBlockSigner: Signature cannot be verified. Your keys might be corrupted.'
       );
     }
     return signature;
@@ -207,7 +211,9 @@ export class WebBundleId {
 
   constructor(ed25519key: KeyObject) {
     if (ed25519key.asymmetricKeyType !== 'ed25519') {
-      throw new Error('Only ed25519 keys are currently supported.');
+      throw new Error(
+        `WebBundleId: Only ed25519 keys are currently supported. Your key's type is ${ed25519key.asymmetricKeyType}.`
+      );
     }
 
     if (ed25519key.type === 'private') {
