@@ -3,5 +3,6 @@ export {
   IntegrityBlock,
   WebBundleId,
   parsePemKey,
+  readPassphrase,
   getRawPublicKey,
 } from './integrityblock.js';
