@@ -12,6 +12,8 @@ type CBORValue = unknown;
 interface Headers {
   [key: string]: string;
 }
+type OverrideHeadersFunction = (filepath: string) => Headers;
+type OverrideHeadersOption = Headers | OverrideHeadersFunction | undefined;
 
 interface CompatAdapter {
   formatVersion: FormatVersion;
@@ -29,12 +31,17 @@ export class BundleBuilder {
   private responses: Uint8Array[][] = [];
   private currentResponsesOffset = 0;
   private compatAdapter: CompatAdapter;
+  private overrideHeadersOption: OverrideHeadersOption;
 
-  constructor(formatVersion: FormatVersion = DEFAULT_VERSION) {
+  constructor(
+    formatVersion: FormatVersion = DEFAULT_VERSION,
+    overrideHeadersOption?: OverrideHeadersOption
+  ) {
     if (!isApprovedVersion(formatVersion)) {
       throw new Error(`Invalid webbundle format version`);
     }
     this.compatAdapter = this.createCompatAdapter(formatVersion);
+    this.overrideHeadersOption = overrideHeadersOption;
   }
 
   createBundle(): Uint8Array {
@@ -58,15 +65,28 @@ export class BundleBuilder {
     headers: Headers,
     payload: Uint8Array | string
   ): BundleBuilder {
+    const overrideHeaders = this.getOverrideHeaders(url);
+
     validateExchangeURL(url);
     if (typeof payload === 'string') {
       payload = byteString(payload);
     }
     this.addIndexEntry(
       url,
-      this.addResponse(new HeaderMap(status, headers), payload)
+      this.addResponse(
+        new HeaderMap(status, getCombinedHeaders(headers, overrideHeaders)),
+        payload
+      )
     );
     return this;
+  }
+
+  private getOverrideHeaders(url: string): Headers {
+    if (!this.overrideHeadersOption) return {};
+
+    return typeof this.overrideHeadersOption == 'function'
+      ? this.overrideHeadersOption(url)
+      : this.overrideHeadersOption;
   }
 
   setPrimaryURL(url: string): BundleBuilder {
@@ -277,4 +297,39 @@ function validateExchangeURL(urlString: string): void {
 
 function byteString(s: string): Uint8Array {
   return new TextEncoder().encode(s);
+}
+
+function headerNamesToLowerCase(headers: Headers) {
+  const lowerCaseHeaders: Headers = {};
+  for (const key of Object.keys(headers)) {
+    lowerCaseHeaders[key.toLowerCase()] = headers[key];
+  }
+  return lowerCaseHeaders;
+}
+
+// Combines the headers in case no duplicates are found. Header names are also
+// converted into lower case as they are case insensitive. Header values with
+// differing casing are considered equal and the casing in the override takes
+// action. If the header name is duplicate but the value is same, we don't
+// throw an error and only add the header once.
+export function getCombinedHeaders(headers: Headers, overrideHeaders: Headers) {
+  const lowerCaseHeaders = headerNamesToLowerCase(headers);
+  const lowerCaseOverrideHeaders = headerNamesToLowerCase(overrideHeaders);
+
+  Object.keys(overrideHeaders).filter((overrideKey) => {
+    const lowerCaseOverrideKey = overrideKey.toLowerCase();
+    const isDuplicate =
+      lowerCaseHeaders[lowerCaseOverrideKey] &&
+      lowerCaseHeaders[lowerCaseOverrideKey].toLowerCase() !=
+        overrideHeaders[overrideKey].toLowerCase();
+
+    if (isDuplicate) {
+      throw new Error(
+        'Duplicate key with differing values was found: ' + overrideKey
+      );
+    }
+    return isDuplicate;
+  });
+
+  return { ...lowerCaseHeaders, ...lowerCaseOverrideHeaders };
 }

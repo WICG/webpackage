@@ -45,6 +45,8 @@ export function addFilesRecursively(
 }
 
 function readOptions() {
+  // TODO(sonkkeli): Add support for overriding headers.
+
   return commander
     .requiredOption('-d, --dir <directory>', 'input root directory (required)')
     .option('-b, --baseURL <URL>', 'base URL')
