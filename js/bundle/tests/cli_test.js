@@ -131,4 +131,86 @@ describe('CLI', () => {
       expect(() => cli.addFilesRecursively(builder, url, dir)).toThrowError();
     });
   });
+
+  describe('combineHeadersForUrl', () => {
+    it('bundle with more headers has more bytes', () => {
+      const baseURL = 'https://example.com/';
+      const indexFile = path.resolve(
+        __dirname,
+        'testdata/encoder_test/index.html'
+      );
+      const headerOverrides = JSON.parse(
+        fs.readFileSync(
+          path.resolve(__dirname, 'testdata/header-overrides.json'),
+          'utf8'
+        )
+      );
+
+      const builder = new wbn.BundleBuilder();
+      builder.addExchange(
+        baseURL,
+        200,
+        wbn.combineHeadersForUrl(
+          { 'Content-Type': 'text/html' },
+          headerOverrides,
+          baseURL
+        ),
+        fs.readFileSync(indexFile)
+      );
+      const generated = builder.createBundle();
+
+      const refBuilder = new wbn.BundleBuilder();
+      refBuilder.addExchange(
+        baseURL,
+        200,
+        { 'Content-Type': 'text/html' },
+        fs.readFileSync(indexFile)
+      );
+      const refBundle = refBuilder.createBundle();
+
+      expect(generated.length).toBeGreaterThan(refBundle.length);
+    });
+
+    it('duplicate header names with different capitalization only get added once and the latter value in the map takes force', () => {
+      const indexFile = path.resolve(
+        __dirname,
+        'testdata/encoder_test/index.html'
+      );
+      const baseURL = 'https://example.com/';
+      const defaultHeaders = { 'Content-Type': 'text/html' };
+
+      const builder = new wbn.BundleBuilder();
+      builder.addExchange(
+        baseURL,
+        200,
+        wbn.combineHeadersForUrl(
+          defaultHeaders,
+          {
+            'content-type': 'text/html',
+            'Hello-World': 'value',
+            'hello-world': 'value2',
+          },
+          baseURL
+        ),
+        fs.readFileSync(indexFile)
+      );
+      const bundle = builder.createBundle();
+
+      const refBuilder = new wbn.BundleBuilder();
+      refBuilder.addExchange(
+        baseURL,
+        200,
+        wbn.combineHeadersForUrl(
+          defaultHeaders,
+          { 'hello-world': 'value2' },
+          baseURL
+        ),
+        fs.readFileSync(indexFile)
+      );
+      const refBundle = refBuilder.createBundle();
+
+      expect(bundle.length).toBe(refBundle.length);
+      expect(Buffer.compare(bundle, refBundle)).toBe(0);
+    });
+  });
 });

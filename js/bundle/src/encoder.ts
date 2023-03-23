@@ -9,9 +9,11 @@ import {
 } from './constants.js';
 
 type CBORValue = unknown;
-interface Headers {
+export interface Headers {
   [key: string]: string;
 }
+type OverrideHeadersFunction = (filepath: string) => Headers;
+type OverrideHeadersOption = Headers | OverrideHeadersFunction | undefined;
 
 interface CompatAdapter {
   formatVersion: FormatVersion;
@@ -277,4 +279,42 @@ function validateExchangeURL(urlString: string): void {
 
 function byteString(s: string): Uint8Array {
   return new TextEncoder().encode(s);
+}
+
+// Type guard for checking that the headers are in valid format: an object of
+// strings.
+export function isHeaders(obj: any): obj is Headers {
+  if (typeof obj !== 'object') {
+    return false;
+  }
+
+  for (const value of Object.values(obj)) {
+    if (typeof value !== 'string') {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Based on the type of the overrideHeadersOption combines the original headers
+// with the override headers.
+export function combineHeadersForUrl(
+  headers: Headers,
+  overrideHeadersOption: OverrideHeadersOption,
+  url: string
+) {
+  if (!overrideHeadersOption) return headers;
+
+  const headersForUrl =
+    typeof overrideHeadersOption == 'function'
+      ? overrideHeadersOption(url)
+      : overrideHeadersOption;
+
+  if (!isHeaders(headersForUrl)) {
+    throw new Error(
+      'Malformatted override headers: They should be an object of strings.'
+    );
+  }
+
+  return { ...headers, ...headersForUrl };
 }

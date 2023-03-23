@@ -1,0 +1,7 @@
+{ 
+  "access-control-allow-headers": "Cross-Origin-Embedder-Policy, Cross-Origin-Opener-Policy, Cross-Origin-Resource-Policy",
+  "cross-origin-opener-policy": "same-origin;report-to=\"coop\"",
+  "cross-origin-embedder-policy": "require-corp;report-to=\"coep\"",
+  "cross-origin-resource-policy": "same-origin",
+  "helloworld": "helloworld"
+}

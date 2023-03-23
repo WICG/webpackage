@@ -128,6 +128,10 @@ Chrome (104+) supports
 
 ## Release Notes
 
+### 0.0.9
+
+- Add support for overriding headers.
+
 ### 0.0.8
 
 - Now `wbn` package provides both ES modules and CommonJS exports.
