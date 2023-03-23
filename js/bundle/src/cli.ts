@@ -1,5 +1,10 @@
 import commander from 'commander';
-import { BundleBuilder } from './encoder.js';
+import {
+  BundleBuilder,
+  combineHeadersForUrl,
+  isHeaders,
+  Headers,
+} from './encoder.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import mime from 'mime';
@@ -11,17 +16,28 @@ import {
   FormatVersion,
 } from './constants.js';
 
-export function addFile(builder: BundleBuilder, url: string, file: string) {
+export function addFile(
+  builder: BundleBuilder,
+  url: string,
+  file: string,
+  overrideHeaders: Headers
+) {
   const headers = {
     'Content-Type': mime.getType(file) || 'application/octet-stream',
   };
-  builder.addExchange(url, 200, headers, fs.readFileSync(file));
+  builder.addExchange(
+    url,
+    200,
+    combineHeadersForUrl(headers, overrideHeaders, url),
+    fs.readFileSync(file)
+  );
 }
 
 export function addFilesRecursively(
   builder: BundleBuilder,
   baseURL: string,
-  dir: string
+  dir: string,
+  overrideHeaders: Headers
 ) {
   if (baseURL !== '' && !baseURL.endsWith('/')) {
     throw new Error("Non-empty baseURL must end with '/'.");
@@ -31,15 +47,29 @@ export function addFilesRecursively(
   for (const file of files) {
     const filePath = path.join(dir, file);
     if (fs.statSync(filePath).isDirectory()) {
-      addFilesRecursively(builder, baseURL + file + '/', filePath);
+      addFilesRecursively(
+        builder,
+        baseURL + file + '/',
+        filePath,
+        overrideHeaders
+      );
     } else if (file === 'index.html') {
       // If the file name is 'index.html', create an entry for baseURL itself
       // and another entry for baseURL/index.html which redirects to baseURL.
       // This matches the behavior of gen-bundle.
-      addFile(builder, baseURL, filePath);
-      builder.addExchange(baseURL + file, 301, { Location: './' }, '');
+      addFile(builder, baseURL, filePath, overrideHeaders);
+      builder.addExchange(
+        baseURL + file,
+        301,
+        combineHeadersForUrl(
+          { Location: './' },
+          overrideHeaders,
+          baseURL + file
+        ),
+        ''
+      );
     } else {
-      addFile(builder, baseURL + file, filePath);
+      addFile(builder, baseURL + file, filePath, overrideHeaders);
     }
   }
 }
@@ -68,6 +98,10 @@ function readOptions() {
       'manifest URL (only valid with format version "' + B1 + '")'
     )
     .option('-o, --output <file>', 'webbundle output file', 'out.wbn')
+    .option(
+      '-h, --headerOverride <jsonFilePath>',
+      'path to a JSON file specifying the headers'
+    )
     .parse(process.argv);
 }
 
@@ -110,6 +144,15 @@ export function main() {
       ? DEFAULT_VERSION
       : options.formatVersion;
 
+  const headerOverrides =
+    options.headerOverride === undefined
+      ? undefined
+      : JSON.parse(fs.readFileSync(options.headerOverride, 'utf8'));
+
+  if (headerOverrides !== undefined) {
+    isHeaders(headerOverrides);
+  }
+
   const builder = new BundleBuilder(version);
 
   switch (version) {
@@ -127,6 +170,11 @@ export function main() {
       break;
   }
 
-  addFilesRecursively(builder, options.baseURL || '', options.dir);
+  addFilesRecursively(
+    builder,
+    options.baseURL || '',
+    options.dir,
+    headerOverrides
+  );
   fs.writeFileSync(options.output, builder.createBundle());
 }

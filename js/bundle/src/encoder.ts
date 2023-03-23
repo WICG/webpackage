@@ -9,9 +9,11 @@ import {
 } from './constants.js';
 
 type CBORValue = unknown;
-interface Headers {
+export interface Headers {
   [key: string]: string;
 }
+type OverrideHeadersFunction = (filepath: string) => Headers;
+type OverrideHeadersOption = Headers | OverrideHeadersFunction | undefined;
 
 interface CompatAdapter {
   formatVersion: FormatVersion;
@@ -277,4 +279,43 @@ function validateExchangeURL(urlString: string): void {
 
 function byteString(s: string): Uint8Array {
   return new TextEncoder().encode(s);
+}
+
+// Type guard for checking that the headers are in valid format.
+export function isHeaders(obj: any): Headers {
+  if (typeof obj !== 'object') {
+    throw new Error(
+      'Malformatted headers: They should be represented as an object.'
+    );
+  }
+
+  for (const key of Object.keys(obj)) {
+    if (typeof key !== 'string') {
+      throw new Error('Malformatted headers: Header name should be a string.');
+    }
+
+    if (typeof obj[key] !== 'string' && typeof obj[key] !== 'number') {
+      throw new Error(
+        'Malformatted headers: Header value should be a string or a number.'
+      );
+    }
+  }
+  return obj as Headers;
+}
+
+// Based on the type of the overrideHeadersOption combines the original headers
+// with the override headers.
+export function combineHeadersForUrl(
+  headers: Headers,
+  overrideHeadersOption: OverrideHeadersOption,
+  url: string
+) {
+  if (!overrideHeadersOption) return headers;
+
+  const headersForUrl =
+    typeof overrideHeadersOption == 'function'
+      ? isHeaders(overrideHeadersOption(url))
+      : isHeaders(overrideHeadersOption);
+
+  return { ...headers, ...headersForUrl };
 }
