@@ -131,7 +131,7 @@ function validateOptions(options: any): string | null {
   return null;
 }
 
-function readHeaderOverridesFile(path: string): string {
+function readHeaderOverridesFile(path: string): unknown {
   try {
     const headerOverridesFile = fs.readFileSync(path, 'utf8');
     return JSON.parse(headerOverridesFile);
