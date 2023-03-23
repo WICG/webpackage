@@ -3,6 +3,5 @@
   "cross-origin-opener-policy": "same-origin;report-to=\"coop\"",
   "cross-origin-embedder-policy": "require-corp;report-to=\"coep\"",
   "cross-origin-resource-policy": "same-origin",
-  "helloworld": "helloworld",
-  "status": 200
+  "helloworld": "helloworld"
 }

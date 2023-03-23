@@ -281,26 +281,19 @@ function byteString(s: string): Uint8Array {
   return new TextEncoder().encode(s);
 }
 
-// Type guard for checking that the headers are in valid format.
-export function isHeaders(obj: any): Headers {
+// Type guard for checking that the headers are in valid format: an object of
+// strings.
+export function isHeaders(obj: any): obj is Headers {
   if (typeof obj !== 'object') {
-    throw new Error(
-      'Malformatted headers: They should be represented as an object.'
-    );
+    return false;
   }
 
-  for (const key of Object.keys(obj)) {
-    if (typeof key !== 'string') {
-      throw new Error('Malformatted headers: Header name should be a string.');
-    }
-
-    if (typeof obj[key] !== 'string' && typeof obj[key] !== 'number') {
-      throw new Error(
-        'Malformatted headers: Header value should be a string or a number.'
-      );
+  for (const value of Object.values(obj)) {
+    if (typeof value !== 'string') {
+      return false;
     }
   }
-  return obj as Headers;
+  return true;
 }
 
 // Based on the type of the overrideHeadersOption combines the original headers
@@ -314,8 +307,14 @@ export function combineHeadersForUrl(
 
   const headersForUrl =
     typeof overrideHeadersOption == 'function'
-      ? isHeaders(overrideHeadersOption(url))
-      : isHeaders(overrideHeadersOption);
+      ? overrideHeadersOption(url)
+      : overrideHeadersOption;
+
+  if (!isHeaders(headersForUrl)) {
+    throw new Error(
+      'Malformatted override headers: They should be an object of strings.'
+    );
+  }
 
   return { ...headers, ...headersForUrl };
 }

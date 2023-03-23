@@ -20,7 +20,7 @@ export function addFile(
   builder: BundleBuilder,
   url: string,
   file: string,
-  overrideHeaders: Headers
+  overrideHeaders: Headers | undefined
 ) {
   const headers = {
     'Content-Type': mime.getType(file) || 'application/octet-stream',
@@ -37,7 +37,7 @@ export function addFilesRecursively(
   builder: BundleBuilder,
   baseURL: string,
   dir: string,
-  overrideHeaders: Headers
+  overrideHeaders: Headers | undefined
 ) {
   if (baseURL !== '' && !baseURL.endsWith('/')) {
     throw new Error("Non-empty baseURL must end with '/'.");
@@ -100,7 +100,7 @@ function readOptions() {
     .option('-o, --output <file>', 'webbundle output file', 'out.wbn')
     .option(
       '-h, --headerOverride <jsonFilePath>',
-      'path to a JSON file specifying the headers'
+      'path to a JSON file specifying the headers as an object of strings'
     )
     .parse(process.argv);
 }
@@ -131,6 +131,15 @@ function validateOptions(options: any): string | null {
   return null;
 }
 
+function readHeaderOverridesFile(path: string): string {
+  try {
+    const headerOverridesFile = fs.readFileSync(path, 'utf8');
+    return JSON.parse(headerOverridesFile);
+  } catch (error) {
+    throw new Error('Header overrides file contains invalid JSON.');
+  }
+}
+
 export function main() {
   const options = readOptions();
   const errorMsg = validateOptions(options);
@@ -147,10 +156,12 @@ export function main() {
   const headerOverrides =
     options.headerOverride === undefined
       ? undefined
-      : JSON.parse(fs.readFileSync(options.headerOverride, 'utf8'));
+      : readHeaderOverridesFile(options.headerOverride);
 
-  if (headerOverrides !== undefined) {
-    isHeaders(headerOverrides);
+  if (headerOverrides !== undefined && !isHeaders(headerOverrides)) {
+    throw new Error(
+      'Malformatted override headers: They should be an object of strings.'
+    );
   }
 
   const builder = new BundleBuilder(version);
