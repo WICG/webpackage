@@ -7,23 +7,21 @@ import {
   VERSION_B1,
 } from './constants.js';
 import { checkDeterministic } from './cbor/deterministic.js';
-import * as readline from 'readline';
+import read from 'read';
 
 // A helper function that can be used to read the passphrase to decrypt a
 // password-decrypted private key.
 export async function readPassphrase(): Promise<string> {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  return new Promise((resolve) =>
-    rl.question('Passphrase for the key: ', (passphrase) => {
-      // TODO(sonkkeli): Hide the password when being written.
-      resolve(passphrase);
-      rl.close();
-    })
-  );
+  try {
+    const passphrase = await read({
+      prompt: 'Passphrase for the key: ',
+      silent: true,
+      replace: '*',
+    });
+    return passphrase;
+  } catch (er) {
+    throw new Error('Reading passphrase failed.');
+  }
 }
 
 // A helper function which can be used to parse string formatted keys to
