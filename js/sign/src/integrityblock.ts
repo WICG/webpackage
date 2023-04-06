@@ -7,12 +7,32 @@ import {
   VERSION_B1,
 } from './constants.js';
 import { checkDeterministic } from './cbor/deterministic.js';
+import read from 'read';
+
+// A helper function that can be used to read the passphrase to decrypt a
+// password-decrypted private key.
+export async function readPassphrase(): Promise<string> {
+  try {
+    const passphrase = await read({
+      prompt: 'Passphrase for the key: ',
+      silent: true,
+      replace: '*',
+    });
+    return passphrase;
+  } catch (er) {
+    throw new Error('Reading passphrase failed.');
+  }
+}
 
 // A helper function which can be used to parse string formatted keys to
 // KeyObjects.
-export function parsePemKey(unparsedKey: string): KeyObject {
+export function parsePemKey(
+  unparsedKey: Buffer,
+  passphrase?: string
+): KeyObject {
   return crypto.createPrivateKey({
     key: unparsedKey,
+    passphrase,
   });
 }
 

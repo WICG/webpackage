@@ -3,8 +3,10 @@ import {
   IntegrityBlockSigner,
   WebBundleId,
   parsePemKey,
+  readPassphrase,
 } from './integrityblock.js';
 import * as fs from 'fs';
+import { KeyObject } from 'crypto';
 
 function readOptions() {
   return commander
@@ -24,11 +26,23 @@ function readOptions() {
     .parse(process.argv);
 }
 
-export function main() {
+async function parseMaybeEncryptedKey(
+  privateKeyFile: Buffer
+): Promise<KeyObject> {
+  try {
+    return parsePemKey(privateKeyFile);
+  } catch (e) {
+    console.warn("This might be an encrypted private key, let's try again.");
+  }
+
+  return parsePemKey(privateKeyFile, await readPassphrase());
+}
+
+export async function main() {
   const options = readOptions();
   const webBundle = fs.readFileSync(options.input);
-  const parsedPrivateKey = parsePemKey(
-    fs.readFileSync(options.privateKey, 'utf-8')
+  const parsedPrivateKey = await parseMaybeEncryptedKey(
+    fs.readFileSync(options.privateKey)
   );
   const signer = new IntegrityBlockSigner(webBundle, {
     key: parsedPrivateKey,

@@ -83,3 +83,15 @@ An ed25519 type of a private key can be generated with:
 ```
 openssl genpkey -algorithm Ed25519 -out ed25519key.pem
 ```
+
+## Release Notes
+
+### v0.0.2
+
+- Add support for using a passphrase-encrypted private key.
+
+### v0.0.1
+
+- Support for signing web bundles with
+  [integrity block](https://github.com/WICG/webpackage/blob/main/explainers/integrity-signature.md)
+  added.

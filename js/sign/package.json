@@ -35,7 +35,8 @@
   "dependencies": {
     "base32-encode": "^2.0.0",
     "cborg": "^1.9.4",
-    "commander": "^4.0.1"
+    "commander": "^4.0.1",
+    "read": "^2.0.0"
   },
   "devDependencies": {
     "@types/node": "^12.7.11",
