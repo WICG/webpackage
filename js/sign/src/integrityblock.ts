@@ -29,7 +29,7 @@ export async function readPassphrase(): Promise<string> {
 // A helper function which can be used to parse string formatted keys to
 // KeyObjects.
 export function parsePemKey(
-  unparsedKey: string,
+  unparsedKey: Buffer,
   passphrase?: string
 ): KeyObject {
   return crypto.createPrivateKey({

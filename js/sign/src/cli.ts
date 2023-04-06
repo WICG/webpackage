@@ -27,7 +27,7 @@ function readOptions() {
 }
 
 async function parseMaybeEncryptedKey(
-  privateKeyFile: string
+  privateKeyFile: Buffer
 ): Promise<KeyObject> {
   try {
     return parsePemKey(privateKeyFile);
@@ -42,7 +42,7 @@ export async function main() {
   const options = readOptions();
   const webBundle = fs.readFileSync(options.input);
   const parsedPrivateKey = await parseMaybeEncryptedKey(
-    fs.readFileSync(options.privateKey, 'utf-8')
+    fs.readFileSync(options.privateKey)
   );
   const signer = new IntegrityBlockSigner(webBundle, {
     key: parsedPrivateKey,
