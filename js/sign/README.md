@@ -78,10 +78,17 @@ wbn-sign \
 -k ~/path/to/ed25519key.pem
 ```
 
-An ed25519 type of a private key can be generated with:
+An unencrypted ed25519 private key can be generated with:
 
 ```
 openssl genpkey -algorithm Ed25519 -out ed25519key.pem
+```
+
+For production, one should prefer using passphrase-encrypted ed25519
+private key. To do so one can run:
+
+```
+openssl pkcs8 -in ed25519key.pem -topk8 -out encrypted_ed25519key.pem && rm ed25519key.pem
 ```
 
 ## Release Notes
