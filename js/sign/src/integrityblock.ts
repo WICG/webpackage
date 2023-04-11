@@ -36,7 +36,7 @@ export function parsePemKey(
   });
 }
 
-export function getRawPublicKey(publicKey: crypto.KeyObject) {
+export function getRawPublicKey(publicKey: KeyObject) {
   // Currently this is the only way for us to get the raw 32 bytes of the public key.
   return new Uint8Array(
     publicKey.export({ type: 'spki', format: 'der' }).slice(-32)
@@ -51,31 +51,33 @@ type IntegritySignature = {
   signature: Uint8Array;
 };
 
-type IntegrityBlockSignerOptions = {
-  key: KeyObject;
-};
-
-export class IntegrityBlockSigner {
-  private key: KeyObject;
+abstract class IntegrityBlockSignerBase {
+  private publicKey: KeyObject;
   private webBundle: Uint8Array;
 
-  constructor(webBundle: Uint8Array, opts: IntegrityBlockSignerOptions) {
-    if (opts.key.asymmetricKeyType !== 'ed25519') {
+  constructor(webBundle: Uint8Array, publicKey: KeyObject) {
+    this.webBundle = webBundle;
+
+    if (publicKey.type !== 'public') {
       throw new Error(
-        `IntegrityBlockSigner: Only ed25519 keys are currently supported. Your key's type is ${opts.key.asymmetricKeyType}.`
+        `IntegrityBlockSignerBase: Expected key type to be "public", but it was "${publicKey.type}".`
       );
     }
-    this.key = opts.key;
-    this.webBundle = webBundle;
+
+    if (publicKey.asymmetricKeyType !== 'ed25519') {
+      throw new Error(
+        `IntegrityBlockSignerBase: Expected asymmetric key type to be "ed25519", but it was "${publicKey.asymmetricKeyType}".`
+      );
+    }
+
+    this.publicKey = publicKey;
   }
 
   sign(): { integrityBlock: Uint8Array; signedWebBundle: Uint8Array } {
     const integrityBlock = this.obtainIntegrityBlock().integrityBlock;
 
-    const publicKey = crypto.createPublicKey(this.key);
-
     const newAttributes: SignatureAttributes = {
-      [ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: getRawPublicKey(publicKey),
+      [ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: getRawPublicKey(this.publicKey),
     };
 
     const ibCbor = integrityBlock.toCBOR();
@@ -89,7 +91,8 @@ export class IntegrityBlockSigner {
       attrCbor
     );
 
-    const signature = this.signAndVerify(dataToBeSigned, this.key, publicKey);
+    const signature = this.getSignature(dataToBeSigned);
+    this.verifySignature(dataToBeSigned, signature);
 
     integrityBlock.addIntegritySignature({
       signature,
@@ -123,7 +126,7 @@ export class IntegrityBlockSigner {
     const webBundleLength = this.readWebBundleLength();
     if (webBundleLength !== this.webBundle.length) {
       throw new Error(
-        'IntegrityBlockSigner: Re-signing signed bundles is not supported yet.'
+        'IntegrityBlockSignerBase: Re-signing signed bundles is not supported yet.'
       );
     }
     return { integrityBlock: new IntegrityBlock(), offset: 0 };
@@ -169,29 +172,51 @@ export class IntegrityBlockSigner {
     return new Uint8Array(buffer);
   }
 
-  signAndVerify(
-    dataToBeSigned: Uint8Array,
-    privateKey: crypto.KeyObject,
-    publicKey: crypto.KeyObject
-  ): Uint8Array {
-    const signature = crypto.sign(
-      /*algorithm=*/ undefined,
-      dataToBeSigned,
-      privateKey
-    );
+  abstract getSignature(dataToBeSigned: Uint8Array): Uint8Array;
 
+  verifySignature(dataToBeSigned: Uint8Array, signature: Uint8Array): void {
     const isVerified = crypto.verify(
       /*algorithm=*/ undefined,
       dataToBeSigned,
-      publicKey,
+      this.publicKey,
       signature
     );
 
     if (!isVerified) {
       throw new Error(
-        'IntegrityBlockSigner: Signature cannot be verified. Your keys might be corrupted.'
+        'BasicSigner: Signature cannot be verified. Your keys might be corrupted or not corresponding each other.'
       );
     }
+  }
+}
+
+type BasicSignerOptions = {
+  key: KeyObject;
+};
+
+// Class to be used when signing with private key provided directly in
+// `BasicSignerOptions.key`.
+export class BasicSigner extends IntegrityBlockSignerBase {
+  private key: KeyObject;
+
+  constructor(webBundle: Uint8Array, opts: BasicSignerOptions) {
+    if (opts.key.type !== 'private') {
+      throw new Error(
+        `BasicSigner: Expected key type to be "private", but it was "${opts.key.type}".`
+      );
+    }
+
+    const publicKey = crypto.createPublicKey(opts.key);
+    super(webBundle, publicKey);
+    this.key = opts.key;
+  }
+
+  override getSignature(dataToBeSigned: Uint8Array): Uint8Array {
+    const signature = crypto.sign(
+      /*algorithm=*/ undefined,
+      dataToBeSigned,
+      this.key
+    );
     return signature;
   }
 }
