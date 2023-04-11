@@ -88,7 +88,10 @@ For better security, one should prefer using passphrase-encrypted ed25519
 private keys. To encrypt an unencrypted private key, run:
 
 ```
-openssl pkcs8 -in ed25519key.pem -topk8 -out encrypted_ed25519key.pem && rm ed25519key.pem
+# encrypt the key (will ask for a passphrase, make sure to use a strong one)
+openssl pkcs8 -in ed25519key.pem -topk8 -out encrypted_ed25519key.pem 
+# delete the unencrypted key
+rm ed25519key.pem 
 ```
 
 ## Release Notes
