@@ -84,8 +84,8 @@ An unencrypted ed25519 private key can be generated with:
 openssl genpkey -algorithm Ed25519 -out ed25519key.pem
 ```
 
-For production, one should prefer using passphrase-encrypted ed25519
-private key. To do so one can run:
+For better security, one should prefer using passphrase-encrypted ed25519
+private keys. To encrypt an unencrypted private key, run:
 
 ```
 openssl pkcs8 -in ed25519key.pem -topk8 -out encrypted_ed25519key.pem && rm ed25519key.pem
