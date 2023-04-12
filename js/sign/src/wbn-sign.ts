@@ -1,8 +1,6 @@
 export {
-  IntegrityBlockSigner,
   IntegrityBlock,
-  WebBundleId,
-  parsePemKey,
-  readPassphrase,
-  getRawPublicKey,
-} from './integrityblock.js';
+  IntegrityBlockSigner,
+} from './signers/integrityblock.js';
+export { WebBundleId } from './web-bundle-id.js';
+export { parsePemKey, readPassphrase, getRawPublicKey } from './utils/utils.js';

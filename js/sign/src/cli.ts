@@ -4,7 +4,7 @@ import {
   WebBundleId,
   parsePemKey,
   readPassphrase,
-} from './integrityblock.js';
+} from './wbn-sign.js';
 import * as fs from 'fs';
 import { KeyObject } from 'crypto';
 
