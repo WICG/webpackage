@@ -1,47 +1,12 @@
 import crypto, { KeyObject } from 'crypto';
 import * as cborg from 'cborg';
-import base32Encode from 'base32-encode';
 import {
   ED25519_PK_SIGNATURE_ATTRIBUTE_NAME,
   INTEGRITY_BLOCK_MAGIC,
   VERSION_B1,
-} from './constants.js';
-import { checkDeterministic } from './cbor/deterministic.js';
-import read from 'read';
-
-// A helper function that can be used to read the passphrase to decrypt a
-// password-decrypted private key.
-export async function readPassphrase(): Promise<string> {
-  try {
-    const passphrase = await read({
-      prompt: 'Passphrase for the key: ',
-      silent: true,
-      replace: '*',
-    });
-    return passphrase;
-  } catch (er) {
-    throw new Error('Reading passphrase failed.');
-  }
-}
-
-// A helper function which can be used to parse string formatted keys to
-// KeyObjects.
-export function parsePemKey(
-  unparsedKey: Buffer,
-  passphrase?: string
-): KeyObject {
-  return crypto.createPrivateKey({
-    key: unparsedKey,
-    passphrase,
-  });
-}
-
-export function getRawPublicKey(publicKey: crypto.KeyObject) {
-  // Currently this is the only way for us to get the raw 32 bytes of the public key.
-  return new Uint8Array(
-    publicKey.export({ type: 'spki', format: 'der' }).slice(-32)
-  );
-}
+} from '../utils/constants.js';
+import { checkDeterministic } from '../cbor/deterministic.js';
+import { getRawPublicKey } from '../utils/utils.js';
 
 type SignatureAttributeKey = typeof ED25519_PK_SIGNATURE_ATTRIBUTE_NAME;
 type SignatureAttributes = { [SignatureAttributeKey: string]: Uint8Array };
@@ -217,47 +182,5 @@ export class IntegrityBlock {
         return [integritySig.signatureAttributes, integritySig.signature];
       }),
     ]);
-  }
-}
-
-// Web Bundle ID is a base32-encoded (without padding) ed25519 public key
-// transformed to lowercase. More information:
-// https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#signed-web-bundle-ids
-export class WebBundleId {
-  // https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#suffix
-  private readonly appIdSuffix = [0x00, 0x01, 0x02];
-  private readonly scheme = 'isolated-app://';
-  private readonly key: KeyObject;
-
-  constructor(ed25519key: KeyObject) {
-    if (ed25519key.asymmetricKeyType !== 'ed25519') {
-      throw new Error(
-        `WebBundleId: Only ed25519 keys are currently supported. Your key's type is ${ed25519key.asymmetricKeyType}.`
-      );
-    }
-
-    if (ed25519key.type === 'private') {
-      this.key = crypto.createPublicKey(ed25519key);
-    } else {
-      this.key = ed25519key;
-    }
-  }
-
-  serialize() {
-    return base32Encode(
-      new Uint8Array([...getRawPublicKey(this.key), ...this.appIdSuffix]),
-      'RFC4648',
-      { padding: false }
-    ).toLowerCase();
-  }
-
-  serializeWithIsolatedWebAppOrigin() {
-    return `${this.scheme}${this.serialize()}/`;
-  }
-
-  toString() {
-    return `\
-Web Bundle ID: ${this.serialize()}
-Isolated Web App Origin: ${this.serializeWithIsolatedWebAppOrigin()}`;
   }
 }

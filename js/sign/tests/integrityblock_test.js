@@ -1,5 +1,5 @@
 import * as wbnSign from '../lib/wbn-sign.js';
-import * as constants from '../lib/constants.js';
+import * as constants from '../lib/utils/constants.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
