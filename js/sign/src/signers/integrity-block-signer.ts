@@ -6,7 +6,8 @@ import {
   VERSION_B1,
 } from '../utils/constants.js';
 import { checkDeterministic } from '../cbor/deterministic.js';
-import { getRawPublicKey } from '../utils/utils.js';
+import { getRawPublicKey, isValidEd25519Key } from '../utils/utils.js';
+import { ISigningStrategy } from './signing-strategy-interface.js';
 
 type SignatureAttributeKey = typeof ED25519_PK_SIGNATURE_ATTRIBUTE_NAME;
 type SignatureAttributes = { [SignatureAttributeKey: string]: Uint8Array };
@@ -16,28 +17,22 @@ type IntegritySignature = {
   signature: Uint8Array;
 };
 
-type IntegrityBlockSignerOptions = {
-  key: KeyObject;
-};
-
 export class IntegrityBlockSigner {
-  private key: KeyObject;
   private webBundle: Uint8Array;
+  private signingStrategy: ISigningStrategy;
 
-  constructor(webBundle: Uint8Array, opts: IntegrityBlockSignerOptions) {
-    if (opts.key.asymmetricKeyType !== 'ed25519') {
-      throw new Error(
-        `IntegrityBlockSigner: Only ed25519 keys are currently supported. Your key's type is ${opts.key.asymmetricKeyType}.`
-      );
-    }
-    this.key = opts.key;
+  constructor(webBundle: Uint8Array, signingStrategy: ISigningStrategy) {
     this.webBundle = webBundle;
+    this.signingStrategy = signingStrategy;
   }
 
-  sign(): { integrityBlock: Uint8Array; signedWebBundle: Uint8Array } {
+  async sign(): Promise<{
+    integrityBlock: Uint8Array;
+    signedWebBundle: Uint8Array;
+  }> {
     const integrityBlock = this.obtainIntegrityBlock().integrityBlock;
-
-    const publicKey = crypto.createPublicKey(this.key);
+    const publicKey = await this.signingStrategy.getPublicKey();
+    isValidEd25519Key('public', publicKey);
 
     const newAttributes: SignatureAttributes = {
       [ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: getRawPublicKey(publicKey),
@@ -54,7 +49,8 @@ export class IntegrityBlockSigner {
       attrCbor
     );
 
-    const signature = this.signAndVerify(dataToBeSigned, this.key, publicKey);
+    const signature = await this.signingStrategy.sign(dataToBeSigned);
+    this.verifySignature(dataToBeSigned, signature, publicKey);
 
     integrityBlock.addIntegritySignature({
       signature,
@@ -134,17 +130,11 @@ export class IntegrityBlockSigner {
     return new Uint8Array(buffer);
   }
 
-  signAndVerify(
+  verifySignature(
     dataToBeSigned: Uint8Array,
-    privateKey: crypto.KeyObject,
-    publicKey: crypto.KeyObject
-  ): Uint8Array {
-    const signature = crypto.sign(
-      /*algorithm=*/ undefined,
-      dataToBeSigned,
-      privateKey
-    );
-
+    signature: Uint8Array,
+    publicKey: KeyObject
+  ): void {
     const isVerified = crypto.verify(
       /*algorithm=*/ undefined,
       dataToBeSigned,
@@ -154,10 +144,9 @@ export class IntegrityBlockSigner {
 
     if (!isVerified) {
       throw new Error(
-        'IntegrityBlockSigner: Signature cannot be verified. Your keys might be corrupted.'
+        'IntegrityBlockSigner: Signature cannot be verified. Your keys might be corrupted or not corresponding each other.'
       );
     }
-    return signature;
   }
 }
 
