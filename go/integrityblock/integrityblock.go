@@ -40,10 +40,10 @@ var VersionB1 = []byte{0x31, 0x62, 0x00, 0x00}
 
 var WebBundleIdSuffix = []byte{0x00, 0x01, 0x02}
 
-// cborEncodeSignatureAttributesMap writes the signature attributes map as CBOR using the given encoder so that the map's key is text string and value byte string.
-func cborEncodeSignatureAttributesMap(signatureAttributes SignatureAttributesMap, enc *cbor.Encoder) error {
+// cborBytes writes the signature attributes map as CBOR using the given encoder so that the map's key is text string and value byte string.
+func (sa SignatureAttributesMap) cborBytes(enc *cbor.Encoder) error {
 	mes := []*cbor.MapEntryEncoder{}
-	for key, value := range signatureAttributes {
+	for key, value := range sa {
 		mes = append(mes,
 			cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
 				keyE.EncodeTextString(key)
@@ -60,7 +60,7 @@ func cborEncodeSignatureAttributesMap(signatureAttributes SignatureAttributesMap
 func (is *IntegritySignature) cborBytes(enc *cbor.Encoder) error {
 	enc.EncodeArrayHeader(2)
 
-	if err := cborEncodeSignatureAttributesMap(is.SignatureAttributes, enc); err != nil {
+	if err := is.SignatureAttributes.cborBytes(enc); err != nil {
 		return fmt.Errorf("integrityblock: Failed to encode signature attributes: %v", err)
 	}
 
@@ -190,7 +190,7 @@ func ComputeWebBundleSha512(bundleFile io.ReadSeeker, offset int64) ([]byte, err
 func generateDataToBeSigned(webBundleHash, integrityBlockBytes []byte, signatureAttributes SignatureAttributesMap) ([]byte, error) {
 	var attributesBytesBuf bytes.Buffer
 	enc := cbor.NewEncoder(&attributesBytesBuf)
-	if err := cborEncodeSignatureAttributesMap(signatureAttributes, enc); err != nil {
+	if err := signatureAttributes.cborBytes(enc); err != nil {
 		return nil, fmt.Errorf("integrityblock: Failed to encode signature attributes: %v", err)
 	}
 	attributesBytes := attributesBytesBuf.Bytes()
