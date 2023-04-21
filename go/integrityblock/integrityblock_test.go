@@ -317,7 +317,7 @@ func TestGetWebBundleId(t *testing.T) {
 		t.Errorf("integrityblock: Failed to parse the test private key. err: %v", err)
 	}
 
-	got := GetWebBundleId(privateKey.(ed25519.PrivateKey))
+	got := GetWebBundleId(privateKey.(ed25519.PrivateKey).Public().(ed25519.PublicKey))
 	want := "4tkrnsmftl4ggvvdkfth3piainqragus2qbhf7rlz2a3wo3rh4wqaaic"
 
 	if got != want {
