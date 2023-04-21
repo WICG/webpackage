@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/WICG/webpackage/go/integrityblock"
+	"github.com/WICG/webpackage/go/integrityblock/webbundleid"
 	"github.com/WICG/webpackage/go/internal/cbor"
 )
 
@@ -44,7 +45,7 @@ func DumpWebBundleId() error {
 		return err
 	}
 
-	webBundleId := integrityblock.GetWebBundleId(ed25519privKey.Public().(ed25519.PublicKey))
+	webBundleId := webbundleid.GetWebBundleId(ed25519privKey.Public().(ed25519.PublicKey))
 	fmt.Printf("Web Bundle ID: %s\n", webBundleId)
 	return nil
 }
@@ -95,7 +96,7 @@ func SignWithIntegrityBlock() error {
 		return err
 	}
 
-	webBundleId := integrityblock.GetWebBundleId(ed25519pubKey)
+	webBundleId := webbundleid.GetWebBundleId(ed25519pubKey)
 	fmt.Println("Web Bundle ID: " + webBundleId)
 
 	signedBundleFile, err := os.Create(*ibFlagOutput)
