@@ -79,7 +79,7 @@ func SignWithIntegrityBlock() error {
 		return err
 	}
 
-	err = integrityBlock.SignAndAddNewSignature(ed25519privKey, webBundleHash, map[string][]byte{})
+	err = integrityBlock.SignAndAddNewSignature(ed25519privKey, webBundleHash, integrityblock.GenerateSignatureAttributesWithPublicKey(ed25519pubKey))
 	if err != nil {
 		return err
 	}

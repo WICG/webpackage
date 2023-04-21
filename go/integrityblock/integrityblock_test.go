@@ -34,7 +34,7 @@ func TestEmptyIntegrityBlock(t *testing.T) {
 
 func TestAddNewSignatureToIntegrityBlock(t *testing.T) {
 	integrityBlock := generateEmptyIntegrityBlock()
-	attributes := map[string][]byte{"ed25519PublicKey": []byte("publickey")}
+	attributes := SignatureAttributesMap{Ed25519publicKeyAttributeName: []byte("publickey")}
 	signature := []byte("signature")
 
 	integrityBlock.addNewSignatureToIntegrityBlock(attributes, signature)
@@ -57,7 +57,7 @@ func TestAddNewSignatureToIntegrityBlock(t *testing.T) {
 
 func TestIntegritySignature(t *testing.T) {
 	var integritySignature *IntegritySignature
-	attributes := map[string][]byte{"ed25519PublicKey": []byte("publickey")}
+	attributes := SignatureAttributesMap{Ed25519publicKeyAttributeName: []byte("publickey")}
 
 	integritySignature = &IntegritySignature{
 		SignatureAttributes: attributes,
@@ -103,7 +103,7 @@ func TestComputeWebBundleSha512(t *testing.T) {
 }
 
 func TestGenerateDataToBeSigned(t *testing.T) {
-	signatureAttributes := map[string][]byte{"key": []byte("value")}
+	signatureAttributes := SignatureAttributesMap{"key": []byte("value")}
 
 	var attributesBytesBuf bytes.Buffer
 	enc := cbor.NewEncoder(&attributesBytesBuf)
@@ -139,8 +139,7 @@ func TestGenerateDataToBeSigned(t *testing.T) {
 }
 
 func TestCborBytesForSignatureAttributesMap(t *testing.T) {
-	signatureAttributes := make(map[string][]byte, 1)
-	signatureAttributes["key"] = []byte("value")
+	signatureAttributes := SignatureAttributesMap{"key": []byte("value")}
 
 	var attributesBytesBuf bytes.Buffer
 	enc := cbor.NewEncoder(&attributesBytesBuf)
@@ -166,7 +165,7 @@ func TestIntegrityBlockGeneratedWithTheToolIsDeterministic(t *testing.T) {
 		t.Error("Empty integrity block generated using our tool should be deterministic.")
 	}
 
-	attributes := map[string][]byte{"ed25519PublicKey": []byte("publickey")}
+	attributes := SignatureAttributesMap{Ed25519publicKeyAttributeName: []byte("publickey")}
 	signature := []byte("signature")
 
 	integrityBlock.addNewSignatureToIntegrityBlock(attributes, signature)
@@ -227,7 +226,7 @@ func TestSignAndAddNewSignature(t *testing.T) {
 	}
 
 	integrityBlock := generateEmptyIntegrityBlock()
-	err = integrityBlock.SignAndAddNewSignature(priv, webBundleHash, map[string][]byte{})
+	err = integrityBlock.SignAndAddNewSignature(priv, webBundleHash, GenerateSignatureAttributesWithPublicKey(pub))
 
 	integrityBlockBytes, err := integrityBlock.CborBytes()
 	if err != nil {
@@ -275,8 +274,11 @@ func TestSignAndAddNewSignatureWithExistingSignature(t *testing.T) {
 	}
 
 	integrityBlock := generateEmptyIntegrityBlock()
-	err = integrityBlock.SignAndAddNewSignature(priv, webBundleHash, map[string][]byte{"hello": []byte("world")})
-	err = integrityBlock.SignAndAddNewSignature(priv, webBundleHash, map[string][]byte{})
+	signatureAttributesWithAdditionalAttribute := GenerateSignatureAttributesWithPublicKey(pub)
+	signatureAttributesWithAdditionalAttribute["hello"] = []byte("world")
+
+	err = integrityBlock.SignAndAddNewSignature(priv, webBundleHash, signatureAttributesWithAdditionalAttribute)
+	err = integrityBlock.SignAndAddNewSignature(priv, webBundleHash, GenerateSignatureAttributesWithPublicKey(pub))
 
 	integrityBlockBytes, err := integrityBlock.CborBytes()
 	if err != nil {
