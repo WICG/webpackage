@@ -16,8 +16,10 @@ import (
 	"github.com/WICG/webpackage/go/internal/cbor"
 )
 
+type SignatureAttributesMap map[string][]byte
+
 type IntegritySignature struct {
-	SignatureAttributes map[string][]byte
+	SignatureAttributes SignatureAttributesMap
 	Signature           []byte
 }
 
@@ -39,7 +41,7 @@ var VersionB1 = []byte{0x31, 0x62, 0x00, 0x00}
 var WebBundleIdSuffix = []byte{0x00, 0x01, 0x02}
 
 // cborEncodeSignatureAttributesMap writes the signature attributes map as CBOR using the given encoder so that the map's key is text string and value byte string.
-func cborEncodeSignatureAttributesMap(signatureAttributes map[string][]byte, enc *cbor.Encoder) error {
+func cborEncodeSignatureAttributesMap(signatureAttributes SignatureAttributesMap, enc *cbor.Encoder) error {
 	mes := []*cbor.MapEntryEncoder{}
 	for key, value := range signatureAttributes {
 		mes = append(mes,
@@ -157,7 +159,7 @@ func ObtainIntegrityBlock(bundleFile *os.File) (*IntegrityBlock, int64, error) {
 	return integrityBlock, integrityBlockLen, nil
 }
 
-func (integrityBlock *IntegrityBlock) addNewSignatureToIntegrityBlock(signatureAttributes map[string][]byte, signature []byte) {
+func (integrityBlock *IntegrityBlock) addNewSignatureToIntegrityBlock(signatureAttributes SignatureAttributesMap, signature []byte) {
 	is := []*IntegritySignature{{
 		SignatureAttributes: signatureAttributes,
 		Signature:           signature,
@@ -185,7 +187,7 @@ func ComputeWebBundleSha512(bundleFile io.ReadSeeker, offset int64) ([]byte, err
 // The order must be the following, where the lengths are represented as 64 bit big-endian integers:
 // (1) length of the web bundle hash, (2) web bundle hash, (3) length of the serialized integrity-block
 // (4) serialized integrity-block, (5) length of the attributes, (6) serialized attributes
-func generateDataToBeSigned(webBundleHash, integrityBlockBytes []byte, signatureAttributes map[string][]byte) ([]byte, error) {
+func generateDataToBeSigned(webBundleHash, integrityBlockBytes []byte, signatureAttributes SignatureAttributesMap) ([]byte, error) {
 	var attributesBytesBuf bytes.Buffer
 	enc := cbor.NewEncoder(&attributesBytesBuf)
 	if err := cborEncodeSignatureAttributesMap(signatureAttributes, enc); err != nil {
@@ -201,6 +203,11 @@ func generateDataToBeSigned(webBundleHash, integrityBlockBytes []byte, signature
 	binary.Write(&buf, binary.BigEndian, uint64(len(attributesBytes)))
 	buf.Write(attributesBytes)
 	return buf.Bytes(), nil
+}
+
+// GenerateSignatureAttributesWithPublicKey generates the basis for the map for signature attributes containing the public key.
+func GenerateSignatureAttributesWithPublicKey(ed25519publicKey ed25519.PublicKey) SignatureAttributesMap {
+	return SignatureAttributesMap{Ed25519publicKeyAttributeName: []byte(ed25519publicKey)}
 }
 
 func computeEd25519Signature(ed25519privKey ed25519.PrivateKey, dataToBeSigned []byte) ([]byte, error) {
@@ -235,10 +242,7 @@ func WebBundleHasIntegrityBlock(bundleFile io.ReadSeeker) (bool, error) {
 
 // SignAndAddNewSignature contains the main logic for generating the new signature and
 // prepending the integrity block's signature stack with a new integrity signature object.
-func (integrityBlock *IntegrityBlock) SignAndAddNewSignature(ed25519privKey ed25519.PrivateKey, webBundleHash []byte, signatureAttributes map[string][]byte) error {
-	ed25519publicKey := ed25519privKey.Public().(ed25519.PublicKey)
-	signatureAttributes[Ed25519publicKeyAttributeName] = []byte(ed25519publicKey)
-
+func (integrityBlock *IntegrityBlock) SignAndAddNewSignature(ed25519privKey ed25519.PrivateKey, webBundleHash []byte, signatureAttributes SignatureAttributesMap) error {
 	integrityBlockBytes, err := integrityBlock.CborBytes()
 	if err != nil {
 		return err
