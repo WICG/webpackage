@@ -44,7 +44,7 @@ func DumpWebBundleId() error {
 		return err
 	}
 
-	webBundleId := integrityblock.GetWebBundleId(ed25519privKey)
+	webBundleId := integrityblock.GetWebBundleId(ed25519privKey.Public().(ed25519.PublicKey))
 	fmt.Printf("Web Bundle ID: %s\n", webBundleId)
 	return nil
 }
@@ -61,6 +61,7 @@ func SignWithIntegrityBlock() error {
 	if err != nil {
 		return err
 	}
+	ed25519pubKey := ed25519privKey.Public().(ed25519.PublicKey)
 
 	bundleFile, err := os.Open(*ibFlagInput)
 	if err != nil {
@@ -94,7 +95,7 @@ func SignWithIntegrityBlock() error {
 		return err
 	}
 
-	webBundleId := integrityblock.GetWebBundleId(ed25519privKey)
+	webBundleId := integrityblock.GetWebBundleId(ed25519pubKey)
 	fmt.Println("Web Bundle ID: " + webBundleId)
 
 	signedBundleFile, err := os.Create(*ibFlagOutput)

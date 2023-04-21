@@ -267,8 +267,7 @@ func (integrityBlock *IntegrityBlock) SignAndAddNewSignature(ed25519privKey ed25
 // GetWebBundleId returns a base32-encoded (without padding) ed25519 public key
 // combined with a 3-byte long suffix and transformed to lowercase. More information:
 // https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#signed-web-bundle-ids
-func GetWebBundleId(ed25519privKey ed25519.PrivateKey) string {
-	ed25519publicKey := ed25519privKey.Public().(ed25519.PublicKey)
+func GetWebBundleId(ed25519publicKey ed25519.PublicKey) string {
 	keyWithSuffix := append([]byte(ed25519publicKey), WebBundleIdSuffix...)
 
 	// StdEncoding is the standard base32 encoding, as defined in RFC 4648.
