@@ -118,7 +118,7 @@ func TestGenerateDataToBeSigned(t *testing.T) {
 	integrityBlockLen := []byte{0, 0, 0, 0, 0, 0, 0, 0x0e} // 14
 	attributesLen := []byte{0, 0, 0, 0, 0, 0, 0, 0x0b}     // 11
 
-	got, err := generateDataToBeSigned(hashBytes, integrityBlockBytes, signatureAttributes)
+	got, err := GenerateDataToBeSigned(hashBytes, integrityBlockBytes, signatureAttributes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,10 +224,18 @@ func TestSignAndAddNewSignature(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	integrityBlock := generateEmptyIntegrityBlock()
-	err = integrityBlock.SignAndAddNewSignature(priv, webBundleHash, GenerateSignatureAttributesWithPublicKey(pub))
+	ibs := IntegrityBlockSigner{
+		SigningStrategy: NewParsedEd25519KeySigningStrategy(priv),
+		WebBundleHash:   webBundleHash,
+		IntegrityBlock:  generateEmptyIntegrityBlock(),
+	}
+	publicKey, err := ibs.SigningStrategy.GetPublicKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ibs.SignAndAddNewSignature(publicKey, GenerateSignatureAttributesWithPublicKey(publicKey))
 
-	integrityBlockBytes, err := integrityBlock.CborBytes()
+	integrityBlockBytes, err := ibs.IntegrityBlock.CborBytes()
 	if err != nil {
 		t.Errorf("integrityBlock.CborBytes. err: %v", err)
 	}
@@ -237,7 +245,7 @@ func TestSignAndAddNewSignature(t *testing.T) {
 		t.Errorf("integrityBlock.CborBytes. err: %v", err)
 	}
 
-	signatureAsReadableCborString, err := bytesToCborAndToReadableStringHelper(integrityBlock.SignatureStack[0].Signature)
+	signatureAsReadableCborString, err := bytesToCborAndToReadableStringHelper(ibs.IntegrityBlock.SignatureStack[0].Signature)
 	if err != nil {
 		t.Errorf("integrityBlock.CborBytes. err: %v", err)
 	}
@@ -272,14 +280,26 @@ func TestSignAndAddNewSignatureWithExistingSignature(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	integrityBlock := generateEmptyIntegrityBlock()
+	ibs := IntegrityBlockSigner{
+		SigningStrategy: NewParsedEd25519KeySigningStrategy(priv),
+		WebBundleHash:   webBundleHash,
+		IntegrityBlock:  generateEmptyIntegrityBlock(),
+	}
+
+	publicKey, err := ibs.SigningStrategy.GetPublicKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Public key from ISigningStrategy should be the same one as the one created in the beginning.
+	bytes.Equal([]byte(publicKey), []byte(pub))
+
 	signatureAttributesWithAdditionalAttribute := GenerateSignatureAttributesWithPublicKey(pub)
 	signatureAttributesWithAdditionalAttribute["hello"] = []byte("world")
 
-	err = integrityBlock.SignAndAddNewSignature(priv, webBundleHash, signatureAttributesWithAdditionalAttribute)
-	err = integrityBlock.SignAndAddNewSignature(priv, webBundleHash, GenerateSignatureAttributesWithPublicKey(pub))
+	err = ibs.SignAndAddNewSignature(pub, signatureAttributesWithAdditionalAttribute)
+	err = ibs.SignAndAddNewSignature(pub, GenerateSignatureAttributesWithPublicKey(pub))
 
-	integrityBlockBytes, err := integrityBlock.CborBytes()
+	integrityBlockBytes, err := ibs.IntegrityBlock.CborBytes()
 	if err != nil {
 		t.Errorf("integrityBlock.CborBytes. err: %v", err)
 	}
@@ -289,11 +309,11 @@ func TestSignAndAddNewSignatureWithExistingSignature(t *testing.T) {
 		t.Errorf("integrityBlock.CborBytes. err: %v", err)
 	}
 
-	signatureAsReadableCborString1, err := bytesToCborAndToReadableStringHelper(integrityBlock.SignatureStack[0].Signature)
+	signatureAsReadableCborString1, err := bytesToCborAndToReadableStringHelper(ibs.IntegrityBlock.SignatureStack[0].Signature)
 	if err != nil {
 		t.Errorf("integrityBlock.CborBytes. err: %v", err)
 	}
-	signatureAsReadableCborString2, err := bytesToCborAndToReadableStringHelper(integrityBlock.SignatureStack[1].Signature)
+	signatureAsReadableCborString2, err := bytesToCborAndToReadableStringHelper(ibs.IntegrityBlock.SignatureStack[1].Signature)
 	if err != nil {
 		t.Errorf("integrityBlock.CborBytes. err: %v", err)
 	}

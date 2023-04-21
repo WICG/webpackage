@@ -88,16 +88,10 @@ func DumpWebBundleId() error {
 // SignWithIntegrityBlock creates a CBOR integrity block and prepends that to the web bundle containing
 // a signature of the hash of the web bundle. Finally it writes the new signed web bundle into file.
 // More details can be found in the [explainer](https://github.com/WICG/webpackage/blob/main/explainers/integrity-signature.md).
-func SignWithIntegrityBlock() error {
+func SignWithIntegrityBlock(signingStrategy integrityblock.ISigningStrategy) error {
 	if *ibFlagInput == *ibFlagOutput {
 		return errors.New("SignIntegrityBlock: Input and output file cannot be the same.")
 	}
-
-	ed25519privKey, err := readAndParseEd25519PrivateKey(*ibFlagPrivateKey)
-	if err != nil {
-		return err
-	}
-	ed25519pubKey := ed25519privKey.Public().(ed25519.PublicKey)
 
 	bundleFile, err := os.Open(*ibFlagInput)
 	if err != nil {
@@ -115,7 +109,20 @@ func SignWithIntegrityBlock() error {
 		return err
 	}
 
-	err = integrityBlock.SignAndAddNewSignature(ed25519privKey, webBundleHash, integrityblock.GenerateSignatureAttributesWithPublicKey(ed25519pubKey))
+	ibs := integrityblock.IntegrityBlockSigner{
+		SigningStrategy: signingStrategy,
+		WebBundleHash:   webBundleHash,
+		IntegrityBlock:  integrityBlock,
+	}
+
+	ed25519publicKey, err := ibs.SigningStrategy.GetPublicKey()
+	if err != nil {
+		return err
+	}
+
+	signatureAttributes := integrityblock.GenerateSignatureAttributesWithPublicKey(ed25519publicKey)
+
+	err = ibs.SignAndAddNewSignature(ed25519publicKey, signatureAttributes)
 	if err != nil {
 		return err
 	}
@@ -131,7 +138,7 @@ func SignWithIntegrityBlock() error {
 		return err
 	}
 
-	webBundleId := webbundleid.GetWebBundleId(ed25519pubKey)
+	webBundleId := webbundleid.GetWebBundleId(ed25519publicKey)
 	fmt.Println("Web Bundle ID: " + webBundleId)
 
 	signedBundleFile, err := os.Create(*ibFlagOutput)
