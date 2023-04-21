@@ -107,7 +107,7 @@ func TestGenerateDataToBeSigned(t *testing.T) {
 
 	var attributesBytesBuf bytes.Buffer
 	enc := cbor.NewEncoder(&attributesBytesBuf)
-	if err := cborEncodeSignatureAttributesMap(signatureAttributes, enc); err != nil {
+	if err := signatureAttributes.cborBytes(enc); err != nil {
 		t.Fatal(err)
 	}
 
@@ -143,7 +143,7 @@ func TestCborBytesForSignatureAttributesMap(t *testing.T) {
 
 	var attributesBytesBuf bytes.Buffer
 	enc := cbor.NewEncoder(&attributesBytesBuf)
-	if err := cborEncodeSignatureAttributesMap(signatureAttributes, enc); err != nil {
+	if err := signatureAttributes.cborBytes(enc); err != nil {
 		t.Fatal(err)
 	}
 
