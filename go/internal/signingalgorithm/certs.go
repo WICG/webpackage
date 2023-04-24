@@ -66,3 +66,32 @@ func parsePrivateKeyBlock(derKey []byte) (crypto.PrivateKey, error) {
 	}
 	return nil, errors.New("signingalgorithm: couldn't parse private key.")
 }
+
+func ParsePublicKey(text []byte) (crypto.PublicKey, error) {
+	for len(text) > 0 {
+		var block *pem.Block
+		block, text = pem.Decode(text)
+		if block == nil {
+			return nil, errors.New("signingalgorithm: invalid PEM block in public key.")
+		}
+
+		pubkey, err := parsePublicKeyBlock(block.Bytes)
+		if err == nil {
+			return pubkey, nil
+		}
+	}
+	return nil, errors.New("signingalgorithm: could not find public key.")
+}
+
+// parsePublicKeyBlock parses any allowed type public key. Currently only allows parsing ed25519 type public keys.
+func parsePublicKeyBlock(derKey []byte) (crypto.PublicKey, error) {
+	if keyInterface, err := x509.ParsePKIXPublicKey(derKey); err == nil {
+		switch typedKey := keyInterface.(type) {
+		case ed25519.PublicKey:
+			return typedKey, nil
+		default:
+			return nil, fmt.Errorf("signingalgorithm: unknown public key type: %T", typedKey)
+		}
+	}
+	return nil, errors.New("signingalgorithm: couldn't parse public key.")
+}

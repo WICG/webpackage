@@ -34,10 +34,24 @@ var (
 	ibFlagPrivateKey  = integrityBlockCmd.String("privateKey", "privatekey.pem", "Private key PEM file")
 )
 
+const flagNamePublicKey = "publicKey"
+
 var (
 	dumpWebBundleIdCmd   = flag.NewFlagSet(dumpWebBundleIdSubCmdName, flag.ExitOnError)
 	dumpIdFlagPrivateKey = dumpWebBundleIdCmd.String("privateKey", "privatekey.pem", "Private key PEM file whose corresponding Web Bundle ID is wanted.")
+	dumpIdFlagPublicKey  = dumpWebBundleIdCmd.String(flagNamePublicKey, "", "Public key PEM file whose corresponding Web Bundle ID is wanted.")
 )
+
+// isFlagPassed is a helper function to check if the given flag was provided. Note that this needs to be called after flag.Parse.
+func isFlagPassed(flags *flag.FlagSet, name string) bool {
+	found := false
+	flags.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
+}
 
 func run() error {
 	switch os.Args[1] {

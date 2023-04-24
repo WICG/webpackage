@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 
 	"github.com/WICG/webpackage/go/integrityblock"
 	"github.com/WICG/webpackage/go/integrityblock/webbundleid"
 	"github.com/WICG/webpackage/go/internal/cbor"
+	"github.com/WICG/webpackage/go/internal/signingalgorithm"
 )
 
 func writeOutput(bundleFile io.ReadSeeker, integrityBlockBytes []byte, originalIntegrityBlockOffset int64, signedBundleFile *os.File) error {
@@ -26,6 +28,20 @@ func writeOutput(bundleFile io.ReadSeeker, integrityBlockBytes []byte, originalI
 	return nil
 }
 
+func readPublicEd25519KeyFromFile(path string) (ed25519.PublicKey, error) {
+	pubkeytext, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, errors.New("SignIntegrityBlock: Unable to read the public key.")
+	}
+	pubKey, err := signingalgorithm.ParsePublicKey(pubkeytext)
+
+	ed25519pubKey, ok := pubKey.(ed25519.PublicKey)
+	if !ok {
+		return nil, errors.New("SignIntegrityBlock: Public key is not Ed25519 type.")
+	}
+	return ed25519pubKey, nil
+}
+
 func readAndParseEd25519PrivateKey(path string) (ed25519.PrivateKey, error) {
 	privKey, err := readPrivateKeyFromFile(path)
 	if err != nil {
@@ -39,7 +55,7 @@ func readAndParseEd25519PrivateKey(path string) (ed25519.PrivateKey, error) {
 	return ed25519privKey, nil
 }
 
-func DumpWebBundleId() error {
+func DumpWebBundleIdFromPrivateKey() error {
 	ed25519privKey, err := readAndParseEd25519PrivateKey(*dumpIdFlagPrivateKey)
 	if err != nil {
 		return err
@@ -48,6 +64,25 @@ func DumpWebBundleId() error {
 	webBundleId := webbundleid.GetWebBundleId(ed25519privKey.Public().(ed25519.PublicKey))
 	fmt.Printf("Web Bundle ID: %s\n", webBundleId)
 	return nil
+}
+
+func DumpWebBundleIdFromPublicKey() error {
+	ed25519pubKey, err := readPublicEd25519KeyFromFile(*dumpIdFlagPublicKey)
+	if err != nil {
+		return err
+	}
+
+	webBundleId := webbundleid.GetWebBundleId(ed25519pubKey)
+	fmt.Printf("Web Bundle ID: %s\n", webBundleId)
+	return nil
+}
+
+func DumpWebBundleId() error {
+	if isFlagPassed(dumpWebBundleIdCmd, flagNamePublicKey) {
+		return DumpWebBundleIdFromPublicKey()
+	} else {
+		return DumpWebBundleIdFromPrivateKey()
+	}
 }
 
 // SignWithIntegrityBlock creates a CBOR integrity block and prepends that to the web bundle containing
