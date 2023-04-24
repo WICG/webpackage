@@ -178,7 +178,7 @@ information about what an integrity block is.
 
 `sign-bundle dump-id` is a helper tool to print out the
 [Web Bundle ID](https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#signed-web-bundle-ids)
-which is corresponding to the given ed25519 private key. The ID is
+which is corresponding to the given ed25519 key. The ID is
 base32-encoded lowercase representation of the ed25519 public key with a
 predefined suffix.
 
@@ -187,7 +187,10 @@ Web Bundle ID can be used for example as the origin of an Isolated Web App.
 ```
 sign-bundle dump-id -privateKey privkey.pem
 ```
-
+or
+```
+sign-bundle dump-id -publicKey pubkey.pem
+```
 ### dump-bundle
 
 `dump-bundle` dumps the content of a web bundle in a human readable form. To
