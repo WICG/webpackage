@@ -13,15 +13,17 @@ draft](https://tools.ietf.org/html/draft-yasskin-wpack-use-cases)).
 
 <!-- TOC -->
 
-- [Explainers](#explainers)
-  - [Use cases](#use-cases)
-  - [Maintaining security and privacy constraints](#maintaining-security-and-privacy-constraints)
-- [Specifications](#specifications)
-- [Building this repository](#building-this-repository)
-  - [Building the Draft](#building-the-draft)
-  - [Packaging tools](#packaging-tools)
-    - [Signed HTTP Exchanges](#signed-http-exchanges)
-    - [Web Bundles](#web-bundles)
+- [Packaging Websites](#packaging-websites)
+  - [Explainers](#explainers)
+    - [Use cases](#use-cases)
+    - [Maintaining security and privacy constraints](#maintaining-security-and-privacy-constraints)
+  - [Specifications](#specifications)
+  - [Building this repository](#building-this-repository)
+    - [Building the Draft](#building-the-draft)
+    - [Packaging tools](#packaging-tools)
+      - [Signed HTTP Exchanges](#signed-http-exchanges)
+      - [Web Bundles](#web-bundles)
+      - [Isolated Web Apps (signing with integrity block)](#isolated-web-apps-signing-with-integrity-block)
 
 <!-- /TOC -->
 
@@ -132,3 +134,15 @@ There are several tools.
 - Rust (Experimental)
 
   - [google/webbundle](https://github.com/google/webbundle)
+
+#### Isolated Web Apps (signing with integrity block)
+
+- Go (Reference Implementation)
+
+  See [go/bundle#using-integrity-block-sub-command](go/bundle#using-integrity-block-sub-command) for more.
+
+- Node
+
+  There is a npm package, [wbn-sign](https://www.npmjs.com/package/wbn-sign).
+
+  Also same plugins as for Web Bundles can sign the bundles.
