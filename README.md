@@ -13,17 +13,16 @@ draft](https://tools.ietf.org/html/draft-yasskin-wpack-use-cases)).
 
 <!-- TOC -->
 
-- [Packaging Websites](#packaging-websites)
-  - [Explainers](#explainers)
-    - [Use cases](#use-cases)
-    - [Maintaining security and privacy constraints](#maintaining-security-and-privacy-constraints)
-  - [Specifications](#specifications)
-  - [Building this repository](#building-this-repository)
-    - [Building the Draft](#building-the-draft)
-    - [Packaging tools](#packaging-tools)
-      - [Signed HTTP Exchanges](#signed-http-exchanges)
-      - [Web Bundles](#web-bundles)
-      - [Isolated Web Apps (signing with integrity block)](#isolated-web-apps-signing-with-integrity-block)
+- [Explainers](#explainers)
+  - [Use cases](#use-cases)
+  - [Maintaining security and privacy constraints](#maintaining-security-and-privacy-constraints)
+- [Specifications](#specifications)
+- [Building this repository](#building-this-repository)
+  - [Building the Draft](#building-the-draft)
+  - [Packaging tools](#packaging-tools)
+    - [Signed HTTP Exchanges](#signed-http-exchanges)
+    - [Web Bundles](#web-bundles)
+    - [Isolated Web Apps (signing with integrity block)](#isolated-web-apps-signing-with-integrity-block)
 
 <!-- /TOC -->
 
