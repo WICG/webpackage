@@ -1,6 +1,6 @@
 import * as cborg from 'cborg';
 import { encodedLength } from 'cborg/length';
-import { B1, FormatVersion, isApprovedVersion } from './constants.js';
+import { B1, FormatVersion, isApprovedVersion } from './constants';
 
 interface Headers {
   [key: string]: string;

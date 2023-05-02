@@ -4,7 +4,7 @@ import {
   combineHeadersForUrl,
   isHeaders,
   Headers,
-} from './encoder.js';
+} from './encoder';
 import * as fs from 'fs';
 import * as path from 'path';
 import mime from 'mime';
@@ -14,7 +14,7 @@ import {
   B2,
   DEFAULT_VERSION,
   FormatVersion,
-} from './constants.js';
+} from './constants';
 
 export function addFile(
   builder: BundleBuilder,

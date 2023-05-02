@@ -6,7 +6,7 @@ import {
   B2,
   DEFAULT_VERSION,
   FormatVersion,
-} from './constants.js';
+} from './constants';
 
 type CBORValue = unknown;
 export interface Headers {

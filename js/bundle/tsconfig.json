@@ -1,15 +1,18 @@
 {
-    "compilerOptions": {
-        "target": "esnext",
-        "module": "esnext",
-        "moduleResolution": "node",
-        "esModuleInterop": true,
-        "strict": true,
-        "declaration": true,
-        "newLine": "lf",
-        "outDir": "lib"
-    },
-    "include": [
-        "src/*"
-    ]
+  "compilerOptions": {
+    "module": "es2020",
+    "target": "es2020",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "declaration": true,
+    "newLine": "lf",
+    "outDir": "lib",
+    "noImplicitReturns": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "noEmit": true,
+    "isolatedModules": true
+  },
+  "include": ["src/**/*"]
 }
