@@ -1,6 +1,6 @@
 import crypto, { KeyObject } from 'crypto';
 import base32Encode from 'base32-encode';
-import { getRawPublicKey } from './utils/utils.js';
+import { getRawPublicKey } from './utils/utils';
 
 // Web Bundle ID is a base32-encoded (without padding) ed25519 public key
 // transformed to lowercase. More information:

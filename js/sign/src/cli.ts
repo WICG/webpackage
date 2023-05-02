@@ -4,7 +4,7 @@ import {
   WebBundleId,
   parsePemKey,
   readPassphrase,
-} from './wbn-sign.js';
+} from './wbn-sign';
 import * as fs from 'fs';
 import { KeyObject } from 'crypto';
 

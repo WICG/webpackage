@@ -4,8 +4,8 @@ import {
   getAdditionalInfoDirectValue,
   getAdditionalInfoLength,
   getAdditionalInfoValueLowerLimit,
-} from './additionalinfo.js';
-import { getMajorType, MajorType } from './majortype.js';
+} from './additionalinfo';
+import { getMajorType, MajorType } from './majortype';
 
 // This function loops through the given Uint8Array containing CBOR sequence and
 // checks that they follow the deterministic principles described here:

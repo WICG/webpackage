@@ -4,9 +4,9 @@ import {
   ED25519_PK_SIGNATURE_ATTRIBUTE_NAME,
   INTEGRITY_BLOCK_MAGIC,
   VERSION_B1,
-} from '../utils/constants.js';
-import { checkDeterministic } from '../cbor/deterministic.js';
-import { getRawPublicKey } from '../utils/utils.js';
+} from '../utils/constants';
+import { checkDeterministic } from '../cbor/deterministic';
+import { getRawPublicKey } from '../utils/utils';
 
 type SignatureAttributeKey = typeof ED25519_PK_SIGNATURE_ATTRIBUTE_NAME;
 type SignatureAttributes = { [SignatureAttributeKey: string]: Uint8Array };
