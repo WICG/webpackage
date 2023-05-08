@@ -15,7 +15,7 @@
     "build:esm": "tsc",
     "build:cjs": "esbuild --bundle --format=cjs --external:cborg --outfile=lib/wbn.cjs src/wbn.ts",
     "test": "jasmine tests/*.js tests/*.cjs",
-    "lint": "npx prettier --write **/*.{js,ts,md} --config ./package.json"
+    "lint": "npx prettier --write . --ignore-unknown --config ./package.json"
   },
   "bin": {
     "wbn": "./bin/wbn.js"

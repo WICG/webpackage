@@ -15,7 +15,7 @@
     "build:esm": "tsc",
     "build:cjs": "esbuild --bundle --format=cjs --external:cborg --outfile=lib/wbn-sign.cjs src/wbn-sign.ts --platform=node",
     "test": "jasmine tests/*.js tests/*.cjs",
-    "lint": "npx prettier --write **/*.{js,ts,md} --config ./package.json"
+    "lint": "npx prettier --write . --ignore-unknown --config ./package.json"
   },
   "bin": {
     "wbn-sign": "./bin/wbn-sign.js"
