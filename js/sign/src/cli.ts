@@ -1,5 +1,6 @@
 import commander from 'commander';
 import {
+  NodeCryptoSigningStrategy,
   IntegrityBlockSigner,
   WebBundleId,
   parsePemKey,
@@ -44,10 +45,11 @@ export async function main() {
   const parsedPrivateKey = await parseMaybeEncryptedKey(
     fs.readFileSync(options.privateKey)
   );
-  const signer = new IntegrityBlockSigner(webBundle, {
-    key: parsedPrivateKey,
-  });
-  const { signedWebBundle } = signer.sign();
+  const signer = new IntegrityBlockSigner(
+    webBundle,
+    new NodeCryptoSigningStrategy(parsedPrivateKey)
+  );
+  const { signedWebBundle } = await signer.sign();
 
   const consoleLogColor = { green: '\x1b[32m', reset: '\x1b[0m' };
   console.log(

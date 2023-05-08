@@ -33,9 +33,31 @@ const privateKey = wbnSign.parsePemKey(
   fs.readFileSync('./path/to/privatekey.pem', 'utf-8')
 );
 
-const { signedWebBundle } = new wbnSign.IntegrityBlockSigner(webBundle, {
+// Option 1: With the default (`NodeCryptoSigningStrategy`) signing strategy.
+const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(webBundle, {
   key: privateKey,
 }).sign();
+
+// Option 2: With specified signing strategy.
+const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(
+  webBundle,
+  new wbnSign.NodeCryptoSigningStrategy(privateKey)
+).sign();
+
+// Option 3: With ones own CustomSigningStrategy class implementing
+// ISigningStrategy.
+const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(
+  webBundle,
+  new class {
+    async sign(data: Uint8Array): Promise<Uint8Array> {
+      // E.g. connect to one's external signing service that signs the payload.
+    }
+    async getPublicKey(): Promise<KeyObject> {
+      /** E.g. connect to one's external signing service that returns the public
+       * key.*/
+    }
+  }
+).sign();
 
 fs.writeFileSync(signedWebBundle);
 ```
@@ -96,8 +118,12 @@ rm ed25519key.pem
 
 ## Release Notes
 
-### v0.0.2
+### v0.1.0
 
+- BREAKING CHANGE: Introducing the support for using different types of signing
+  strategies. Will enable users to initialize a SigningStrategy class
+  (implementing the newly introduced `ISigningStrategy` interface). Also `sign`
+  changes to be an async function.
 - Add support for using a passphrase-encrypted private key.
 
 ### v0.0.1

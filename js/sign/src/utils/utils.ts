@@ -34,3 +34,21 @@ export function getRawPublicKey(publicKey: crypto.KeyObject) {
     publicKey.export({ type: 'spki', format: 'der' }).slice(-32)
   );
 }
+
+// Throws an error if the key is not a valid Ed25519 key of the specified type.
+export function checkIsValidEd25519Key(
+  expectedKeyType: crypto.KeyObjectType,
+  key: KeyObject
+) {
+  if (key.type !== expectedKeyType) {
+    throw new Error(
+      `Expected key type to be ${expectedKeyType}, but it was "${key.type}".`
+    );
+  }
+
+  if (key.asymmetricKeyType !== 'ed25519') {
+    throw new Error(
+      `Expected asymmetric key type to be "ed25519", but it was "${key.asymmetricKeyType}".`
+    );
+  }
+}

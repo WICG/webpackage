@@ -36,16 +36,18 @@ describe('Integrity Block Signer', () => {
   function initSignerWithTestWebBundleAndKeys(privateKey) {
     const file = path.resolve(__dirname, 'testdata/unsigned.wbn');
     const contents = fs.readFileSync(file);
-    const signer = new wbnSign.IntegrityBlockSigner(contents, {
-      key: privateKey,
-    });
+    const signer = new wbnSign.IntegrityBlockSigner(
+      contents,
+      new wbnSign.NodeCryptoSigningStrategy(privateKey)
+    );
     return signer;
   }
 
   it('accepts only ed25519 type of key.', () => {
     const keypair = crypto.generateKeyPairSync('ed25519');
-    const signer = initSignerWithTestWebBundleAndKeys(keypair.privateKey);
-    signer.sign();
+    expect(() =>
+      initSignerWithTestWebBundleAndKeys(keypair.privateKey)
+    ).not.toThrowError();
 
     for (const invalidKey of [
       { keyType: 'rsa', options: { modulusLength: 2048 } },
@@ -115,7 +117,7 @@ describe('Integrity Block Signer', () => {
     );
   });
 
-  it('generates a valid signature.', () => {
+  it('generates a valid signature.', async () => {
     const keypair = crypto.generateKeyPairSync('ed25519');
     const signer = initSignerWithTestWebBundleAndKeys(keypair.privateKey);
     const rawPubKey = wbnSign.getRawPublicKey(keypair.publicKey);
@@ -128,7 +130,7 @@ describe('Integrity Block Signer', () => {
       cborg.encode(sigAttr)
     );
 
-    const ib = cborg.decode(signer.sign().integrityBlock);
+    const ib = cborg.decode((await signer.sign()).integrityBlock);
     expect(ib.length).toEqual(3);
 
     const [magic, version, signatureStack] = ib;
