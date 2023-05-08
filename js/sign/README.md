@@ -48,7 +48,7 @@ const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(
 // ISigningStrategy.
 const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(
   webBundle,
-  class {
+  new class {
     async sign(data: Uint8Array): Promise<Uint8Array> {
       // E.g. connect to one's external signing service that signs the payload.
     }
@@ -121,7 +121,7 @@ rm ed25519key.pem
 ### v0.1.0
 
 - BREAKING CHANGE: Introducing the support for using different types of signing
-  strategies. Will require users to initialize a SigningStrategy class
+  strategies. Will enable users to initialize a SigningStrategy class
   (implementing the newly introduced `ISigningStrategy` interface). Also `sign`
   changes to be an async function.
 - Add support for using a passphrase-encrypted private key.
