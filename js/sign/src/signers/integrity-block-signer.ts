@@ -128,13 +128,13 @@ export class IntegrityBlockSigner {
   }
 
   verifySignature(
-    dataToBeSigned: Uint8Array,
+    data: Uint8Array,
     signature: Uint8Array,
     publicKey: KeyObject
   ): void {
     const isVerified = crypto.verify(
       /*algorithm=*/ undefined,
-      dataToBeSigned,
+      data,
       publicKey,
       signature
     );
