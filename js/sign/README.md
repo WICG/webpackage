@@ -48,7 +48,7 @@ const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(
 // ISigningStrategy.
 const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(
   webBundle,
-  new class {
+  new (class {
     async sign(data: Uint8Array): Promise<Uint8Array> {
       // E.g. connect to one's external signing service that signs the payload.
     }
@@ -56,7 +56,7 @@ const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(
       /** E.g. connect to one's external signing service that returns the public
        * key.*/
     }
-  }
+  })()
 ).sign();
 
 fs.writeFileSync(signedWebBundle);

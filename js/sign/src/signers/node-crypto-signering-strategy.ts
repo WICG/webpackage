@@ -9,10 +9,10 @@ export class NodeCryptoSigningStrategy implements ISigningStrategy {
     checkIsValidEd25519Key('private', privateKey);
   }
 
-  async sign(dataToBeSigned: Uint8Array): Promise<Uint8Array> {
+  async sign(data: Uint8Array): Promise<Uint8Array> {
     return crypto.sign(
       /*algorithm=*/ undefined,
-      dataToBeSigned,
+      data,
       this.privateKey
     );
   }
