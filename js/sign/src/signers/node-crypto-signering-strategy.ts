@@ -10,12 +10,11 @@ export class NodeCryptoSigningStrategy implements ISigningStrategy {
   }
 
   async sign(dataToBeSigned: Uint8Array): Promise<Uint8Array> {
-    const signature = crypto.sign(
+    return crypto.sign(
       /*algorithm=*/ undefined,
       dataToBeSigned,
       this.privateKey
     );
-    return signature;
   }
 
   async getPublicKey(): Promise<KeyObject> {
