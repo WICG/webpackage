@@ -1,4 +1,4 @@
-export { NodeCryptoSigningStrategy } from './signers/node-crypto-signering-strategy.js';
+export { NodeCryptoSigningStrategy } from './signers/node-crypto-signing-strategy.js';
 export { ISigningStrategy } from './signers/signing-strategy-interface.js';
 export {
   IntegrityBlock,
