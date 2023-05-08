@@ -1,0 +1,4 @@
+lib
+*.wbn
+*.swbn
+testdata
