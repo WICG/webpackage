@@ -35,7 +35,8 @@ export function getRawPublicKey(publicKey: crypto.KeyObject) {
   );
 }
 
-export function isValidEd25519Key(
+// Throws an error if the key is not a valid Ed25519 key of the specified type.
+export function checkIsValidEd25519Key(
   expectedKeyType: crypto.KeyObjectType,
   key: KeyObject
 ) {

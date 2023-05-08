@@ -6,7 +6,7 @@ import {
   VERSION_B1,
 } from '../utils/constants.js';
 import { checkDeterministic } from '../cbor/deterministic.js';
-import { getRawPublicKey, isValidEd25519Key } from '../utils/utils.js';
+import { getRawPublicKey, checkIsValidEd25519Key } from '../utils/utils.js';
 import { ISigningStrategy } from './signing-strategy-interface.js';
 
 type SignatureAttributeKey = typeof ED25519_PK_SIGNATURE_ATTRIBUTE_NAME;
@@ -18,13 +18,10 @@ type IntegritySignature = {
 };
 
 export class IntegrityBlockSigner {
-  private webBundle: Uint8Array;
-  private signingStrategy: ISigningStrategy;
-
-  constructor(webBundle: Uint8Array, signingStrategy: ISigningStrategy) {
-    this.webBundle = webBundle;
-    this.signingStrategy = signingStrategy;
-  }
+  constructor(
+    private readonly webBundle: Uint8Array,
+    private readonly signingStrategy: ISigningStrategy
+  ) {}
 
   async sign(): Promise<{
     integrityBlock: Uint8Array;
@@ -32,7 +29,7 @@ export class IntegrityBlockSigner {
   }> {
     const integrityBlock = this.obtainIntegrityBlock().integrityBlock;
     const publicKey = await this.signingStrategy.getPublicKey();
-    isValidEd25519Key('public', publicKey);
+    checkIsValidEd25519Key('public', publicKey);
 
     const newAttributes: SignatureAttributes = {
       [ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: getRawPublicKey(publicKey),
