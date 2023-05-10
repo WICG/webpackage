@@ -124,7 +124,7 @@ rm ed25519key.pem
   strategies. Will enable users to initialize a SigningStrategy class
   (implementing the newly introduced `ISigningStrategy` interface). Also `sign`
   changes to be an async function.
-- Add support for using a passphrase-encrypted private key.
+- Add support for using passphrase-encrypted Ed25519 private keys.
 
 ### v0.0.1
 
