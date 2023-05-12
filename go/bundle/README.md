@@ -161,15 +161,35 @@ the integrity block.
 
 It updates a bundle prepending the web bundle with an integrity block containing
 a stack of signatures over the hash of the web bundle. To use this tool, you
-need an ed25519 private key in .pem format, which can be generated with:
-`openssl genpkey -algorithm Ed25519 -out ed25519key.pem`.
+need an ed25519 private key in .pem format.
+
+An unencrypted ed25519 private key can be generated with:
+
+```
+openssl genpkey -algorithm Ed25519 -out ed25519key.pem
+```
+
+For better security, one should prefer using passphrase-encrypted ed25519
+private keys. To encrypt an unencrypted private key, run:
+
+```
+# encrypt the key (will ask for a passphrase, make sure to use a strong one)
+openssl pkcs8 -in ed25519key.pem -topk8 -out encrypted_ed25519key.pem
+# delete the unencrypted key
+rm ed25519key.pem
+```
 
 ```
 sign-bundle integrity-block \
   -i unsigned.wbn \
-  -privateKey privkey.pem \
+  -privateKey encrypted_ed25519key.pem \
   -o signed.swbn
 ```
+
+In case you chose to use an encrypted private key, it will be prompted during
+the signing process. If one wants to use the tool programmatically (e.g. as
+part of their DevOps pipeline), they can bypass the prompt by setting the
+password into an environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 
 See [integrityblock-explainer](../../explainers/integrity-signature.md) for more
 information about what an integrity block is.
