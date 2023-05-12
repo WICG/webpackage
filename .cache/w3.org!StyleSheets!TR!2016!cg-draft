@@ -1,0 +1,41 @@
+@import url('base.css');
+
+body {
+    background-repeat: no-repeat, repeat-x;
+    background-size: auto;
+    background-image: none, url(https://www.w3.org/StyleSheets/TR/2016/logos/UD-watermark);
+    background-image: none, var(--unofficial-watermark);
+}
+body::before {
+    content: url('logos/back-cg-draft.png');
+    float: left;
+    margin: -1.6em 0 0 calc(-26px - 1.5em);
+}
+
+@media (min-width: 40em) {
+    body::before {
+        content: none;
+    }
+    body {
+        background-image: url('https://www.w3.org/StyleSheets/TR/2016/logos/back-cg-draft'),
+                          url('https://www.w3.org/StyleSheets/TR/2016/logos/UD-watermark-light');
+        background-image: url('logos/back-cg-draft.png'),
+                          var(--unofficial-watermark);
+        padding-left: 160px;
+    }
+}
+
+@media screen and (min-width: 78em) {
+    body:not(.toc-inline) #toc {
+        padding-top: 160px;
+        background-attachment: local;
+    };
+}
+
+@media screen {
+    body.toc-sidebar #toc {
+        padding-top: 160px;
+        background-attachment: local;
+    };
+}
+
