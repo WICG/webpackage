@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"time"
+
+	"github.com/WICG/webpackage/go/integrityblock"
 )
 
 const (
@@ -62,7 +64,17 @@ func run() error {
 
 	case integrityBlockSubCmdName:
 		integrityBlockCmd.Parse(os.Args[2:])
-		return SignWithIntegrityBlock()
+
+		// TODO(sonkkeli): Add parsing for the new `signingStrategy` flag and
+		// make another switch case for the different types of signing.
+
+		ed25519privKey, err := readAndParseEd25519PrivateKey(*ibFlagPrivateKey)
+		if err != nil {
+			return err
+		}
+
+		var bss integrityblock.ISigningStrategy = integrityblock.NewParsedEd25519KeySigningStrategy(ed25519privKey)
+		return SignWithIntegrityBlock(bss)
 
 	case dumpWebBundleIdSubCmdName:
 		dumpWebBundleIdCmd.Parse(os.Args[2:])

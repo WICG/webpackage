@@ -179,11 +179,11 @@ func ComputeWebBundleSha512(bundleFile io.ReadSeeker, offset int64) ([]byte, err
 	return h.Sum(nil), nil
 }
 
-// generateDataToBeSigned creates a bytes array containing the payload of which the signature of the web bundle will be calculated.
+// GenerateDataToBeSigned creates a bytes array containing the payload of which the signature of the web bundle will be calculated.
 // The order must be the following, where the lengths are represented as 64 bit big-endian integers:
 // (1) length of the web bundle hash, (2) web bundle hash, (3) length of the serialized integrity-block
 // (4) serialized integrity-block, (5) length of the attributes, (6) serialized attributes
-func generateDataToBeSigned(webBundleHash, integrityBlockBytes []byte, signatureAttributes SignatureAttributesMap) ([]byte, error) {
+func GenerateDataToBeSigned(webBundleHash, integrityBlockBytes []byte, signatureAttributes SignatureAttributesMap) ([]byte, error) {
 	var attributesBytesBuf bytes.Buffer
 	enc := cbor.NewEncoder(&attributesBytesBuf)
 	if err := signatureAttributes.cborBytes(enc); err != nil {
@@ -206,16 +206,6 @@ func GenerateSignatureAttributesWithPublicKey(ed25519publicKey ed25519.PublicKey
 	return SignatureAttributesMap{Ed25519publicKeyAttributeName: []byte(ed25519publicKey)}
 }
 
-func computeEd25519Signature(ed25519privKey ed25519.PrivateKey, dataToBeSigned []byte) ([]byte, error) {
-	signature := ed25519.Sign(ed25519privKey, dataToBeSigned)
-	// Verification is done to ensure that the signing was successful and that the obtained public key is not corrupted and corresponds to the private key used for signing.
-	signatureOk := ed25519.Verify(ed25519privKey.Public().(ed25519.PublicKey), dataToBeSigned, signature)
-	if !signatureOk {
-		return nil, errors.New("integrityblock: Signature verification failed.")
-	}
-	return signature, nil
-}
-
 // WebBundleHasIntegrityBlock is a helper function that can be called with any file path to check if it has
 // an integrtiy block. Basically this checks if the bytes fileBytes[2:10] match with the magic bytes.
 func WebBundleHasIntegrityBlock(bundleFile io.ReadSeeker) (bool, error) {
@@ -234,32 +224,4 @@ func WebBundleHasIntegrityBlock(bundleFile io.ReadSeeker) (bool, error) {
 	bundleFile.Seek(0, io.SeekStart)
 
 	return bytes.Compare(IntegrityBlockMagic, possibleMagic) == 0, nil
-}
-
-// SignAndAddNewSignature contains the main logic for generating the new signature and
-// prepending the integrity block's signature stack with a new integrity signature object.
-func (integrityBlock *IntegrityBlock) SignAndAddNewSignature(ed25519privKey ed25519.PrivateKey, webBundleHash []byte, signatureAttributes SignatureAttributesMap) error {
-	integrityBlockBytes, err := integrityBlock.CborBytes()
-	if err != nil {
-		return err
-	}
-
-	// Ensure the CBOR on the integrity block follows the deterministic principles.
-	err = cbor.Deterministic(integrityBlockBytes)
-	if err != nil {
-		return err
-	}
-
-	dataToBeSigned, err := generateDataToBeSigned(webBundleHash, integrityBlockBytes, signatureAttributes)
-	if err != nil {
-		return err
-	}
-
-	signature, err := computeEd25519Signature(ed25519privKey, dataToBeSigned)
-	if err != nil {
-		return err
-	}
-
-	integrityBlock.addNewSignatureToIntegrityBlock(signatureAttributes, signature)
-	return nil
 }
