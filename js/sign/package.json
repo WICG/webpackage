@@ -30,7 +30,10 @@
     "webpackage",
     "integrity-block"
   ],
-  "author": "Sonja Laurila <laurila@google.com>",
+  "author": "Sonja Laurila <laurila@google.com> (https://github.com/sonkkeli)",
+  "contributors": [
+    "Christian Flach <cmfcmf@google.com> (https://github.com/cmfcmf)"
+  ],
   "license": "W3C-20150513",
   "dependencies": {
     "base32-encode": "^2.0.0",

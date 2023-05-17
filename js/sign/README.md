@@ -15,6 +15,10 @@ Using npm:
 npm install wbn-sign
 ```
 
+## Requirements
+
+This plugin requires Node v14.0.0+.
+
 ## Usage
 
 Please be aware that the APIs are not stable yet and are subject to change at

@@ -31,6 +31,10 @@
     "bundled exchanges"
   ],
   "author": "Kunihiko Sakamoto <ksakamoto@chromium.org>",
+  "contributors": [
+    "Sonja Laurila <laurila@google.com> (https://github.com/sonkkeli)",
+    "Christian Flach <cmfcmf@google.com> (https://github.com/cmfcmf)"
+  ],
   "license": "W3C-20150513",
   "dependencies": {
     "cborg": "^1.9.4",
