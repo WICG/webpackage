@@ -27,13 +27,32 @@ function readOptions() {
     .parse(process.argv);
 }
 
+// Parses either an unencrypted or encrypted private key. For unencrypted keys,
+// reads the passphrase to decrypt an encrypted private key from either
+// `WEB_BUNDLE_SIGNING_PASSPHRASE` env var or if not set, it prompts passphrase
+// from the user.
 async function parseMaybeEncryptedKey(
   privateKeyFile: Buffer
 ): Promise<KeyObject> {
+  // If the env var is provided, that's most probably the right one so let's
+  // check this before the unencrypted case.
+  if (process.env.WEB_BUNDLE_SIGNING_PASSPHRASE !== '') {
+    try {
+      return parsePemKey(
+        privateKeyFile,
+        process.env.WEB_BUNDLE_SIGNING_PASSPHRASE
+      );
+    } catch (e) {
+      console.warn(
+        "Passphrase read from `WEB_BUNDLE_SIGNING_PASSPHRASE` environment variable doesn't match with the provided private key."
+      );
+    }
+  }
+
   try {
     return parsePemKey(privateKeyFile);
   } catch (e) {
-    console.warn("This might be an encrypted private key, let's try again.");
+    console.warn('This key is probably an encrypted private key.');
   }
 
   return parsePemKey(privateKeyFile, await readPassphrase());
