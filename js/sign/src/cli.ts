@@ -27,35 +27,41 @@ function readOptions() {
     .parse(process.argv);
 }
 
-// Parses either an unencrypted or encrypted private key. For unencrypted keys,
-// reads the passphrase to decrypt an encrypted private key from either
-// `WEB_BUNDLE_SIGNING_PASSPHRASE` env var or if not set, it prompts passphrase
-// from the user.
+// Parses either an unencrypted or encrypted private key. For encrypted keys, it
+// reads the passphrase to decrypt them from either the
+// `WEB_BUNDLE_SIGNING_PASSPHRASE` environment variable, or, if not set, prompts
+// the user for the passphrase.
 async function parseMaybeEncryptedKey(
   privateKeyFile: Buffer
 ): Promise<KeyObject> {
-  // If the env var is provided, that's most probably the right one so let's
-  // check this before the unencrypted case.
-  if (process.env.WEB_BUNDLE_SIGNING_PASSPHRASE !== '') {
-    try {
-      return parsePemKey(
-        privateKeyFile,
-        process.env.WEB_BUNDLE_SIGNING_PASSPHRASE
-      );
-    } catch (e) {
-      console.warn(
-        "Passphrase read from `WEB_BUNDLE_SIGNING_PASSPHRASE` environment variable doesn't match with the provided private key."
-      );
-    }
-  }
-
+  // Read unencrypted private key.
   try {
     return parsePemKey(privateKeyFile);
   } catch (e) {
     console.warn('This key is probably an encrypted private key.');
   }
 
-  return parsePemKey(privateKeyFile, await readPassphrase());
+  const hasEnvVarSet =
+    process.env.WEB_BUNDLE_SIGNING_PASSPHRASE &&
+    process.env.WEB_BUNDLE_SIGNING_PASSPHRASE !== '';
+
+  // Read encrypted private key.
+  try {
+    return parsePemKey(
+      privateKeyFile,
+      hasEnvVarSet
+        ? process.env.WEB_BUNDLE_SIGNING_PASSPHRASE
+        : await readPassphrase()
+    );
+  } catch (e) {
+    throw Error(
+      `Failed decrypting encrypted private key with passphrase read from ${
+        hasEnvVarSet
+          ? '`WEB_BUNDLE_SIGNING_PASSPHRASE` environment variable'
+          : ' prompt'
+      }`
+    );
+  }
 }
 
 export async function main() {
