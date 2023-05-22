@@ -74,7 +74,7 @@ func run() error {
 		}
 
 		var bss integrityblock.ISigningStrategy = integrityblock.NewParsedEd25519KeySigningStrategy(ed25519privKey)
-		return SignWithIntegrityBlock(bss)
+		return SignWithIntegrityBlockWithCmdFlags(bss)
 
 	case dumpWebBundleIdSubCmdName:
 		dumpWebBundleIdCmd.Parse(os.Args[2:])

@@ -85,10 +85,10 @@ func DumpWebBundleId() error {
 	}
 }
 
-// SignWithIntegrityBlock creates a CBOR integrity block and prepends that to the web bundle containing
-// a signature of the hash of the web bundle. Finally it writes the new signed web bundle into file.
-// More details can be found in the [explainer](https://github.com/WICG/webpackage/blob/main/explainers/integrity-signature.md).
-func SignWithIntegrityBlock(signingStrategy integrityblock.ISigningStrategy) error {
+// SignWithIntegrityBlockWithCmdFlags is just a wrapper function for `SignWithIntegrityBlock`
+// function containing the actual logic so that it can be easily exported without having
+// to rely on reading and writing to files specified to be read from the CMD tool flags.
+func SignWithIntegrityBlockWithCmdFlags(signingStrategy integrityblock.ISigningStrategy) error {
 	if *ibFlagInput == *ibFlagOutput {
 		return errors.New("SignIntegrityBlock: Input and output file cannot be the same.")
 	}
@@ -99,12 +99,26 @@ func SignWithIntegrityBlock(signingStrategy integrityblock.ISigningStrategy) err
 	}
 	defer bundleFile.Close()
 
-	integrityBlock, offset, err := integrityblock.ObtainIntegrityBlock(bundleFile)
+	signedBundleFile, err := os.Create(*ibFlagOutput)
+	if err != nil {
+		return err
+	}
+	defer signedBundleFile.Close()
+
+	return SignWithIntegrityBlock(bundleFile, signedBundleFile, signingStrategy)
+}
+
+// SignWithIntegrityBlock creates a CBOR integrity block containing a signature
+// matching the hash of the web bundle read from `bundleFileIn`. Finally it
+// writes the new signed web bundle into `bundleFileOut`. More details can be
+// found in [Integrity Block Explainer](https://github.com/WICG/webpackage/blob/main/explainers/integrity-signature.md).
+func SignWithIntegrityBlock(bundleFileIn, bundleFileOut *os.File, signingStrategy integrityblock.ISigningStrategy) error {
+	integrityBlock, offset, err := integrityblock.ObtainIntegrityBlock(bundleFileIn)
 	if err != nil {
 		return err
 	}
 
-	webBundleHash, err := integrityblock.ComputeWebBundleSha512(bundleFile, offset)
+	webBundleHash, err := integrityblock.ComputeWebBundleSha512(bundleFileIn, offset)
 	if err != nil {
 		return err
 	}
@@ -141,14 +155,5 @@ func SignWithIntegrityBlock(signingStrategy integrityblock.ISigningStrategy) err
 	webBundleId := webbundleid.GetWebBundleId(ed25519publicKey)
 	fmt.Println("Web Bundle ID: " + webBundleId)
 
-	signedBundleFile, err := os.Create(*ibFlagOutput)
-	if err != nil {
-		return err
-	}
-	defer signedBundleFile.Close()
-	if err := writeOutput(bundleFile, integrityBlockBytes, offset, signedBundleFile); err != nil {
-		return err
-	}
-
-	return nil
+	return writeOutput(bundleFileIn, integrityBlockBytes, offset, bundleFileOut)
 }
