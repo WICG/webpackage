@@ -63,8 +63,6 @@ describe('CLI key parsing', () => {
   });
 
   it('fails for faulty passphrase read from a prompt.', async () => {
-    process.env.WEB_BUNDLE_SIGNING_PASSPHRASE = 'helloworld1';
-
     await expectToThrowErrorAsync(async () => {
       const stdin = mockStdin.stdin();
       const keyPromise = cli.parseMaybeEncryptedKey(TEST_ENCRYPTED_PRIVATE_KEY);
