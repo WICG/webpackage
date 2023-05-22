@@ -31,7 +31,7 @@ function readOptions() {
 // reads the passphrase to decrypt them from either the
 // `WEB_BUNDLE_SIGNING_PASSPHRASE` environment variable, or, if not set, prompts
 // the user for the passphrase.
-async function parseMaybeEncryptedKey(
+export async function parseMaybeEncryptedKey(
   privateKeyFile: Buffer
 ): Promise<KeyObject> {
   // Read unencrypted private key.
@@ -58,7 +58,7 @@ async function parseMaybeEncryptedKey(
       `Failed decrypting encrypted private key with passphrase read from ${
         hasEnvVarSet
           ? '`WEB_BUNDLE_SIGNING_PASSPHRASE` environment variable'
-          : ' prompt'
+          : 'prompt'
       }`
     );
   }
