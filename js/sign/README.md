@@ -116,18 +116,18 @@ openssl pkcs8 -in ed25519key.pem -topk8 -out encrypted_ed25519key.pem
 rm ed25519key.pem
 ```
 
-In case you chose to use an encrypted private key, it will be prompted during
-the signing process. If one wants to use the CLI tool programmatically (e.g. as
-part of their DevOps pipeline), they can bypass the prompt by setting the
-password into an environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
+If you use an encrypted private key, you will be prompted for its passphrase as
+part of the signing process. If you want to use the CLI tool programmatically,
+then you can bypass the passphrase prompt by storing the passphrase in an
+environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 
 ## Release Notes
 
 ### v0.1.1
 
-- Adds support for bypassing prompting passphrase for encrypted private keys by
-  using `WEB_BUNDLE_SIGNING_PASSPHRASE` environment variable if using the CLI
-  tool directly.
+- Add support for bypassing the passphrase prompt for encrypted private keys by
+  reading the passphrase from the `WEB_BUNDLE_SIGNING_PASSPHRASE` environment
+  variable if it is set when using the CLI tool directly.
 
 ### v0.1.0
 
