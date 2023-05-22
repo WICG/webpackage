@@ -85,7 +85,7 @@ func DumpWebBundleId() error {
 	}
 }
 
-// SignWithIntegrityBlockWithCmdFlags is just a wrapper class for `SignWithIntegrityBlock`
+// SignWithIntegrityBlockWithCmdFlags is just a wrapper function for `SignWithIntegrityBlock`
 // function containing the actual logic so that it can be easily exported without having
 // to rely on reading and writing to files specified to be read from the CMD tool flags.
 func SignWithIntegrityBlockWithCmdFlags(signingStrategy integrityblock.ISigningStrategy) error {
@@ -105,12 +105,7 @@ func SignWithIntegrityBlockWithCmdFlags(signingStrategy integrityblock.ISigningS
 	}
 	defer signedBundleFile.Close()
 
-	err = SignWithIntegrityBlock(bundleFile, signedBundleFile, signingStrategy)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return SignWithIntegrityBlock(bundleFile, signedBundleFile, signingStrategy)
 }
 
 // SignWithIntegrityBlock creates a CBOR integrity block containing a signature
@@ -160,9 +155,5 @@ func SignWithIntegrityBlock(bundleFileIn, bundleFileOut *os.File, signingStrateg
 	webBundleId := webbundleid.GetWebBundleId(ed25519publicKey)
 	fmt.Println("Web Bundle ID: " + webBundleId)
 
-	if err := writeOutput(bundleFileIn, integrityBlockBytes, offset, bundleFileOut); err != nil {
-		return err
-	}
-
-	return nil
+	return writeOutput(bundleFileIn, integrityBlockBytes, offset, bundleFileOut)
 }
