@@ -107,7 +107,7 @@ https://github.com/martinthomson/i-d-template/blob/main/doc/SETUP.md.
 
 #### Signed HTTP Exchanges
 
-Install this with `go install github.com/WICG/webpackage/go/signedexchange/cmd/...`.
+Install this with `go install github.com/WICG/webpackage/go/signedexchange/cmd/...` (Golang 1.18+).
 
 See [go/signedexchange](go/signedexchange) for the usage of the tool.
 

@@ -37,7 +37,7 @@ details.
 
 ### Installation
 
-We recommend using `go install` to install the command-line tool.
+We recommend using `go install` (Golang 1.18+) to install the command-line tool.
 
 ```
 go install github.com/WICG/webpackage/go/bundle/cmd/...@latest
