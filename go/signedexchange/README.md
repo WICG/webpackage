@@ -16,7 +16,7 @@ You are also welcome to use the code as a Go lib (e.g. `import "github.com/WICG/
 The Go environment needs to be set up in prior to using the tool. We are testing the tool on the latest version of Go. Please refer to the [Go Getting Started documentation](https://golang.org/doc/install) for the details.
 
 ### Installation
-We recommend using `go install` to install the command-line tool.
+We recommend using `go install` (Golang 1.18+) to install the command-line tool.
 
 ```
 go install github.com/WICG/webpackage/go/signedexchange/cmd/...@latest
