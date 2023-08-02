@@ -18,7 +18,8 @@
     "lint": "npx prettier --write . --ignore-unknown --config ./package.json"
   },
   "bin": {
-    "wbn-sign": "./bin/wbn-sign.js"
+    "wbn-sign": "./bin/wbn-sign.js",
+    "wbn-dump-id": "./bin/wbn-dump-id.js"
   },
   "repository": {
     "type": "git",

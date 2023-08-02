@@ -9,6 +9,9 @@ export async function readPassphrase(): Promise<string> {
       prompt: 'Passphrase for the key: ',
       silent: true,
       replace: '*',
+      // Output must be != `stdout`. Otherwise saving the `wbn-dump-id`
+      // result into a file or an environment variable also includes the prompt.
+      output: process.stderr,
     });
     return passphrase;
   } catch (er) {

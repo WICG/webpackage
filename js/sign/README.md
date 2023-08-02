@@ -92,8 +92,24 @@ const webBundleIdWithIWAOrigin = new wbnSign.WebBundleId(
 
 ## CLI
 
-This package also includes a CLI tool `wbn-sign` which lets you sign a web
-bundle easily without having to write any additional JavaScript.
+This package also includes 2 CLI tools
+
+- `wbn-sign` which lets you sign a web bundle easily without having to write any
+  additional JavaScript.
+- `wbn-dump-id` which can be used to calculate the Web Bundle ID corresponding
+  to your signing key.
+
+### Running wbn-sign
+
+There are the following command-line flags available:
+
+- (required) `--privateKey <filePath>` (`-k <filePath>`)  
+  which takes the path to ed25519 private key.
+- (required) `--input <filePath>` (`-i <filePath>`)  
+  which takes the path to the web bundle to be signed.
+- (optional) `--output <filePath>` (`-o <filePath>`)  
+  which takes the path to the wanted signed web bundle output. Default:
+  `signed.swbn`.
 
 Example command:
 
@@ -103,6 +119,42 @@ wbn-sign \
 -o ~/path/to/signed-webbundle.swbn \
 -k ~/path/to/ed25519key.pem
 ```
+
+### Running wbn-dump-id
+
+There are the following command-line flags available:
+
+- (required) `--privateKey <filePath>` (`-k <filePath>`)  
+  which takes the path to ed25519 private key.
+- (optional) `--withIwaScheme <boolean>` (`-s`)  
+  which dumps the Web Bundle ID with isolated-app:// scheme. By default it only
+  dumps the ID. Default: `false`.
+
+Example command:
+
+```bash
+wbn-sign -s -k ~/path/to/ed25519key.pem
+```
+
+This would print the Web Bundle ID calculated from `ed25519key.pem` into the
+console with the `isolated-app://` scheme.
+
+If one wants to save the ID into a file or into an environment variable, one can
+do the following (respectively):
+
+```bash
+wbn-dump-id -k file_enc.pem -s > webbundleid.txt
+```
+
+```bash
+export DUMP_WEB_BUNDLE_ID="$(wbn-dump-id -k file_enc.pem -s)"
+```
+
+The environment variable set like this, can then be used in other scripts, for
+example in `--baseURL` when creating a web bundle with
+[wbn CLI tool](https://github.com/WICG/webpackage/tree/main/js/bundle#cli).
+
+## Generating Ed25519 key
 
 An unencrypted ed25519 private key can be generated with:
 
@@ -126,6 +178,10 @@ then you can bypass the passphrase prompt by storing the passphrase in an
 environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 
 ## Release Notes
+
+### v0.1.2
+
+- Add support for calculating the Web Bundle ID with the CLI tool.
 
 ### v0.1.1
 
