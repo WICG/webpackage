@@ -1,4 +1,4 @@
-import * as cli from '../lib/cli.js';
+import * as cliUtils from '../lib/utils/cli-utils.js';
 import * as mockStdin from 'mock-stdin';
 
 const TEST_UNENCRYPTED_PRIVATE_KEY = Buffer.from(
@@ -37,19 +37,25 @@ describe('CLI key parsing', () => {
   });
 
   it('works for unencrypted key.', async () => {
-    const key = await cli.parseMaybeEncryptedKey(TEST_UNENCRYPTED_PRIVATE_KEY);
+    const key = await cliUtils.parseMaybeEncryptedKey(
+      TEST_UNENCRYPTED_PRIVATE_KEY
+    );
     expect(key.type).toEqual('private');
   });
 
   it('works for encrypted key read from `WEB_BUNDLE_SIGNING_PASSPHRASE`.', async () => {
     process.env.WEB_BUNDLE_SIGNING_PASSPHRASE = PASSPHRASE;
-    const key = await cli.parseMaybeEncryptedKey(TEST_ENCRYPTED_PRIVATE_KEY);
+    const key = await cliUtils.parseMaybeEncryptedKey(
+      TEST_ENCRYPTED_PRIVATE_KEY
+    );
     expect(key.type).toEqual('private');
   });
 
   it('works for encrypted key read from a prompt.', async () => {
     const stdin = mockStdin.stdin();
-    const keyPromise = cli.parseMaybeEncryptedKey(TEST_ENCRYPTED_PRIVATE_KEY);
+    const keyPromise = cliUtils.parseMaybeEncryptedKey(
+      TEST_ENCRYPTED_PRIVATE_KEY
+    );
     stdin.send(`${PASSPHRASE}\n`);
     expect((await keyPromise).type).toEqual('private');
   });
@@ -58,14 +64,16 @@ describe('CLI key parsing', () => {
     process.env.WEB_BUNDLE_SIGNING_PASSPHRASE = 'helloworld1';
 
     await expectToThrowErrorAsync(() =>
-      cli.parseMaybeEncryptedKey(TEST_ENCRYPTED_PRIVATE_KEY)
+      cliUtils.parseMaybeEncryptedKey(TEST_ENCRYPTED_PRIVATE_KEY)
     );
   });
 
   it('fails for faulty passphrase read from a prompt.', async () => {
     await expectToThrowErrorAsync(async () => {
       const stdin = mockStdin.stdin();
-      const keyPromise = cli.parseMaybeEncryptedKey(TEST_ENCRYPTED_PRIVATE_KEY);
+      const keyPromise = cliUtils.parseMaybeEncryptedKey(
+        TEST_ENCRYPTED_PRIVATE_KEY
+      );
       stdin.send(`${PASSPHRASE}1\n`);
       await keyPromise;
     });
