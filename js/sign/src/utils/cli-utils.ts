@@ -41,9 +41,7 @@ export async function parseMaybeEncryptedKey(
 
 export function greenConsoleLog(text: string): void {
   const logColor = { green: '\x1b[32m', reset: '\x1b[0m' };
-
-  // @ts-expect-error Unknown property `fd`.
-  const fileDescriptor: number = process.stdout.fd ?? 1;
+  const fileDescriptor: number = process.stdout.fd;
 
   // If the log is used for non-terminal (fd != 1), e.g., setting an environment
   // variable, it shouldn't have any formatting.
