@@ -1,7 +1,8 @@
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/influxdata/influxdb v1.6.3 h1:TioHM/BpNNH25J89jnL2tk45ww8e2CF+3Q/ih0CMw1I=
 github.com/influxdata/influxdb v1.6.3/go.mod h1:qZna6X/4elxqT3yI9iZYdZrWWdeFOOprn86kgg4+IzY=
+github.com/influxdata/influxdb v1.7.6 h1:8mQ7A/V+3noMGCt/P9pD09ISaiz9XvgCk303UYA3gcs=
+github.com/influxdata/influxdb v1.7.6/go.mod h1:qZna6X/4elxqT3yI9iZYdZrWWdeFOOprn86kgg4+IzY=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1 h1:mweAR1A6xJ3oS2pRaGiHgQ4OO8tzTaLawm8vnODuwDk=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/mrichman/hargo v0.1.2-0.20190117125451-162adce4527e h1:fcjfIMjVh8w+y7b5+vznUKU1qwiI5wAI9ybNNLuY3nc=
