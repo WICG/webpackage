@@ -9,11 +9,11 @@ require (
 )
 
 require (
-	github.com/influxdata/influxdb v1.6.3 // indirect
+	github.com/influxdata/influxdb v1.7.6 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 	github.com/sirupsen/logrus v1.3.0 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a
-	golang.org/x/net v0.10.0 // indirect
+  golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/term v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
