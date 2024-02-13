@@ -17,23 +17,23 @@ other ways described in the appendices.
        These signatures contain countermeasures against downgrade and
 protocol-confusion attacks. 
     " name="description">
-<meta content="xml2rfc 3.17.1" name="generator">
+<meta content="xml2rfc 3.19.2" name="generator">
 <meta content="draft-yasskin-http-origin-signed-responses-latest" name="ietf.draft">
 <!-- Generator version information:
-  xml2rfc 3.17.1
-    Python 3.10.11
-    appdirs 1.4.4
-    ConfigArgParse 1.5.3
-    google-i18n-address 2.5.2
+  xml2rfc 3.19.2
+    Python 3.11.6
+    ConfigArgParse 1.7
+    google-i18n-address 3.1.0
     intervaltree 3.1.0
     Jinja2 3.1.2
-    lxml 4.9.2
+    lxml 4.9.3
+    platformdirs 4.2.0
     pycountry 22.3.5
-    PyYAML 6.0
-    requests 2.28.1
-    setuptools 65.6.0
+    PyYAML 6.0.1
+    requests 2.31.0
+    setuptools 68.2.2
     six 1.16.0
-    wcwidth 0.2.6
+    wcwidth 0.2.13
 -->
 <link href="draft-yasskin-http-origin-signed-responses.xml" rel="alternate" type="application/rfc+xml">
 <link href="#copyright" rel="license">
@@ -615,6 +615,7 @@ sub, sup {
   clear: left;
   float: left;
   text-align: right;
+  margin-right: 1ch;
 }
 #identifiers dd {
   margin: 0;
@@ -655,7 +656,7 @@ sub, sup {
 }
 #toc nav li {
   line-height: 1.3em;
-  margin: 0.75em 0;
+  margin: 2px 0;
   padding-left: 1.2em;
   text-indent: -1.2em;
 }
@@ -748,7 +749,7 @@ hr.addr {
     z-index: 2;
     top: 0;
     right: 0;
-    padding: 0;
+    padding: 1px 0 0 0;
     margin: 0;
     border-bottom: 1px solid #ccc;
     opacity: 0.6;
@@ -872,16 +873,13 @@ hr.addr {
     border-top: none;
     padding-top: 0;
   }
-  figure, pre {
+  figure, pre, .vcard {
     page-break-inside: avoid;
-  }
-  figure {
-    overflow: scroll;
   }
   h1, h2, h3, h4, h5, h6 {
     page-break-after: avoid;
   }
-  h2+*, h3+*, h4+*, h5+*, h6+* {
+  :is(h2, h3, h4, h5, h6)+*, dd {
     page-break-before: avoid;
   }
   pre {
@@ -894,6 +892,9 @@ hr.addr {
   }
   td {
     border-top: 1px solid #ddd;
+  }
+  .toplink {
+    display: none;
   }
 }
 
@@ -995,28 +996,6 @@ address div.right {
   text-align: right;
 }
 
-/* Give the table caption label the same styling as the figcaption */
-
-@media print {
-  .toplink {
-    display: none;
-  }
-
-  /* avoid overwriting the top border line with the ToC header */
-  #toc {
-    padding-top: 1px;
-  }
-
-  /* Avoid page breaks inside dl and author address entries */
-  dd {
-    page-break-before: avoid;
-  }
-  .vcard {
-    page-break-inside: avoid;
-  }
-
-}
-
 /* Dark mode. */
 @media (prefers-color-scheme: dark) {
 :root {
@@ -1053,11 +1032,11 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <thead><tr>
 <td class="left">Internet-Draft</td>
 <td class="center">Signed HTTP Exchanges</td>
-<td class="right">May 2023</td>
+<td class="right">February 2024</td>
 </tr></thead>
 <tfoot><tr>
 <td class="left">Yasskin</td>
-<td class="center">Expires 13 November 2023</td>
+<td class="center">Expires 16 August 2024</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1070,12 +1049,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-yasskin-http-origin-signed-responses-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2023-05-12" class="published">12 May 2023</time>
+<time datetime="2024-02-13" class="published">13 February 2024</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2023-11-13">13 November 2023</time></dd>
+<dd class="expires"><time datetime="2024-08-16">16 August 2024</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1128,7 +1107,7 @@ protocol-confusion attacks.<a href="#section-abstract-2" class="pilcrow">¶</a><
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 13 November 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 16 August 2024.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1137,7 +1116,7 @@ protocol-confusion attacks.<a href="#section-abstract-2" class="pilcrow">¶</a><
 <a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
         </h2>
 <p id="section-boilerplate.2-1">
-            Copyright (c) 2023 IETF Trust and the persons identified as the
+            Copyright (c) 2024 IETF Trust and the persons identified as the
             document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.2-2">
             This document is subject to BCP 78 and the IETF Trust's Legal
@@ -1495,20 +1474,23 @@ protocol-confusion attacks.<a href="#section-abstract-2" class="pilcrow">¶</a><
 cases where the transport layer isn't sufficient. This can be used in several
 ways:<a href="#section-1-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-1-2.1">When signed by a certificate (<span>[<a href="#RFC5280" class="cite xref">RFC5280</a>]</span>) that's trusted for an origin, an
+<li class="normal" id="section-1-2.1">
+          <p id="section-1-2.1.1">When signed by a certificate (<span>[<a href="#RFC5280" class="cite xref">RFC5280</a>]</span>) that's trusted for an origin, an
 exchange can be treated as authoritative for that origin, even if it was
 transferred over a connection that isn't authoritative (Section 9.1 of
 <span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>) for that origin. See <a href="#uc-pushed-subresources" class="auto internal xref">Appendix A.1</a> and
-<a href="#uc-explicit-distributor" class="auto internal xref">Appendix A.2</a>.<a href="#section-1-2.1" class="pilcrow">¶</a>
+<a href="#uc-explicit-distributor" class="auto internal xref">Appendix A.2</a>.<a href="#section-1-2.1.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="section-1-2.2">A top-level resource can use a public key to identify an expected publisher for
+        <li class="normal" id="section-1-2.2">
+          <p id="section-1-2.2.1">A top-level resource can use a public key to identify an expected publisher for
 particular subresources, a system known as Subresource Integrity (<span>[<a href="#SRI" class="cite xref">SRI</a>]</span>). An
 exchange's signature provides the matching proof of authorship. See
-<a href="#uc-sri" class="auto internal xref">Appendix A.3</a>.<a href="#section-1-2.2" class="pilcrow">¶</a>
+<a href="#uc-sri" class="auto internal xref">Appendix A.3</a>.<a href="#section-1-2.2.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="section-1-2.3">A signature can vouch for the exchange in some way, for example that it
+        <li class="normal" id="section-1-2.3">
+          <p id="section-1-2.3.1">A signature can vouch for the exchange in some way, for example that it
 appears in a transparency log or that static analysis indicates that it omits
-certain attacks. See <a href="#uc-transparency" class="auto internal xref">Appendix A.4</a> and <a href="#uc-static-analysis" class="auto internal xref">Appendix A.5</a>.<a href="#section-1-2.3" class="pilcrow">¶</a>
+certain attacks. See <a href="#uc-transparency" class="auto internal xref">Appendix A.4</a> and <a href="#uc-static-analysis" class="auto internal xref">Appendix A.5</a>.<a href="#section-1-2.3.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="section-1-3">Subsequent work toward the use cases in <span>[<a href="#I-D.yasskin-wpack-use-cases" class="cite xref">I-D.yasskin-wpack-use-cases</a>]</span>
@@ -1777,11 +1759,13 @@ representation that can be embedded into other CBOR, canonically serialized
 <p id="section-3.2-2">The CBOR representation of a set of response metadata and headers is the CBOR
 (<span>[<a href="#RFC7049" class="cite xref">RFC7049</a>]</span>) map with the following mappings:<a href="#section-3.2-2" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-3.2-3.1">The byte string ':status' to the byte string containing the response's 3-digit
-status code, and<a href="#section-3.2-3.1" class="pilcrow">¶</a>
+<li class="normal" id="section-3.2-3.1">
+            <p id="section-3.2-3.1.1">The byte string ':status' to the byte string containing the response's 3-digit
+status code, and<a href="#section-3.2-3.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-3.2-3.2">For each response header field, the header field's lowercase name as a byte
-string to the header field's value as a byte string.<a href="#section-3.2-3.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-3.2-3.2">
+            <p id="section-3.2-3.2.1">For each response header field, the header field's lowercase name as a byte
+string to the header field's value as a byte string.<a href="#section-3.2-3.2.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 <div id="example-cbor-representation">
@@ -1847,34 +1831,40 @@ augmented-certificate = {
 certificate, and the client will attempt to build a path (<span>[<a href="#RFC5280" class="cite xref">RFC5280</a>]</span>) to it
 from a trusted root using the other certificates in the chain.<a href="#section-3.3-3" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-3.3-4">
-<li id="section-3.3-4.1">Each <code>cert</code> value MUST be a DER-encoded X.509v3 certificate (<span>[<a href="#RFC5280" class="cite xref">RFC5280</a>]</span>).
+<li id="section-3.3-4.1">
+            <p id="section-3.3-4.1.1">Each <code>cert</code> value MUST be a DER-encoded X.509v3 certificate (<span>[<a href="#RFC5280" class="cite xref">RFC5280</a>]</span>).
 Other key/value pairs in the same array item define properties of this
-certificate.<a href="#section-3.3-4.1" class="pilcrow">¶</a>
+certificate.<a href="#section-3.3-4.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-3.3-4.2">The first certificate's <code>ocsp</code> value MUST be a complete, DER-encoded OCSP
+          <li id="section-3.3-4.2">
+            <p id="section-3.3-4.2.1">The first certificate's <code>ocsp</code> value MUST be a complete, DER-encoded OCSP
 response for that certificate (using the ASN.1 type <code>OCSPResponse</code> defined in
-<span>[<a href="#RFC6960" class="cite xref">RFC6960</a>]</span>). Subsequent certificates MUST NOT have an <code>ocsp</code> value.<a href="#section-3.3-4.2" class="pilcrow">¶</a>
+<span>[<a href="#RFC6960" class="cite xref">RFC6960</a>]</span>). Subsequent certificates MUST NOT have an <code>ocsp</code> value.<a href="#section-3.3-4.2.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-3.3-4.3">Each certificate's <code>sct</code> value if any MUST be a
+          <li id="section-3.3-4.3">
+            <p id="section-3.3-4.3.1">Each certificate's <code>sct</code> value if any MUST be a
 <code>SignedCertificateTimestampList</code> for that certificate as defined by Section
-3.3 of <span>[<a href="#RFC6962" class="cite xref">RFC6962</a>]</span>.<a href="#section-3.3-4.3" class="pilcrow">¶</a>
+3.3 of <span>[<a href="#RFC6962" class="cite xref">RFC6962</a>]</span>.<a href="#section-3.3-4.3.1" class="pilcrow">¶</a></p>
 </li>
         </ol>
 <p id="section-3.3-5">Loading a <code>cert-url</code> takes a <code>forceFetch</code> flag. The client MUST:<a href="#section-3.3-5" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-3.3-6">
-<li id="section-3.3-6.1">Let <code>raw-chain</code> be the result of fetching (<span>[<a href="#FETCH" class="cite xref">FETCH</a>]</span>) <code>cert-url</code>. If
+<li id="section-3.3-6.1">
+            <p id="section-3.3-6.1.1">Let <code>raw-chain</code> be the result of fetching (<span>[<a href="#FETCH" class="cite xref">FETCH</a>]</span>) <code>cert-url</code>. If
 <code>forceFetch</code> is <em>not</em> set, the fetch can be fulfilled from a cache using
 normal HTTP semantics <span>[<a href="#RFC7234" class="cite xref">RFC7234</a>]</span>. If this fetch fails, return
-"invalid".<a href="#section-3.3-6.1" class="pilcrow">¶</a>
+"invalid".<a href="#section-3.3-6.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-3.3-6.2">Let <code>certificate-chain</code> be the array of certificates and properties produced
+          <li id="section-3.3-6.2">
+            <p id="section-3.3-6.2.1">Let <code>certificate-chain</code> be the array of certificates and properties produced
 by parsing <code>raw-chain</code> using the CDDL above. If any of the requirements above
 aren't satisfied, return "invalid". Note that this validation requirement
 might be impractical to completely achieve due to certificate validation
 implementations that don't enforce DER encoding or other standard
-constraints.<a href="#section-3.3-6.2" class="pilcrow">¶</a>
+constraints.<a href="#section-3.3-6.2.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-3.3-6.3">Return <code>certificate-chain</code>.<a href="#section-3.3-6.3" class="pilcrow">¶</a>
+          <li id="section-3.3-6.3">
+            <p id="section-3.3-6.3.1">Return <code>certificate-chain</code>.<a href="#section-3.3-6.3.1" class="pilcrow">¶</a></p>
 </li>
         </ol>
 </section>
@@ -1888,30 +1878,40 @@ constraints.<a href="#section-3.3-6.2" class="pilcrow">¶</a>
 following rules derived from Section 3.9 of <span>[<a href="#RFC7049" class="cite xref">RFC7049</a>]</span> with erratum 4964
 applied:<a href="#section-3.4-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-3.4-2.1">Integers and the lengths of arrays, maps, and strings MUST use the smallest
-possible encoding.<a href="#section-3.4-2.1" class="pilcrow">¶</a>
+<li class="normal" id="section-3.4-2.1">
+            <p id="section-3.4-2.1.1">Integers and the lengths of arrays, maps, and strings MUST use the smallest
+possible encoding.<a href="#section-3.4-2.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-3.4-2.2">Items MUST NOT be encoded with indefinite length.<a href="#section-3.4-2.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-3.4-2.2">
+            <p id="section-3.4-2.2.1">Items MUST NOT be encoded with indefinite length.<a href="#section-3.4-2.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-3.4-2.3">
             <p id="section-3.4-2.3.1">The keys in every map MUST be sorted in the bytewise lexicographic order of
 their canonical encodings. For example, the following keys are correctly sorted:<a href="#section-3.4-2.3.1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-3.4-2.3.2">
-<li id="section-3.4-2.3.2.1">10, encoded as 0A.<a href="#section-3.4-2.3.2.1" class="pilcrow">¶</a>
+<li id="section-3.4-2.3.2.1">
+                <p id="section-3.4-2.3.2.1.1">10, encoded as 0A.<a href="#section-3.4-2.3.2.1.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.4-2.3.2.2">100, encoded as 18 64.<a href="#section-3.4-2.3.2.2" class="pilcrow">¶</a>
+              <li id="section-3.4-2.3.2.2">
+                <p id="section-3.4-2.3.2.2.1">100, encoded as 18 64.<a href="#section-3.4-2.3.2.2.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.4-2.3.2.3">-1, encoded as 20.<a href="#section-3.4-2.3.2.3" class="pilcrow">¶</a>
+              <li id="section-3.4-2.3.2.3">
+                <p id="section-3.4-2.3.2.3.1">-1, encoded as 20.<a href="#section-3.4-2.3.2.3.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.4-2.3.2.4">"z", encoded as 61 7A.<a href="#section-3.4-2.3.2.4" class="pilcrow">¶</a>
+              <li id="section-3.4-2.3.2.4">
+                <p id="section-3.4-2.3.2.4.1">"z", encoded as 61 7A.<a href="#section-3.4-2.3.2.4.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.4-2.3.2.5">"aa", encoded as 62 61 61.<a href="#section-3.4-2.3.2.5" class="pilcrow">¶</a>
+              <li id="section-3.4-2.3.2.5">
+                <p id="section-3.4-2.3.2.5.1">"aa", encoded as 62 61 61.<a href="#section-3.4-2.3.2.5.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.4-2.3.2.6">[100], encoded as 81 18 64.<a href="#section-3.4-2.3.2.6" class="pilcrow">¶</a>
+              <li id="section-3.4-2.3.2.6">
+                <p id="section-3.4-2.3.2.6.1">[100], encoded as 81 18 64.<a href="#section-3.4-2.3.2.6.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.4-2.3.2.7">[-1], encoded as 81 20.<a href="#section-3.4-2.3.2.7" class="pilcrow">¶</a>
+              <li id="section-3.4-2.3.2.7">
+                <p id="section-3.4-2.3.2.7.1">[-1], encoded as 81 20.<a href="#section-3.4-2.3.2.7.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.4-2.3.2.8">false, encoded as F4.<a href="#section-3.4-2.3.2.8" class="pilcrow">¶</a>
+              <li id="section-3.4-2.3.2.8">
+                <p id="section-3.4-2.3.2.8.1">false, encoded as F4.<a href="#section-3.4-2.3.2.8.1" class="pilcrow">¶</a></p>
 </li>
             </ol>
 </li>
@@ -1935,27 +1935,29 @@ parameters.<a href="#section-3.5-1" class="pilcrow">¶</a></p>
 with parameters is invalid or potentially-valid for an exchange's<a href="#section-3.5-2" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-3.5-3.1">
-            <code>requestUrl</code>, a byte sequence that can be parsed into the exchange's effective
-request URI (Section 5.5 of <span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>),<a href="#section-3.5-3.1" class="pilcrow">¶</a>
+            <p id="section-3.5-3.1.1"><code>requestUrl</code>, a byte sequence that can be parsed into the exchange's effective
+request URI (Section 5.5 of <span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>),<a href="#section-3.5-3.1.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-3.5-3.2">
-            <code>responseHeaders</code>, a byte sequence holding the canonical serialization
+            <p id="section-3.5-3.2.1"><code>responseHeaders</code>, a byte sequence holding the canonical serialization
 (<a href="#canonical-cbor" class="auto internal xref">Section 3.4</a>) of the CBOR representation (<a href="#cbor-representation" class="auto internal xref">Section 3.2</a>) of
-the exchange's response metadata and headers, and<a href="#section-3.5-3.2" class="pilcrow">¶</a>
+the exchange's response metadata and headers, and<a href="#section-3.5-3.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-3.5-3.3">
-            <code>payload</code>, a stream of bytes constituting the exchange's payload body (Section
+            <p id="section-3.5-3.3.1"><code>payload</code>, a stream of bytes constituting the exchange's payload body (Section
 3.3 of <span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>). Note that the payload body is the message body with any
-transfer encodings removed.<a href="#section-3.5-3.3" class="pilcrow">¶</a>
+transfer encodings removed.<a href="#section-3.5-3.3.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 <p id="section-3.5-4">Potentially-valid results include:<a href="#section-3.5-4" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-3.5-5.1">The signed headers of the exchange so that higher-level protocols can avoid
-relying on unsigned headers, and<a href="#section-3.5-5.1" class="pilcrow">¶</a>
+<li class="normal" id="section-3.5-5.1">
+            <p id="section-3.5-5.1.1">The signed headers of the exchange so that higher-level protocols can avoid
+relying on unsigned headers, and<a href="#section-3.5-5.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-3.5-5.2">Either a certificate chain or a public key so that a higher-level protocol can
-determine whether it's actually valid.<a href="#section-3.5-5.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-3.5-5.2">
+            <p id="section-3.5-5.2.1">Either a certificate chain or a public key so that a higher-level protocol can
+determine whether it's actually valid.<a href="#section-3.5-5.2.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 <div id="force-fetch">
@@ -1969,30 +1971,30 @@ to retrieve an updated OCSP from the original server.<a href="#section-3.5-6" cl
             <p id="section-3.5-7.1.1">Let:<a href="#section-3.5-7.1.1" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-3.5-7.1.2.1">
-                <code>signature</code> be the signature (byte sequence in the parameterised
-identifier's "sig" parameter).<a href="#section-3.5-7.1.2.1" class="pilcrow">¶</a>
+                <p id="section-3.5-7.1.2.1.1"><code>signature</code> be the signature (byte sequence in the parameterised
+identifier's "sig" parameter).<a href="#section-3.5-7.1.2.1.1" class="pilcrow">¶</a></p>
 </li>
               <li class="normal" id="section-3.5-7.1.2.2">
-                <code>integrity</code> be the signature's "integrity" parameter.<a href="#section-3.5-7.1.2.2" class="pilcrow">¶</a>
+                <p id="section-3.5-7.1.2.2.1"><code>integrity</code> be the signature's "integrity" parameter.<a href="#section-3.5-7.1.2.2.1" class="pilcrow">¶</a></p>
 </li>
               <li class="normal" id="section-3.5-7.1.2.3">
-                <code>validity-url</code> be the signature's "validity-url" parameter.<a href="#section-3.5-7.1.2.3" class="pilcrow">¶</a>
+                <p id="section-3.5-7.1.2.3.1"><code>validity-url</code> be the signature's "validity-url" parameter.<a href="#section-3.5-7.1.2.3.1" class="pilcrow">¶</a></p>
 </li>
               <li class="normal" id="section-3.5-7.1.2.4">
-                <code>cert-url</code> be the signature's "cert-url" parameter, if any.<a href="#section-3.5-7.1.2.4" class="pilcrow">¶</a>
+                <p id="section-3.5-7.1.2.4.1"><code>cert-url</code> be the signature's "cert-url" parameter, if any.<a href="#section-3.5-7.1.2.4.1" class="pilcrow">¶</a></p>
 </li>
               <li class="normal" id="section-3.5-7.1.2.5">
-                <code>cert-sha256</code> be the signature's "cert-sha256" parameter, if any.<a href="#section-3.5-7.1.2.5" class="pilcrow">¶</a>
+                <p id="section-3.5-7.1.2.5.1"><code>cert-sha256</code> be the signature's "cert-sha256" parameter, if any.<a href="#section-3.5-7.1.2.5.1" class="pilcrow">¶</a></p>
 </li>
               <li class="normal" id="section-3.5-7.1.2.6">
-                <code>ed25519key</code> be the signature's "ed25519key" parameter, if any.<a href="#section-3.5-7.1.2.6" class="pilcrow">¶</a>
+                <p id="section-3.5-7.1.2.6.1"><code>ed25519key</code> be the signature's "ed25519key" parameter, if any.<a href="#section-3.5-7.1.2.6.1" class="pilcrow">¶</a></p>
 </li>
               <li class="normal" id="section-3.5-7.1.2.7">
-                <code>date</code> be the signature's "date" parameter, interpreted as a Unix time.<a href="#section-3.5-7.1.2.7" class="pilcrow">¶</a>
+                <p id="section-3.5-7.1.2.7.1"><code>date</code> be the signature's "date" parameter, interpreted as a Unix time.<a href="#section-3.5-7.1.2.7.1" class="pilcrow">¶</a></p>
 </li>
               <li class="normal" id="section-3.5-7.1.2.8">
-                <code>expires</code> be the signature's "expires" parameter, interpreted as a Unix
-time.<a href="#section-3.5-7.1.2.8" class="pilcrow">¶</a>
+                <p id="section-3.5-7.1.2.8.1"><code>expires</code> be the signature's "expires" parameter, interpreted as a Unix
+time.<a href="#section-3.5-7.1.2.8.1" class="pilcrow">¶</a></p>
 </li>
             </ul>
 </li>
@@ -2002,36 +2004,45 @@ time.<a href="#section-3.5-7.1.2.8" class="pilcrow">¶</a>
 <li id="section-3.5-7.2.2.1">
                 <p id="section-3.5-7.2.2.1.1">If <code>cert-url</code> is present:<a href="#section-3.5-7.2.2.1.1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-3.5-7.2.2.1.2">
-<li id="section-3.5-7.2.2.1.2.1">Let <code>certificate-chain</code> be the result of loading the certificate chain
+<li id="section-3.5-7.2.2.1.2.1">
+                    <p id="section-3.5-7.2.2.1.2.1.1">Let <code>certificate-chain</code> be the result of loading the certificate chain
 at <code>cert-url</code> passing the <code>forceFetch</code> flag (<a href="#cert-chain-format" class="auto internal xref">Section 3.3</a>). If
-this returns "invalid", return "invalid".<a href="#section-3.5-7.2.2.1.2.1" class="pilcrow">¶</a>
+this returns "invalid", return "invalid".<a href="#section-3.5-7.2.2.1.2.1.1" class="pilcrow">¶</a></p>
 </li>
-                  <li id="section-3.5-7.2.2.1.2.2">Let <code>main-certificate</code> be the first certificate in <code>certificate-chain</code>.<a href="#section-3.5-7.2.2.1.2.2" class="pilcrow">¶</a>
+                  <li id="section-3.5-7.2.2.1.2.2">
+                    <p id="section-3.5-7.2.2.1.2.2.1">Let <code>main-certificate</code> be the first certificate in <code>certificate-chain</code>.<a href="#section-3.5-7.2.2.1.2.2.1" class="pilcrow">¶</a></p>
 </li>
-                  <li id="section-3.5-7.2.2.1.2.3">Set <code>publicKey</code> to <code>main-certificate</code>'s public key.<a href="#section-3.5-7.2.2.1.2.3" class="pilcrow">¶</a>
+                  <li id="section-3.5-7.2.2.1.2.3">
+                    <p id="section-3.5-7.2.2.1.2.3.1">Set <code>publicKey</code> to <code>main-certificate</code>'s public key.<a href="#section-3.5-7.2.2.1.2.3.1" class="pilcrow">¶</a></p>
 </li>
-                  <li id="section-3.5-7.2.2.1.2.4">If <code>publicKey</code> is an RSA key, return "invalid".<a href="#section-3.5-7.2.2.1.2.4" class="pilcrow">¶</a>
+                  <li id="section-3.5-7.2.2.1.2.4">
+                    <p id="section-3.5-7.2.2.1.2.4.1">If <code>publicKey</code> is an RSA key, return "invalid".<a href="#section-3.5-7.2.2.1.2.4.1" class="pilcrow">¶</a></p>
 </li>
-                  <li id="section-3.5-7.2.2.1.2.5">If <code>publicKey</code> is a key using the secp256r1 elliptic curve, set
+                  <li id="section-3.5-7.2.2.1.2.5">
+                    <p id="section-3.5-7.2.2.1.2.5.1">If <code>publicKey</code> is a key using the secp256r1 elliptic curve, set
 <code>signing-alg</code> to ecdsa_secp256r1_sha256 as defined in Section 4.2.3 of
-<span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>.<a href="#section-3.5-7.2.2.1.2.5" class="pilcrow">¶</a>
+<span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>.<a href="#section-3.5-7.2.2.1.2.5.1" class="pilcrow">¶</a></p>
 </li>
-                  <li id="section-3.5-7.2.2.1.2.6">Otherwise, either return "invalid" or set <code>signing-alg</code> to a non-legacy
+                  <li id="section-3.5-7.2.2.1.2.6">
+                    <p id="section-3.5-7.2.2.1.2.6.1">Otherwise, either return "invalid" or set <code>signing-alg</code> to a non-legacy
 signing algorithm defined by TLS 1.3 or later
 (<span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>). This choice MUST depend only on
-<code>publicKey</code>'s type and not on any other context.<a href="#section-3.5-7.2.2.1.2.6" class="pilcrow">¶</a>
+<code>publicKey</code>'s type and not on any other context.<a href="#section-3.5-7.2.2.1.2.6.1" class="pilcrow">¶</a></p>
 </li>
                 </ol>
 </li>
-              <li id="section-3.5-7.2.2.2">If <code>ed25519key</code> is present, set <code>publicKey</code> to <code>ed25519key</code> and
-<code>signing-alg</code> to ed25519, as defined by <span>[<a href="#RFC8032" class="cite xref">RFC8032</a>]</span><a href="#section-3.5-7.2.2.2" class="pilcrow">¶</a>
+              <li id="section-3.5-7.2.2.2">
+                <p id="section-3.5-7.2.2.2.1">If <code>ed25519key</code> is present, set <code>publicKey</code> to <code>ed25519key</code> and
+<code>signing-alg</code> to ed25519, as defined by <span>[<a href="#RFC8032" class="cite xref">RFC8032</a>]</span><a href="#section-3.5-7.2.2.2.1" class="pilcrow">¶</a></p>
 </li>
             </ol>
 </li>
-          <li id="section-3.5-7.3">If <code>expires</code> is more than 7 days (604800 seconds) after <code>date</code>, return
-"invalid".<a href="#section-3.5-7.3" class="pilcrow">¶</a>
+          <li id="section-3.5-7.3">
+            <p id="section-3.5-7.3.1">If <code>expires</code> is more than 7 days (604800 seconds) after <code>date</code>, return
+"invalid".<a href="#section-3.5-7.3.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-3.5-7.4">If the current time is before <code>date</code> or after <code>expires</code>, return "invalid".<a href="#section-3.5-7.4" class="pilcrow">¶</a>
+          <li id="section-3.5-7.4">
+            <p id="section-3.5-7.4.1">If the current time is before <code>date</code> or after <code>expires</code>, return "invalid".<a href="#section-3.5-7.4.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-3.5-7.5">
             <p id="section-3.5-7.5.1">Let <code>message</code> be the concatenation of the following byte strings. This
@@ -2039,7 +2050,8 @@ matches the <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span> form
 anyone uses the same key in a TLS certificate and an exchange-signing
 certificate.<a href="#section-3.5-7.5.1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-3.5-7.5.2">
-<li id="section-3.5-7.5.2.1">A string that consists of octet 32 (0x20) repeated 64 times.<a href="#section-3.5-7.5.2.1" class="pilcrow">¶</a>
+<li id="section-3.5-7.5.2.1">
+                <p id="section-3.5-7.5.2.1.1">A string that consists of octet 32 (0x20) repeated 64 times.<a href="#section-3.5-7.5.2.1.1" class="pilcrow">¶</a></p>
 </li>
               <li id="section-3.5-7.5.2.2">
                 <p id="section-3.5-7.5.2.2.1">A context string: the ASCII encoding of "HTTP Exchange 1".<a href="#section-3.5-7.5.2.2.1" class="pilcrow">¶</a></p>
@@ -2050,23 +2062,30 @@ use it and MUST use another draft-specific string beginning with "HTTP
 Exchange 1 ” instead. This ensures that signers can predict how their
 signatures will be used.<a href="#section-3.5-7.5.2.2.2" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.5-7.5.2.3">A single 0 byte which serves as a separator.<a href="#section-3.5-7.5.2.3" class="pilcrow">¶</a>
+              <li id="section-3.5-7.5.2.3">
+                <p id="section-3.5-7.5.2.3.1">A single 0 byte which serves as a separator.<a href="#section-3.5-7.5.2.3.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.5-7.5.2.4">If <code>cert-sha256</code> is set, a byte holding the value 32 followed by the 32
-bytes of the value of <code>cert-sha256</code>. Otherwise a 0 byte.<a href="#section-3.5-7.5.2.4" class="pilcrow">¶</a>
+              <li id="section-3.5-7.5.2.4">
+                <p id="section-3.5-7.5.2.4.1">If <code>cert-sha256</code> is set, a byte holding the value 32 followed by the 32
+bytes of the value of <code>cert-sha256</code>. Otherwise a 0 byte.<a href="#section-3.5-7.5.2.4.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.5-7.5.2.5">The 8-byte big-endian encoding of the length in bytes of <code>validity-url</code>,
-followed by the bytes of <code>validity-url</code>.<a href="#section-3.5-7.5.2.5" class="pilcrow">¶</a>
+              <li id="section-3.5-7.5.2.5">
+                <p id="section-3.5-7.5.2.5.1">The 8-byte big-endian encoding of the length in bytes of <code>validity-url</code>,
+followed by the bytes of <code>validity-url</code>.<a href="#section-3.5-7.5.2.5.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.5-7.5.2.6">The 8-byte big-endian encoding of <code>date</code>.<a href="#section-3.5-7.5.2.6" class="pilcrow">¶</a>
+              <li id="section-3.5-7.5.2.6">
+                <p id="section-3.5-7.5.2.6.1">The 8-byte big-endian encoding of <code>date</code>.<a href="#section-3.5-7.5.2.6.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.5-7.5.2.7">The 8-byte big-endian encoding of <code>expires</code>.<a href="#section-3.5-7.5.2.7" class="pilcrow">¶</a>
+              <li id="section-3.5-7.5.2.7">
+                <p id="section-3.5-7.5.2.7.1">The 8-byte big-endian encoding of <code>expires</code>.<a href="#section-3.5-7.5.2.7.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.5-7.5.2.8">The 8-byte big-endian encoding of the length in bytes of <code>requestUrl</code>,
-followed by the bytes of <code>requestUrl</code>.<a href="#section-3.5-7.5.2.8" class="pilcrow">¶</a>
+              <li id="section-3.5-7.5.2.8">
+                <p id="section-3.5-7.5.2.8.1">The 8-byte big-endian encoding of the length in bytes of <code>requestUrl</code>,
+followed by the bytes of <code>requestUrl</code>.<a href="#section-3.5-7.5.2.8.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-3.5-7.5.2.9">The 8-byte big-endian encoding of the length in bytes of <code>responseHeaders</code>,
-followed by the bytes of <code>responseHeaders</code>.<a href="#section-3.5-7.5.2.9" class="pilcrow">¶</a>
+              <li id="section-3.5-7.5.2.9">
+                <p id="section-3.5-7.5.2.9.1">The 8-byte big-endian encoding of the length in bytes of <code>responseHeaders</code>,
+followed by the bytes of <code>responseHeaders</code>.<a href="#section-3.5-7.5.2.9.1" class="pilcrow">¶</a></p>
 </li>
             </ol>
 </li>
@@ -2080,8 +2099,9 @@ certificate chain in its Certificate Verify (Section 4.4.3 of
 <span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>), in order to allow updating the stapled OCSP
 response without updating signatures at the same time.<a href="#section-3.5-7.6.2" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-3.5-7.7">If <code>signature</code> is not a valid signature of <code>message</code> by <code>publicKey</code> using
-<code>signing-alg</code>, return "invalid".<a href="#section-3.5-7.7" class="pilcrow">¶</a>
+          <li id="section-3.5-7.7">
+            <p id="section-3.5-7.7.1">If <code>signature</code> is not a valid signature of <code>message</code> by <code>publicKey</code> using
+<code>signing-alg</code>, return "invalid".<a href="#section-3.5-7.7.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-3.5-7.8">
             <p id="section-3.5-7.8.1">If <code>headers</code>, interpreted according to <a href="#cbor-representation" class="auto internal xref">Section 3.2</a>, does not
@@ -2116,8 +2136,9 @@ encoding.<a href="#section-3.5-7.9.2" class="pilcrow">¶</a></p>
 If <code>payload</code> doesn't match the integrity information in the header described
 by <code>integrity</code>, return "invalid".<a href="#section-3.5-7.9.3" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-3.5-7.10">Return "potentially-valid" with whichever is present of <code>certificate-chain</code>
-or <code>ed25519key</code>.<a href="#section-3.5-7.10" class="pilcrow">¶</a>
+          <li id="section-3.5-7.10">
+            <p id="section-3.5-7.10.1">Return "potentially-valid" with whichever is present of <code>certificate-chain</code>
+or <code>ed25519key</code>.<a href="#section-3.5-7.10.1" class="pilcrow">¶</a></p>
 </li>
         </ol>
 <p id="section-3.5-8">Note that the above algorithm can determine that an exchange's headers are
@@ -2419,17 +2440,17 @@ ecosystem in the future.<a href="#section-3.7.5-1" class="pilcrow">¶</a></p>
 <code>Signature</code> header field (<a href="#signature-header" class="auto internal xref">Section 3.1</a>) and the exchange's<a href="#section-4-1" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-4-2.1">
-          <code>requestUrl</code>, a byte sequence that can be parsed into the exchange's effective
-request URI (Section 5.5 of <span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>),<a href="#section-4-2.1" class="pilcrow">¶</a>
+          <p id="section-4-2.1.1"><code>requestUrl</code>, a byte sequence that can be parsed into the exchange's effective
+request URI (Section 5.5 of <span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>),<a href="#section-4-2.1.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-4-2.2">
-          <code>responseHeaders</code>, a byte sequence holding the canonical serialization
+          <p id="section-4-2.2.1"><code>responseHeaders</code>, a byte sequence holding the canonical serialization
 (<a href="#canonical-cbor" class="auto internal xref">Section 3.4</a>) of the CBOR representation (<a href="#cbor-representation" class="auto internal xref">Section 3.2</a>) of
-the exchange's response metadata and headers, and<a href="#section-4-2.2" class="pilcrow">¶</a>
+the exchange's response metadata and headers, and<a href="#section-4-2.2.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="section-4-2.3">
-          <code>payload</code>, a stream of bytes constituting the exchange's payload body (Section
-3.3 of <span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>).<a href="#section-4-2.3" class="pilcrow">¶</a>
+          <p id="section-4-2.3.1"><code>payload</code>, a stream of bytes constituting the exchange's payload body (Section
+3.3 of <span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>).<a href="#section-4-2.3.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="section-4-3">The client MUST parse the <code>Signature</code> header into a list of signatures according
@@ -2437,25 +2458,31 @@ to the instructions in <a href="#signature-validity" class="auto internal xref">
 for each signature, stopping at the first one that returns "valid". If any
 signature returns "valid", return "valid". Otherwise, return "invalid".<a href="#section-4-3" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-4-4">
-<li id="section-4-4.1">If the signature's <span><a href="#signature-validityurl" class="internal xref">"validity-url" parameter</a> (<a href="#signature-validityurl" class="auto internal xref">Section 3.1</a>)</span> is not
+<li id="section-4-4.1">
+          <p id="section-4-4.1.1">If the signature's <span><a href="#signature-validityurl" class="internal xref">"validity-url" parameter</a> (<a href="#signature-validityurl" class="auto internal xref">Section 3.1</a>)</span> is not
 <a href="https://html.spec.whatwg.org/multipage/origin.html#same-origin">same-origin</a>
-with <code>requestUrl</code>, return "invalid".<a href="#section-4-4.1" class="pilcrow">¶</a>
+with <code>requestUrl</code>, return "invalid".<a href="#section-4-4.1.1" class="pilcrow">¶</a></p>
 </li>
-        <li id="section-4-4.2">Use <a href="#signature-validity" class="auto internal xref">Section 3.5</a> to determine the signature's validity for
+        <li id="section-4-4.2">
+          <p id="section-4-4.2.1">Use <a href="#signature-validity" class="auto internal xref">Section 3.5</a> to determine the signature's validity for
 <code>requestUrl</code>, <code>responseHeaders</code>, and <code>payload</code>, getting <code>certificate-chain</code> back. If
 this returned "invalid" or didn't return a certificate chain, return
-"invalid".<a href="#section-4-4.2" class="pilcrow">¶</a>
+"invalid".<a href="#section-4-4.2.1" class="pilcrow">¶</a></p>
 </li>
-        <li id="section-4-4.3">Let <code>response</code> be the response metadata and headers parsed out of
-<code>responseHeaders</code>.<a href="#section-4-4.3" class="pilcrow">¶</a>
+        <li id="section-4-4.3">
+          <p id="section-4-4.3.1">Let <code>response</code> be the response metadata and headers parsed out of
+<code>responseHeaders</code>.<a href="#section-4-4.3.1" class="pilcrow">¶</a></p>
 </li>
-        <li id="section-4-4.4">If Section 3 of <span>[<a href="#RFC7234" class="cite xref">RFC7234</a>]</span> forbids a shared cache from storing <code>response</code>,
-return "invalid".<a href="#section-4-4.4" class="pilcrow">¶</a>
+        <li id="section-4-4.4">
+          <p id="section-4-4.4.1">If Section 3 of <span>[<a href="#RFC7234" class="cite xref">RFC7234</a>]</span> forbids a shared cache from storing <code>response</code>,
+return "invalid".<a href="#section-4-4.4.1" class="pilcrow">¶</a></p>
 </li>
-        <li id="section-4-4.5">If <code>response</code>'s headers contain an uncached header field, as defined in
-<a href="#uncached-headers" class="auto internal xref">Section 4.1</a>, return "invalid".<a href="#section-4-4.5" class="pilcrow">¶</a>
+        <li id="section-4-4.5">
+          <p id="section-4-4.5.1">If <code>response</code>'s headers contain an uncached header field, as defined in
+<a href="#uncached-headers" class="auto internal xref">Section 4.1</a>, return "invalid".<a href="#section-4-4.5.1" class="pilcrow">¶</a></p>
 </li>
-        <li id="section-4-4.6">Let <code>authority</code> be the host component of <code>requestUrl</code>.<a href="#section-4-4.6" class="pilcrow">¶</a>
+        <li id="section-4-4.6">
+          <p id="section-4-4.6.1">Let <code>authority</code> be the host component of <code>requestUrl</code>.<a href="#section-4-4.6.1" class="pilcrow">¶</a></p>
 </li>
         <li id="section-4-4.7">
           <p id="section-4-4.7.1">Validate the <code>certificate-chain</code> using the following substeps. If any of them
@@ -2463,32 +2490,38 @@ fail, re-run <a href="#signature-validity" class="auto internal xref">Section 3.
 <code>forceFetch</code> flag set, and restart from step 2. If a substep fails again,
 return "invalid".<a href="#section-4-4.7.1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-4-4.7.2">
-<li id="section-4-4.7.2.1">Use <code>certificate-chain</code> to validate that its first entry,
+<li id="section-4-4.7.2.1">
+              <p id="section-4-4.7.2.1.1">Use <code>certificate-chain</code> to validate that its first entry,
 <code>main-certificate</code> is trusted as <code>authority</code>'s server certificate
 (<span>[<a href="#RFC5280" class="cite xref">RFC5280</a>]</span> and other undocumented conventions). Let <code>path</code> be the path
 that was used from the <code>main-certificate</code> to a trusted root, including the
-<code>main-certificate</code> but excluding the root.<a href="#section-4-4.7.2.1" class="pilcrow">¶</a>
+<code>main-certificate</code> but excluding the root.<a href="#section-4-4.7.2.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="section-4-4.7.2.2">Validate that <code>main-certificate</code> has the CanSignHttpExchanges extension
-(<a href="#cross-origin-cert-req" class="auto internal xref">Section 4.2</a>).<a href="#section-4-4.7.2.2" class="pilcrow">¶</a>
+            <li id="section-4-4.7.2.2">
+              <p id="section-4-4.7.2.2.1">Validate that <code>main-certificate</code> has the CanSignHttpExchanges extension
+(<a href="#cross-origin-cert-req" class="auto internal xref">Section 4.2</a>).<a href="#section-4-4.7.2.2.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="section-4-4.7.2.3">Validate that <code>main-certificate</code> has an <code>ocsp</code> property
+            <li id="section-4-4.7.2.3">
+              <p id="section-4-4.7.2.3.1">Validate that <code>main-certificate</code> has an <code>ocsp</code> property
 (<a href="#cert-chain-format" class="auto internal xref">Section 3.3</a>) with a valid OCSP response whose lifetime
 (<code>nextUpdate - thisUpdate</code>) is less than 7 days (<span>[<a href="#RFC6960" class="cite xref">RFC6960</a>]</span>). Note that
 this does not check for revocation of intermediate certificates, and
-clients SHOULD implement another mechanism for that.<a href="#section-4-4.7.2.3" class="pilcrow">¶</a>
+clients SHOULD implement another mechanism for that.<a href="#section-4-4.7.2.3.1" class="pilcrow">¶</a></p>
 </li>
             <li id="section-4-4.7.2.4">
               <p id="section-4-4.7.2.4.1">Validate that valid SCTs from trusted logs are available from any of:<a href="#section-4-4.7.2.4.1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-4-4.7.2.4.2.1">The <code>SignedCertificateTimestampList</code> in <code>main-certificate</code>'s <code>sct</code>
-property (<a href="#cert-chain-format" class="auto internal xref">Section 3.3</a>),<a href="#section-4-4.7.2.4.2.1" class="pilcrow">¶</a>
+<li class="normal" id="section-4-4.7.2.4.2.1">
+                  <p id="section-4-4.7.2.4.2.1.1">The <code>SignedCertificateTimestampList</code> in <code>main-certificate</code>'s <code>sct</code>
+property (<a href="#cert-chain-format" class="auto internal xref">Section 3.3</a>),<a href="#section-4-4.7.2.4.2.1.1" class="pilcrow">¶</a></p>
 </li>
-                <li class="normal" id="section-4-4.7.2.4.2.2">An OCSP extension in the OCSP response in <code>main-certificate</code>'s <code>ocsp</code>
-property, or<a href="#section-4-4.7.2.4.2.2" class="pilcrow">¶</a>
+                <li class="normal" id="section-4-4.7.2.4.2.2">
+                  <p id="section-4-4.7.2.4.2.2.1">An OCSP extension in the OCSP response in <code>main-certificate</code>'s <code>ocsp</code>
+property, or<a href="#section-4-4.7.2.4.2.2.1" class="pilcrow">¶</a></p>
 </li>
-                <li class="normal" id="section-4-4.7.2.4.2.3">An X.509 extension in the certificate in <code>main-certificate</code>'s <code>cert</code>
-property,<a href="#section-4-4.7.2.4.2.3" class="pilcrow">¶</a>
+                <li class="normal" id="section-4-4.7.2.4.2.3">
+                  <p id="section-4-4.7.2.4.2.3.1">An X.509 extension in the certificate in <code>main-certificate</code>'s <code>cert</code>
+property,<a href="#section-4-4.7.2.4.2.3.1" class="pilcrow">¶</a></p>
 </li>
               </ul>
 <p id="section-4-4.7.2.4.3">
@@ -2496,7 +2529,8 @@ as described by Section 3.3 of <span>[<a href="#RFC6962" class="cite xref">RFC69
 </li>
           </ol>
 </li>
-        <li id="section-4-4.8">Return "valid".<a href="#section-4-4.8" class="pilcrow">¶</a>
+        <li id="section-4-4.8">
+          <p id="section-4-4.8.1">Return "valid".<a href="#section-4-4.8.1" class="pilcrow">¶</a></p>
 </li>
       </ol>
 <div id="uncached-headers">
@@ -2508,30 +2542,39 @@ as described by Section 3.3 of <span>[<a href="#RFC6962" class="cite xref">RFC69
 These will eventually be listed in <span>[<a href="#I-D.ietf-httpbis-cache" class="cite xref">I-D.ietf-httpbis-cache</a>]</span>, but for now
 they're listed here:<a href="#section-4.1-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-4.1-2.1">Hop-by-hop header fields listed in the Connection header field (Section 6.1 of
-<span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>).<a href="#section-4.1-2.1" class="pilcrow">¶</a>
+<li class="normal" id="section-4.1-2.1">
+            <p id="section-4.1-2.1.1">Hop-by-hop header fields listed in the Connection header field (Section 6.1 of
+<span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>).<a href="#section-4.1-2.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-4.1-2.2">Header fields listed in the no-cache response directive in the Cache-Control
-header field (Section 5.2.2.2 of <span>[<a href="#RFC7234" class="cite xref">RFC7234</a>]</span>).<a href="#section-4.1-2.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-4.1-2.2">
+            <p id="section-4.1-2.2.1">Header fields listed in the no-cache response directive in the Cache-Control
+header field (Section 5.2.2.2 of <span>[<a href="#RFC7234" class="cite xref">RFC7234</a>]</span>).<a href="#section-4.1-2.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-4.1-2.3">
             <p id="section-4.1-2.3.1">Header fields defined as hop-by-hop:<a href="#section-4.1-2.3.1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-4.1-2.3.2.1">Connection<a href="#section-4.1-2.3.2.1" class="pilcrow">¶</a>
+<li class="normal" id="section-4.1-2.3.2.1">
+                <p id="section-4.1-2.3.2.1.1">Connection<a href="#section-4.1-2.3.2.1.1" class="pilcrow">¶</a></p>
 </li>
-              <li class="normal" id="section-4.1-2.3.2.2">Keep-Alive<a href="#section-4.1-2.3.2.2" class="pilcrow">¶</a>
+              <li class="normal" id="section-4.1-2.3.2.2">
+                <p id="section-4.1-2.3.2.2.1">Keep-Alive<a href="#section-4.1-2.3.2.2.1" class="pilcrow">¶</a></p>
 </li>
-              <li class="normal" id="section-4.1-2.3.2.3">Proxy-Connection<a href="#section-4.1-2.3.2.3" class="pilcrow">¶</a>
+              <li class="normal" id="section-4.1-2.3.2.3">
+                <p id="section-4.1-2.3.2.3.1">Proxy-Connection<a href="#section-4.1-2.3.2.3.1" class="pilcrow">¶</a></p>
 </li>
-              <li class="normal" id="section-4.1-2.3.2.4">Trailer<a href="#section-4.1-2.3.2.4" class="pilcrow">¶</a>
+              <li class="normal" id="section-4.1-2.3.2.4">
+                <p id="section-4.1-2.3.2.4.1">Trailer<a href="#section-4.1-2.3.2.4.1" class="pilcrow">¶</a></p>
 </li>
-              <li class="normal" id="section-4.1-2.3.2.5">Transfer-Encoding<a href="#section-4.1-2.3.2.5" class="pilcrow">¶</a>
+              <li class="normal" id="section-4.1-2.3.2.5">
+                <p id="section-4.1-2.3.2.5.1">Transfer-Encoding<a href="#section-4.1-2.3.2.5.1" class="pilcrow">¶</a></p>
 </li>
-              <li class="normal" id="section-4.1-2.3.2.6">Upgrade<a href="#section-4.1-2.3.2.6" class="pilcrow">¶</a>
+              <li class="normal" id="section-4.1-2.3.2.6">
+                <p id="section-4.1-2.3.2.6.1">Upgrade<a href="#section-4.1-2.3.2.6.1" class="pilcrow">¶</a></p>
 </li>
             </ul>
 </li>
-          <li class="normal" id="section-4.1-2.4">Stateful headers as defined below.<a href="#section-4.1-2.4" class="pilcrow">¶</a>
+          <li class="normal" id="section-4.1-2.4">
+            <p id="section-4.1-2.4.1">Stateful headers as defined below.<a href="#section-4.1-2.4.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 <div id="stateful-headers">
@@ -2548,43 +2591,43 @@ status, in the client. The HTTP cache is not considered part of this state.
 These include but are not limited to:<a href="#section-4.1.1-2" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-4.1.1-3.1">
-              <code>Authentication-Control</code>, <span>[<a href="#RFC8053" class="cite xref">RFC8053</a>]</span><a href="#section-4.1.1-3.1" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.1.1"><code>Authentication-Control</code>, <span>[<a href="#RFC8053" class="cite xref">RFC8053</a>]</span><a href="#section-4.1.1-3.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-4.1.1-3.2">
-              <code>Authentication-Info</code>, <span>[<a href="#RFC7615" class="cite xref">RFC7615</a>]</span><a href="#section-4.1.1-3.2" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.2.1"><code>Authentication-Info</code>, <span>[<a href="#RFC7615" class="cite xref">RFC7615</a>]</span><a href="#section-4.1.1-3.2.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-4.1.1-3.3">
-              <code>Clear-Site-Data</code>, <span>[<a href="#W3C.WD-clear-site-data-20171130" class="cite xref">W3C.WD-clear-site-data-20171130</a>]</span><a href="#section-4.1.1-3.3" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.3.1"><code>Clear-Site-Data</code>, <span>[<a href="#W3C.WD-clear-site-data-20171130" class="cite xref">W3C.WD-clear-site-data-20171130</a>]</span><a href="#section-4.1.1-3.3.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-4.1.1-3.4">
-              <code>Optional-WWW-Authenticate</code>, <span>[<a href="#RFC8053" class="cite xref">RFC8053</a>]</span><a href="#section-4.1.1-3.4" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.4.1"><code>Optional-WWW-Authenticate</code>, <span>[<a href="#RFC8053" class="cite xref">RFC8053</a>]</span><a href="#section-4.1.1-3.4.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-4.1.1-3.5">
-              <code>Proxy-Authenticate</code>, <span>[<a href="#RFC7235" class="cite xref">RFC7235</a>]</span><a href="#section-4.1.1-3.5" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.5.1"><code>Proxy-Authenticate</code>, <span>[<a href="#RFC7235" class="cite xref">RFC7235</a>]</span><a href="#section-4.1.1-3.5.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-4.1.1-3.6">
-              <code>Proxy-Authentication-Info</code>, <span>[<a href="#RFC7615" class="cite xref">RFC7615</a>]</span><a href="#section-4.1.1-3.6" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.6.1"><code>Proxy-Authentication-Info</code>, <span>[<a href="#RFC7615" class="cite xref">RFC7615</a>]</span><a href="#section-4.1.1-3.6.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-4.1.1-3.7">
-              <code>Public-Key-Pins</code>, <span>[<a href="#RFC7469" class="cite xref">RFC7469</a>]</span><a href="#section-4.1.1-3.7" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.7.1"><code>Public-Key-Pins</code>, <span>[<a href="#RFC7469" class="cite xref">RFC7469</a>]</span><a href="#section-4.1.1-3.7.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-4.1.1-3.8">
-              <code>Sec-WebSocket-Accept</code>, <span>[<a href="#RFC6455" class="cite xref">RFC6455</a>]</span><a href="#section-4.1.1-3.8" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.8.1"><code>Sec-WebSocket-Accept</code>, <span>[<a href="#RFC6455" class="cite xref">RFC6455</a>]</span><a href="#section-4.1.1-3.8.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-4.1.1-3.9">
-              <code>Set-Cookie</code>, <span>[<a href="#RFC6265" class="cite xref">RFC6265</a>]</span><a href="#section-4.1.1-3.9" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.9.1"><code>Set-Cookie</code>, <span>[<a href="#RFC6265" class="cite xref">RFC6265</a>]</span><a href="#section-4.1.1-3.9.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-4.1.1-3.10">
-              <code>Set-Cookie2</code>, <span>[<a href="#RFC2965" class="cite xref">RFC2965</a>]</span><a href="#section-4.1.1-3.10" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.10.1"><code>Set-Cookie2</code>, <span>[<a href="#RFC2965" class="cite xref">RFC2965</a>]</span><a href="#section-4.1.1-3.10.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-4.1.1-3.11">
-              <code>SetProfile</code>, <span>[<a href="#W3C.NOTE-OPS-OverHTTP" class="cite xref">W3C.NOTE-OPS-OverHTTP</a>]</span><a href="#section-4.1.1-3.11" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.11.1"><code>SetProfile</code>, <span>[<a href="#W3C.NOTE-OPS-OverHTTP" class="cite xref">W3C.NOTE-OPS-OverHTTP</a>]</span><a href="#section-4.1.1-3.11.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-4.1.1-3.12">
-              <code>Strict-Transport-Security</code>, <span>[<a href="#RFC6797" class="cite xref">RFC6797</a>]</span><a href="#section-4.1.1-3.12" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.12.1"><code>Strict-Transport-Security</code>, <span>[<a href="#RFC6797" class="cite xref">RFC6797</a>]</span><a href="#section-4.1.1-3.12.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-4.1.1-3.13">
-              <code>WWW-Authenticate</code>, <span>[<a href="#RFC7235" class="cite xref">RFC7235</a>]</span><a href="#section-4.1.1-3.13" class="pilcrow">¶</a>
+              <p id="section-4.1.1-3.13.1"><code>WWW-Authenticate</code>, <span>[<a href="#RFC7235" class="cite xref">RFC7235</a>]</span><a href="#section-4.1.1-3.13.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -2624,11 +2667,13 @@ days.<a href="#section-4.2-7" class="pilcrow">¶</a></p>
 <p id="section-4.2-9">A conforming CA MUST NOT issue certificates with this extension unless, for each
 dNSName in the subjectAltName extension of the certificate to be issued:<a href="#section-4.2-9" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-4.2-10">
-<li id="section-4.2-10.1">An "issue" or "issuewild" CAA property (<span>[<a href="#RFC6844" class="cite xref">RFC6844</a>]</span>) exists that authorizes
-the CA to issue the certificate; and<a href="#section-4.2-10.1" class="pilcrow">¶</a>
+<li id="section-4.2-10.1">
+            <p id="section-4.2-10.1.1">An "issue" or "issuewild" CAA property (<span>[<a href="#RFC6844" class="cite xref">RFC6844</a>]</span>) exists that authorizes
+the CA to issue the certificate; and<a href="#section-4.2-10.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-4.2-10.2">The "cansignhttpexchanges" parameter (<a href="#caa-cansignhttpexchanges" class="auto internal xref">Section 4.2.1</a>) is
-present on the property and is equal to "yes"<a href="#section-4.2-10.2" class="pilcrow">¶</a>
+          <li id="section-4.2-10.2">
+            <p id="section-4.2-10.2.1">The "cansignhttpexchanges" parameter (<a href="#caa-cansignhttpexchanges" class="auto internal xref">Section 4.2.1</a>) is
+present on the property and is equal to "yes"<a href="#section-4.2-10.2.1" class="pilcrow">¶</a></p>
 </li>
         </ol>
 <p id="section-4.2-11">Clients MUST NOT accept certificates with this extension in TLS connections
@@ -2649,11 +2694,13 @@ RFC is published.<a href="#section-4.2-14" class="pilcrow">¶</a></p>
 periods longer than 90 days. These certificates will not immediately be treated
 as invalid. Instead:<a href="#section-4.2-15" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-4.2-16.1">Clients MUST reject certificates with this extension that were issued after
-2019-05-01 and have a Validity Period longer than 90 days.<a href="#section-4.2-16.1" class="pilcrow">¶</a>
+<li class="normal" id="section-4.2-16.1">
+            <p id="section-4.2-16.1.1">Clients MUST reject certificates with this extension that were issued after
+2019-05-01 and have a Validity Period longer than 90 days.<a href="#section-4.2-16.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-4.2-16.2">After 2019-08-01, clients MUST reject all certificates with this extension
-that have a Validity Period longer than 90 days.<a href="#section-4.2-16.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-4.2-16.2">
+            <p id="section-4.2-16.2.1">After 2019-08-01, clients MUST reject all certificates with this extension
+that have a Validity Period longer than 90 days.<a href="#section-4.2-16.2.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 <p id="section-4.2-17">The above requirements on CAs to limit the Validity Period and check for a CAA
@@ -2693,13 +2740,17 @@ calls the validation procedure in <a href="#signature-validity" class="auto inte
 <code>Signature</code> header field for an exchange represented as a normal HTTP
 request/response pair, it MUST pass:<a href="#section-5.1-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-5.1-2.1">The <code>Signature</code> header field,<a href="#section-5.1-2.1" class="pilcrow">¶</a>
+<li class="normal" id="section-5.1-2.1">
+            <p id="section-5.1-2.1.1">The <code>Signature</code> header field,<a href="#section-5.1-2.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-5.1-2.2">The effective request URI (Section 5.5 of <span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>) of the request,<a href="#section-5.1-2.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-5.1-2.2">
+            <p id="section-5.1-2.2.1">The effective request URI (Section 5.5 of <span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>) of the request,<a href="#section-5.1-2.2.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-5.1-2.3">The serialized headers defined by <a href="#serialized-headers" class="auto internal xref">Section 5.1.1</a>, and<a href="#section-5.1-2.3" class="pilcrow">¶</a>
+          <li class="normal" id="section-5.1-2.3">
+            <p id="section-5.1-2.3.1">The serialized headers defined by <a href="#serialized-headers" class="auto internal xref">Section 5.1.1</a>, and<a href="#section-5.1-2.3.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-5.1-2.4">The response's payload.<a href="#section-5.1-2.4" class="pilcrow">¶</a>
+          <li class="normal" id="section-5.1-2.4">
+            <p id="section-5.1-2.4.1">The response's payload.<a href="#section-5.1-2.4.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 <p id="section-5.1-3">If the client relies on signature validity for any aspect of its behavior, it
@@ -2835,25 +2886,31 @@ Section 8.2 of <span>[<a href="#RFC7540" class="cite xref">RFC7540</a>]</span>, 
 <p id="section-5.2.3-2">Instead, the client MUST validate such a PUSH_PROMISE and its response against
 the following list:<a href="#section-5.2.3-2" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-5.2.3-3">
-<li id="section-5.2.3-3.1">If the PUSH_PROMISE includes any non-pseudo request header fields, the client
+<li id="section-5.2.3-3.1">
+              <p id="section-5.2.3-3.1.1">If the PUSH_PROMISE includes any non-pseudo request header fields, the client
 MUST treat it as a stream error (Section 5.4.2 of <span>[<a href="#RFC7540" class="cite xref">RFC7540</a>]</span>) of type
-PROTOCOL_ERROR.<a href="#section-5.2.3-3.1" class="pilcrow">¶</a>
+PROTOCOL_ERROR.<a href="#section-5.2.3-3.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="section-5.2.3-3.2">If the PUSH_PROMISE's method is not <code>GET</code>, the client MUST treat it as a
-stream error (Section 5.4.2 of <span>[<a href="#RFC7540" class="cite xref">RFC7540</a>]</span>) of type PROTOCOL_ERROR.<a href="#section-5.2.3-3.2" class="pilcrow">¶</a>
+            <li id="section-5.2.3-3.2">
+              <p id="section-5.2.3-3.2.1">If the PUSH_PROMISE's method is not <code>GET</code>, the client MUST treat it as a
+stream error (Section 5.4.2 of <span>[<a href="#RFC7540" class="cite xref">RFC7540</a>]</span>) of type PROTOCOL_ERROR.<a href="#section-5.2.3-3.2.1" class="pilcrow">¶</a></p>
 </li>
             <li id="section-5.2.3-3.3">
               <p id="section-5.2.3-3.3.1">Run the algorithm in <a href="#cross-origin-trust" class="auto internal xref">Section 4</a> over:<a href="#section-5.2.3-3.3.1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-5.2.3-3.3.2.1">The <code>Signature</code> header field from the response.<a href="#section-5.2.3-3.3.2.1" class="pilcrow">¶</a>
+<li class="normal" id="section-5.2.3-3.3.2.1">
+                  <p id="section-5.2.3-3.3.2.1.1">The <code>Signature</code> header field from the response.<a href="#section-5.2.3-3.3.2.1.1" class="pilcrow">¶</a></p>
 </li>
-                <li class="normal" id="section-5.2.3-3.3.2.2">The effective request URI from the PUSH_PROMISE.<a href="#section-5.2.3-3.3.2.2" class="pilcrow">¶</a>
+                <li class="normal" id="section-5.2.3-3.3.2.2">
+                  <p id="section-5.2.3-3.3.2.2.1">The effective request URI from the PUSH_PROMISE.<a href="#section-5.2.3-3.3.2.2.1" class="pilcrow">¶</a></p>
 </li>
-                <li class="normal" id="section-5.2.3-3.3.2.3">The canonical serialization (<a href="#canonical-cbor" class="auto internal xref">Section 3.4</a>) of the CBOR representation
+                <li class="normal" id="section-5.2.3-3.3.2.3">
+                  <p id="section-5.2.3-3.3.2.3.1">The canonical serialization (<a href="#canonical-cbor" class="auto internal xref">Section 3.4</a>) of the CBOR representation
 (<a href="#cbor-representation" class="auto internal xref">Section 3.2</a>) of the pushed response's status and its headers
-except for the <code>Signature</code> header field.<a href="#section-5.2.3-3.3.2.3" class="pilcrow">¶</a>
+except for the <code>Signature</code> header field.<a href="#section-5.2.3-3.3.2.3.1" class="pilcrow">¶</a></p>
 </li>
-                <li class="normal" id="section-5.2.3-3.3.2.4">The response's payload.<a href="#section-5.2.3-3.3.2.4" class="pilcrow">¶</a>
+                <li class="normal" id="section-5.2.3-3.3.2.4">
+                  <p id="section-5.2.3-3.3.2.4.1">The response's payload.<a href="#section-5.2.3-3.3.2.4.1" class="pilcrow">¶</a></p>
 </li>
               </ul>
 <p id="section-5.2.3-3.3.3">
@@ -2891,9 +2948,11 @@ and header fields, and a response payload.<a href="#section-5.3-1" class="pilcro
 payload MUST include at least the following response header fields, to reduce
 content sniffing vulnerabilities (<a href="#seccons-content-sniffing" class="auto internal xref">Section 6.8</a>):<a href="#section-5.3-2" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-5.3-3.1">Content-Type: application/signed-exchange;v=<em>version</em><a href="#section-5.3-3.1" class="pilcrow">¶</a>
+<li class="normal" id="section-5.3-3.1">
+            <p id="section-5.3-3.1.1">Content-Type: application/signed-exchange;v=<em>version</em><a href="#section-5.3-3.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-5.3-3.2">X-Content-Type-Options: nosniff<a href="#section-5.3-3.2" class="pilcrow">¶</a>
+          <li class="normal" id="section-5.3-3.2">
+            <p id="section-5.3-3.2.1">X-Content-Type-Options: nosniff<a href="#section-5.3-3.2.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 <p id="section-5.3-4">This content type consists of the concatenation of the following items:<a href="#section-5.3-4" class="pilcrow">¶</a></p>
@@ -2909,7 +2968,8 @@ MUST use this file signature, but implementations of drafts MUST NOT use it
 and MUST use another implementation-specific 8-byte string beginning with
 "sxg1-".<a href="#section-5.3-5.1.2" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-5.3-5.2">2 bytes storing a big-endian integer <code>fallbackUrlLength</code>.<a href="#section-5.3-5.2" class="pilcrow">¶</a>
+          <li id="section-5.3-5.2">
+            <p id="section-5.3-5.2.1">2 bytes storing a big-endian integer <code>fallbackUrlLength</code>.<a href="#section-5.3-5.2.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-5.3-5.3">
             <p id="section-5.3-5.3.1"><code>fallbackUrlLength</code> bytes holding a <code>fallbackUrl</code>, which MUST UTF-8 decode to
@@ -2921,21 +2981,23 @@ encountering unknown versions can always find a URL to redirect to.<a href="#sec
 <p id="section-5.3-5.3.3">
 Issue: Should this fallback information also include the method?<a href="#section-5.3-5.3.3" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-5.3-5.4">3 bytes storing a big-endian integer <code>sigLength</code>. If this is larger than
-16384 (16*1024), parsing MUST fail.<a href="#section-5.3-5.4" class="pilcrow">¶</a>
+          <li id="section-5.3-5.4">
+            <p id="section-5.3-5.4.1">3 bytes storing a big-endian integer <code>sigLength</code>. If this is larger than
+16384 (16*1024), parsing MUST fail.<a href="#section-5.3-5.4.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-5.3-5.5">3 bytes storing a big-endian integer <code>headerLength</code>. If this is larger than
-524288 (512*1024), parsing MUST fail.<a href="#section-5.3-5.5" class="pilcrow">¶</a>
+          <li id="section-5.3-5.5">
+            <p id="section-5.3-5.5.1">3 bytes storing a big-endian integer <code>headerLength</code>. If this is larger than
+524288 (512*1024), parsing MUST fail.<a href="#section-5.3-5.5.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-5.3-5.6">
-            <code>sigLength</code> bytes holding the <code>Signature</code> header field's value
-(<a href="#signature-header" class="auto internal xref">Section 3.1</a>).<a href="#section-5.3-5.6" class="pilcrow">¶</a>
+            <p id="section-5.3-5.6.1"><code>sigLength</code> bytes holding the <code>Signature</code> header field's value
+(<a href="#signature-header" class="auto internal xref">Section 3.1</a>).<a href="#section-5.3-5.6.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-5.3-5.7">
-            <code>headerLength</code> bytes holding <code>signedHeaders</code>, the canonical serialization
+            <p id="section-5.3-5.7.1"><code>headerLength</code> bytes holding <code>signedHeaders</code>, the canonical serialization
 (<a href="#canonical-cbor" class="auto internal xref">Section 3.4</a>) of the CBOR representation of the response
 headers of the exchange represented by the <code>application/signed-exchange</code>
-resource (<a href="#cbor-representation" class="auto internal xref">Section 3.2</a>), excluding the <code>Signature</code> header field.<a href="#section-5.3-5.7" class="pilcrow">¶</a>
+resource (<a href="#cbor-representation" class="auto internal xref">Section 3.2</a>), excluding the <code>Signature</code> header field.<a href="#section-5.3-5.7.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-5.3-5.8">
             <p id="section-5.3-5.8.1">The payload body (Section 3.3 of <span>[<a href="#RFC7230" class="cite xref">RFC7230</a>]</span>) of the exchange represented by
@@ -3011,14 +3073,16 @@ authentication status into signatures instead of signing by default.<a href="#se
 <p id="section-6.1-2">Signing systems SHOULD also incorporate the following mitigations to reduce the
 risk that private responses are signed:<a href="#section-6.1-2" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-6.1-3">
-<li id="section-6.1-3.1">Strip the <code>Cookie</code> request header field and other identifying information
+<li id="section-6.1-3.1">
+            <p id="section-6.1-3.1.1">Strip the <code>Cookie</code> request header field and other identifying information
 like client authentication and TLS session IDs from requests whose exchange
-is destined to be signed, before forwarding the request to a backend.<a href="#section-6.1-3.1" class="pilcrow">¶</a>
+is destined to be signed, before forwarding the request to a backend.<a href="#section-6.1-3.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-6.1-3.2">Only sign exchanges where the response includes a <code>Cache-Control: public</code>
+          <li id="section-6.1-3.2">
+            <p id="section-6.1-3.2.1">Only sign exchanges where the response includes a <code>Cache-Control: public</code>
 header. Clients are not required to fail signature-checking for exchanges
 that omit this <code>Cache-Control</code> response header field to reduce the risk that
-naive signing systems blindly add it.<a href="#section-6.1-3.2" class="pilcrow">¶</a>
+naïve signing systems blindly add it.<a href="#section-6.1-3.2.1" class="pilcrow">¶</a></p>
 </li>
         </ol>
 <div id="seccons-session-fixation">
@@ -3234,25 +3298,29 @@ attacker could use to cause these plugins to sniff a bad content type.<a href="#
 safe for that domain to serve the SXG's content directly, and to follow at least
 one of the following strategies:<a href="#section-6.8-3" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-6.8-4">
-<li id="section-6.8-4.1">Only serve signed exchanges from dedicated domains that don't have access to
-sensitive cookies or user storage.<a href="#section-6.8-4.1" class="pilcrow">¶</a>
+<li id="section-6.8-4.1">
+            <p id="section-6.8-4.1.1">Only serve signed exchanges from dedicated domains that don't have access to
+sensitive cookies or user storage.<a href="#section-6.8-4.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-6.8-4.2">Generate signed exchanges "offline", that is, in response to a trusted author
+          <li id="section-6.8-4.2">
+            <p id="section-6.8-4.2.1">Generate signed exchanges "offline", that is, in response to a trusted author
 submitting content or existing signatures reaching a certain age, rather than
-in response to untrusted-reader queries.<a href="#section-6.8-4.2" class="pilcrow">¶</a>
+in response to untrusted-reader queries.<a href="#section-6.8-4.2.1" class="pilcrow">¶</a></p>
 </li>
           <li id="section-6.8-4.3">
             <p id="section-6.8-4.3.1">Do all of:<a href="#section-6.8-4.3.1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-6.8-4.3.2">
-<li id="section-6.8-4.3.2.1">If the SXG's fallback URL (<a href="#application-signed-exchange" class="auto internal xref">Section 5.3</a>) is derived
+<li id="section-6.8-4.3.2.1">
+                <p id="section-6.8-4.3.2.1.1">If the SXG's fallback URL (<a href="#application-signed-exchange" class="auto internal xref">Section 5.3</a>) is derived
 from the request URL,
 <a href="https://url.spec.whatwg.org/#percent-encode">percent-encode</a> (<span>[<a href="#URL" class="cite xref">URL</a>]</span>)
 any bytes that are greater than 0x7E or are not <a href="https://url.spec.whatwg.org/#url-code-points">URL code
 points</a> (<span>[<a href="#URL" class="cite xref">URL</a>]</span>) in the
 fallback URL . It is particularly important to make sure no unescaped
-nulls (0x00) or angle brackets (0x3C and 0x3E) appear.<a href="#section-6.8-4.3.2.1" class="pilcrow">¶</a>
+nulls (0x00) or angle brackets (0x3C and 0x3E) appear.<a href="#section-6.8-4.3.2.1.1" class="pilcrow">¶</a></p>
 </li>
-              <li id="section-6.8-4.3.2.2">Do not reflect request header fields into the set of response headers.<a href="#section-6.8-4.3.2.2" class="pilcrow">¶</a>
+              <li id="section-6.8-4.3.2.2">
+                <p id="section-6.8-4.3.2.2.1">Do not reflect request header fields into the set of response headers.<a href="#section-6.8-4.3.2.2.1" class="pilcrow">¶</a></p>
 </li>
             </ol>
 </li>
@@ -3321,13 +3389,15 @@ the distributor's cookies or because the source stashes an encoded user ID into
 either the request's path or a subdomain, the distributor has a few ways to
 pass that user ID on to the publisher that signed the page:<a href="#section-7.2-1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-7.2-2">
-<li id="section-7.2-2.1">If the distributor has the publisher's signing keys, it can sign a new page
-with its user ID directly embedded.<a href="#section-7.2-2.1" class="pilcrow">¶</a>
+<li id="section-7.2-2.1">
+            <p id="section-7.2-2.1.1">If the distributor has the publisher's signing keys, it can sign a new page
+with its user ID directly embedded.<a href="#section-7.2-2.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li id="section-7.2-2.2">Otherwise, the publisher can sign lots of copies of their package, and the
+          <li id="section-7.2-2.2">
+            <p id="section-7.2-2.2.1">Otherwise, the publisher can sign lots of copies of their package, and the
 distributor can choose a particular copy to send a subset of the bits in its
 user ID to the publisher on each click, which will eventually transfer the
-whole thing.<a href="#section-7.2-2.2" class="pilcrow">¶</a>
+whole thing.<a href="#section-7.2-2.2.1" class="pilcrow">¶</a></p>
 </li>
         </ol>
 <p id="section-7.2-3">To prevent this, the request for a signed exchange needs to omit credentials and
@@ -3507,6 +3577,7 @@ CBOR-format certificate chains, application/cert-chain+cbor, as follows:<a href=
       <h2 id="name-references">
 <a href="#section-9" class="section-number selfRef">9. </a><a href="#name-references" class="section-name selfRef">References</a>
       </h2>
+<div id="sec-normative-references">
 <section id="section-9.1">
         <h3 id="name-normative-references">
 <a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
@@ -3518,7 +3589,7 @@ CBOR-format certificate chains, application/cert-chain+cbor, as follows:<a href=
 <dd class="break"></dd>
 <dt id="FETCH">[FETCH]</dt>
         <dd>
-<span class="refAuthor">WHATWG</span>, <span class="refTitle">"Fetch"</span>, <time datetime="2023-05" class="refDate">May 2023</time>, <span>&lt;<a href="https://fetch.spec.whatwg.org/">https://fetch.spec.whatwg.org/</a>&gt;</span>. </dd>
+<span class="refAuthor">WHATWG</span>, <span class="refTitle">"Fetch"</span>, <time datetime="2024-02" class="refDate">February 2024</time>, <span>&lt;<a href="https://fetch.spec.whatwg.org/">https://fetch.spec.whatwg.org/</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="I-D.ietf-httpbis-header-structure">[I-D.ietf-httpbis-header-structure]</dt>
         <dd>
@@ -3534,7 +3605,7 @@ CBOR-format certificate chains, application/cert-chain+cbor, as follows:<a href=
 <dd class="break"></dd>
 <dt id="IANA.media-types">[IANA.media-types]</dt>
         <dd>
-<span class="refTitle">"*** BROKEN REFERENCE ***"</span>. </dd>
+<span class="refAuthor">IANA</span>, <span class="refTitle">"Media Types"</span>, <span>&lt;<a href="http://www.iana.org/assignments/media-types">http://www.iana.org/assignments/media-types</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="POSIX">[POSIX]</dt>
         <dd>
@@ -3606,10 +3677,12 @@ CBOR-format certificate chains, application/cert-chain+cbor, as follows:<a href=
 <dd class="break"></dd>
 <dt id="URL">[URL]</dt>
       <dd>
-<span class="refAuthor">WHATWG</span>, <span class="refTitle">"URL"</span>, <time datetime="2023-05" class="refDate">May 2023</time>, <span>&lt;<a href="https://url.spec.whatwg.org/">https://url.spec.whatwg.org/</a>&gt;</span>. </dd>
+<span class="refAuthor">WHATWG</span>, <span class="refTitle">"URL"</span>, <time datetime="2024-02" class="refDate">February 2024</time>, <span>&lt;<a href="https://url.spec.whatwg.org/">https://url.spec.whatwg.org/</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 </dl>
 </section>
+</div>
+<div id="sec-informative-references">
 <section id="section-9.2">
         <h3 id="name-informative-references">
 <a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
@@ -3725,6 +3798,7 @@ CBOR-format certificate chains, application/cert-chain+cbor, as follows:<a href=
 <dd class="break"></dd>
 </dl>
 </section>
+</div>
 </section>
 <div id="use-cases">
 <section id="appendix-A">
@@ -3877,12 +3951,14 @@ is to re-use the web PKI and CA ecosystem.<a href="#appendix-B.1-1" class="pilcr
           </h4>
 <p id="appendix-B.1.1-1">If we re-use existing TLS server certificates, we incur the risks that:<a href="#appendix-B.1.1-1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="appendix-B.1.1-2">
-<li id="appendix-B.1.1-2.1">TLS server certificates must be accessible from online servers, so they're
+<li id="appendix-B.1.1-2.1">
+              <p id="appendix-B.1.1-2.1.1">TLS server certificates must be accessible from online servers, so they're
 easier to steal or use as signing oracles than an offline key. An exchange's
-signing key doesn't need to be online.<a href="#appendix-B.1.1-2.1" class="pilcrow">¶</a>
+signing key doesn't need to be online.<a href="#appendix-B.1.1-2.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="appendix-B.1.1-2.2">A server using an origin-trusted key for one purpose (e.g. TLS) might
-accidentally sign something that looks like an exchange, or vice versa.<a href="#appendix-B.1.1-2.2" class="pilcrow">¶</a>
+            <li id="appendix-B.1.1-2.2">
+              <p id="appendix-B.1.1-2.2.1">A server using an origin-trusted key for one purpose (e.g. TLS) might
+accidentally sign something that looks like an exchange, or vice versa.<a href="#appendix-B.1.1-2.2.1" class="pilcrow">¶</a></p>
 </li>
           </ol>
 <p id="appendix-B.1.1-3">These risks are considered too high, so we define a new X.509 certificate
@@ -3902,12 +3978,14 @@ new X.509 extension here is forbidden from being used in TLS servers. If
 <a href="#cross-origin-cert-req" class="auto internal xref">Section 4.2</a> changes to allow re-use in TLS servers, we would need
 to:<a href="#appendix-B.1.2-1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="appendix-B.1.2-2">
-<li id="appendix-B.1.2-2.1">Avoid key types that are used for non-TLS protocols whose output could be
+<li id="appendix-B.1.2-2.1">
+              <p id="appendix-B.1.2-2.1.1">Avoid key types that are used for non-TLS protocols whose output could be
 confused with a signature. That may be just the <code>rsaEncryption</code> OID from
-<span>[<a href="#RFC8017" class="cite xref">RFC8017</a>]</span>.<a href="#appendix-B.1.2-2.1" class="pilcrow">¶</a>
+<span>[<a href="#RFC8017" class="cite xref">RFC8017</a>]</span>.<a href="#appendix-B.1.2-2.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="appendix-B.1.2-2.2">Use the same format as TLS's signatures, specified in Section 4.4.3 of
-<span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>, with a context string that's specific to this use.<a href="#appendix-B.1.2-2.2" class="pilcrow">¶</a>
+            <li id="appendix-B.1.2-2.2">
+              <p id="appendix-B.1.2-2.2.1">Use the same format as TLS's signatures, specified in Section 4.4.3 of
+<span>[<a href="#RFC8446" class="cite xref">RFC8446</a>]</span>, with a context string that's specific to this use.<a href="#appendix-B.1.2-2.2.1" class="pilcrow">¶</a></p>
 </li>
           </ol>
 <p id="appendix-B.1.2-3">The specification also needs to define which signing algorithm to use. It
@@ -4032,21 +4110,24 @@ revocation, I expect the best option to be stapled "this version is still valid"
 assertions with short expiration times.<a href="#appendix-B.3.2-1" class="pilcrow">¶</a></p>
 <p id="appendix-B.3.2-2">These assertions could be structured as:<a href="#appendix-B.3.2-2" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="appendix-B.3.2-3">
-<li id="appendix-B.3.2-3.1">A signed minimum version number or timestamp for a set of request headers:
+<li id="appendix-B.3.2-3.1">
+              <p id="appendix-B.3.2-3.1.1">A signed minimum version number or timestamp for a set of request headers:
 This requires that signed responses need to include a version number or
 timestamp, but allows a server to provide a single signature covering all
-valid versions.<a href="#appendix-B.3.2-3.1" class="pilcrow">¶</a>
+valid versions.<a href="#appendix-B.3.2-3.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="appendix-B.3.2-3.2">A replacement for the whole exchange's signature. This requires the publisher to
+            <li id="appendix-B.3.2-3.2">
+              <p id="appendix-B.3.2-3.2.1">A replacement for the whole exchange's signature. This requires the publisher to
 separately re-sign each valid version and requires each version to include a
 different update URL, but allows intermediates to serve less data. This is
-the approach taken in <a href="#proposal" class="auto internal xref">Section 3</a>.<a href="#appendix-B.3.2-3.2" class="pilcrow">¶</a>
+the approach taken in <a href="#proposal" class="auto internal xref">Section 3</a>.<a href="#appendix-B.3.2-3.2.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="appendix-B.3.2-3.3">A replacement for the exchange's signature and an update for the embedded
+            <li id="appendix-B.3.2-3.3">
+              <p id="appendix-B.3.2-3.3.1">A replacement for the exchange's signature and an update for the embedded
 <code>expires</code> and related cache-control HTTP headers <span>[<a href="#RFC7234" class="cite xref">RFC7234</a>]</span>. This naturally
 extends publishers' intuitions about cache expiration and the existing cache
 revalidation behavior to signed exchanges. This is sketched and its downsides
-explored in <a href="#validity-with-cache-control" class="auto internal xref">Appendix C</a>.<a href="#appendix-B.3.2-3.3" class="pilcrow">¶</a>
+explored in <a href="#validity-with-cache-control" class="auto internal xref">Appendix C</a>.<a href="#appendix-B.3.2-3.3.1" class="pilcrow">¶</a></p>
 </li>
           </ol>
 <p id="appendix-B.3.2-4">The signature also needs to include instructions to intermediates for how to
@@ -4194,143 +4275,187 @@ exchange argues for embedding a signature's lifetime into the signature.<a href=
 <p id="appendix-D-1">RFC EDITOR PLEASE DELETE THIS SECTION.<a href="#appendix-D-1" class="pilcrow">¶</a></p>
 <p id="appendix-D-2">draft-09<a href="#appendix-D-2" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="appendix-D-3.1">No change<a href="#appendix-D-3.1" class="pilcrow">¶</a>
+<li class="normal" id="appendix-D-3.1">
+          <p id="appendix-D-3.1.1">No change<a href="#appendix-D-3.1.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="appendix-D-4">draft-08<a href="#appendix-D-4" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="appendix-D-5.1">Improve the privacy considerations.<a href="#appendix-D-5.1" class="pilcrow">¶</a>
+<li class="normal" id="appendix-D-5.1">
+          <p id="appendix-D-5.1.1">Improve the privacy considerations.<a href="#appendix-D-5.1.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="appendix-D-6">draft-07<a href="#appendix-D-6" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="appendix-D-7.1">Provisionally register application/signed-exchange and
-application/cert-chain+cbor.<a href="#appendix-D-7.1" class="pilcrow">¶</a>
+<li class="normal" id="appendix-D-7.1">
+          <p id="appendix-D-7.1.1">Provisionally register application/signed-exchange and
+application/cert-chain+cbor.<a href="#appendix-D-7.1.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="appendix-D-8">draft-06<a href="#appendix-D-8" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="appendix-D-9.1">Add a security consideration for future-dated OCSP responses and for stolen
-private keys.<a href="#appendix-D-9.1" class="pilcrow">¶</a>
+<li class="normal" id="appendix-D-9.1">
+          <p id="appendix-D-9.1.1">Add a security consideration for future-dated OCSP responses and for stolen
+private keys.<a href="#appendix-D-9.1.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-9.2">Define a CAA parameter to opt into certificate issuance.<a href="#appendix-D-9.2" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-9.2">
+          <p id="appendix-D-9.2.1">Define a CAA parameter to opt into certificate issuance.<a href="#appendix-D-9.2.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-9.3">Limit certificate lifetimes to 90 days.<a href="#appendix-D-9.3" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-9.3">
+          <p id="appendix-D-9.3.1">Limit certificate lifetimes to 90 days.<a href="#appendix-D-9.3.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-9.4">UTF-8 decode the fallback URL.<a href="#appendix-D-9.4" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-9.4">
+          <p id="appendix-D-9.4.1">UTF-8 decode the fallback URL.<a href="#appendix-D-9.4.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="appendix-D-10">draft-05<a href="#appendix-D-10" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="appendix-D-11.1">Define absolute URLs, and limit the schemes each instance can use.<a href="#appendix-D-11.1" class="pilcrow">¶</a>
+<li class="normal" id="appendix-D-11.1">
+          <p id="appendix-D-11.1.1">Define absolute URLs, and limit the schemes each instance can use.<a href="#appendix-D-11.1.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-11.2">Fill in TBD size limits.<a href="#appendix-D-11.2" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-11.2">
+          <p id="appendix-D-11.2.1">Fill in TBD size limits.<a href="#appendix-D-11.2.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-11.3">Update to mice-03 including the Digest header.<a href="#appendix-D-11.3" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-11.3">
+          <p id="appendix-D-11.3.1">Update to mice-03 including the Digest header.<a href="#appendix-D-11.3.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-11.4">Refer to draft-yasskin-httpbis-origin-signed-exchanges-impl for draft version
-numbers.<a href="#appendix-D-11.4" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-11.4">
+          <p id="appendix-D-11.4.1">Refer to draft-yasskin-httpbis-origin-signed-exchanges-impl for draft version
+numbers.<a href="#appendix-D-11.4.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-11.5">Require <code>exchange</code>'s response to be cachable by a shared cache.<a href="#appendix-D-11.5" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-11.5">
+          <p id="appendix-D-11.5.1">Require <code>exchange</code>'s response to be cachable by a shared cache.<a href="#appendix-D-11.5.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-11.6">Define the "integrity" field of the Signature header to include subfields of
-the main integrity-protecting header, including the digest algorithm.<a href="#appendix-D-11.6" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-11.6">
+          <p id="appendix-D-11.6.1">Define the "integrity" field of the Signature header to include subfields of
+the main integrity-protecting header, including the digest algorithm.<a href="#appendix-D-11.6.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-11.7">Put a fallback URL at the beginning of the <code>application/signed-exchange</code>
+        <li class="normal" id="appendix-D-11.7">
+          <p id="appendix-D-11.7.1">Put a fallback URL at the beginning of the <code>application/signed-exchange</code>
 format, which replaces the ':url' key from the CBOR representation of the
-exchange's request and response metadata and headers.<a href="#appendix-D-11.7" class="pilcrow">¶</a>
+exchange's request and response metadata and headers.<a href="#appendix-D-11.7.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-11.8">Remove the rest of the request headers from the signed data, in favor of
-representing content negotiation with the <code>Variants</code> response header.<a href="#appendix-D-11.8" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-11.8">
+          <p id="appendix-D-11.8.1">Remove the rest of the request headers from the signed data, in favor of
+representing content negotiation with the <code>Variants</code> response header.<a href="#appendix-D-11.8.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-11.9">Make the signed message format a concatenation of byte sequences, which helps
+        <li class="normal" id="appendix-D-11.9">
+          <p id="appendix-D-11.9.1">Make the signed message format a concatenation of byte sequences, which helps
 implementations avoid re-serializing the exchange's request and response
-metadata and headers.<a href="#appendix-D-11.9" class="pilcrow">¶</a>
+metadata and headers.<a href="#appendix-D-11.9.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-11.10">Explicitly check the response payload's integrity instead of assuming the
-client did it elsewhere in processing the response.<a href="#appendix-D-11.10" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-11.10">
+          <p id="appendix-D-11.10.1">Explicitly check the response payload's integrity instead of assuming the
+client did it elsewhere in processing the response.<a href="#appendix-D-11.10.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-11.11">Reject uncached header fields.<a href="#appendix-D-11.11" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-11.11">
+          <p id="appendix-D-11.11.1">Reject uncached header fields.<a href="#appendix-D-11.11.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-11.12">Update to draft-ietf-httpbis-header-structure-09.<a href="#appendix-D-11.12" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-11.12">
+          <p id="appendix-D-11.12.1">Update to draft-ietf-httpbis-header-structure-09.<a href="#appendix-D-11.12.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-11.13">Update to the final TLS 1.3 RFC.<a href="#appendix-D-11.13" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-11.13">
+          <p id="appendix-D-11.13.1">Update to the final TLS 1.3 RFC.<a href="#appendix-D-11.13.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="appendix-D-12">draft-04<a href="#appendix-D-12" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="appendix-D-13.1">Update to draft-ietf-httpbis-header-structure-06.<a href="#appendix-D-13.1" class="pilcrow">¶</a>
+<li class="normal" id="appendix-D-13.1">
+          <p id="appendix-D-13.1.1">Update to draft-ietf-httpbis-header-structure-06.<a href="#appendix-D-13.1.1" class="pilcrow">¶</a></p>
 </li>
         <li class="normal" id="appendix-D-13.2">
           <p id="appendix-D-13.2.1">Replace the application/http-exchange+cbor format with a simpler
 application/signed-exchange format that:<a href="#appendix-D-13.2.1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="appendix-D-13.2.2.1">Doesn't require a streaming CBOR parser parse it from a network stream.<a href="#appendix-D-13.2.2.1" class="pilcrow">¶</a>
+<li class="normal" id="appendix-D-13.2.2.1">
+              <p id="appendix-D-13.2.2.1.1">Doesn't require a streaming CBOR parser parse it from a network stream.<a href="#appendix-D-13.2.2.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="appendix-D-13.2.2.2">Doesn't allow request payloads or response trailers, which don't fit into
-the signature model.<a href="#appendix-D-13.2.2.2" class="pilcrow">¶</a>
+            <li class="normal" id="appendix-D-13.2.2.2">
+              <p id="appendix-D-13.2.2.2.1">Doesn't allow request payloads or response trailers, which don't fit into
+the signature model.<a href="#appendix-D-13.2.2.2.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="appendix-D-13.2.2.3">Allows checking the signature before parsing the exchange headers.<a href="#appendix-D-13.2.2.3" class="pilcrow">¶</a>
+            <li class="normal" id="appendix-D-13.2.2.3">
+              <p id="appendix-D-13.2.2.3.1">Allows checking the signature before parsing the exchange headers.<a href="#appendix-D-13.2.2.3.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </li>
-        <li class="normal" id="appendix-D-13.3">Require absolute URLs.<a href="#appendix-D-13.3" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-13.3">
+          <p id="appendix-D-13.3.1">Require absolute URLs.<a href="#appendix-D-13.3.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-13.4">Make all identifiers in headers lower-case, as required by Structured Headers.<a href="#appendix-D-13.4" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-13.4">
+          <p id="appendix-D-13.4.1">Make all identifiers in headers lower-case, as required by Structured Headers.<a href="#appendix-D-13.4.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-13.5">Switch back to the TLS 1.3 signature format.<a href="#appendix-D-13.5" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-13.5">
+          <p id="appendix-D-13.5.1">Switch back to the TLS 1.3 signature format.<a href="#appendix-D-13.5.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-13.6">Include the version and draft number in the signature context string.<a href="#appendix-D-13.6" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-13.6">
+          <p id="appendix-D-13.6.1">Include the version and draft number in the signature context string.<a href="#appendix-D-13.6.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-13.7">Remove support for integrity protection using the Digest header field.<a href="#appendix-D-13.7" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-13.7">
+          <p id="appendix-D-13.7.1">Remove support for integrity protection using the Digest header field.<a href="#appendix-D-13.7.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-13.8">Limit the record size in the mi-sha256 encoding.<a href="#appendix-D-13.8" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-13.8">
+          <p id="appendix-D-13.8.1">Limit the record size in the mi-sha256 encoding.<a href="#appendix-D-13.8.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-13.9">Forbid RSA keys, and only require clients to support secp256r1 keys.<a href="#appendix-D-13.9" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-13.9">
+          <p id="appendix-D-13.9.1">Forbid RSA keys, and only require clients to support secp256r1 keys.<a href="#appendix-D-13.9.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-13.10">Add a test OID for the CanSignHttpExchanges X.509 extension.<a href="#appendix-D-13.10" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-13.10">
+          <p id="appendix-D-13.10.1">Add a test OID for the CanSignHttpExchanges X.509 extension.<a href="#appendix-D-13.10.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="appendix-D-14">draft-03<a href="#appendix-D-14" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="appendix-D-15.1">Allow each method of transferring an exchange to define which headers are
+<li class="normal" id="appendix-D-15.1">
+          <p id="appendix-D-15.1.1">Allow each method of transferring an exchange to define which headers are
 signed, have the cross-origin methods use all headers, and remove the
-<code>allResponseHeaders</code> flag.<a href="#appendix-D-15.1" class="pilcrow">¶</a>
+<code>allResponseHeaders</code> flag.<a href="#appendix-D-15.1.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-15.2">Describe footguns around signing private content, and block certain headers to
-make it less likely.<a href="#appendix-D-15.2" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-15.2">
+          <p id="appendix-D-15.2.1">Describe footguns around signing private content, and block certain headers to
+make it less likely.<a href="#appendix-D-15.2.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-15.3">Define a CBOR structure to hold the certificate chain instead of re-using the
+        <li class="normal" id="appendix-D-15.3">
+          <p id="appendix-D-15.3.1">Define a CBOR structure to hold the certificate chain instead of re-using the
 TLS1.3 message. The TLS 1.3 parser fails on unexpected extensions while this
 format should ignore them, and apparently TLS implementations don't expose
 their message parsers enough to allow passing a message to a certificate
-verifier.<a href="#appendix-D-15.3" class="pilcrow">¶</a>
+verifier.<a href="#appendix-D-15.3.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-15.4">Require an X.509 extension for the signing certificate.<a href="#appendix-D-15.4" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-15.4">
+          <p id="appendix-D-15.4.1">Require an X.509 extension for the signing certificate.<a href="#appendix-D-15.4.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 <p id="appendix-D-16">draft-02<a href="#appendix-D-16" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="appendix-D-17.1">Signatures identify a header (e.g. Digest or MI) to guard the payload's
-integrity instead of directly signing over the payload.<a href="#appendix-D-17.1" class="pilcrow">¶</a>
+<li class="normal" id="appendix-D-17.1">
+          <p id="appendix-D-17.1.1">Signatures identify a header (e.g. Digest or MI) to guard the payload's
+integrity instead of directly signing over the payload.<a href="#appendix-D-17.1.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-17.2">The validityUrl is signed.<a href="#appendix-D-17.2" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-17.2">
+          <p id="appendix-D-17.2.1">The validityUrl is signed.<a href="#appendix-D-17.2.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-17.3">Use CBOR maps where appropriate, and define how they're canonicalized.<a href="#appendix-D-17.3" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-17.3">
+          <p id="appendix-D-17.3.1">Use CBOR maps where appropriate, and define how they're canonicalized.<a href="#appendix-D-17.3.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-17.4">Remove the update.url field from signature validity updates, in favor of just
-re-fetching the original request URL.<a href="#appendix-D-17.4" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-17.4">
+          <p id="appendix-D-17.4.1">Remove the update.url field from signature validity updates, in favor of just
+re-fetching the original request URL.<a href="#appendix-D-17.4.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-17.5">Define an HTTP/2 extension to use a setting to enable cross-origin Server
-Push.<a href="#appendix-D-17.5" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-17.5">
+          <p id="appendix-D-17.5.1">Define an HTTP/2 extension to use a setting to enable cross-origin Server
+Push.<a href="#appendix-D-17.5.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-17.6">Define an <code>Accept-Signature</code> header to negotiate whether to send Signatures
-and which ones.<a href="#appendix-D-17.6" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-17.6">
+          <p id="appendix-D-17.6.1">Define an <code>Accept-Signature</code> header to negotiate whether to send Signatures
+and which ones.<a href="#appendix-D-17.6.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-17.7">Define an <code>application/http-exchange+cbor</code> format to fetch signed exchanges
-without HTTP/2 Push.<a href="#appendix-D-17.7" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-17.7">
+          <p id="appendix-D-17.7.1">Define an <code>application/http-exchange+cbor</code> format to fetch signed exchanges
+without HTTP/2 Push.<a href="#appendix-D-17.7.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="normal" id="appendix-D-17.8">2 new use cases.<a href="#appendix-D-17.8" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-17.8">
+          <p id="appendix-D-17.8.1">2 new use cases.<a href="#appendix-D-17.8.1" class="pilcrow">¶</a></p>
 </li>
       </ul>
 </section>

@@ -10,23 +10,23 @@
        This document lists use cases for signing and/or bundling collections
 of web pages, and extracts a set of requirements from them. 
     " name="description">
-<meta content="xml2rfc 3.17.1" name="generator">
+<meta content="xml2rfc 3.19.2" name="generator">
 <meta content="draft-yasskin-wpack-use-cases-latest" name="ietf.draft">
 <!-- Generator version information:
-  xml2rfc 3.17.1
-    Python 3.10.11
-    appdirs 1.4.4
-    ConfigArgParse 1.5.3
-    google-i18n-address 2.5.2
+  xml2rfc 3.19.2
+    Python 3.11.6
+    ConfigArgParse 1.7
+    google-i18n-address 3.1.0
     intervaltree 3.1.0
     Jinja2 3.1.2
-    lxml 4.9.2
+    lxml 4.9.3
+    platformdirs 4.2.0
     pycountry 22.3.5
-    PyYAML 6.0
-    requests 2.28.1
-    setuptools 65.6.0
+    PyYAML 6.0.1
+    requests 2.31.0
+    setuptools 68.2.2
     six 1.16.0
-    wcwidth 0.2.6
+    wcwidth 0.2.13
 -->
 <link href="draft-yasskin-wpack-use-cases.xml" rel="alternate" type="application/rfc+xml">
 <link href="#copyright" rel="license">
@@ -608,6 +608,7 @@ sub, sup {
   clear: left;
   float: left;
   text-align: right;
+  margin-right: 1ch;
 }
 #identifiers dd {
   margin: 0;
@@ -648,7 +649,7 @@ sub, sup {
 }
 #toc nav li {
   line-height: 1.3em;
-  margin: 0.75em 0;
+  margin: 2px 0;
   padding-left: 1.2em;
   text-indent: -1.2em;
 }
@@ -741,7 +742,7 @@ hr.addr {
     z-index: 2;
     top: 0;
     right: 0;
-    padding: 0;
+    padding: 1px 0 0 0;
     margin: 0;
     border-bottom: 1px solid #ccc;
     opacity: 0.6;
@@ -865,16 +866,13 @@ hr.addr {
     border-top: none;
     padding-top: 0;
   }
-  figure, pre {
+  figure, pre, .vcard {
     page-break-inside: avoid;
-  }
-  figure {
-    overflow: scroll;
   }
   h1, h2, h3, h4, h5, h6 {
     page-break-after: avoid;
   }
-  h2+*, h3+*, h4+*, h5+*, h6+* {
+  :is(h2, h3, h4, h5, h6)+*, dd {
     page-break-before: avoid;
   }
   pre {
@@ -887,6 +885,9 @@ hr.addr {
   }
   td {
     border-top: 1px solid #ddd;
+  }
+  .toplink {
+    display: none;
   }
 }
 
@@ -988,28 +989,6 @@ address div.right {
   text-align: right;
 }
 
-/* Give the table caption label the same styling as the figcaption */
-
-@media print {
-  .toplink {
-    display: none;
-  }
-
-  /* avoid overwriting the top border line with the ToC header */
-  #toc {
-    padding-top: 1px;
-  }
-
-  /* Avoid page breaks inside dl and author address entries */
-  dd {
-    page-break-before: avoid;
-  }
-  .vcard {
-    page-break-inside: avoid;
-  }
-
-}
-
 /* Dark mode. */
 @media (prefers-color-scheme: dark) {
 :root {
@@ -1046,11 +1025,11 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <thead><tr>
 <td class="left">Internet-Draft</td>
 <td class="center">Use Cases and Requirements for Web Packa</td>
-<td class="right">May 2023</td>
+<td class="right">February 2024</td>
 </tr></thead>
 <tfoot><tr>
 <td class="left">Yasskin</td>
-<td class="center">Expires 13 November 2023</td>
+<td class="center">Expires 16 August 2024</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1063,12 +1042,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-yasskin-wpack-use-cases-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2023-05-12" class="published">12 May 2023</time>
+<time datetime="2024-02-13" class="published">13 February 2024</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2023-11-13">13 November 2023</time></dd>
+<dd class="expires"><time datetime="2024-08-16">16 August 2024</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1114,7 +1093,7 @@ of web pages, and extracts a set of requirements from them.<a href="#section-abs
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 13 November 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 16 August 2024.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1123,7 +1102,7 @@ of web pages, and extracts a set of requirements from them.<a href="#section-abs
 <a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
         </h2>
 <p id="section-boilerplate.2-1">
-            Copyright (c) 2023 IETF Trust and the persons identified as the
+            Copyright (c) 2024 IETF Trust and the persons identified as the
             document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.2-2">
             This document is subject to BCP 78 and the IETF Trust's Legal
@@ -1393,71 +1372,73 @@ and then Bailey can install the Service Worker with a proof that it came from <c
 This saves Bailey the bandwidth costs of transferring the website.<a href="#section-2.1.1-1" class="pilcrow">¶</a></p>
 <p id="section-2.1.1-2">There are roughly two ways to accomplish this:<a href="#section-2.1.1-2" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-2.1.1-3">
-<li id="section-2.1.1-3.1">Package just the Service Worker Javascript and any other Javascript that it
+<li id="section-2.1.1-3.1">
+              <p id="section-2.1.1-3.1.1">Package just the Service Worker Javascript and any other Javascript that it
 <a href="https://w3c.github.io/ServiceWorker/#importscripts">importScripts()</a>, with
 their URLs and enough metadata to synthesize a
 <a href="https://w3c.github.io/ServiceWorker/#navigator-service-worker-register">navigator.serviceWorker.register(scriptURL, options)
 call</a>,
 along with an uninterpreted but signature-checked blob of data that the
-Service Worker can interpret to fill in its caches.<a href="#section-2.1.1-3.1" class="pilcrow">¶</a>
+Service Worker can interpret to fill in its caches.<a href="#section-2.1.1-3.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="section-2.1.1-3.2">Package the resources so that the Service Worker can fetch() them to populate
-its cache.<a href="#section-2.1.1-3.2" class="pilcrow">¶</a>
+            <li id="section-2.1.1-3.2">
+              <p id="section-2.1.1-3.2.1">Package the resources so that the Service Worker can fetch() them to populate
+its cache.<a href="#section-2.1.1-3.2.1" class="pilcrow">¶</a></p>
 </li>
           </ol>
 <p id="section-2.1.1-4">Associated requirements for just the Service Worker:<a href="#section-2.1.1-4" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.1.1-5.1">
-              <a href="#urls" class="internal xref">Indexed by URL</a>: The <code>register()</code> and <code>importScripts()</code> calls have
-semantics that depend on the URL.<a href="#section-2.1.1-5.1" class="pilcrow">¶</a>
+              <p id="section-2.1.1-5.1.1"><a href="#urls" class="internal xref">Indexed by URL</a>: The <code>register()</code> and <code>importScripts()</code> calls have
+semantics that depend on the URL.<a href="#section-2.1.1-5.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.1-5.2">
-              <a href="#signing" class="internal xref">Signing as an origin</a>: To prove that the file came from <code>O</code>.<a href="#section-2.1.1-5.2" class="pilcrow">¶</a>
+              <p id="section-2.1.1-5.2.1"><a href="#signing" class="internal xref">Signing as an origin</a>: To prove that the file came from <code>O</code>.<a href="#section-2.1.1-5.2.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.1-5.3">
-              <a href="#existing-certs" class="internal xref">Signing uses existing TLS certificates</a>: So <code>O</code> doesn't have to spend lots of
-money buying a specialized certificate.<a href="#section-2.1.1-5.3" class="pilcrow">¶</a>
+              <p id="section-2.1.1-5.3.1"><a href="#existing-certs" class="internal xref">Signing uses existing TLS certificates</a>: So <code>O</code> doesn't have to spend lots of
+money buying a specialized certificate.<a href="#section-2.1.1-5.3.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.1-5.4">
-              <a href="#crypto-agility" class="internal xref">Cryptographic agility</a>: Today's algorithms will eventually be
-obsolete and will need to be replaced.<a href="#section-2.1.1-5.4" class="pilcrow">¶</a>
+              <p id="section-2.1.1-5.4.1"><a href="#crypto-agility" class="internal xref">Cryptographic agility</a>: Today's algorithms will eventually be
+obsolete and will need to be replaced.<a href="#section-2.1.1-5.4.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.1-5.5">
-              <a href="#revocation" class="internal xref">Certificate revocation</a>: <code>O</code>'s certificate might be compromised or
+              <p id="section-2.1.1-5.5.1"><a href="#revocation" class="internal xref">Certificate revocation</a>: <code>O</code>'s certificate might be compromised or
 mis-issued, and the attacker shouldn't then get an infinite ability to mint
-packages.<a href="#section-2.1.1-5.5" class="pilcrow">¶</a>
+packages.<a href="#section-2.1.1-5.5.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.1-5.6">
-              <a href="#no-downgrades" class="internal xref">Downgrade prevention</a>: <code>O</code>'s site might have an XSS
+              <p id="section-2.1.1-5.6.1"><a href="#no-downgrades" class="internal xref">Downgrade prevention</a>: <code>O</code>'s site might have an XSS
 vulnerability, and attackers with an old signed package shouldn't be able to
-take advantage of the XSS forever.<a href="#section-2.1.1-5.6" class="pilcrow">¶</a>
+take advantage of the XSS forever.<a href="#section-2.1.1-5.6.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.1-5.7">
-              <a href="#metadata" class="internal xref">Metadata</a>: Just enough to generate the <code>register()</code> call,
-which is less than a full W3C Application Manifest.<a href="#section-2.1.1-5.7" class="pilcrow">¶</a>
+              <p id="section-2.1.1-5.7.1"><a href="#metadata" class="internal xref">Metadata</a>: Just enough to generate the <code>register()</code> call,
+which is less than a full W3C Application Manifest.<a href="#section-2.1.1-5.7.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 <p id="section-2.1.1-6">Additional associated requirements for packaged resources:<a href="#section-2.1.1-6" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.1.1-7.1">
-              <a href="#urls" class="internal xref">Indexed by URL</a>: Resources on the web are addressed by URL.<a href="#section-2.1.1-7.1" class="pilcrow">¶</a>
+              <p id="section-2.1.1-7.1.1"><a href="#urls" class="internal xref">Indexed by URL</a>: Resources on the web are addressed by URL.<a href="#section-2.1.1-7.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.1-7.2">
-              <a href="#request-headers" class="internal xref">Request headers</a>: If Bailey's running a different browser
+              <p id="section-2.1.1-7.2.1"><a href="#request-headers" class="internal xref">Request headers</a>: If Bailey's running a different browser
 from Alex or has a different language configured, the <code>accept*</code> headers are
-important for selecting which resource to use at each URL.<a href="#section-2.1.1-7.2" class="pilcrow">¶</a>
+important for selecting which resource to use at each URL.<a href="#section-2.1.1-7.2.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.1-7.3">
-              <a href="#response-headers" class="internal xref">Response headers</a>: The meaning of a resource is heavily
-influenced by its HTTP response headers.<a href="#section-2.1.1-7.3" class="pilcrow">¶</a>
+              <p id="section-2.1.1-7.3.1"><a href="#response-headers" class="internal xref">Response headers</a>: The meaning of a resource is heavily
+influenced by its HTTP response headers.<a href="#section-2.1.1-7.3.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.1-7.4">
-              <a href="#multiple-origins" class="internal xref">Resources from multiple origins in a package</a>: So the site can
-be <span><a href="#libraries" class="internal xref">built from multiple components</a> (<a href="#libraries" class="auto internal xref">Section 2.2.4</a>)</span>.<a href="#section-2.1.1-7.4" class="pilcrow">¶</a>
+              <p id="section-2.1.1-7.4.1"><a href="#multiple-origins" class="internal xref">Resources from multiple origins in a package</a>: So the site can
+be <span><a href="#libraries" class="internal xref">built from multiple components</a> (<a href="#libraries" class="auto internal xref">Section 2.2.4</a>)</span>.<a href="#section-2.1.1-7.4.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.1-7.5">
-              <a href="#metadata" class="internal xref">Metadata</a>: The browser needs to know which resource within
-a package file to treat as its Service Worker and/or initial HTML page.<a href="#section-2.1.1-7.5" class="pilcrow">¶</a>
+              <p id="section-2.1.1-7.5.1"><a href="#metadata" class="internal xref">Metadata</a>: The browser needs to know which resource within
+a package file to treat as its Service Worker and/or initial HTML page.<a href="#section-2.1.1-7.5.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 <div id="online-use">
@@ -1481,8 +1462,8 @@ their plan partway through each month.<a href="#section-2.1.1.2-1" class="pilcro
 <p id="section-2.1.1.2-2">Associated requirements beyond <a href="#offline-installation" class="internal xref">Offline installation</a>:<a href="#section-2.1.1.2-2" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.1.1.2-3.1">
-                <a href="#packaged-validity" class="internal xref">Packaged validity information</a>: Even without a direct internet
-connection, Bailey should be able to check that their package is still valid.<a href="#section-2.1.1.2-3.1" class="pilcrow">¶</a>
+                <p id="section-2.1.1.2-3.1.1"><a href="#packaged-validity" class="internal xref">Packaged validity information</a>: Even without a direct internet
+connection, Bailey should be able to check that their package is still valid.<a href="#section-2.1.1.2-3.1.1" class="pilcrow">¶</a></p>
 </li>
             </ul>
 </section>
@@ -1505,12 +1486,12 @@ adopt Service Workers before they can sign their site.<a href="#section-2.1.2-2"
 <p id="section-2.1.2-3">Associated requirements beyond <a href="#offline-installation" class="internal xref">Offline installation</a>:<a href="#section-2.1.2-3" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.1.2-4.1">
-              <a href="#random-access" class="internal xref">Random access</a>: To avoid needing a long linear scan before
-using the content.<a href="#section-2.1.2-4.1" class="pilcrow">¶</a>
+              <p id="section-2.1.2-4.1.1"><a href="#random-access" class="internal xref">Random access</a>: To avoid needing a long linear scan before
+using the content.<a href="#section-2.1.2-4.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.2-4.2">
-              <a href="#stored-compression" class="internal xref">Compress stored packages</a>: So that more content can fit on the
-same storage device.<a href="#section-2.1.2-4.2" class="pilcrow">¶</a>
+              <p id="section-2.1.2-4.2.1"><a href="#stored-compression" class="internal xref">Compress stored packages</a>: So that more content can fit on the
+same storage device.<a href="#section-2.1.2-4.2.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -1530,19 +1511,19 @@ links and accessibility.<a href="#section-2.1.3-1" class="pilcrow">¶</a></p>
 <p id="section-2.1.3-2">Associated requirements:<a href="#section-2.1.3-2" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.1.3-3.1">
-              <a href="#unsigned-content" class="internal xref">Unsigned content</a>: A client can't sign content as another
-origin.<a href="#section-2.1.3-3.1" class="pilcrow">¶</a>
+              <p id="section-2.1.3-3.1.1"><a href="#unsigned-content" class="internal xref">Unsigned content</a>: A client can't sign content as another
+origin.<a href="#section-2.1.3-3.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.3-3.2">
-              <a href="#multiple-origins" class="internal xref">Resources from multiple origins in a package</a>: General web pages include resources
-from multiple origins.<a href="#section-2.1.3-3.2" class="pilcrow">¶</a>
+              <p id="section-2.1.3-3.2.1"><a href="#multiple-origins" class="internal xref">Resources from multiple origins in a package</a>: General web pages include resources
+from multiple origins.<a href="#section-2.1.3-3.2.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.3-3.3">
-              <a href="#urls" class="internal xref">Indexed by URL</a>: Resources on the web are addressed by URL.<a href="#section-2.1.3-3.3" class="pilcrow">¶</a>
+              <p id="section-2.1.3-3.3.1"><a href="#urls" class="internal xref">Indexed by URL</a>: Resources on the web are addressed by URL.<a href="#section-2.1.3-3.3.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.3-3.4">
-              <a href="#response-headers" class="internal xref">Response headers</a>: The meaning of a resource is heavily
-influenced by its HTTP response headers.<a href="#section-2.1.3-3.4" class="pilcrow">¶</a>
+              <p id="section-2.1.3-3.4.1"><a href="#response-headers" class="internal xref">Response headers</a>: The meaning of a resource is heavily
+influenced by its HTTP response headers.<a href="#section-2.1.3-3.4.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -1574,22 +1555,22 @@ after the user clicks.<a href="#section-2.1.4-3" class="pilcrow">¶</a></p>
 <p id="section-2.1.4-4">Associated requirements:<a href="#section-2.1.4-4" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.1.4-5.1">
-              <a href="#signing" class="internal xref">Signing as an origin</a>: To prove the content came from the original
-origin.<a href="#section-2.1.4-5.1" class="pilcrow">¶</a>
+              <p id="section-2.1.4-5.1.1"><a href="#signing" class="internal xref">Signing as an origin</a>: To prove the content came from the original
+origin.<a href="#section-2.1.4-5.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.4-5.2">
-              <a href="#streamed-loading" class="internal xref">Streamed loading</a>: If the user clicks before the target
+              <p id="section-2.1.4-5.2.1"><a href="#streamed-loading" class="internal xref">Streamed loading</a>: If the user clicks before the target
 page is fully transferred, the browser should be able to start loading early
-parts before the source site finishes sending the whole page.<a href="#section-2.1.4-5.2" class="pilcrow">¶</a>
+parts before the source site finishes sending the whole page.<a href="#section-2.1.4-5.2.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.4-5.3">
-              <a href="#transfer-compression" class="internal xref">Compress transfers</a><a href="#section-2.1.4-5.3" class="pilcrow">¶</a>
+              <p id="section-2.1.4-5.3.1"><a href="#transfer-compression" class="internal xref">Compress transfers</a><a href="#section-2.1.4-5.3.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.1.4-5.4">
-              <a href="#subsetting" class="internal xref">Subsetting and reordering</a>: If a prefetched page includes subresources,
+              <p id="section-2.1.4-5.4.1"><a href="#subsetting" class="internal xref">Subsetting and reordering</a>: If a prefetched page includes subresources,
 its publisher might want to provide and sign both WebP and PNG versions of an
 image, but the source site should be able to transfer only best one for each
-client.<a href="#section-2.1.4-5.4" class="pilcrow">¶</a>
+client.<a href="#section-2.1.4-5.4.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -1617,56 +1598,56 @@ for more details.<a href="#section-2.2.1-1" class="pilcrow">¶</a></p>
 <p id="section-2.2.1-2">Associated requirements:<a href="#section-2.2.1-2" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.1-3.1">
-              <a href="#urls" class="internal xref">Indexed by URL</a>: Resources on the web are addressed by URL.<a href="#section-2.2.1-3.1" class="pilcrow">¶</a>
+              <p id="section-2.2.1-3.1.1"><a href="#urls" class="internal xref">Indexed by URL</a>: Resources on the web are addressed by URL.<a href="#section-2.2.1-3.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.1-3.2">
-              <a href="#signing" class="internal xref">Signing as an origin</a>: So that readers can be sure their copy is
+              <p id="section-2.2.1-3.2.1"><a href="#signing" class="internal xref">Signing as an origin</a>: So that readers can be sure their copy is
 authentic and so that copying the package preserves the URLs of the content
-inside it.<a href="#section-2.2.1-3.2" class="pilcrow">¶</a>
+inside it.<a href="#section-2.2.1-3.2.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.1-3.3">
-              <a href="#no-downgrades" class="internal xref">Downgrade prevention</a>: An early version of a publication might
+              <p id="section-2.2.1-3.3.1"><a href="#no-downgrades" class="internal xref">Downgrade prevention</a>: An early version of a publication might
 contain incorrect content, and a publisher should be able to update that
-without worrying that an attacker can still show the old content to users.<a href="#section-2.2.1-3.3" class="pilcrow">¶</a>
+without worrying that an attacker can still show the old content to users.<a href="#section-2.2.1-3.3.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.1-3.4">
-              <a href="#metadata" class="internal xref">Metadata</a>: A publication can have copyright and licensing
+              <p id="section-2.2.1-3.4.1"><a href="#metadata" class="internal xref">Metadata</a>: A publication can have copyright and licensing
 concerns; a title, author, and cover image; an ISBN or DOI name; etc.; which
-should be included when that publication is packaged.<a href="#section-2.2.1-3.4" class="pilcrow">¶</a>
+should be included when that publication is packaged.<a href="#section-2.2.1-3.4.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 <p id="section-2.2.1-4">Other requirements are similar to those from
 <a href="#offline-installation" class="internal xref">Offline installation</a>:<a href="#section-2.2.1-4" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.1-5.1">
-              <a href="#random-access" class="internal xref">Random access</a>: To avoid needing a long linear scan before
-using the content.<a href="#section-2.2.1-5.1" class="pilcrow">¶</a>
+              <p id="section-2.2.1-5.1.1"><a href="#random-access" class="internal xref">Random access</a>: To avoid needing a long linear scan before
+using the content.<a href="#section-2.2.1-5.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.1-5.2">
-              <a href="#stored-compression" class="internal xref">Compress stored packages</a>: So that more content can fit on the
-same storage device.<a href="#section-2.2.1-5.2" class="pilcrow">¶</a>
+              <p id="section-2.2.1-5.2.1"><a href="#stored-compression" class="internal xref">Compress stored packages</a>: So that more content can fit on the
+same storage device.<a href="#section-2.2.1-5.2.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.1-5.3">
-              <a href="#request-headers" class="internal xref">Request headers</a>: If different users' browsers have
+              <p id="section-2.2.1-5.3.1"><a href="#request-headers" class="internal xref">Request headers</a>: If different users' browsers have
 different capabilities or preferences, the <code>accept*</code> headers are important for
-selecting which resource to use at each URL.<a href="#section-2.2.1-5.3" class="pilcrow">¶</a>
+selecting which resource to use at each URL.<a href="#section-2.2.1-5.3.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.1-5.4">
-              <a href="#response-headers" class="internal xref">Response headers</a>: The meaning of a resource is heavily
-influenced by its HTTP response headers.<a href="#section-2.2.1-5.4" class="pilcrow">¶</a>
+              <p id="section-2.2.1-5.4.1"><a href="#response-headers" class="internal xref">Response headers</a>: The meaning of a resource is heavily
+influenced by its HTTP response headers.<a href="#section-2.2.1-5.4.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.1-5.5">
-              <a href="#existing-certs" class="internal xref">Signing uses existing TLS certificates</a>: So a publisher doesn't have to spend lots
-of money buying a specialized certificate.<a href="#section-2.2.1-5.5" class="pilcrow">¶</a>
+              <p id="section-2.2.1-5.5.1"><a href="#existing-certs" class="internal xref">Signing uses existing TLS certificates</a>: So a publisher doesn't have to spend lots
+of money buying a specialized certificate.<a href="#section-2.2.1-5.5.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.1-5.6">
-              <a href="#crypto-agility" class="internal xref">Cryptographic agility</a>: Today's algorithms will eventually be
-obsolete and will need to be replaced.<a href="#section-2.2.1-5.6" class="pilcrow">¶</a>
+              <p id="section-2.2.1-5.6.1"><a href="#crypto-agility" class="internal xref">Cryptographic agility</a>: Today's algorithms will eventually be
+obsolete and will need to be replaced.<a href="#section-2.2.1-5.6.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.1-5.7">
-              <a href="#revocation" class="internal xref">Certificate revocation</a>: The publisher's certificate might be
+              <p id="section-2.2.1-5.7.1"><a href="#revocation" class="internal xref">Certificate revocation</a>: The publisher's certificate might be
 compromised or mis-issued, and an attacker shouldn't then get an infinite
-ability to mint packages.<a href="#section-2.2.1-5.7" class="pilcrow">¶</a>
+ability to mint packages.<a href="#section-2.2.1-5.7.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -1693,13 +1674,13 @@ instead of on the network.<a href="#section-2.2.2-4" class="pilcrow">¶</a></p>
 <p id="section-2.2.2-5">Associated requirements:<a href="#section-2.2.2-5" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.2-6.1">
-              <a href="#urls" class="internal xref">Indexed by URL</a>: So the user can see that they're getting the
-content they expected.<a href="#section-2.2.2-6.1" class="pilcrow">¶</a>
+              <p id="section-2.2.2-6.1.1"><a href="#urls" class="internal xref">Indexed by URL</a>: So the user can see that they're getting the
+content they expected.<a href="#section-2.2.2-6.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.2-6.2">
-              <a href="#signing" class="internal xref">Signing as an origin</a>: So that readers can be sure their copy is
+              <p id="section-2.2.2-6.2.1"><a href="#signing" class="internal xref">Signing as an origin</a>: So that readers can be sure their copy is
 authentic and so that copying the package preserves the URLs of the content
-inside it.<a href="#section-2.2.2-6.2" class="pilcrow">¶</a>
+inside it.<a href="#section-2.2.2-6.2.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -1721,7 +1702,7 @@ received.<a href="#section-2.2.3-2" class="pilcrow">¶</a></p>
 <p id="section-2.2.3-3">Associated requirements:<a href="#section-2.2.3-3" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.3-4.1">
-              <a href="#additional-signatures" class="internal xref">Additional signatures</a><a href="#section-2.2.3-4.1" class="pilcrow">¶</a>
+              <p id="section-2.2.3-4.1.1"><a href="#additional-signatures" class="internal xref">Additional signatures</a><a href="#section-2.2.3-4.1.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -1741,12 +1722,12 @@ requests back to their own origin, for example to implement federated sign-in.<a
 <p id="section-2.2.4-2">Associated requirements:<a href="#section-2.2.4-2" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.4-3.1">
-              <a href="#multiple-origins" class="internal xref">Resources from multiple origins in a package</a>: Each component may come from its own origin.<a href="#section-2.2.4-3.1" class="pilcrow">¶</a>
+              <p id="section-2.2.4-3.1.1"><a href="#multiple-origins" class="internal xref">Resources from multiple origins in a package</a>: Each component may come from its own origin.<a href="#section-2.2.4-3.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.4-3.2">
-              <a href="#deduplication" class="internal xref">Deduplication of diamond dependencies</a>: If we have dependencies A-&gt;B-&gt;D and
+              <p id="section-2.2.4-3.2.1"><a href="#deduplication" class="internal xref">Deduplication of diamond dependencies</a>: If we have dependencies A-&gt;B-&gt;D and
 A-&gt;C-&gt;D, it's important that a request for a D resource resolves to a single
-resource that both B and C can handle.<a href="#section-2.2.4-3.2" class="pilcrow">¶</a>
+resource that both B and C can handle.<a href="#section-2.2.4-3.2.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 <div id="shared-libraries">
@@ -1762,7 +1743,7 @@ them all inline.<a href="#section-2.2.4.1-1" class="pilcrow">¶</a></p>
 <p id="section-2.2.4.1-2">Associated requirements:<a href="#section-2.2.4.1-2" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.4.1-3.1">
-                <a href="#external-dependencies" class="internal xref">External dependencies</a><a href="#section-2.2.4.1-3.1" class="pilcrow">¶</a>
+                <p id="section-2.2.4.1-3.1.1"><a href="#external-dependencies" class="internal xref">External dependencies</a><a href="#section-2.2.4.1-3.1.1" class="pilcrow">¶</a></p>
 </li>
             </ul>
 </section>
@@ -1789,16 +1770,16 @@ naively telling the server that a resource is already present is a privacy leak.
 <p id="section-2.2.5-4">Associated requirements:<a href="#section-2.2.5-4" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.5-5.1">
-              <a href="#streamed-loading" class="internal xref">Streamed loading</a>: To get optimal performance, the browser
+              <p id="section-2.2.5-5.1.1"><a href="#streamed-loading" class="internal xref">Streamed loading</a>: To get optimal performance, the browser
 should be able to start loading early parts of a resource before the
-distributor finishes sending the whole resource.<a href="#section-2.2.5-5.1" class="pilcrow">¶</a>
+distributor finishes sending the whole resource.<a href="#section-2.2.5-5.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.5-5.2">
-              <a href="#signing" class="internal xref">Signing as an origin</a>: To prove the content came from the original
-origin.<a href="#section-2.2.5-5.2" class="pilcrow">¶</a>
+              <p id="section-2.2.5-5.2.1"><a href="#signing" class="internal xref">Signing as an origin</a>: To prove the content came from the original
+origin.<a href="#section-2.2.5-5.2.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.5-5.3">
-              <a href="#transfer-compression" class="internal xref">Compress transfers</a><a href="#section-2.2.5-5.3" class="pilcrow">¶</a>
+              <p id="section-2.2.5-5.3.1"><a href="#transfer-compression" class="internal xref">Compress transfers</a><a href="#section-2.2.5-5.3.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -1828,8 +1809,8 @@ browser.<a href="#section-2.2.6-3" class="pilcrow">¶</a></p>
 <p id="section-2.2.6-4">Associated requirements:<a href="#section-2.2.6-4" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.6-5.1">
-              <a href="#service-worker-integration" class="internal xref">Service Worker integration</a>: To pass the package into the
-<code>install</code> event and from there get its contents into a <code>Cache</code>.<a href="#section-2.2.6-5.1" class="pilcrow">¶</a>
+              <p id="section-2.2.6-5.1.1"><a href="#service-worker-integration" class="internal xref">Service Worker integration</a>: To pass the package into the
+<code>install</code> event and from there get its contents into a <code>Cache</code>.<a href="#section-2.2.6-5.1.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -1876,14 +1857,14 @@ to use a wholly-untrustworthy CDN because of the risk to first-time users.<a hre
 <p id="section-2.2.7-7">Associated requirements:<a href="#section-2.2.7-7" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.7-8.1">
-              <a href="#non-origin-signatures" class="internal xref">Signing without origin trust</a>: To let a backend system vouch for
+              <p id="section-2.2.7-8.1.1"><a href="#non-origin-signatures" class="internal xref">Signing without origin trust</a>: To let a backend system vouch for
 the content. This would likely be augmented with origin trust by receiving the
-signed content over TLS.<a href="#section-2.2.7-8.1" class="pilcrow">¶</a>
+signed content over TLS.<a href="#section-2.2.7-8.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.7-8.2">
-              <a href="#streamed-loading" class="internal xref">Streamed loading</a>: To get optimal performance, the browser
+              <p id="section-2.2.7-8.2.1"><a href="#streamed-loading" class="internal xref">Streamed loading</a>: To get optimal performance, the browser
 should be able to start loading early parts of a resource before the
-server finishes sending the whole resource.<a href="#section-2.2.7-8.2" class="pilcrow">¶</a>
+server finishes sending the whole resource.<a href="#section-2.2.7-8.2.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -1901,7 +1882,7 @@ and seek backwards from there for the start of the package.<a href="#section-2.2
 <p id="section-2.2.8-2">Associated requirements:<a href="#section-2.2.8-2" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.8-3.1">
-              <a href="#trailing-length" class="internal xref">Trailing length</a><a href="#section-2.2.8-3.1" class="pilcrow">¶</a>
+              <p id="section-2.2.8-3.1.1"><a href="#trailing-length" class="internal xref">Trailing length</a><a href="#section-2.2.8-3.1.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -1918,7 +1899,7 @@ data, VC may break the package.<a href="#section-2.2.9-1" class="pilcrow">¶</a>
 <p id="section-2.2.9-2">Associated requirements:<a href="#section-2.2.9-2" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.9-3.1">
-              <a href="#binary" class="internal xref">Binary</a><a href="#section-2.2.9-3.1" class="pilcrow">¶</a>
+              <p id="section-2.2.9-3.1.1"><a href="#binary" class="internal xref">Binary</a><a href="#section-2.2.9-3.1.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -1933,16 +1914,19 @@ bundled together.<a href="#section-2.2.10-1" class="pilcrow">¶</a></p>
 <p id="section-2.2.10-2">At the same time, the current practice of JS and CSS bundling, by compiling
 everything into a single JS file, also has negative side-effects:<a href="#section-2.2.10-2" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-2.2.10-3">
-<li id="section-2.2.10-3.1">Dependent execution - in order to start executing <em>any</em> of the bundled
-resources, it is required to download, parse and execute <em>all</em> of them.<a href="#section-2.2.10-3.1" class="pilcrow">¶</a>
+<li id="section-2.2.10-3.1">
+              <p id="section-2.2.10-3.1.1">Dependent execution - in order to start executing <em>any</em> of the bundled
+resources, it is required to download, parse and execute <em>all</em> of them.<a href="#section-2.2.10-3.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="section-2.2.10-3.2">Loss of caching granularity - Modification of <em>any</em> of the resources results
-in caching invalidation of <em>all</em> of them.<a href="#section-2.2.10-3.2" class="pilcrow">¶</a>
+            <li id="section-2.2.10-3.2">
+              <p id="section-2.2.10-3.2.1">Loss of caching granularity - Modification of <em>any</em> of the resources results
+in caching invalidation of <em>all</em> of them.<a href="#section-2.2.10-3.2.1" class="pilcrow">¶</a></p>
 </li>
-            <li id="section-2.2.10-3.3">Loss of module semantics - ES6 modules must be delivered as independent
+            <li id="section-2.2.10-3.3">
+              <p id="section-2.2.10-3.3.1">Loss of module semantics - ES6 modules must be delivered as independent
 resources. Therefore, current bundling methods, which deliver them with other
 resources under a common URL, require transpilation to ES5 and result in loss
-of ES6 module semantics.<a href="#section-2.2.10-3.3" class="pilcrow">¶</a>
+of ES6 module semantics.<a href="#section-2.2.10-3.3.1" class="pilcrow">¶</a></p>
 </li>
           </ol>
 <p id="section-2.2.10-4">An on-the-fly readable packaging format, that will enable resources to maintain
@@ -1955,21 +1939,21 @@ or perhaps with <span>[<a href="#I-D.ietf-httpbis-cache-digest" class="cite xref
 <p id="section-2.2.10-6">Associated requirements:<a href="#section-2.2.10-6" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.10-7.1">
-              <a href="#urls" class="internal xref">Indexed by URL</a><a href="#section-2.2.10-7.1" class="pilcrow">¶</a>
+              <p id="section-2.2.10-7.1.1"><a href="#urls" class="internal xref">Indexed by URL</a><a href="#section-2.2.10-7.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.10-7.2">
-              <a href="#streamed-loading" class="internal xref">Streamed loading</a>: To solve downside 1.<a href="#section-2.2.10-7.2" class="pilcrow">¶</a>
+              <p id="section-2.2.10-7.2.1"><a href="#streamed-loading" class="internal xref">Streamed loading</a>: To solve downside 1.<a href="#section-2.2.10-7.2.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.10-7.3">
-              <a href="#transfer-compression" class="internal xref">Compress transfers</a>: To keep the upside.<a href="#section-2.2.10-7.3" class="pilcrow">¶</a>
+              <p id="section-2.2.10-7.3.1"><a href="#transfer-compression" class="internal xref">Compress transfers</a>: To keep the upside.<a href="#section-2.2.10-7.3.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.10-7.4">
-              <a href="#response-headers" class="internal xref">Response headers</a>: At least the Content-Type is needed to
-load JS and CSS.<a href="#section-2.2.10-7.4" class="pilcrow">¶</a>
+              <p id="section-2.2.10-7.4.1"><a href="#response-headers" class="internal xref">Response headers</a>: At least the Content-Type is needed to
+load JS and CSS.<a href="#section-2.2.10-7.4.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.10-7.5">
-              <a href="#unsigned-content" class="internal xref">Unsigned content</a>: Signing same-origin content wastes
-space.<a href="#section-2.2.10-7.5" class="pilcrow">¶</a>
+              <p id="section-2.2.10-7.5.1"><a href="#unsigned-content" class="internal xref">Unsigned content</a>: Signing same-origin content wastes
+space.<a href="#section-2.2.10-7.5.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -1994,17 +1978,17 @@ it on the original origin.<a href="#section-2.2.11-2" class="pilcrow">¶</a></p>
 <p id="section-2.2.11-3">Associated requirements:<a href="#section-2.2.11-3" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-2.2.11-4.1">
-              <a href="#urls" class="internal xref">Indexed by URL</a><a href="#section-2.2.11-4.1" class="pilcrow">¶</a>
+              <p id="section-2.2.11-4.1.1"><a href="#urls" class="internal xref">Indexed by URL</a><a href="#section-2.2.11-4.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.11-4.2">
-              <a href="#response-headers" class="internal xref">Response headers</a>: To accurately record the server's
-response.<a href="#section-2.2.11-4.2" class="pilcrow">¶</a>
+              <p id="section-2.2.11-4.2.1"><a href="#response-headers" class="internal xref">Response headers</a>: To accurately record the server's
+response.<a href="#section-2.2.11-4.2.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.11-4.3">
-              <a href="#unsigned-content" class="internal xref">Unsigned content</a>: To deal with expired signatures.<a href="#section-2.2.11-4.3" class="pilcrow">¶</a>
+              <p id="section-2.2.11-4.3.1"><a href="#unsigned-content" class="internal xref">Unsigned content</a>: To deal with expired signatures.<a href="#section-2.2.11-4.3.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-2.2.11-4.4">
-              <a href="#timeshifting" class="internal xref">Time-shifting execution</a><a href="#section-2.2.11-4.4" class="pilcrow">¶</a>
+              <p id="section-2.2.11-4.4.1"><a href="#timeshifting" class="internal xref">Time-shifting execution</a><a href="#section-2.2.11-4.4.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -2155,19 +2139,21 @@ a package.<a href="#section-3.1.11-1" class="pilcrow">¶</a></p>
 implementations to get noticed quickly, and avoid aspects that are easy to
 implement incorrectly. For example:<a href="#section-3.1.12-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-3.1.12-2.1">Explicitly specifying a cryptographic algorithm identifier in <span>[<a href="#RFC7515" class="cite xref">RFC7515</a>]</span>
+<li class="normal" id="section-3.1.12-2.1">
+              <p id="section-3.1.12-2.1.1">Explicitly specifying a cryptographic algorithm identifier in <span>[<a href="#RFC7515" class="cite xref">RFC7515</a>]</span>
 made it easy for implementations to trust that algorithm,
 which
-<a href="https://paragonie.com/blog/2017/03/jwt-json-web-tokens-is-bad-standard-that-everyone-should-avoid">caused vulnerabilities</a>.<a href="#section-3.1.12-2.1" class="pilcrow">¶</a>
+<a href="https://paragonie.com/blog/2017/03/jwt-json-web-tokens-is-bad-standard-that-everyone-should-avoid">caused vulnerabilities</a>.<a href="#section-3.1.12-2.1.1" class="pilcrow">¶</a></p>
 </li>
             <li class="normal" id="section-3.1.12-2.2">
-              <span>[<a href="#ZIP" class="cite xref">ZIP</a>]</span>'s duplicate specification of filenames makes it easy for
+              <p id="section-3.1.12-2.2.1"><span>[<a href="#ZIP" class="cite xref">ZIP</a>]</span>'s duplicate specification of filenames makes it easy for
 implementations to
-<a href="https://nakedsecurity.sophos.com/2013/07/10/anatomy-of-a-security-hole-googles-android-master-key-debacle-explained/">check the signature of one copy but use the other</a>.<a href="#section-3.1.12-2.2" class="pilcrow">¶</a>
+<a href="https://nakedsecurity.sophos.com/2013/07/10/anatomy-of-a-security-hole-googles-android-master-key-debacle-explained/">check the signature of one copy but use the other</a>.<a href="#section-3.1.12-2.2.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-3.1.12-2.3">Following
+            <li class="normal" id="section-3.1.12-2.3">
+              <p id="section-3.1.12-2.3.1">Following
 <a href="https://blog.gerv.net/2016/09/introducing-deliberate-protocol-errors-langleys-law/">Langley's Law</a> when
-possible makes it hard to deploy incorrect implementations.<a href="#section-3.1.12-2.3" class="pilcrow">¶</a>
+possible makes it hard to deploy incorrect implementations.<a href="#section-3.1.12-2.3.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 </section>
@@ -2401,36 +2387,36 @@ data, and packaging would either have to re-do that or accept lower performance.
 For example:<a href="#section-4.5-3" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-4.5-4.1">
-            <span>[<a href="#I-D.vkrasnov-h2-compression-dictionaries" class="cite xref">I-D.vkrasnov-h2-compression-dictionaries</a>]</span> should allow individual small
-resources to be compressed as well as they would be in a bundle.<a href="#section-4.5-4.1" class="pilcrow">¶</a>
+            <p id="section-4.5-4.1.1"><span>[<a href="#I-D.vkrasnov-h2-compression-dictionaries" class="cite xref">I-D.vkrasnov-h2-compression-dictionaries</a>]</span> should allow individual small
+resources to be compressed as well as they would be in a bundle.<a href="#section-4.5-4.1.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-4.5-4.2">
-            <span>[<a href="#I-D.ietf-httpbis-cache-digest" class="cite xref">I-D.ietf-httpbis-cache-digest</a>]</span> tells the server which resources it doesn't
-need to PUSH.<a href="#section-4.5-4.2" class="pilcrow">¶</a>
+            <p id="section-4.5-4.2.1"><span>[<a href="#I-D.ietf-httpbis-cache-digest" class="cite xref">I-D.ietf-httpbis-cache-digest</a>]</span> tells the server which resources it doesn't
+need to PUSH.<a href="#section-4.5-4.2.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 <p id="section-4.5-5">Associated requirements:<a href="#section-4.5-5" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-4.5-6.1">
-            <a href="#streamed-loading" class="internal xref">Streamed loading</a>: If the whole package has to be
+            <p id="section-4.5-6.1.1"><a href="#streamed-loading" class="internal xref">Streamed loading</a>: If the whole package has to be
 downloaded before the browser can load a piece, this will definitely be slower
-than PUSH.<a href="#section-4.5-6.1" class="pilcrow">¶</a>
+than PUSH.<a href="#section-4.5-6.1.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-4.5-6.2">
-            <a href="#transfer-compression" class="internal xref">Compress transfers</a>: Keep up with
-<span>[<a href="#I-D.vkrasnov-h2-compression-dictionaries" class="cite xref">I-D.vkrasnov-h2-compression-dictionaries</a>]</span>.<a href="#section-4.5-6.2" class="pilcrow">¶</a>
+            <p id="section-4.5-6.2.1"><a href="#transfer-compression" class="internal xref">Compress transfers</a>: Keep up with
+<span>[<a href="#I-D.vkrasnov-h2-compression-dictionaries" class="cite xref">I-D.vkrasnov-h2-compression-dictionaries</a>]</span>.<a href="#section-4.5-6.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-4.5-6.3">
-            <a href="#urls" class="internal xref">Indexed by URL</a>: Resources on the web are addressed by URL.<a href="#section-4.5-6.3" class="pilcrow">¶</a>
+            <p id="section-4.5-6.3.1"><a href="#urls" class="internal xref">Indexed by URL</a>: Resources on the web are addressed by URL.<a href="#section-4.5-6.3.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-4.5-6.4">
-            <a href="#request-headers" class="internal xref">Request headers</a>:
+            <p id="section-4.5-6.4.1"><a href="#request-headers" class="internal xref">Request headers</a>:
 <a href="http://httpwg.org/specs/rfc7540.html#PUSH_PROMISE">PUSH_PROMISE</a>
-(<span>[<a href="#RFC7540" class="cite xref">RFC7540</a>]</span>, section 6.6) includes request headers.<a href="#section-4.5-6.4" class="pilcrow">¶</a>
+(<span>[<a href="#RFC7540" class="cite xref">RFC7540</a>]</span>, section 6.6) includes request headers.<a href="#section-4.5-6.4.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-4.5-6.5">
-            <a href="#response-headers" class="internal xref">Response headers</a>: PUSHed resources include their response
-headers.<a href="#section-4.5-6.5" class="pilcrow">¶</a>
+            <p id="section-4.5-6.5.1"><a href="#response-headers" class="internal xref">Response headers</a>: PUSHed resources include their response
+headers.<a href="#section-4.5-6.5.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 </section>
@@ -2455,6 +2441,7 @@ set of security considerations.<a href="#section-5-1" class="pilcrow">¶</a></p>
 <p id="section-6-1">This document has no actions for IANA.<a href="#section-6-1" class="pilcrow">¶</a></p>
 </section>
 </div>
+<div id="sec-informative-references">
 <section id="section-7">
       <h2 id="name-informative-references">
 <a href="#section-7" class="section-number selfRef">7. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
@@ -2538,6 +2525,7 @@ set of security considerations.<a href="#section-5-1" class="pilcrow">¶</a></p>
 <dd class="break"></dd>
 </dl>
 </section>
+</div>
 <div id="acknowledgements">
 <section id="appendix-A">
       <h2 id="name-acknowledgements">
