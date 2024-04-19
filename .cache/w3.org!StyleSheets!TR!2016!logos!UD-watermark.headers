@@ -1,0 +1,20 @@
+{
+  "status": 200,
+  "received": "Thu, 16 Sep 2021 01:24:00 GMT",
+  "accept-ranges": "bytes",
+  "access-control-allow-origin": "*",
+  "cache-control": "max-age=2592000",
+  "connection": "close",
+  "content-length": "10993",
+  "content-location": "UD-watermark.png",
+  "content-security-policy": "upgrade-insecure-requests",
+  "content-type": "image/png; qs=0.7",
+  "date": "Thu, 16 Sep 2021 01:24:00 GMT",
+  "etag": "\"2af1-5b3a5aee87940;5ca8696258230\"",
+  "expires": "Thu, 14 Oct 2021 15:37:21 GMT",
+  "last-modified": "Mon, 09 Nov 2020 05:17:49 GMT",
+  "strict-transport-security": "max-age=15552000; includeSubdomains; preload",
+  "tcn": "choice",
+  "vary": "negotiate",
+  "x-backend": "varnish"
+}

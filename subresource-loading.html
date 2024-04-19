@@ -1,0 +1,2458 @@
+<!doctype html><html lang="en">
+ <head>
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <title>Subresource Loading with Web Bundles</title>
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
+  <link href="https://www.w3.org/StyleSheets/TR/2021/cg-draft" rel="stylesheet">
+  <meta content="Bikeshed version d765c696b, updated Fri Mar 8 15:58:52 2024 -0800" name="generator">
+  <link href="https://wicg.github.io/webpackage/subresource-loading.html" rel="canonical">
+  <meta content="225cd5b94ef64492b9425cfa915864d5086a7303" name="revision">
+  <meta content="dark light" name="color-scheme">
+  <link href="https://www.w3.org/StyleSheets/TR/2021/dark.css" media="(prefers-color-scheme: dark)" rel="stylesheet" type="text/css">
+<style>/* Boilerplate: style-autolinks */
+.css.css, .property.property, .descriptor.descriptor {
+    color: var(--a-normal-text);
+    font-size: inherit;
+    font-family: inherit;
+}
+.css::before, .property::before, .descriptor::before {
+    content: "‘";
+}
+.css::after, .property::after, .descriptor::after {
+    content: "’";
+}
+.property, .descriptor {
+    /* Don't wrap property and descriptor names */
+    white-space: nowrap;
+}
+.type { /* CSS value <type> */
+    font-style: italic;
+}
+pre .property::before, pre .property::after {
+    content: "";
+}
+[data-link-type="property"]::before,
+[data-link-type="propdesc"]::before,
+[data-link-type="descriptor"]::before,
+[data-link-type="value"]::before,
+[data-link-type="function"]::before,
+[data-link-type="at-rule"]::before,
+[data-link-type="selector"]::before,
+[data-link-type="maybe"]::before {
+    content: "‘";
+}
+[data-link-type="property"]::after,
+[data-link-type="propdesc"]::after,
+[data-link-type="descriptor"]::after,
+[data-link-type="value"]::after,
+[data-link-type="function"]::after,
+[data-link-type="at-rule"]::after,
+[data-link-type="selector"]::after,
+[data-link-type="maybe"]::after {
+    content: "’";
+}
+
+[data-link-type].production::before,
+[data-link-type].production::after,
+.prod [data-link-type]::before,
+.prod [data-link-type]::after {
+    content: "";
+}
+
+[data-link-type=element],
+[data-link-type=element-attr] {
+    font-family: Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: .9em;
+}
+[data-link-type=element]::before { content: "<" }
+[data-link-type=element]::after  { content: ">" }
+
+[data-link-type=biblio] {
+    white-space: pre;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --selflink-text: black;
+        --selflink-bg: silver;
+        --selflink-hover-text: white;
+    }
+}
+</style>
+<style>/* Boilerplate: style-colors */
+/* Any --*-text not paired with a --*-bg is assumed to have a transparent bg */
+:root {
+    color-scheme: light dark;
+
+    --text: black;
+    --bg: white;
+
+    --unofficial-watermark: url(https://www.w3.org/StyleSheets/TR/2016/logos/UD-watermark);
+
+    --logo-bg: #1a5e9a;
+    --logo-active-bg: #c00;
+    --logo-text: white;
+
+    --tocnav-normal-text: #707070;
+    --tocnav-normal-bg: var(--bg);
+    --tocnav-hover-text: var(--tocnav-normal-text);
+    --tocnav-hover-bg: #f8f8f8;
+    --tocnav-active-text: #c00;
+    --tocnav-active-bg: var(--tocnav-normal-bg);
+
+    --tocsidebar-text: var(--text);
+    --tocsidebar-bg: #f7f8f9;
+    --tocsidebar-shadow: rgba(0,0,0,.1);
+    --tocsidebar-heading-text: hsla(203,20%,40%,.7);
+
+    --toclink-text: var(--text);
+    --toclink-underline: #3980b5;
+    --toclink-visited-text: var(--toclink-text);
+    --toclink-visited-underline: #054572;
+
+    --heading-text: #005a9c;
+
+    --hr-text: var(--text);
+
+    --algo-border: #def;
+
+    --del-text: red;
+    --del-bg: transparent;
+    --ins-text: #080;
+    --ins-bg: transparent;
+
+    --a-normal-text: #034575;
+    --a-normal-underline: #bbb;
+    --a-visited-text: var(--a-normal-text);
+    --a-visited-underline: #707070;
+    --a-hover-bg: rgba(75%, 75%, 75%, .25);
+    --a-active-text: #c00;
+    --a-active-underline: #c00;
+
+    --blockquote-border: silver;
+    --blockquote-bg: transparent;
+    --blockquote-text: currentcolor;
+
+    --issue-border: #e05252;
+    --issue-bg: #fbe9e9;
+    --issue-text: var(--text);
+    --issueheading-text: #831616;
+
+    --example-border: #e0cb52;
+    --example-bg: #fcfaee;
+    --example-text: var(--text);
+    --exampleheading-text: #574b0f;
+
+    --note-border: #52e052;
+    --note-bg: #e9fbe9;
+    --note-text: var(--text);
+    --noteheading-text: hsl(120, 70%, 30%);
+    --notesummary-underline: silver;
+
+    --assertion-border: #aaa;
+    --assertion-bg: #eee;
+    --assertion-text: black;
+
+    --advisement-border: orange;
+    --advisement-bg: #fec;
+    --advisement-text: var(--text);
+    --advisementheading-text: #b35f00;
+
+    --warning-border: red;
+    --warning-bg: hsla(40,100%,50%,0.95);
+    --warning-text: var(--text);
+
+    --amendment-border: #330099;
+    --amendment-bg: #F5F0FF;
+    --amendment-text: var(--text);
+    --amendmentheading-text: #220066;
+
+    --def-border: #8ccbf2;
+    --def-bg: #def;
+    --def-text: var(--text);
+    --defrow-border: #bbd7e9;
+
+    --datacell-border: silver;
+
+    --indexinfo-text: #707070;
+
+    --indextable-hover-text: black;
+    --indextable-hover-bg: #f7f8f9;
+
+    --outdatedspec-bg: rgba(0, 0, 0, .5);
+    --outdatedspec-text: black;
+    --outdated-bg: maroon;
+    --outdated-text: white;
+    --outdated-shadow: red;
+
+    --editedrec-bg: darkorange;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text: #ddd;
+        --bg: black;
+
+        --unofficial-watermark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cg fill='%23100808' transform='translate(200 200) rotate(-45) translate(-200 -200)' stroke='%23100808' stroke-width='3'%3E%3Ctext x='50%25' y='220' style='font: bold 70px sans-serif; text-anchor: middle; letter-spacing: 6px;'%3EUNOFFICIAL%3C/text%3E%3Ctext x='50%25' y='305' style='font: bold 70px sans-serif; text-anchor: middle; letter-spacing: 6px;'%3EDRAFT%3C/text%3E%3C/g%3E%3C/svg%3E");
+
+        --logo-bg: #1a5e9a;
+        --logo-active-bg: #c00;
+        --logo-text: white;
+
+        --tocnav-normal-text: #999;
+        --tocnav-normal-bg: var(--bg);
+        --tocnav-hover-text: var(--tocnav-normal-text);
+        --tocnav-hover-bg: #080808;
+        --tocnav-active-text: #f44;
+        --tocnav-active-bg: var(--tocnav-normal-bg);
+
+        --tocsidebar-text: var(--text);
+        --tocsidebar-bg: #080808;
+        --tocsidebar-shadow: rgba(255,255,255,.1);
+        --tocsidebar-heading-text: hsla(203,20%,40%,.7);
+
+        --toclink-text: var(--text);
+        --toclink-underline: #6af;
+        --toclink-visited-text: var(--toclink-text);
+        --toclink-visited-underline: #054572;
+
+        --heading-text: #8af;
+
+        --hr-text: var(--text);
+
+        --algo-border: #456;
+
+        --del-text: #f44;
+        --del-bg: transparent;
+        --ins-text: #4a4;
+        --ins-bg: transparent;
+
+        --a-normal-text: #6af;
+        --a-normal-underline: #555;
+        --a-visited-text: var(--a-normal-text);
+        --a-visited-underline: var(--a-normal-underline);
+        --a-hover-bg: rgba(25%, 25%, 25%, .2);
+        --a-active-text: #f44;
+        --a-active-underline: var(--a-active-text);
+
+        --borderedblock-bg: rgba(255, 255, 255, .05);
+
+        --blockquote-border: silver;
+        --blockquote-bg: var(--borderedblock-bg);
+        --blockquote-text: currentcolor;
+
+        --issue-border: #e05252;
+        --issue-bg: var(--borderedblock-bg);
+        --issue-text: var(--text);
+        --issueheading-text: hsl(0deg, 70%, 70%);
+
+        --example-border: hsl(50deg, 90%, 60%);
+        --example-bg: var(--borderedblock-bg);
+        --example-text: var(--text);
+        --exampleheading-text: hsl(50deg, 70%, 70%);
+
+        --note-border: hsl(120deg, 100%, 35%);
+        --note-bg: var(--borderedblock-bg);
+        --note-text: var(--text);
+        --noteheading-text: hsl(120, 70%, 70%);
+        --notesummary-underline: silver;
+
+        --assertion-border: #444;
+        --assertion-bg: var(--borderedblock-bg);
+        --assertion-text: var(--text);
+
+        --advisement-border: orange;
+        --advisement-bg: #222218;
+        --advisement-text: var(--text);
+        --advisementheading-text: #f84;
+
+        --warning-border: red;
+        --warning-bg: hsla(40,100%,20%,0.95);
+        --warning-text: var(--text);
+
+        --amendment-border: #330099;
+        --amendment-bg: #080010;
+        --amendment-text: var(--text);
+        --amendmentheading-text: #cc00ff;
+
+        --def-border: #8ccbf2;
+        --def-bg: #080818;
+        --def-text: var(--text);
+        --defrow-border: #136;
+
+        --datacell-border: silver;
+
+        --indexinfo-text: #aaa;
+
+        --indextable-hover-text: var(--text);
+        --indextable-hover-bg: #181818;
+
+        --outdatedspec-bg: rgba(255, 255, 255, .5);
+        --outdatedspec-text: black;
+        --outdated-bg: maroon;
+        --outdated-text: white;
+        --outdated-shadow: red;
+
+        --editedrec-bg: darkorange;
+    }
+    /* In case a transparent-bg image doesn't expect to be on a dark bg,
+       which is quite common in practice... */
+    img { background: white; }
+}
+</style>
+<style>/* Boilerplate: style-counters */
+body {
+    counter-reset: example figure issue;
+}
+.issue {
+    counter-increment: issue;
+}
+.issue:not(.no-marker)::before {
+    content: "Issue " counter(issue);
+}
+
+.example {
+    counter-increment: example;
+}
+.example:not(.no-marker)::before {
+    content: "Example " counter(example);
+}
+.invalid.example:not(.no-marker)::before,
+.illegal.example:not(.no-marker)::before {
+    content: "Invalid Example" counter(example);
+}
+
+figcaption {
+    counter-increment: figure;
+}
+figcaption:not(.no-marker)::before {
+    content: "Figure " counter(figure) " ";
+}
+</style>
+<style>/* Boilerplate: style-dfn-panel */
+:root {
+    --dfnpanel-bg: #ddd;
+    --dfnpanel-text: var(--text);
+    --dfnpanel-target-bg: #ffc;
+    --dfnpanel-target-outline: orange;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --dfnpanel-bg: #222;
+        --dfnpanel-text: var(--text);
+        --dfnpanel-target-bg: #333;
+        --dfnpanel-target-outline: silver;
+    }
+}
+.dfn-panel {
+    position: absolute;
+    z-index: 35;
+    width: 20em;
+    width: 300px;
+    height: auto;
+    max-height: 500px;
+    overflow: auto;
+    padding: 0.5em 0.75em;
+    font: small Helvetica Neue, sans-serif, Droid Sans Fallback;
+    background: var(--dfnpanel-bg);
+    color: var(--dfnpanel-text);
+    border: outset 0.2em;
+    white-space: normal; /* in case it's moved into a pre */
+}
+.dfn-panel:not(.on) { display: none; }
+.dfn-panel * { margin: 0; padding: 0; text-indent: 0; }
+.dfn-panel > b { display: block; }
+.dfn-panel a { color: var(--dfnpanel-text); }
+.dfn-panel a:not(:hover) { text-decoration: none !important; border-bottom: none !important; }
+.dfn-panel a:focus {
+    outline: 5px auto Highlight;
+    outline: 5px auto -webkit-focus-ring-color;
+}
+.dfn-panel > b + b { margin-top: 0.25em; }
+.dfn-panel ul { padding: 0 0 0 1em; list-style: none; }
+.dfn-panel li a {
+    max-width: calc(300px - 1.5em - 1em);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dfn-panel.activated {
+    display: inline-block;
+    position: fixed;
+    left: 8px;
+    bottom: 2em;
+    margin: 0 auto;
+    max-width: calc(100vw - 1.5em - .4em - .5em);
+    max-height: 30vh;
+    transition: left 1s ease-out, bottom 1s ease-out;
+}
+
+.dfn-panel .link-item:hover {
+    text-decoration: underline;
+}
+.dfn-panel .link-item .copy-icon {
+    opacity: 0;
+}
+.dfn-panel .link-item:hover .copy-icon,
+.dfn-panel .link-item .copy-icon:focus {
+    opacity: 1;
+}
+
+.dfn-panel .copy-icon {
+    display: inline-block;
+    margin-right: 0.5em;
+    width: 0.85em;
+    height: 1em;
+    border-radius: 3px;
+    background-color: #ccc;
+    cursor: pointer;
+}
+
+.dfn-panel .copy-icon .icon {
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.dfn-panel .copy-icon .icon::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 1px solid black;
+    background-color: #ccc;
+    opacity: 0.25;
+    transform: translate(3px, -3px);
+}
+
+.dfn-panel .copy-icon:active .icon::before {
+    opacity: 1;
+}
+
+.dfn-paneled[role="button"] { cursor: help; }
+
+.highlighted {
+    animation: target-fade 3s;
+}
+
+@keyframes target-fade {
+    from {
+        background-color: var(--dfnpanel-target-bg);
+        outline: 5px solid var(--dfnpanel-target-outline);
+    }
+    to {
+        color: var(--a-normal-text);
+        background-color: transparent;
+        outline: transparent;
+    }
+}
+</style>
+<style>/* Boilerplate: style-issues */
+a[href].issue-return {
+    float: right;
+    float: inline-end;
+    color: var(--issueheading-text);
+    font-weight: bold;
+    text-decoration: none;
+}
+</style>
+<style>/* Boilerplate: style-md-lists */
+/* This is a weird hack for me not yet following the commonmark spec
+   regarding paragraph and lists. */
+[data-md] > :first-child {
+    margin-top: 0;
+}
+[data-md] > :last-child {
+    margin-bottom: 0;
+}
+</style>
+<style>/* Boilerplate: style-ref-hints */
+:root {
+    --ref-hint-bg: #ddd;
+    --ref-hint-text: var(--text);
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ref-hint-bg: #222;
+        --ref-hint-text: var(--text);
+    }
+}
+
+.ref-hint {
+    display: inline-block;
+    position: absolute;
+    z-index: 35;
+    width: 20em;
+    width: 300px;
+    height: auto;
+    max-height: 500px;
+    overflow: auto;
+    padding: 0.5em 0.5em;
+    font: small Helvetica Neue, sans-serif, Droid Sans Fallback;
+    background: var(--ref-hint-bg);
+    color: var(--ref-hint-text);
+    border: outset 0.2em;
+    white-space: normal; /* in case it's moved into a pre */
+}
+
+.ref-hint * { margin: 0; padding: 0; text-indent: 0; }
+
+.ref-hint ul { padding: 0 0 0 1em; list-style: none; }
+</style>
+<style>/* Boilerplate: style-selflinks */
+:root {
+    --selflink-text: white;
+    --selflink-bg: gray;
+    --selflink-hover-text: black;
+}
+.heading, .issue, .note, .example, li, dt {
+    position: relative;
+}
+a.self-link {
+    position: absolute;
+    top: 0;
+    left: calc(-1 * (3.5rem - 26px));
+    width: calc(3.5rem - 26px);
+    height: 2em;
+    text-align: center;
+    border: none;
+    transition: opacity .2s;
+    opacity: .5;
+}
+a.self-link:hover {
+    opacity: 1;
+}
+.heading > a.self-link {
+    font-size: 83%;
+}
+.example > a.self-link,
+.note > a.self-link,
+.issue > a.self-link {
+    /* These blocks are overflow:auto, so positioning outside
+       doesn't work. */
+    left: auto;
+    right: 0;
+}
+li > a.self-link {
+    left: calc(-1 * (3.5rem - 26px) - 2em);
+}
+dfn > a.self-link {
+    top: auto;
+    left: auto;
+    opacity: 0;
+    width: 1.5em;
+    height: 1.5em;
+    background: var(--selflink-bg);
+    color: var(--selflink-text);
+    font-style: normal;
+    transition: opacity .2s, background-color .2s, color .2s;
+}
+dfn:hover > a.self-link {
+    opacity: 1;
+}
+dfn > a.self-link:hover {
+    color: var(--selflink-hover-text);
+}
+
+a.self-link::before            { content: "¶"; }
+.heading > a.self-link::before { content: "§"; }
+dfn > a.self-link::before      { content: "#"; }
+</style>
+ <body class="h-entry">
+  <div class="head">
+   <p data-fill-with="logo"><a class="logo" href="https://www.w3.org/"> <img alt="W3C" height="48" src="https://www.w3.org/StyleSheets/TR/2021/logos/W3C" width="72"> </a> </p>
+   <h1 class="p-name no-ref" id="title">Subresource Loading with Web Bundles</h1>
+   <p id="w3c-state"><a href="https://www.w3.org/standards/types#CG-DRAFT">Draft Community Group Report</a>, <time class="dt-updated" datetime="2024-04-19">19 April 2024</time></p>
+   <div data-fill-with="spec-metadata">
+    <dl>
+     <dt>This version:
+     <dd><a class="u-url" href="https://wicg.github.io/webpackage/subresource-loading.html">https://wicg.github.io/webpackage/subresource-loading.html</a>
+     <dt>Issue Tracking:
+     <dd><a href="https://github.com/WICG/webpackage/issues/">GitHub</a>
+     <dd><a href="#issues-index">Inline In Spec</a>
+     <dt class="editor">Editors:
+     <dd class="editor p-author h-card vcard"><a class="p-name fn u-email email" href="mailto:hayato@google.com">Hayato Ito</a> (<a class="p-org org" href="https://google.com/">Google Inc.</a>)
+     <dd class="editor p-author h-card vcard"><a class="p-name fn u-email email" href="mailto:hiroshige@google.com">Hiroshige Hayashizaki</a> (<a class="p-org org" href="https://google.com/">Google</a>)
+    </dl>
+   </div>
+   <div data-fill-with="warning"></div>
+   <p class="copyright" data-fill-with="copyright"><a href="https://www.w3.org/policies/#copyright">Copyright</a> © 2024 the Contributors to the Subresource Loading with Web Bundles Specification, published by the <a href="https://www.w3.org/community/wicg/">Web Platform Incubator Community Group</a> under the <a href="https://www.w3.org/community/about/agreements/cla/">W3C Community Contributor License Agreement (CLA)</a>.
+A human-readable <a href="http://www.w3.org/community/about/agreements/cla-deed/">summary</a> is available. </p>
+   <hr title="Separator for header">
+  </div>
+  <div class="p-summary" data-fill-with="abstract">
+   <h2 class="no-num no-toc no-ref heading settled" id="abstract"><span class="content">Abstract</span></h2>
+   <p>How UAs load subresources from Web Bundles.</p>
+  </div>
+  <div data-fill-with="at-risk"></div>
+  <h2 class="no-num no-toc no-ref heading settled" id="status"><span class="content">Status of this document</span></h2>
+  <div data-fill-with="status">
+   <p> This specification was published by the <a href="https://www.w3.org/community/wicg/">Web Platform Incubator Community Group</a>.
+  It is not a W3C Standard nor is it on the W3C Standards Track.
+
+  Please note that under the <a href="https://www.w3.org/community/about/agreements/cla/">W3C Community Contributor License Agreement (CLA)</a> there is a limited opt-out and other conditions apply.
+
+  Learn more about <a href="http://www.w3.org/community/">W3C Community and Business Groups</a>. </p>
+   <p></p>
+  </div>
+  <div data-fill-with="at-risk"></div>
+  <nav data-fill-with="table-of-contents" id="toc">
+   <h2 class="no-num no-toc no-ref" id="contents">Table of Contents</h2>
+   <ol class="toc" role="directory">
+    <li><a href="#intro"><span class="secno">1</span> <span class="content">Introduction</span></a>
+    <li><a href="#structures"><span class="secno">2</span> <span class="content">Structures</span></a>
+    <li>
+     <a href="#html-monkeypatches"><span class="secno">3</span> <span class="content">HTML monkeypatches</span></a>
+     <ol class="toc">
+      <li><a href="#prepare-the-script-element"><span class="secno">3.1</span> <span class="content">Prepare the script element</span></a>
+      <li><a href="#firing-events"><span class="secno">3.2</span> <span class="content">Firing events</span></a>
+      <li><a href="#removing"><span class="secno">3.3</span> <span class="content">Removing</span></a>
+     </ol>
+    <li>
+     <a href="#fetch-monkeypatches"><span class="secno">4</span> <span class="content">Fetch monkeypatches</span></a>
+     <ol class="toc">
+      <li><a href="#monkeypatch-fetch"><span class="secno">4.1</span> <span class="content">Monkeypatch fetch</span></a>
+      <li><a href="#monkeypatch-fetch-scheme"><span class="secno">4.2</span> <span class="content">Monkeypatch fetch scheme</span></a>
+      <li><a href="#monkeypatch-http-network-or-cache-fetch"><span class="secno">4.3</span> <span class="content">Monkeypatch HTTP-network-or-cache fetch</span></a>
+     </ol>
+    <li>
+     <a href="#csp-monkeypatches"><span class="secno">5</span> <span class="content">CSP monkeypatches</span></a>
+     <ol class="toc">
+      <li><a href="#monkeypatch-match-request-to-source-list"><span class="secno">5.1</span> <span class="content">Monkeypatch Does request match source list?</span></a>
+      <li><a href="#monkeypatch-match-response-to-source-list"><span class="secno">5.2</span> <span class="content">Monkeypatch Does response to request match source list?</span></a>
+     </ol>
+    <li>
+     <a href="#algorithms"><span class="secno">6</span> <span class="content">Algorithms</span></a>
+     <ol class="toc">
+      <li><a href="#parsing"><span class="secno">6.1</span> <span class="content">Parsing</span></a>
+      <li><a href="#fetching-web-bundle"><span class="secno">6.2</span> <span class="content">Fetching a web bundle</span></a>
+      <li><a href="#process-web-bundle-response"><span class="secno">6.3</span> <span class="content">Process web bundle response</span></a>
+      <li><a href="#fetching-subresources"><span class="secno">6.4</span> <span class="content">Fetching subresources from a web bundle</span></a>
+      <li><a href="#matching-registration"><span class="secno">6.5</span> <span class="content">Finding a matching registration</span></a>
+     </ol>
+    <li>
+     <a href="#w3c-conformance"><span class="secno"></span> <span class="content">Conformance</span></a>
+     <ol class="toc">
+      <li><a href="#w3c-conventions"><span class="secno"></span> <span class="content">Document conventions</span></a>
+     </ol>
+    <li>
+     <a href="#index"><span class="secno"></span> <span class="content">Index</span></a>
+     <ol class="toc">
+      <li><a href="#index-defined-here"><span class="secno"></span> <span class="content">Terms defined by this specification</span></a>
+      <li><a href="#index-defined-elsewhere"><span class="secno"></span> <span class="content">Terms defined by reference</span></a>
+     </ol>
+    <li>
+     <a href="#references"><span class="secno"></span> <span class="content">References</span></a>
+     <ol class="toc">
+      <li><a href="#normative"><span class="secno"></span> <span class="content">Normative References</span></a>
+      <li><a href="#informative"><span class="secno"></span> <span class="content">Informative References</span></a>
+     </ol>
+    <li><a href="#issues-index"><span class="secno"></span> <span class="content">Issues Index</span></a>
+   </ol>
+  </nav>
+  <main>
+   <h2 class="heading settled" data-level="1" id="intro"><span class="secno">1. </span><span class="content">Introduction</span><a class="self-link" href="#intro"></a></h2>
+   <p><em>This section is non-normative.</em></p>
+   <p>The Subresource Loading with Web Bundles specification describes a way to load a
+large number of resources efficiently using a format that allows multiple
+resources to be bundled, <a href="https://web.dev/web-bundles/">Web Bundles</a>. This
+specification describes how web browsers load those resources. It is expressed
+as several monkeypatches to the <a data-link-type="biblio" href="#biblio-html" title="HTML Standard">[HTML]</a>, <a data-link-type="biblio" href="#biblio-fetch" title="Fetch Standard">[FETCH]</a> and <a data-link-type="biblio" href="#biblio-csp" title="Content Security Policy Level 3">[CSP]</a> specification
+which call algorithms defined here.</p>
+   <p class="note" role="note"><span class="marker">Note:</span> This specification is under construction. See <a href="https://github.com/WICG/webpackage/issues/708">#708</a>.</p>
+   <h2 class="heading settled" data-level="2" id="structures"><span class="secno">2. </span><span class="content">Structures</span><a class="self-link" href="#structures"></a></h2>
+   <p>A <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="fetched-web-bundle">fetched web bundle</dfn> is a representation of a web bundle format
+defined in <a data-link-type="biblio" href="#biblio-draft-ietf-wpack-bundled-responses-latest" title="Web Bundles">[draft-ietf-wpack-bundled-responses-latest]</a>.</p>
+   <p>A <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="web-bundle-fetch-entry">web bundle fetch entry</dfn> is a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#struct" id="ref-for-struct">struct</a> with the following <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#struct-item" id="ref-for-struct-item">items</a>:</p>
+   <ul>
+    <li data-md>
+     <p><dfn class="dfn-paneled" data-dfn-for="web bundle fetch entry" data-dfn-type="dfn" data-noexport id="web-bundle-fetch-entry-source">source</dfn>, a <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url" id="ref-for-concept-url">URL</a> of a web bundle.</p>
+    <li data-md>
+     <p><dfn class="dfn-paneled" data-dfn-for="web bundle fetch entry" data-dfn-type="dfn" data-noexport id="web-bundle-fetch-entry-credentials">credentials</dfn>, a <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-credentials-mode" id="ref-for-concept-request-credentials-mode">credentials
+mode</a>.</p>
+    <li data-md>
+     <p><dfn class="dfn-paneled" data-dfn-for="web bundle fetch entry" data-dfn-type="dfn" data-noexport id="web-bundle-fetch-entry-state">state</dfn>, an internal state which is
+"fetching", "fetched", or "failed". Initially "fetching".</p>
+    <li data-md>
+     <p><dfn class="dfn-paneled" data-dfn-for="web bundle fetch entry" data-dfn-type="dfn" data-noexport id="web-bundle-fetch-entry-fetched-bundle">fetched bundle</dfn>, a <a data-link-type="dfn" href="#fetched-web-bundle" id="ref-for-fetched-web-bundle">fetched web
+bundle</a> or null.</p>
+   </ul>
+   <p class="issue" id="issue-5fcc07ef"><a class="self-link" href="#issue-5fcc07ef"></a> A better name for <a data-link-type="dfn" href="#web-bundle-fetch-entry" id="ref-for-web-bundle-fetch-entry">web bundle fetch entry</a>?</p>
+   <p>A <a data-link-type="dfn" href="#web-bundle-fetch-entry" id="ref-for-web-bundle-fetch-entry①">web bundle fetch entry</a> <var>entry</var> is <dfn class="dfn-paneled" data-dfn-for="web bundle fetch entry" data-dfn-type="dfn" data-lt="used by a registration" data-noexport id="web-bundle-fetch-entry-used-by-a-registration">used
+by a registration</dfn> in <a data-link-type="dfn" href="https://dom.spec.whatwg.org/#concept-document" id="ref-for-concept-document">Document</a> <var>document</var> if <var>document</var>’s <a data-link-type="dfn" href="#document-web-bundle-registration-list" id="ref-for-document-web-bundle-registration-list">web bundle registration list</a> <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-contain" id="ref-for-list-contain">contains</a> a <a data-link-type="dfn" href="#web-bundle-registration" id="ref-for-web-bundle-registration">web bundle
+registration</a> whose <a data-link-type="dfn" href="#web-bundle-registration-fetch-entry" id="ref-for-web-bundle-registration-fetch-entry">fetch entry</a> is <var>entry</var>.</p>
+   <p>A <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="bundle-rule">bundle rule</dfn> is a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#struct" id="ref-for-struct①">struct</a> with the following <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#struct-item" id="ref-for-struct-item①">items</a>:</p>
+   <ul>
+    <li data-md>
+     <p><dfn class="dfn-paneled" data-dfn-for="bundle rule" data-dfn-type="dfn" data-noexport id="bundle-rule-resources">resources</dfn>, a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list">list</a> of <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url" id="ref-for-concept-url①">URLs</a>.</p>
+    <li data-md>
+     <p><dfn class="dfn-paneled" data-dfn-for="bundle rule" data-dfn-type="dfn" data-noexport id="bundle-rule-scopes">scopes</dfn>, a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list①">list</a> of <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url" id="ref-for-concept-url②">URLs</a>.</p>
+   </ul>
+   <p>A <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="web-bundle-registration">web bundle registration</dfn> is a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#struct" id="ref-for-struct②">struct</a> with the following <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#struct-item" id="ref-for-struct-item②">items</a>:</p>
+   <ul>
+    <li data-md>
+     <p><dfn class="dfn-paneled" data-dfn-for="web bundle registration" data-dfn-type="dfn" data-noexport id="web-bundle-registration-fetch-entry">fetch entry</dfn>, a <a data-link-type="dfn" href="#web-bundle-fetch-entry" id="ref-for-web-bundle-fetch-entry②">web bundle fetch
+entry</a>.</p>
+    <li data-md>
+     <p><dfn class="dfn-paneled" data-dfn-for="web bundle registration" data-dfn-type="dfn" data-noexport id="web-bundle-registration-rule">rule</dfn>, a <a data-link-type="dfn" href="#bundle-rule" id="ref-for-bundle-rule">bundle rule</a>.</p>
+   </ul>
+   <p>A <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="web-bundle-parse-result">web bundle parse result</dfn> is a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#struct" id="ref-for-struct③">struct</a> with the following <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#struct-item" id="ref-for-struct-item③">items</a>:</p>
+   <ul>
+    <li data-md>
+     <p><dfn class="dfn-paneled" data-dfn-for="web bundle parse result" data-dfn-type="dfn" data-noexport id="web-bundle-parse-result-source">source</dfn>, a <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url" id="ref-for-concept-url③">URL</a> of a web bundle.</p>
+    <li data-md>
+     <p><dfn class="dfn-paneled" data-dfn-for="web bundle parse result" data-dfn-type="dfn" data-noexport id="web-bundle-parse-result-credentials">credentials</dfn>, a <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-credentials-mode" id="ref-for-concept-request-credentials-mode①">credentials
+mode</a>.</p>
+    <li data-md>
+     <p><dfn class="dfn-paneled" data-dfn-for="web bundle parse result" data-dfn-type="dfn" data-noexport id="web-bundle-parse-result-rule">rule</dfn>, a <a data-link-type="dfn" href="#bundle-rule" id="ref-for-bundle-rule①">bundle rule</a>.</p>
+   </ul>
+   <p>Each <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/webappapis.html#environment-settings-object" id="ref-for-environment-settings-object">environment settings object</a> will get a <dfn class="dfn-paneled" data-dfn-for="environment settings object" data-dfn-type="dfn" data-noexport id="environment-settings-object-web-bundle-registration-list">web bundle registration list</dfn> algorithm, which returns a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list②">list</a> of <a data-link-type="dfn" href="#web-bundle-registration" id="ref-for-web-bundle-registration①">web bundle registrations</a>.</p>
+   <p>A <code class="idl"><a data-link-type="idl" href="https://dom.spec.whatwg.org/#document" id="ref-for-document">Document</a></code> has a <dfn class="dfn-paneled" data-dfn-for="Document" data-dfn-type="dfn" data-noexport id="document-web-bundle-registration-list">web bundle registration list</dfn>, which
+is a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list③">list</a> of <a data-link-type="dfn" href="#web-bundle-registration" id="ref-for-web-bundle-registration②">web bundle registrations</a>. It is initially empty.</p>
+   <p>In <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#set-up-a-window-environment-settings-object" id="ref-for-set-up-a-window-environment-settings-object">set up a window environment settings object</a>, <var>settings object</var>’s <a data-link-type="dfn" href="#environment-settings-object-web-bundle-registration-list" id="ref-for-environment-settings-object-web-bundle-registration-list">web bundle
+registration list</a> returns the <a data-link-type="dfn" href="#document-web-bundle-registration-list" id="ref-for-document-web-bundle-registration-list①">web bundle registration list</a> of <var>window</var>’s <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#concept-document-window" id="ref-for-concept-document-window">associated <code>Document</code></a>.</p>
+   <p>In <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/workers.html#set-up-a-worker-environment-settings-object" id="ref-for-set-up-a-worker-environment-settings-object">set up a worker environment settings object</a>, <var>settings object</var>’s <a data-link-type="dfn" href="#environment-settings-object-web-bundle-registration-list" id="ref-for-environment-settings-object-web-bundle-registration-list①">web bundle
+registration list</a> returns an empty <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list④">list</a>.</p>
+   <p>A <code class="idl"><a data-link-type="idl" href="https://dom.spec.whatwg.org/#document" id="ref-for-document①">Document</a></code> has a <dfn class="dfn-paneled" data-dfn-for="Document" data-dfn-type="dfn" data-noexport id="document-web-bundle-fetch-entry-list">web bundle fetch entry list</dfn>, which
+is a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list⑤">list</a> of <a data-link-type="dfn" href="#web-bundle-fetch-entry" id="ref-for-web-bundle-fetch-entry③">web bundle fetch entries</a>. It is initially empty.</p>
+   <p class="issue" id="issue-0a9e75a1"><a class="self-link" href="#issue-0a9e75a1"></a> While <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list⑥">list</a> is used for <a data-link-type="dfn" href="#document-web-bundle-fetch-entry-list" id="ref-for-document-web-bundle-fetch-entry-list">web bundle fetch entry list</a>, the
+order shouldn’t be important.</p>
+   <p class="issue" id="issue-411f8f6f"><a class="self-link" href="#issue-411f8f6f"></a> Not supported for workers.</p>
+   <h2 class="heading settled" data-level="3" id="html-monkeypatches"><span class="secno">3. </span><span class="content">HTML monkeypatches</span><a class="self-link" href="#html-monkeypatches"></a></h2>
+   <p>To process web bundles in the <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element" id="ref-for-prepare-the-script-element">prepare the script element</a> algorithm consistently with existing script types (i.e. classic or module), we
+make the following changes:</p>
+   <ul>
+    <li data-md>
+     <p><a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-type" id="ref-for-concept-script-type">the script’s type</a> should be either "classic", "module", or
+"webbundle"</p>
+    <li data-md>
+     <p>Introduce <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="web-bundle-result">web bundle result</dfn>, which is a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#struct" id="ref-for-struct④">struct</a> with two <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#struct-item" id="ref-for-struct-item④">items</a>:</p>
+     <ul>
+      <li data-md>
+       <p>a <dfn class="dfn-paneled" data-dfn-for="web bundle result" data-dfn-type="dfn" data-noexport id="web-bundle-result-registration">registration</dfn>, a <a data-link-type="dfn" href="#web-bundle-registration" id="ref-for-web-bundle-registration③">web bundle
+registration</a>; and</p>
+      <li data-md>
+       <p>an <dfn class="dfn-paneled" data-dfn-for="web bundle result" data-dfn-type="dfn" data-noexport id="web-bundle-result-error-to-rethrow">error to rethrow</dfn>, a JavaScript value
+representing a parse error when non-null.</p>
+     </ul>
+    <li data-md>
+     <p><a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-result" id="ref-for-concept-script-result">the script’s result</a> is either "uninitiated", null, <a href="https://html.spec.whatwg.org/multipage/webappapis.html#concept-script">script</a>,
+or a <a data-link-type="dfn" href="#web-bundle-result" id="ref-for-web-bundle-result">web bundle result</a>.</p>
+   </ul>
+   <p class="note" role="note"><span class="marker">Note:</span> Because we don’t make <a data-link-type="dfn" href="#web-bundle-result" id="ref-for-web-bundle-result①">web bundle result</a> a new subclass of <a href="https://html.spec.whatwg.org/multipage/webappapis.html#concept-script">script</a>,
+other script execution-related specs are left unaffected.</p>
+   <h3 class="heading settled" data-level="3.1" id="prepare-the-script-element"><span class="secno">3.1. </span><span class="content">Prepare the script element</span><a class="self-link" href="#prepare-the-script-element"></a></h3>
+   <p>Inside the <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element" id="ref-for-prepare-the-script-element①">prepare the script element</a> algorithm, we make the
+following changes:</p>
+   <ul>
+    <li data-md>
+     <p>Insert the following step to <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element" id="ref-for-prepare-the-script-element②">prepare the script element</a> step 10:</p>
+     <ul>
+      <li data-md>
+       <p>If the script block’s type string is an <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#ascii-case-insensitive" id="ref-for-ascii-case-insensitive">ASCII case-insensitive</a> match for
+the string "<code>webbundle</code>", then set el’s type to "<code>webbundle</code>".</p>
+     </ul>
+    <li data-md>
+     <p>Insert the following case to <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element" id="ref-for-prepare-the-script-element③">prepare the script element</a> step 26.7:</p>
+     <ul>
+      <li data-md>
+       <p>"<code>webbundle</code>":</p>
+       <ol>
+        <li data-md>
+         <p><a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task" id="ref-for-queue-a-task">Queue a task</a> to <a data-link-type="dfn" href="https://dom.spec.whatwg.org/#concept-event-fire" id="ref-for-concept-event-fire">fire an event</a> named <code>error</code> at the element, and
+ return.</p>
+         <p class="note" role="note"><span class="marker">Note:</span> <code>&lt;script type="webbundle" src=...></code> is not supported. There are no
+ specific requirements for the error handling here, so currently an <code>error</code> event is fired similarly to the case of an empty <code>src</code> attribute.</p>
+       </ol>
+     </ul>
+    <li data-md>
+     <p>Insert the following case to <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element" id="ref-for-prepare-the-script-element④">prepare the script element</a> step 27.2:</p>
+     <ul>
+      <li data-md>
+       <p>"<code>webbundle</code>":</p>
+       <ol>
+        <li data-md>
+         <p><a data-link-type="dfn" href="#prepare-a-web-bundle" id="ref-for-prepare-a-web-bundle">Prepare a web bundle</a> given <var>element</var>, <var>source text</var> and <var>base URL</var>.</p>
+       </ol>
+     </ul>
+    <li data-md>
+     <p>Insert the following case to <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element" id="ref-for-prepare-the-script-element⑤">prepare the script element</a> step 28:</p>
+     <ul>
+      <li data-md>
+       <p>If <a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-type" id="ref-for-concept-script-type①">the script’s type</a> is "<code>webbundle</code>":</p>
+       <ol>
+        <li data-md>
+         <p class="assertion">Assert: script’s <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#ready-to-be-parser-executed" id="ref-for-ready-to-be-parser-executed">ready to be parser-executed</a> is true.</p>
+        <li data-md>
+         <p><a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/infrastructure.html#in-parallel" id="ref-for-in-parallel">In parallel</a>, <a data-link-type="dfn" href="#process-events-for-a-web-bundle" id="ref-for-process-events-for-a-web-bundle">process events for a web bundle</a> given <var>element</var>.</p>
+       </ol>
+     </ul>
+   </ul>
+   <p class="note" role="note"><span class="marker">NOTE:</span> CSPs are applied to inline web bundles at Step 15 of <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element" id="ref-for-prepare-the-script-element⑥">prepare the script element</a>, just like applied to
+classic/module scripts.</p>
+   <p>To <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="prepare-a-web-bundle">prepare a web bundle</dfn>, given an <code class="idl"><a data-link-type="idl" href="https://html.spec.whatwg.org/multipage/scripting.html#htmlscriptelement" id="ref-for-htmlscriptelement">HTMLScriptElement</a></code> <var>element</var>, a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#string" id="ref-for-string">string</a> <var>sourceText</var> and a <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url" id="ref-for-concept-url④">URL</a> <var>baseURL</var>:</p>
+   <ol>
+    <li data-md>
+     <p>Let <var>parse result</var> be the result of <a data-link-type="dfn" href="#parse-a-web-bundle-string" id="ref-for-parse-a-web-bundle-string">parse a web bundle string</a> given <var>sourceText</var> and <var>baseURL</var>.</p>
+    <li data-md>
+     <p>If this throws an exception:</p>
+     <ol>
+      <li data-md>
+       <p>Set <a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-result" id="ref-for-concept-script-result①">the script’s result</a> to a new <a data-link-type="dfn" href="#web-bundle-result" id="ref-for-web-bundle-result②">web bundle result</a> with its <a data-link-type="dfn" href="#web-bundle-result-registration" id="ref-for-web-bundle-result-registration">registration</a> is null and its <a data-link-type="dfn" href="#web-bundle-result-error-to-rethrow" id="ref-for-web-bundle-result-error-to-rethrow">error to
+  rethrow</a> is the exception thrown.</p>
+      <li data-md>
+       <p><a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#mark-as-ready" id="ref-for-mark-as-ready">Mark as ready</a>.</p>
+      <li data-md>
+       <p>Return.</p>
+     </ol>
+    <li data-md>
+     <p>Let <var>document</var> be <var>element</var>’s <a data-link-type="dfn">node document</a>.</p>
+    <li data-md>
+     <p>Set <var>fetch entry</var> to null.</p>
+    <li data-md>
+     <p>For each <var>r</var> in <var>document</var>’s <a data-link-type="dfn" href="#document-web-bundle-fetch-entry-list" id="ref-for-document-web-bundle-fetch-entry-list①">web bundle fetch entry list</a>:</p>
+     <ol>
+      <li data-md>
+       <p>If <var>r</var>’s <a data-link-type="dfn" href="#web-bundle-fetch-entry-source" id="ref-for-web-bundle-fetch-entry-source">source</a> is <var>parse result</var>’s <a data-link-type="dfn" href="#web-bundle-parse-result-source" id="ref-for-web-bundle-parse-result-source">source</a> and <var>r</var>’s <a data-link-type="dfn" href="#web-bundle-fetch-entry-credentials" id="ref-for-web-bundle-fetch-entry-credentials">credentials</a> is <var>parse result</var>’s <a data-link-type="dfn" href="#web-bundle-parse-result-credentials" id="ref-for-web-bundle-parse-result-credentials">credentials</a>, then:</p>
+       <ol>
+        <li data-md>
+         <p>If <var>r</var> is not <a data-link-type="dfn" href="#web-bundle-fetch-entry-used-by-a-registration" id="ref-for-web-bundle-fetch-entry-used-by-a-registration">used by a registration</a> in <var>document</var>, then set <var>fetch entry</var> to <var>r</var>.</p>
+         <p class="note" role="note"><span class="marker">NOTE:</span> This implies that another script element whose <a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-result" id="ref-for-concept-script-result②">the script’s
+ result</a>'s <a data-link-type="dfn" href="#web-bundle-result-registration" id="ref-for-web-bundle-result-registration①">registration</a>'s <a data-link-type="dfn" href="#web-bundle-registration-fetch-entry" id="ref-for-web-bundle-registration-fetch-entry①">fetch entry</a> is <var>r</var> was removed. This is to ensure that <a data-link-type="dfn" href="#web-bundle-fetch-entry" id="ref-for-web-bundle-fetch-entry④">web bundle fetch entries</a> are not destructed and re-fetched when <code class="idl"><a data-link-type="idl" href="https://html.spec.whatwg.org/multipage/scripting.html#htmlscriptelement" id="ref-for-htmlscriptelement①">HTMLScriptElement</a></code>s with the same web bundle <a data-link-type="dfn" href="#web-bundle-fetch-entry-source" id="ref-for-web-bundle-fetch-entry-source①">source</a> and <a data-link-type="dfn" href="#web-bundle-fetch-entry-credentials" id="ref-for-web-bundle-fetch-entry-credentials①">credentials</a> are removed
+ and added.</p>
+       </ol>
+     </ol>
+    <li data-md>
+     <p>If <var>fetch entry</var> is null:</p>
+     <ol>
+      <li data-md>
+       <p>Set <var>fetch entry</var> to a new <a data-link-type="dfn" href="#web-bundle-fetch-entry" id="ref-for-web-bundle-fetch-entry⑤">web bundle fetch entry</a> with its <a data-link-type="dfn" href="#web-bundle-fetch-entry-source" id="ref-for-web-bundle-fetch-entry-source②">source</a> is <var>parse result</var>’s <a data-link-type="dfn" href="#web-bundle-parse-result-source" id="ref-for-web-bundle-parse-result-source①">source</a>, its <a data-link-type="dfn" href="#web-bundle-fetch-entry-credentials" id="ref-for-web-bundle-fetch-entry-credentials②">credentials</a> is <var>parse
+  result</var>’s <a data-link-type="dfn" href="#web-bundle-parse-result-credentials" id="ref-for-web-bundle-parse-result-credentials①">credentials</a>, its <a data-link-type="dfn" href="#web-bundle-fetch-entry-state" id="ref-for-web-bundle-fetch-entry-state">state</a> is "fetching", and its <a data-link-type="dfn" href="#web-bundle-fetch-entry-fetched-bundle" id="ref-for-web-bundle-fetch-entry-fetched-bundle">fetched
+  bundle</a> is null.</p>
+      <li data-md>
+       <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-append" id="ref-for-list-append">Append</a> <var>fetch entry</var> to <var>document</var>’s <a data-link-type="dfn" href="#document-web-bundle-fetch-entry-list" id="ref-for-document-web-bundle-fetch-entry-list②">web bundle fetch
+  entry list</a>.</p>
+      <li data-md>
+       <p><a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/infrastructure.html#in-parallel" id="ref-for-in-parallel①">In parallel</a>, <a data-link-type="dfn" href="#fetch-a-web-bundle" id="ref-for-fetch-a-web-bundle">fetch a web bundle</a> <var>fetch entry</var>.</p>
+     </ol>
+    <li data-md>
+     <p>Let <var>registration</var> be a new <a data-link-type="dfn" href="#web-bundle-registration" id="ref-for-web-bundle-registration④">web bundle registration</a> with its <a data-link-type="dfn" href="#web-bundle-registration-fetch-entry" id="ref-for-web-bundle-registration-fetch-entry②">fetch entry</a> is <var>fetch entry</var> and its <a data-link-type="dfn" href="#web-bundle-registration-rule" id="ref-for-web-bundle-registration-rule">rule</a> is <var>parse result</var>’s <a data-link-type="dfn" href="#web-bundle-parse-result-rule" id="ref-for-web-bundle-parse-result-rule">rule</a>.</p>
+    <li data-md>
+     <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-append" id="ref-for-list-append①">Append</a> <var>registration</var> to <var>document</var>’s <a data-link-type="dfn" href="#document-web-bundle-registration-list" id="ref-for-document-web-bundle-registration-list②">web bundle
+ registration list</a>.</p>
+    <li data-md>
+     <p>Set <a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-result" id="ref-for-concept-script-result③">the script’s result</a> to a new <a data-link-type="dfn" href="#web-bundle-result" id="ref-for-web-bundle-result③">web bundle result</a> with its <a data-link-type="dfn" href="#web-bundle-result-registration" id="ref-for-web-bundle-result-registration②">registration</a> is <var>registration</var> and its <a data-link-type="dfn" href="#web-bundle-result-error-to-rethrow" id="ref-for-web-bundle-result-error-to-rethrow①">error to rethrow</a> is null.</p>
+    <li data-md>
+     <p><a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#mark-as-ready" id="ref-for-mark-as-ready①">Mark as ready</a>.</p>
+   </ol>
+   <h3 class="heading settled" data-level="3.2" id="firing-events"><span class="secno">3.2. </span><span class="content">Firing events</span><a class="self-link" href="#firing-events"></a></h3>
+   <p>In <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#execute-the-script-element" id="ref-for-execute-the-script-element">execute the script element</a>, add the following case to Step
+6:</p>
+   <ul>
+    <li data-md>
+     <p>"<code>webbundle</code>":</p>
+     <ol>
+      <li data-md>
+       <p class="assertion">Assert: Never reached.</p>
+       <p class="note" role="note"><span class="marker">Note:</span> Web bundles are processed by <a data-link-type="dfn" href="#process-events-for-a-web-bundle" id="ref-for-process-events-for-a-web-bundle①">process events for a web bundle</a> instead of <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#execute-the-script-element" id="ref-for-execute-the-script-element①">execute the script element</a>.</p>
+     </ol>
+   </ul>
+   <p>To <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="process-events-for-a-web-bundle">process events for a web bundle</dfn> given an <code class="idl"><a data-link-type="idl" href="https://html.spec.whatwg.org/multipage/scripting.html#htmlscriptelement" id="ref-for-htmlscriptelement②">HTMLScriptElement</a></code> <var>element</var>:</p>
+   <ol>
+    <li data-md>
+     <p>Let <var>result</var> be <a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-result" id="ref-for-concept-script-result④">the script’s result</a> of <var>element</var>.</p>
+    <li data-md>
+     <p class="assertion">Assert: <var>element</var>’s <a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-type" id="ref-for-concept-script-type②">the script’s type</a> is "<code>webbundle</code>".</p>
+    <li data-md>
+     <p class="assertion">Assert: <var>result</var> is an <a data-link-type="dfn" href="#web-bundle-result" id="ref-for-web-bundle-result④">web bundle result</a>.</p>
+    <li data-md>
+     <p>Await asynchronously until either of the following conditions met:</p>
+     <ul>
+      <li data-md>
+       <p><var>result</var>’s <a data-link-type="dfn" href="#web-bundle-result-error-to-rethrow" id="ref-for-web-bundle-result-error-to-rethrow②">error to rethrow</a> is not null, or</p>
+      <li data-md>
+       <p><var>result</var>’s <a data-link-type="dfn" href="#web-bundle-result-registration" id="ref-for-web-bundle-result-registration③">registration</a> is not null and <var>result</var>’s <a data-link-type="dfn" href="#web-bundle-result-registration" id="ref-for-web-bundle-result-registration④">registration</a>'s <a data-link-type="dfn" href="#web-bundle-registration-fetch-entry" id="ref-for-web-bundle-registration-fetch-entry③">fetch
+ entry</a>'s <a data-link-type="dfn" href="#web-bundle-fetch-entry-state" id="ref-for-web-bundle-fetch-entry-state①">state</a> becomes "fetched" or "failed".</p>
+     </ul>
+     <p class="note" role="note"><span class="marker">Note:</span> Unlike other script types, we wait asynchronously here for <a data-link-type="dfn" href="#fetched-web-bundle" id="ref-for-fetched-web-bundle①">fetch web
+ bundle</a> before firing <code>load</code> events at <code class="idl"><a data-link-type="idl" href="https://html.spec.whatwg.org/multipage/scripting.html#htmlscriptelement" id="ref-for-htmlscriptelement③">HTMLScriptElement</a></code>. We don’t <a data-link-type="dfn" href="https://html.spec.whatwg.org/#delay-the-load-event" id="ref-for-delay-the-load-event">delay the load event</a> here, because we <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#mark-as-ready" id="ref-for-mark-as-ready②">mark
+ as ready</a> synchronously in <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element" id="ref-for-prepare-the-script-element⑦">prepare the script element</a>.
+ This is intentional because <a data-link-type="dfn" href="#fetch-a-web-bundle" id="ref-for-fetch-a-web-bundle①">fetch a web bundle</a> is similar to preloading.</p>
+    <li data-md>
+     <p>If <a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-result" id="ref-for-concept-script-result⑤">the script’s result</a> of <var>element</var> is null, then return.</p>
+     <p class="note" role="note"><span class="marker">Note:</span> This can happen when <var>element</var> was <a href="https://html.spec.whatwg.org/multipage/infrastructure.html#remove-an-element-from-a-document">removed
+ from the document</a> during the previous step.</p>
+     <p class="note" role="note"><span class="marker">Note:</span> This is specified consistently with <a href="https://github.com/whatwg/html/pull/2673">whatwg/html#2673</a>.
+ Currently we don’t fire <code>error</code> events in this case. If we change the
+ decision at <a href="https://github.com/whatwg/html/pull/2673">whatwg/html#2673</a> to
+ fire <code>error</code> events, then change this step accordingly.</p>
+    <li data-md>
+     <p class="assertion">Assert: <var>element</var>’s <a data-link-type="dfn">node document</a> is equal to <var>element</var>’s <a href="spec">preparation-time document</a>.</p>
+    <li data-md>
+     <p>If <var>result</var>’s <a data-link-type="dfn" href="#web-bundle-result-error-to-rethrow" id="ref-for-web-bundle-result-error-to-rethrow③">error to rethrow</a> is not null, then:</p>
+     <ol>
+      <li data-md>
+       <p><a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/webappapis.html#report-the-exception" id="ref-for-report-the-exception">Report the exception</a> given <var>result</var>’s <a data-link-type="dfn" href="#web-bundle-result-error-to-rethrow" id="ref-for-web-bundle-result-error-to-rethrow④">error to rethrow</a>.</p>
+       <p class="issue" id="issue-bb807bb8"><a class="self-link" href="#issue-bb807bb8"></a> There are no relevant <a href="https://html.spec.whatwg.org/multipage/webappapis.html#concept-script">script</a>,
+  because <a data-link-type="dfn" href="#web-bundle-result" id="ref-for-web-bundle-result⑤">web bundle result</a> isn’t a <a href="https://html.spec.whatwg.org/multipage/webappapis.html#concept-script">script</a>.
+  This needs to wait for <a href="https://github.com/whatwg/html/issues/958">whatwg/html#958</a> before it is fixable.</p>
+      <li data-md>
+       <p>Return.</p>
+     </ol>
+    <li data-md>
+     <p class="assertion">Assert: <var>result</var>’s <a data-link-type="dfn" href="#web-bundle-result-registration" id="ref-for-web-bundle-result-registration⑤">registration</a> is not null.</p>
+    <li data-md>
+     <p>If <var>result</var>’s <a data-link-type="dfn" href="#web-bundle-result-registration" id="ref-for-web-bundle-result-registration⑥">registration</a>'s <a data-link-type="dfn" href="#web-bundle-registration-fetch-entry" id="ref-for-web-bundle-registration-fetch-entry④">fetch entry</a>'s <a data-link-type="dfn" href="#web-bundle-fetch-entry-state" id="ref-for-web-bundle-fetch-entry-state②">state</a> is "failed":</p>
+     <ol>
+      <li data-md>
+       <p><a data-link-type="dfn" href="https://dom.spec.whatwg.org/#concept-event-fire" id="ref-for-concept-event-fire①">Fire an event</a> named <code>error</code> at <var>element</var>.</p>
+      <li data-md>
+       <p>Return.</p>
+     </ol>
+    <li data-md>
+     <p class="assertion">Assert: <var>result</var>’s <a data-link-type="dfn" href="#web-bundle-result-registration" id="ref-for-web-bundle-result-registration⑦">registration</a>'s <a data-link-type="dfn" href="#web-bundle-registration-fetch-entry" id="ref-for-web-bundle-registration-fetch-entry⑤">fetch entry</a>'s <a data-link-type="dfn" href="#web-bundle-fetch-entry-state" id="ref-for-web-bundle-fetch-entry-state③">state</a> is "fetched".</p>
+    <li data-md>
+     <p><a data-link-type="dfn" href="https://dom.spec.whatwg.org/#concept-event-fire" id="ref-for-concept-event-fire②">Fire an event</a> named <code>load</code> at <var>element</var>.</p>
+   </ol>
+   <h3 class="heading settled" data-level="3.3" id="removing"><span class="secno">3.3. </span><span class="content">Removing</span><a class="self-link" href="#removing"></a></h3>
+   <p>If <code>script</code> element is <a href="https://html.spec.whatwg.org/multipage/infrastructure.html#remove-an-element-from-a-document">removed
+from the document</a>, user agents must run the following algorithm:</p>
+   <ol>
+    <li data-md>
+     <p>If <a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-type" id="ref-for-concept-script-type③">the script’s type</a> is not "<code>webbundle</code>", then return.</p>
+    <li data-md>
+     <p>If <a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-result" id="ref-for-concept-script-result⑥">the script’s result</a> is null, then return.</p>
+    <li data-md>
+     <p class="assertion">Assert: <a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-result" id="ref-for-concept-script-result⑦">the script’s result</a> is an <a data-link-type="dfn" href="#web-bundle-result" id="ref-for-web-bundle-result⑥">web bundle result</a>.</p>
+    <li data-md>
+     <p>Let <var>registration</var> be <a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-result" id="ref-for-concept-script-result⑧">the script’s result</a>'s <a data-link-type="dfn" href="#web-bundle-result-registration" id="ref-for-web-bundle-result-registration⑧">registration</a>.</p>
+    <li data-md>
+     <p>Set <a data-link-type="dfn" href="https://html.spec.whatwg.org/#concept-script-result" id="ref-for-concept-script-result⑨">the script’s result</a> to null.</p>
+    <li data-md>
+     <p>If <var>registration</var> is null, then return.</p>
+    <li data-md>
+     <p>Let <var>document</var> be the <a data-link-type="dfn">node document</a>.</p>
+    <li data-md>
+     <p class="assertion">Assert: <var>document</var>’s <a data-link-type="dfn" href="#document-web-bundle-registration-list" id="ref-for-document-web-bundle-registration-list③">web bundle registration list</a> <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-contain" id="ref-for-list-contain①">contains</a> <var>registration</var>.</p>
+    <li data-md>
+     <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-remove" id="ref-for-list-remove">Remove</a> <var>registration</var> from <var>document</var>’s <a data-link-type="dfn" href="#document-web-bundle-registration-list" id="ref-for-document-web-bundle-registration-list④">web bundle
+ registration list</a>.</p>
+    <li data-md>
+     <p><a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-microtask" id="ref-for-queue-a-microtask">Queue a microtask</a> to perform the following steps:</p>
+     <ol>
+      <li data-md>
+       <p>Let <var>fetch entry</var> be <var>registration</var>’s <a data-link-type="dfn" href="#web-bundle-registration-fetch-entry" id="ref-for-web-bundle-registration-fetch-entry⑥">fetch
+  entry</a>.</p>
+      <li data-md>
+       <p>If <var>fetch entry</var> is <a data-link-type="dfn" href="#web-bundle-fetch-entry-used-by-a-registration" id="ref-for-web-bundle-fetch-entry-used-by-a-registration①">used by a registration</a> in <var>document</var>, then return.</p>
+      <li data-md>
+       <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-remove" id="ref-for-list-remove①">Remove</a> <var>fetch entry</var> from <var>document</var>’s <a data-link-type="dfn" href="#document-web-bundle-fetch-entry-list" id="ref-for-document-web-bundle-fetch-entry-list③">web bundle
+  fetch entry list</a>.</p>
+       <p class="note" role="note"><span class="marker">Note:</span> It is possible that <var>document</var>’s <a data-link-type="dfn" href="#document-web-bundle-fetch-entry-list" id="ref-for-document-web-bundle-fetch-entry-list④">web bundle fetch entry
+  list</a> doesn’t <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-contain" id="ref-for-list-contain②">contain</a> <var>fetch entry</var> even before this step, if <var>fetch entry</var> is used by <a data-link-type="dfn" href="#web-bundle-registration" id="ref-for-web-bundle-registration⑤">web bundle registrations</a> of multiple <code>script</code> elements and the <code>script elements</code> are removed.</p>
+       <p class="note" role="note"><span class="marker">Note:</span> At this point, <var>fetch entry</var> can no longer used by subsequent
+  subresource fetches nor subsequent <a data-link-type="dfn" href="#prepare-a-web-bundle" id="ref-for-prepare-a-web-bundle①">prepare a web bundle</a> calls, but its <a data-link-type="dfn" href="#web-bundle-fetch-entry-fetched-bundle" id="ref-for-web-bundle-fetch-entry-fetched-bundle①">fetched bundle</a> can be still in use by ongoing
+  fetches.</p>
+     </ol>
+   </ol>
+   <h2 class="heading settled" data-level="4" id="fetch-monkeypatches"><span class="secno">4. </span><span class="content">Fetch monkeypatches</span><a class="self-link" href="#fetch-monkeypatches"></a></h2>
+   <h3 class="heading settled" data-level="4.1" id="monkeypatch-fetch"><span class="secno">4.1. </span><span class="content">Monkeypatch fetch</span><a class="self-link" href="#monkeypatch-fetch"></a></h3>
+   <p>In <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-fetch" id="ref-for-concept-fetch">fetch</a>, before</p>
+   <blockquote>
+    <ol start="2">
+     <li data-md>
+      <p>Let taskDestination be null.</p>
+    </ol>
+   </blockquote>
+   <p>add the following step:</p>
+   <ol start="2">
+    <li data-md>
+     <p>If the result of <a data-link-type="dfn" href="#find-a-matching-web-bundle-registration" id="ref-for-find-a-matching-web-bundle-registration">find a matching web bundle registration</a> given <var>request</var> is null, set <var>request</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#request-service-workers-mode" id="ref-for-request-service-workers-mode">service-workers mode</a> to "<code>none</code>".</p>
+   </ol>
+   <p class="note" role="note"><span class="marker">Note:</span> This means that no service workers will get events for a subresource
+loading from a webbundle.</p>
+   <h3 class="heading settled" data-level="4.2" id="monkeypatch-fetch-scheme"><span class="secno">4.2. </span><span class="content">Monkeypatch fetch scheme</span><a class="self-link" href="#monkeypatch-fetch-scheme"></a></h3>
+   <p>Add "<code>uuid-in-package</code>" to the schemes listed in <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#fetch-scheme" id="ref-for-fetch-scheme">fetch
+scheme</a>.</p>
+   <p class="note" role="note"><span class="marker">Note:</span> This ensures that the <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate" id="ref-for-navigate">navigate</a> algorithm uses the <a data-link-type="dfn">process a navigate fetch</a> algorithm for <code>uuid-in-package:</code> URLs.</p>
+   <p class="note" role="note"><span class="marker">Note:</span> The <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url-origin" id="ref-for-concept-url-origin">origin</a> of a URL whose scheme is "<code>uuid-in-package</code>" is an
+opaque origin.</p>
+   <h3 class="heading settled" data-level="4.3" id="monkeypatch-http-network-or-cache-fetch"><span class="secno">4.3. </span><span class="content">Monkeypatch HTTP-network-or-cache fetch</span><a class="self-link" href="#monkeypatch-http-network-or-cache-fetch"></a></h3>
+   <p>In <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-http-network-or-cache-fetch" id="ref-for-concept-http-network-or-cache-fetch">HTTP-network-or-cache fetch</a>, before</p>
+   <blockquote>
+    <p>8.22. Set httpCache to the result of determining the HTTP cache partition,
+given <var>httpRequest</var>.</p>
+   </blockquote>
+   <p>add the following steps:</p>
+   <ol start="22">
+    <li data-md>
+     <p>Set the <var>response</var> to the result of <a data-link-type="dfn" href="#fetch-a-subresource-from-web-bundle" id="ref-for-fetch-a-subresource-from-web-bundle">fetch a subresource from web bundle</a>,
+  given <var>httpRequest</var>.</p>
+     <ol>
+      <li data-md>
+       <p>If <var>response</var> is <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-network-error" id="ref-for-concept-network-error">network error</a>, return <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-network-error" id="ref-for-concept-network-error①">network error</a>.</p>
+      <li data-md>
+       <p>If <var>response</var> is non-null, skip the steps 8.22-8.24 and goto the step 9.</p>
+       <p class="note" role="note"><span class="marker">Note:</span> That means a subresource from a webbundle never interacts with
+ HttpCache. We plan to support HttpCache as a feature enhancement in the
+ future.</p>
+     </ol>
+   </ol>
+   <h2 class="heading settled" data-level="5" id="csp-monkeypatches"><span class="secno">5. </span><span class="content">CSP monkeypatches</span><a class="self-link" href="#csp-monkeypatches"></a></h2>
+   <h3 class="heading settled" data-level="5.1" id="monkeypatch-match-request-to-source-list"><span class="secno">5.1. </span><span class="content">Monkeypatch Does request match source list?</span><a class="self-link" href="#monkeypatch-match-request-to-source-list"></a></h3>
+   <p>Rewrite <a href="https://w3c.github.io/webappsec-csp/#match-request-to-source-list">Does <var>request</var> match <var>source list</var>?</a> to run these steps:</p>
+   <ol>
+    <li data-md>
+     <p>Let <var>url</var> be <var>request</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-current-url" id="ref-for-concept-request-current-url">current url</a>.</p>
+    <li data-md>
+     <p>If <var>url</var>’s <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url-scheme" id="ref-for-concept-url-scheme">scheme</a> is "<code>uuid-in-package</code>", then:</p>
+     <ol>
+      <li data-md>
+       <p>Let <var>registration</var> be the result of running <a data-link-type="dfn" href="#find-a-matching-web-bundle-registration" id="ref-for-find-a-matching-web-bundle-registration①">find a matching web bundle
+  registration</a> given <var>request</var>.</p>
+      <li data-md>
+       <p>If <var>registration</var> is not null, then set <var>url</var> to <var>registration</var>’s <a data-link-type="dfn" href="#web-bundle-registration-fetch-entry" id="ref-for-web-bundle-registration-fetch-entry⑦">fetch entry</a>'s <a data-link-type="dfn" href="#web-bundle-fetch-entry-source" id="ref-for-web-bundle-fetch-entry-source③">source</a>.</p>
+     </ol>
+    <li data-md>
+     <p>Returns the result of executing <a href="https://w3c.github.io/webappsec-csp/#match-url-to-source-list">Does
+ url match source list in origin with redirect count?</a> on <var>url</var>, <var>source
+ list</var>, <var>policy</var>’s <a data-link-type="dfn" href="https://w3c.github.io/webappsec-csp/#policy-self-origin" id="ref-for-policy-self-origin">self-origin</a>, and <var>request</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-redirect-count" id="ref-for-concept-request-redirect-count">redirect
+ count</a>.</p>
+   </ol>
+   <p class="note" role="note"><span class="marker">Note:</span> This means that CSP restrictions are evaluated against the bundle’s URL
+instead of to the <code>uuid-in-package:</code> URL. See <a href="https://github.com/WICG/webpackage/issues/651">#651</a> for the
+detailed motivation.</p>
+   <h3 class="heading settled" data-level="5.2" id="monkeypatch-match-response-to-source-list"><span class="secno">5.2. </span><span class="content">Monkeypatch Does response to request match source list?</span><a class="self-link" href="#monkeypatch-match-response-to-source-list"></a></h3>
+   <p>Rewrite <a href="https://w3c.github.io/webappsec-csp/#match-response-to-source-list">Does <var>response</var> to <var>request</var> match <var>source list</var>?</a> to run these steps:</p>
+   <ol>
+    <li data-md>
+     <p>Let <var>url</var> be <var>response</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-response-url" id="ref-for-concept-response-url">url</a>.</p>
+    <li data-md>
+     <p>If <var>url</var>’s <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url-scheme" id="ref-for-concept-url-scheme①">scheme</a> is "<code>uuid-in-package</code>", then:</p>
+     <ol>
+      <li data-md>
+       <p>Let <var>registration</var> be the result of running <a data-link-type="dfn" href="#find-a-matching-web-bundle-registration" id="ref-for-find-a-matching-web-bundle-registration②">find a matching web bundle
+  registration</a> given <var>request</var>.</p>
+      <li data-md>
+       <p>If <var>registration</var> is not null, then set <var>url</var> to <var>registration</var>’s <a data-link-type="dfn" href="#web-bundle-registration-fetch-entry" id="ref-for-web-bundle-registration-fetch-entry⑧">fetch entry</a>'s <a data-link-type="dfn" href="#web-bundle-fetch-entry-source" id="ref-for-web-bundle-fetch-entry-source④">source</a>.</p>
+     </ol>
+    <li data-md>
+     <p>Returns the result of executing <a href="https://w3c.github.io/webappsec-csp/#match-url-to-source-list">Does
+ url match source list in origin with redirect count?</a> on <var>url</var>, <var>source
+ list</var>, <var>policy</var>’s <a data-link-type="dfn" href="https://w3c.github.io/webappsec-csp/#policy-self-origin" id="ref-for-policy-self-origin①">self-origin</a>, and <var>request</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-redirect-count" id="ref-for-concept-request-redirect-count①">redirect
+ count</a>.</p>
+   </ol>
+   <p class="note" role="note"><span class="marker">Note:</span> This means that CSP restrictions are evaluated against the bundle’s URL
+instead of to the <code>uuid-in-package:</code> URL. See <a href="https://github.com/WICG/webpackage/issues/651">#651</a> for the
+detailed motivation.</p>
+   <h2 class="heading settled" data-level="6" id="algorithms"><span class="secno">6. </span><span class="content">Algorithms</span><a class="self-link" href="#algorithms"></a></h2>
+   <h3 class="heading settled" data-level="6.1" id="parsing"><span class="secno">6.1. </span><span class="content">Parsing</span><a class="self-link" href="#parsing"></a></h3>
+   <p>To <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="parse-a-web-bundle-string">parse a web bundle string</dfn>, given a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#string" id="ref-for-string①">string</a> <var>sourceText</var> and a <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url" id="ref-for-concept-url⑤">URL</a> <var>baseURL</var>:</p>
+   <ol>
+    <li data-md>
+     <p>Let <var>parsed</var> be the result of <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#parse-a-json-string-to-an-infra-value" id="ref-for-parse-a-json-string-to-an-infra-value">parsing JSON
+  into Infra values</a> given <var>sourceText</var>.</p>
+    <li data-md>
+     <p>If <var>parsed</var> is not a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#ordered-map" id="ref-for-ordered-map">map</a>, then throw a <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror">TypeError</a></code> indicating that the
+  top-level value needs to be a JSON object.</p>
+    <li data-md>
+     <p>If <var>parsed</var>["<code>source</code>"] does not <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-exists" id="ref-for-map-exists">exist</a>, then throw a <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①">TypeError</a></code>.</p>
+    <li data-md>
+     <p>If <var>parsed</var>["<code>source</code>"] is not a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#string" id="ref-for-string②">string</a>, then throw a <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror②">TypeError</a></code>.</p>
+    <li data-md>
+     <p>Let <var>source</var> be the result of <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url-parser" id="ref-for-concept-url-parser">parsing</a> <var>parsed</var>["<code>source</code>"]
+  with <var>baseURL</var> as the base URL.</p>
+    <li data-md>
+     <p>If <var>source</var> is null, then throw a <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror③">TypeError</a></code>.</p>
+    <li data-md>
+     <p>Let <var>credentials</var> be "<code>same-origin</code>".</p>
+    <li data-md>
+     <p>If <var>parsed</var>["<code>credentials</code>"] <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-exists" id="ref-for-map-exists①">exists</a>, then:</p>
+     <ol>
+      <li data-md>
+       <p>If <var>parsed</var>["<code>credentials</code>"] is "<code>omit</code>", then set <var>credentials</var> to
+ "<code>omit</code>".</p>
+      <li data-md>
+       <p>Otherwise, if <var>parsed</var>["<code>credentials</code>"] is "<code>include</code>", then set <var>credentials</var> to "<code>include</code>".</p>
+     </ol>
+    <li data-md>
+     <p>Let <var>resources</var> be an empty <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list⑦">list</a>.</p>
+    <li data-md>
+     <p>If <var>parsed</var>["<code>resources</code>"] <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-exists" id="ref-for-map-exists②">exists</a>, then:</p>
+     <ol>
+      <li data-md>
+       <p>If <var>parsed</var>["<code>resources</code>"] is not a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list⑧">list</a>, then throw a <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror④">TypeError</a></code>.</p>
+      <li data-md>
+       <p>Set <var>resources</var> to the result of <a data-link-type="dfn" href="#parse-a-url-list" id="ref-for-parse-a-url-list">parsing a url list</a> given <var>parsed</var>["<code>resources</code>"] and <var>source</var>.</p>
+     </ol>
+    <li data-md>
+     <p>Let <var>scopes</var> be an empty <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list⑨">list</a>.</p>
+    <li data-md>
+     <p>If <var>parsed</var>["<code>scopes</code>"] <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-exists" id="ref-for-map-exists③">exists</a>, then:</p>
+     <ol>
+      <li data-md>
+       <p>If <var>parsed</var>["<code>scopes</code>"] is not a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list①⓪">list</a>, then throw a <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror⑤">TypeError</a></code>.</p>
+      <li data-md>
+       <p>Set <var>scopes</var> to the result of <a data-link-type="dfn" href="#parse-a-url-list" id="ref-for-parse-a-url-list①">parsing a url list</a> given <var>parsed</var>["<code>scopes</code>"] and <var>source</var>.</p>
+     </ol>
+    <li data-md>
+     <p>If <var>parsed</var>’s <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-getting-the-keys" id="ref-for-map-getting-the-keys">keys</a> <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-contain" id="ref-for-list-contain③">contains</a> any items besides
+  "<code>source</code>", "<code>credentials</code>", "<code>resources</code>" or "<code>scopes</code>", <a data-link-type="dfn" href="https://console.spec.whatwg.org/#report-a-warning-to-the-console" id="ref-for-report-a-warning-to-the-console">report a warning
+  to the console</a> that an invalid top-level key was present in the web bundle
+  string.</p>
+     <p class="note" role="note"><span class="marker">Note:</span> This can help detect typos. It is not an error, because that would
+  prevent any future extensions from being added backward-compatibly.</p>
+    <li data-md>
+     <p>Let <var>rule</var> be <a data-link-type="dfn" href="#bundle-rule" id="ref-for-bundle-rule②">bundle rule</a> whose <a data-link-type="dfn" href="#bundle-rule-resources" id="ref-for-bundle-rule-resources">resources</a> are <var>resources</var> and whose <a data-link-type="dfn" href="#bundle-rule-scopes" id="ref-for-bundle-rule-scopes">scopes</a> are <var>scopes</var>.</p>
+    <li data-md>
+     <p>Return the <a data-link-type="dfn" href="#web-bundle-parse-result" id="ref-for-web-bundle-parse-result">web bundle parse result</a> whose <a data-link-type="dfn" href="#web-bundle-parse-result-source" id="ref-for-web-bundle-parse-result-source②">source</a> is <var>source</var>, whose <a data-link-type="dfn" href="#web-bundle-parse-result-credentials" id="ref-for-web-bundle-parse-result-credentials②">credentials</a> are <var>credentials</var> and whose <a data-link-type="dfn" href="#web-bundle-parse-result-rule" id="ref-for-web-bundle-parse-result-rule①">rule</a> is <var>rule</var> .</p>
+   </ol>
+   <p>To <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="parse-a-url-list">parse a URL list</dfn>, given a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list①①">list</a> <var>originalList</var> and a <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url" id="ref-for-concept-url⑥">URL</a> <var>baseURL</var>:</p>
+   <ol>
+    <li data-md>
+     <p>Let <var>parsed URL list</var> be an empty <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list①②">list</a>.</p>
+    <li data-md>
+     <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-iterate" id="ref-for-list-iterate">For each</a> <var>item</var> of <var>originalList</var>,</p>
+     <ol>
+      <li data-md>
+       <p>If <var>item</var> is a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#string" id="ref-for-string③">string</a>, then</p>
+       <ol>
+        <li data-md>
+         <p>Let <var>URL</var> be the result of <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url-parser" id="ref-for-concept-url-parser①">parsing</a> <var>item</var> with <var>baseURL</var> as the base URL.</p>
+        <li data-md>
+         <p>If <var>URL</var> is not null, <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-append" id="ref-for-list-append②">append</a> <var>URL</var> to <var>parsed URL list</var>.</p>
+       </ol>
+     </ol>
+    <li data-md>
+     <p>Return <var>parsed URL list</var>.</p>
+   </ol>
+   <h3 class="heading settled" data-level="6.2" id="fetching-web-bundle"><span class="secno">6.2. </span><span class="content">Fetching a web bundle</span><a class="self-link" href="#fetching-web-bundle"></a></h3>
+   <p>To <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="fetch-a-web-bundle">fetch a web bundle</dfn> given <a data-link-type="dfn" href="#web-bundle-fetch-entry" id="ref-for-web-bundle-fetch-entry⑥">web bundle fetch entry</a> <var>fetch entry</var> and <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#fetch-params" id="ref-for-fetch-params">fetch params</a> <var>fetch params</var>:</p>
+   <ol>
+    <li data-md>
+     <p class="assertion">Assert: <var>fetch entry</var>’s <a data-link-type="dfn" href="#web-bundle-fetch-entry-state" id="ref-for-web-bundle-fetch-entry-state④">state</a> is "fetching".</p>
+    <li data-md>
+     <p>Let <var>request</var> be <var>fetch params</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request" id="ref-for-concept-request">request</a>.</p>
+    <li data-md>
+     <p>Set <var>request</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-url" id="ref-for-concept-request-url">url</a> to <var>fetch entry</var>’s <a data-link-type="dfn" href="#web-bundle-fetch-entry-source" id="ref-for-web-bundle-fetch-entry-source⑤">source</a>.</p>
+     <p class="note" role="note"><span class="marker">Note:</span> Source URL is resolved on document’s base URL.</p>
+    <li data-md>
+     <p>Set <var>request</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-destination" id="ref-for-concept-request-destination">destination</a> to "webbundle",</p>
+    <li data-md>
+     <p>Set <var>request</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-mode" id="ref-for-concept-request-mode">mode</a> to "cors",</p>
+    <li data-md>
+     <p>Set <var>request</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-credentials-mode" id="ref-for-concept-request-credentials-mode②">credentials mode</a> to <var>fetch entry</var>’s <a data-link-type="dfn" href="#web-bundle-fetch-entry-credentials" id="ref-for-web-bundle-fetch-entry-credentials③">credentials</a>.</p>
+    <li data-md>
+     <p>Set <var>request</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#request-service-workers-mode" id="ref-for-request-service-workers-mode①">service-workers mode</a> to "<code>none</code>".</p>
+    <li data-md>
+     <p>Append a <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-header" id="ref-for-concept-header">header</a>, a tuple of ("Accept", "application/webbundle;v=b2"), to <var>request</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-header-list" id="ref-for-concept-request-header-list">header list</a>.</p>
+     <p class="note" role="note"><span class="marker">Note:</span> The final <a data-link-type="biblio" href="#biblio-draft-ietf-wpack-bundled-responses-latest" title="Web Bundles">[draft-ietf-wpack-bundled-responses-latest]</a> will use a
+ version of <code>1</code>, but this specification tracks what’s actually implemented in
+ browsers, which still uses draft versions.</p>
+    <li data-md>
+     <p><a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-fetch" id="ref-for-concept-fetch①">Fetch</a> <var>request</var> with <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#process-response" id="ref-for-process-response">processResponse</a> algorithm set to <a data-link-type="dfn" href="#concept-process-web-bundle-response" id="ref-for-concept-process-web-bundle-response">process web
+ bundle response</a> which is partially applied with <var>fetch entry</var>.</p>
+     <p class="note" role="note"><span class="marker">Note:</span> Chromium’s current implementation doesn’t allow a nested bundle. A Web
+ bundle is never fetched from other web bundles.</p>
+   </ol>
+   <h3 class="heading settled" data-level="6.3" id="process-web-bundle-response"><span class="secno">6.3. </span><span class="content">Process web bundle response</span><a class="self-link" href="#process-web-bundle-response"></a></h3>
+   <p>To <dfn class="dfn-paneled" data-dfn-type="dfn" data-lt="process web bundle response" data-noexport id="concept-process-web-bundle-response">process web bundle
+response</dfn> given <a data-link-type="dfn" href="#web-bundle-fetch-entry" id="ref-for-web-bundle-fetch-entry⑦">web bundle fetch entry</a> <var>fetch entry</var> and <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-response" id="ref-for-concept-response">response</a> <var>response</var>:</p>
+   <ol>
+    <li data-md>
+     <p>If <var>response</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-response-status" id="ref-for-concept-response-status">status</a> is an <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#ok-status" id="ref-for-ok-status">ok status</a>,</p>
+     <ol>
+      <li data-md>
+       <p>Parse <var>response</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-response-body" id="ref-for-concept-response-body">body</a> as a Web Bundle
+  (<a data-link-type="biblio" href="#biblio-draft-ietf-wpack-bundled-responses-latest" title="Web Bundles">[draft-ietf-wpack-bundled-responses-latest]</a>).</p>
+       <p class="note" role="note"><span class="marker">Note:</span> <var>response</var>’s body might not be fully available at this moment. UA
+  might parse the bundle by <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#body-incrementally-read" id="ref-for-body-incrementally-read">incrementally reading</a> a body asynchronously
+  in order to serve a subresource as early as possible.</p>
+       <p class="note" role="note"><span class="marker">Note:</span> In parsing, Chromium’s experimental implementation only accepts "b2"
+  as a web bundle format version number
+  (<a data-link-type="biblio" href="#biblio-draft-ietf-wpack-bundled-responses-latest" title="Web Bundles">[draft-ietf-wpack-bundled-responses-latest]</a>).</p>
+      <li data-md>
+       <p>When the parse algorithm asynchronously completes, set <var>fetch entry</var>’s <a data-link-type="dfn" href="#web-bundle-fetch-entry-fetched-bundle" id="ref-for-web-bundle-fetch-entry-fetched-bundle②">fetched bundle</a> to the result of parsing and <var>fetch entry</var>’s <a data-link-type="dfn" href="#web-bundle-fetch-entry-state" id="ref-for-web-bundle-fetch-entry-state⑤">state</a> be "fetched". If parsing
+  fails, or any other conformance is violated, set <a data-link-type="dfn" href="#web-bundle-fetch-entry-fetched-bundle" id="ref-for-web-bundle-fetch-entry-fetched-bundle③">fetched bundle</a> to null and <a data-link-type="dfn" href="#web-bundle-fetch-entry-state" id="ref-for-web-bundle-fetch-entry-state⑥">state</a> to
+  "failed".</p>
+     </ol>
+    <li data-md>
+     <p>Otherwise, set <var>fetch entry</var>’s <a data-link-type="dfn" href="#web-bundle-fetch-entry-state" id="ref-for-web-bundle-fetch-entry-state⑦">state</a> to "failed".</p>
+   </ol>
+   <h3 class="heading settled" data-level="6.4" id="fetching-subresources"><span class="secno">6.4. </span><span class="content">Fetching subresources from a web bundle</span><a class="self-link" href="#fetching-subresources"></a></h3>
+   <p>To <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="fetch-a-subresource-from-web-bundle">fetch a subresource from web bundle</dfn> given <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request" id="ref-for-concept-request①">request</a> <var>httpRequest</var>:</p>
+   <ol>
+    <li data-md>
+     <p>Let <var>registration</var> be the result of running <a data-link-type="dfn" href="#find-a-matching-web-bundle-registration" id="ref-for-find-a-matching-web-bundle-registration③">find a matching web bundle
+ registration</a> given <var>httpRequest</var>.</p>
+    <li data-md>
+     <p>If <var>registration</var> is not null:</p>
+     <ol>
+      <li data-md>
+       <p>Let <var>response</var> be the result of <a data-link-type="dfn" href="#get-response-from-web-bundle-fetch-entry" id="ref-for-get-response-from-web-bundle-fetch-entry">get response from web bundle fetch
+  entry</a> given <var>httpRequest</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-url" id="ref-for-concept-request-url①">url</a> and <var>registration</var>’s <a data-link-type="dfn" href="#web-bundle-registration-fetch-entry" id="ref-for-web-bundle-registration-fetch-entry⑨">fetch entry</a>.</p>
+      <li data-md>
+       <p>If <var>response</var> is null, return a <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-network-error" id="ref-for-concept-network-error②">network error</a>.</p>
+       <p class="note" role="note"><span class="marker">Note:</span> This means a browser does not fallback to fetch a subresource from
+  network.</p>
+      <li data-md>
+       <p>Otherwise, return <var>response</var>.</p>
+     </ol>
+    <li data-md>
+     <p>Return null.</p>
+   </ol>
+   <p class="note" role="note"><span class="marker">Note:</span> Returning null here can fallback to HTTP cache and ordinal network fetch,
+unlike returning a <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-network-error" id="ref-for-concept-network-error③">network error</a> above.</p>
+   <p>To <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="get-response-from-web-bundle-fetch-entry">get response from web bundle fetch entry</dfn> given <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url" id="ref-for-concept-url⑦">url</a> <var>url</var> and <a data-link-type="dfn" href="#web-bundle-fetch-entry" id="ref-for-web-bundle-fetch-entry⑧">web bundle fetch entry</a> <var>fetch entry</var>:</p>
+   <ol>
+    <li data-md>
+     <p>If <var>fetch entry</var>’s <a data-link-type="dfn" href="#web-bundle-fetch-entry-state" id="ref-for-web-bundle-fetch-entry-state⑧">state</a> is "fetching", await
+ until <a data-link-type="dfn" href="#web-bundle-fetch-entry-state" id="ref-for-web-bundle-fetch-entry-state⑨">state</a> becomes "fetched" or "failed"
+ asynchronously.</p>
+    <li data-md>
+     <p>If <var>fetch entry</var>’s <a data-link-type="dfn" href="#web-bundle-fetch-entry-state" id="ref-for-web-bundle-fetch-entry-state①⓪">state</a> is "failed", return null.</p>
+    <li data-md>
+     <p class="assertion">Assert: <var>fetch entry</var>’s <a data-link-type="dfn" href="#web-bundle-fetch-entry-fetched-bundle" id="ref-for-web-bundle-fetch-entry-fetched-bundle④">fetched bundle</a> is
+ non-null.</p>
+    <li data-md>
+     <p>Returns <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-response" id="ref-for-concept-response①">response</a> from <var>fetch entry</var>’s <a data-link-type="dfn" href="#web-bundle-fetch-entry-fetched-bundle" id="ref-for-web-bundle-fetch-entry-fetched-bundle⑤">fetched
+ bundle</a> given <var>url</var> (<a data-link-type="biblio" href="#biblio-draft-ietf-wpack-bundled-responses-latest" title="Web Bundles">[draft-ietf-wpack-bundled-responses-latest]</a>). If a
+ representation of <var>url</var> is not found in <a data-link-type="dfn" href="#web-bundle-fetch-entry-fetched-bundle" id="ref-for-web-bundle-fetch-entry-fetched-bundle⑥">fetched
+ bundle</a>, return null.</p>
+   </ol>
+   <h3 class="heading settled" data-level="6.5" id="matching-registration"><span class="secno">6.5. </span><span class="content">Finding a matching registration</span><a class="self-link" href="#matching-registration"></a></h3>
+   <p>To <dfn class="dfn-paneled" data-dfn-type="dfn" data-noexport id="find-a-matching-web-bundle-registration">find a matching web bundle registration</dfn> given <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request" id="ref-for-concept-request②">request</a> <var>httpRequest</var>:</p>
+   <ol>
+    <li data-md>
+     <p>Let <var>url</var> be <var>httpRequest</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-url" id="ref-for-concept-request-url②">url</a>.</p>
+    <li data-md>
+     <p>For each <var>registration</var> of <var>httpRequest</var>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#concept-request-client" id="ref-for-concept-request-client">client</a>'s <a data-link-type="dfn" href="#environment-settings-object-web-bundle-registration-list" id="ref-for-environment-settings-object-web-bundle-registration-list②">web bundle registration list</a>:</p>
+     <ol>
+      <li data-md>
+       <p>Let <var>rule</var> be <var>registration</var>’s <a data-link-type="dfn" href="#web-bundle-registration-rule" id="ref-for-web-bundle-registration-rule①">rule</a>.</p>
+      <li data-md>
+       <p>If <var>url</var>’s <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url-scheme" id="ref-for-concept-url-scheme②">scheme</a> is not "<code>uuid-in-package</code>", then</p>
+       <ol>
+        <li data-md>
+         <p>If <var>url</var>’s <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url-origin" id="ref-for-concept-url-origin①">origin</a> and <var>registration</var>’s <a data-link-type="dfn" href="#web-bundle-registration-fetch-entry" id="ref-for-web-bundle-registration-fetch-entry①⓪">fetch entry</a>'s <a data-link-type="dfn" href="#web-bundle-fetch-entry-source" id="ref-for-web-bundle-fetch-entry-source⑥">source</a>'s <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url-origin" id="ref-for-concept-url-origin②">origin</a> are not <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/browsers.html#same-origin" id="ref-for-same-origin">same origin</a>, then <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#iteration-continue" id="ref-for-iteration-continue">continue</a>.</p>
+        <li data-md>
+         <p>Let <var>allowed path</var> be the result of <a data-link-type="dfn" href="https://url.spec.whatwg.org/#shorten-a-urls-path" id="ref-for-shorten-a-urls-path">shortening</a> <var>registration</var>’s <a data-link-type="dfn" href="#web-bundle-registration-fetch-entry" id="ref-for-web-bundle-registration-fetch-entry①①">fetch entry</a>'s <a data-link-type="dfn" href="#web-bundle-fetch-entry-source" id="ref-for-web-bundle-fetch-entry-source⑦">source</a>'s <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url-path" id="ref-for-concept-url-path">path</a>.</p>
+        <li data-md>
+         <p>If <var>url</var>’s <a data-link-type="dfn" href="https://url.spec.whatwg.org/#concept-url-path" id="ref-for-concept-url-path①">path</a> doesn’t start with <var>allowed path</var>, then <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#iteration-continue" id="ref-for-iteration-continue①">continue</a>.</p>
+       </ol>
+      <li data-md>
+       <p>If <var>rule</var>’s <a data-link-type="dfn" href="#bundle-rule-resources" id="ref-for-bundle-rule-resources①">resources</a> <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-contain" id="ref-for-list-contain④">contains</a> <var>url</var>, then return <var>registration</var>.</p>
+      <li data-md>
+       <p>If <var>url</var> starts with any of <var>rule</var>’s <a data-link-type="dfn" href="#bundle-rule-scopes" id="ref-for-bundle-rule-scopes①">scopes</a>, then return <var>registration</var>.</p>
+     </ol>
+    <li data-md>
+     <p>Return null.</p>
+   </ol>
+  </main>
+  <div data-fill-with="conformance">
+   <h2 class="no-ref no-num heading settled" id="w3c-conformance"><span class="content">Conformance</span><a class="self-link" href="#w3c-conformance"></a></h2>
+   <h3 class="no-ref no-num heading settled" id="w3c-conventions"><span class="content">Document conventions</span><a class="self-link" href="#w3c-conventions"></a></h3>
+   <p>Conformance requirements are expressed
+    with a combination of descriptive assertions
+    and RFC 2119 terminology.
+    The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL”
+    in the normative parts of this document
+    are to be interpreted as described in RFC 2119.
+    However, for readability,
+    these words do not appear in all uppercase letters in this specification. </p>
+   <p>All of the text of this specification is normative
+    except sections explicitly marked as non-normative, examples, and notes. <a data-link-type="biblio" href="#biblio-rfc2119" title="Key words for use in RFCs to Indicate Requirement Levels">[RFC2119]</a> </p>
+   <p>Examples in this specification are introduced with the words “for example”
+    or are set apart from the normative text
+    with <code>class="example"</code>,
+    like this: </p>
+   <div class="example" id="w3c-example">
+    <a class="self-link" href="#w3c-example"></a> 
+    <p>This is an example of an informative example. </p>
+   </div>
+   <p>Informative notes begin with the word “Note”
+    and are set apart from the normative text
+    with <code>class="note"</code>,
+    like this: </p>
+   <p class="note" role="note">Note, this is an informative note.</p>
+  </div>
+  <script src="https://www.w3.org/scripts/TR/2021/fixup.js"></script>
+  <h2 class="no-num no-ref heading settled" id="index"><span class="content">Index</span><a class="self-link" href="#index"></a></h2>
+  <h3 class="no-num no-ref heading settled" id="index-defined-here"><span class="content">Terms defined by this specification</span><a class="self-link" href="#index-defined-here"></a></h3>
+  <ul class="index">
+   <li><a href="#bundle-rule">bundle rule</a><span>, in § 2</span>
+   <li>
+    credentials
+    <ul>
+     <li><a href="#web-bundle-fetch-entry-credentials">dfn for web bundle fetch entry</a><span>, in § 2</span>
+     <li><a href="#web-bundle-parse-result-credentials">dfn for web bundle parse result</a><span>, in § 2</span>
+    </ul>
+   <li><a href="#web-bundle-result-error-to-rethrow">error to rethrow</a><span>, in § 3</span>
+   <li><a href="#fetch-a-subresource-from-web-bundle">fetch a subresource from web bundle</a><span>, in § 6.4</span>
+   <li><a href="#fetch-a-web-bundle">fetch a web bundle</a><span>, in § 6.2</span>
+   <li><a href="#web-bundle-fetch-entry-fetched-bundle">fetched bundle</a><span>, in § 2</span>
+   <li><a href="#fetched-web-bundle">fetched web bundle</a><span>, in § 2</span>
+   <li><a href="#web-bundle-registration-fetch-entry">fetch entry</a><span>, in § 2</span>
+   <li><a href="#find-a-matching-web-bundle-registration">find a matching web bundle registration</a><span>, in § 6.5</span>
+   <li><a href="#get-response-from-web-bundle-fetch-entry">get response from web bundle fetch entry</a><span>, in § 6.4</span>
+   <li><a href="#parse-a-url-list">parse a URL list</a><span>, in § 6.1</span>
+   <li><a href="#parse-a-web-bundle-string">parse a web bundle string</a><span>, in § 6.1</span>
+   <li><a href="#prepare-a-web-bundle">prepare a web bundle</a><span>, in § 3.1</span>
+   <li><a href="#process-events-for-a-web-bundle">process events for a web bundle</a><span>, in § 3.2</span>
+   <li><a href="#concept-process-web-bundle-response">process web bundle response</a><span>, in § 6.3</span>
+   <li><a href="#web-bundle-result-registration">registration</a><span>, in § 3</span>
+   <li><a href="#bundle-rule-resources">resources</a><span>, in § 2</span>
+   <li>
+    rule
+    <ul>
+     <li><a href="#web-bundle-parse-result-rule">dfn for web bundle parse result</a><span>, in § 2</span>
+     <li><a href="#web-bundle-registration-rule">dfn for web bundle registration</a><span>, in § 2</span>
+    </ul>
+   <li><a href="#bundle-rule-scopes">scopes</a><span>, in § 2</span>
+   <li>
+    source
+    <ul>
+     <li><a href="#web-bundle-fetch-entry-source">dfn for web bundle fetch entry</a><span>, in § 2</span>
+     <li><a href="#web-bundle-parse-result-source">dfn for web bundle parse result</a><span>, in § 2</span>
+    </ul>
+   <li><a href="#web-bundle-fetch-entry-state">state</a><span>, in § 2</span>
+   <li><a href="#web-bundle-fetch-entry-used-by-a-registration">used by a registration</a><span>, in § 2</span>
+   <li><a href="#web-bundle-fetch-entry">web bundle fetch entry</a><span>, in § 2</span>
+   <li><a href="#document-web-bundle-fetch-entry-list">web bundle fetch entry list</a><span>, in § 2</span>
+   <li><a href="#web-bundle-parse-result">web bundle parse result</a><span>, in § 2</span>
+   <li><a href="#web-bundle-registration">web bundle registration</a><span>, in § 2</span>
+   <li>
+    web bundle registration list
+    <ul>
+     <li><a href="#document-web-bundle-registration-list">dfn for Document</a><span>, in § 2</span>
+     <li><a href="#environment-settings-object-web-bundle-registration-list">dfn for environment settings object</a><span>, in § 2</span>
+    </ul>
+   <li><a href="#web-bundle-result">web bundle result</a><span>, in § 3</span>
+  </ul>
+  <h3 class="no-num no-ref heading settled" id="index-defined-elsewhere"><span class="content">Terms defined by reference</span><a class="self-link" href="#index-defined-elsewhere"></a></h3>
+  <ul class="index">
+   <li>
+    <a data-link-type="biblio">[CONSOLE]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="37e32f12">report a warning to the console</span>
+    </ul>
+   <li>
+    <a data-link-type="biblio">[CSP]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="67296a45">self-origin</span>
+    </ul>
+   <li>
+    <a data-link-type="biblio">[DOM]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="85394472">Document</span>
+     <li><span class="dfn-paneled" id="a973e0fe">document</span>
+     <li><span class="dfn-paneled" id="5fd23811">fire an event</span>
+    </ul>
+   <li>
+    <a data-link-type="biblio">[FETCH]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="81a76425">body</span>
+     <li><span class="dfn-paneled" id="857d5516">client</span>
+     <li><span class="dfn-paneled" id="902380f7">credentials mode</span>
+     <li><span class="dfn-paneled" id="3f2ca4de">current url</span>
+     <li><span class="dfn-paneled" id="3ae34c95">destination</span>
+     <li><span class="dfn-paneled" id="a33db89a">fetch</span>
+     <li><span class="dfn-paneled" id="97aa4684">fetch params</span>
+     <li><span class="dfn-paneled" id="9ad93b4c">fetch scheme</span>
+     <li><span class="dfn-paneled" id="c9e7c11a">header</span>
+     <li><span class="dfn-paneled" id="6ee0eab1">header list</span>
+     <li><span class="dfn-paneled" id="980528b0">http-network-or-cache fetch</span>
+     <li><span class="dfn-paneled" id="6ef88ad8">incrementally reading</span>
+     <li><span class="dfn-paneled" id="cb98f71f">mode</span>
+     <li><span class="dfn-paneled" id="eb1b1af3">network error</span>
+     <li><span class="dfn-paneled" id="a27468c5">ok status</span>
+     <li><span class="dfn-paneled" id="bd2fe71e">processresponse</span>
+     <li><span class="dfn-paneled" id="8c3deeef">redirect count</span>
+     <li><span class="dfn-paneled" id="55213b5b">request</span>
+     <li><span class="dfn-paneled" id="ee7bba09">response</span>
+     <li><span class="dfn-paneled" id="6d1db60d">service-workers mode</span>
+     <li><span class="dfn-paneled" id="a1d47575">status</span>
+     <li><span class="dfn-paneled" id="dc1cd39b">url <small>(for request)</small></span>
+     <li><span class="dfn-paneled" id="3268a8eb">url <small>(for response)</small></span>
+    </ul>
+   <li>
+    <a data-link-type="biblio">[HTML]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="ec4838d8">HTMLScriptElement</span>
+     <li><span class="dfn-paneled" id="3349d69f">associated document</span>
+     <li><span class="dfn-paneled" id="c3f357e8">delay the load event</span>
+     <li><span class="dfn-paneled" id="3e12e042">environment settings object</span>
+     <li><span class="dfn-paneled" id="3327afdd">execute the script element</span>
+     <li><span class="dfn-paneled" id="a72449dd">in parallel</span>
+     <li><span class="dfn-paneled" id="2b07d94d">mark as ready</span>
+     <li><span class="dfn-paneled" id="2594e562">navigate</span>
+     <li><span class="dfn-paneled" id="037b46da">prepare the script element</span>
+     <li><span class="dfn-paneled" id="53079ce3">queue a microtask</span>
+     <li><span class="dfn-paneled" id="9a517a7d">queue a task</span>
+     <li><span class="dfn-paneled" id="1f67eee5">ready to be parser-executed</span>
+     <li><span class="dfn-paneled" id="04e154c5">report the exception</span>
+     <li><span class="dfn-paneled" id="7393da89">same origin</span>
+     <li><span class="dfn-paneled" id="66f104fd">set up a window environment settings object</span>
+     <li><span class="dfn-paneled" id="bbb5f6df">set up a worker environment settings object</span>
+     <li><span class="dfn-paneled" id="8ad9bc1a">the script's result</span>
+     <li><span class="dfn-paneled" id="4435c4d9">the script's type</span>
+    </ul>
+   <li>
+    <a data-link-type="biblio">[INFRA]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="53275e46">append</span>
+     <li><span class="dfn-paneled" id="7f9469b5">ascii case-insensitive</span>
+     <li><span class="dfn-paneled" id="ae8def21">contain</span>
+     <li><span class="dfn-paneled" id="f937b7b6">continue</span>
+     <li><span class="dfn-paneled" id="1243a891">exist</span>
+     <li><span class="dfn-paneled" id="16d07e10">for each</span>
+     <li><span class="dfn-paneled" id="4e92bc80">get the keys</span>
+     <li><span class="dfn-paneled" id="c88f3887">item</span>
+     <li><span class="dfn-paneled" id="649608b9">list</span>
+     <li><span class="dfn-paneled" id="3fca5a9e">map</span>
+     <li><span class="dfn-paneled" id="8e8decb4">parse json into infra values</span>
+     <li><span class="dfn-paneled" id="99c988d6">remove</span>
+     <li><span class="dfn-paneled" id="0698d556">string</span>
+     <li><span class="dfn-paneled" id="984221ca">struct</span>
+    </ul>
+   <li>
+    <a data-link-type="biblio">[URL]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="959ad97b">origin</span>
+     <li><span class="dfn-paneled" id="c0868016">path</span>
+     <li><span class="dfn-paneled" id="3a711be7">scheme</span>
+     <li><span class="dfn-paneled" id="cfb25fa2">shortening</span>
+     <li><span class="dfn-paneled" id="dcffbccd">url</span>
+     <li><span class="dfn-paneled" id="ca3ca4ae">url parser</span>
+    </ul>
+   <li>
+    <a data-link-type="biblio">[WEBIDL]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="82ca3efc">TypeError</span>
+    </ul>
+  </ul>
+  <h2 class="no-num no-ref heading settled" id="references"><span class="content">References</span><a class="self-link" href="#references"></a></h2>
+  <h3 class="no-num no-ref heading settled" id="normative"><span class="content">Normative References</span><a class="self-link" href="#normative"></a></h3>
+  <dl>
+   <dt id="biblio-console">[CONSOLE]
+   <dd>Dominic Farolino; Robert Kowalski; Terin Stock. <a href="https://console.spec.whatwg.org/"><cite>Console Standard</cite></a>. Living Standard. URL: <a href="https://console.spec.whatwg.org/">https://console.spec.whatwg.org/</a>
+   <dt id="biblio-csp">[CSP]
+   <dd>Mike West; Antonio Sartori. <a href="https://w3c.github.io/webappsec-csp/"><cite>Content Security Policy Level 3</cite></a>. URL: <a href="https://w3c.github.io/webappsec-csp/">https://w3c.github.io/webappsec-csp/</a>
+   <dt id="biblio-dom">[DOM]
+   <dd>Anne van Kesteren. <a href="https://dom.spec.whatwg.org/"><cite>DOM Standard</cite></a>. Living Standard. URL: <a href="https://dom.spec.whatwg.org/">https://dom.spec.whatwg.org/</a>
+   <dt id="biblio-fetch">[FETCH]
+   <dd>Anne van Kesteren. <a href="https://fetch.spec.whatwg.org/"><cite>Fetch Standard</cite></a>. Living Standard. URL: <a href="https://fetch.spec.whatwg.org/">https://fetch.spec.whatwg.org/</a>
+   <dt id="biblio-html">[HTML]
+   <dd>Anne van Kesteren; et al. <a href="https://html.spec.whatwg.org/multipage/"><cite>HTML Standard</cite></a>. Living Standard. URL: <a href="https://html.spec.whatwg.org/multipage/">https://html.spec.whatwg.org/multipage/</a>
+   <dt id="biblio-infra">[INFRA]
+   <dd>Anne van Kesteren; Domenic Denicola. <a href="https://infra.spec.whatwg.org/"><cite>Infra Standard</cite></a>. Living Standard. URL: <a href="https://infra.spec.whatwg.org/">https://infra.spec.whatwg.org/</a>
+   <dt id="biblio-rfc2119">[RFC2119]
+   <dd>S. Bradner. <a href="https://datatracker.ietf.org/doc/html/rfc2119"><cite>Key words for use in RFCs to Indicate Requirement Levels</cite></a>. March 1997. Best Current Practice. URL: <a href="https://datatracker.ietf.org/doc/html/rfc2119">https://datatracker.ietf.org/doc/html/rfc2119</a>
+   <dt id="biblio-url">[URL]
+   <dd>Anne van Kesteren. <a href="https://url.spec.whatwg.org/"><cite>URL Standard</cite></a>. Living Standard. URL: <a href="https://url.spec.whatwg.org/">https://url.spec.whatwg.org/</a>
+   <dt id="biblio-webidl">[WEBIDL]
+   <dd>Edgar Chen; Timothy Gu. <a href="https://webidl.spec.whatwg.org/"><cite>Web IDL Standard</cite></a>. Living Standard. URL: <a href="https://webidl.spec.whatwg.org/">https://webidl.spec.whatwg.org/</a>
+  </dl>
+  <h3 class="no-num no-ref heading settled" id="informative"><span class="content">Informative References</span><a class="self-link" href="#informative"></a></h3>
+  <dl>
+   <dt id="biblio-draft-ietf-wpack-bundled-responses-latest">[DRAFT-IETF-WPACK-BUNDLED-RESPONSES-LATEST]
+   <dd><a href="https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html"><cite>Web Bundles</cite></a>. URL: <a href="https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html">https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html</a>
+  </dl>
+  <h2 class="no-num no-ref heading settled" id="issues-index"><span class="content">Issues Index</span><a class="self-link" href="#issues-index"></a></h2>
+  <div style="counter-reset:issue">
+   <div class="issue"> A better name for <a data-link-type="dfn" href="#web-bundle-fetch-entry">web bundle fetch entry</a>? <a class="issue-return" href="#issue-5fcc07ef" title="Jump to section">↵</a></div>
+   <div class="issue"> While <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list">list</a> is used for <a data-link-type="dfn" href="#document-web-bundle-fetch-entry-list">web bundle fetch entry list</a>, the
+order shouldn’t be important. <a class="issue-return" href="#issue-0a9e75a1" title="Jump to section">↵</a></div>
+   <div class="issue"> Not supported for workers. <a class="issue-return" href="#issue-411f8f6f" title="Jump to section">↵</a></div>
+   <div class="issue"> There are no relevant <a href="https://html.spec.whatwg.org/multipage/webappapis.html#concept-script">script</a>,
+  because <a data-link-type="dfn" href="#web-bundle-result">web bundle result</a> isn’t a <a href="https://html.spec.whatwg.org/multipage/webappapis.html#concept-script">script</a>.
+  This needs to wait for <a href="https://github.com/whatwg/html/issues/958">whatwg/html#958</a> before it is fixable. <a class="issue-return" href="#issue-bb807bb8" title="Jump to section">↵</a></div>
+  </div>
+<script>/* Boilerplate: script-dom-helper */
+"use strict";
+function query(sel) { return document.querySelector(sel); }
+
+function queryAll(sel) { return [...document.querySelectorAll(sel)]; }
+
+function iter(obj) {
+	if(!obj) return [];
+	var it = obj[Symbol.iterator];
+	if(it) return it;
+	return Object.entries(obj);
+}
+
+function mk(tagname, attrs, ...children) {
+	const el = document.createElement(tagname);
+	for(const [k,v] of iter(attrs)) {
+		if(k.slice(0,3) == "_on") {
+			const eventName = k.slice(3);
+			el.addEventListener(eventName, v);
+		} else if(k[0] == "_") {
+			// property, not attribute
+			el[k.slice(1)] = v;
+		} else {
+			if(v === false || v == null) {
+        continue;
+      } else if(v === true) {
+        el.setAttribute(k, "");
+        continue;
+      } else {
+  			el.setAttribute(k, v);
+      }
+		}
+	}
+	append(el, children);
+	return el;
+}
+
+/* Create shortcuts for every known HTML element */
+[
+  "a",
+  "abbr",
+  "acronym",
+  "address",
+  "applet",
+  "area",
+  "article",
+  "aside",
+  "audio",
+  "b",
+  "base",
+  "basefont",
+  "bdo",
+  "big",
+  "blockquote",
+  "body",
+  "br",
+  "button",
+  "canvas",
+  "caption",
+  "center",
+  "cite",
+  "code",
+  "col",
+  "colgroup",
+  "datalist",
+  "dd",
+  "del",
+  "details",
+  "dfn",
+  "dialog",
+  "div",
+  "dl",
+  "dt",
+  "em",
+  "embed",
+  "fieldset",
+  "figcaption",
+  "figure",
+  "font",
+  "footer",
+  "form",
+  "frame",
+  "frameset",
+  "head",
+  "header",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "hr",
+  "html",
+  "i",
+  "iframe",
+  "img",
+  "input",
+  "ins",
+  "kbd",
+  "label",
+  "legend",
+  "li",
+  "link",
+  "main",
+  "map",
+  "mark",
+  "meta",
+  "meter",
+  "nav",
+  "nobr",
+  "noscript",
+  "object",
+  "ol",
+  "optgroup",
+  "option",
+  "output",
+  "p",
+  "param",
+  "pre",
+  "progress",
+  "q",
+  "s",
+  "samp",
+  "script",
+  "section",
+  "select",
+  "small",
+  "source",
+  "span",
+  "strike",
+  "strong",
+  "style",
+  "sub",
+  "summary",
+  "sup",
+  "table",
+  "tbody",
+  "td",
+  "template",
+  "textarea",
+  "tfoot",
+  "th",
+  "thead",
+  "time",
+  "title",
+  "tr",
+  "u",
+  "ul",
+  "var",
+  "video",
+  "wbr",
+  "xmp",
+].forEach(tagname=>{
+	mk[tagname] = (...args) => mk(tagname, ...args);
+});
+
+function* nodesFromChildList(children) {
+	for(const child of children.flat(Infinity)) {
+		if(child instanceof Node) {
+			yield child;
+		} else {
+			yield new Text(child);
+		}
+	}
+}
+function append(el, ...children) {
+	for(const child of nodesFromChildList(children)) {
+		if(el instanceof Node) el.appendChild(child);
+		else el.push(child);
+	}
+	return el;
+}
+
+function insertAfter(el, ...children) {
+	for(const child of nodesFromChildList(children)) {
+		el.parentNode.insertBefore(child, el.nextSibling);
+	}
+	return el;
+}
+
+function clearContents(el) {
+	el.innerHTML = "";
+	return el;
+}
+
+function parseHTML(markup) {
+	if(markup.toLowerCase().trim().indexOf('<!doctype') === 0) {
+		const doc = document.implementation.createHTMLDocument("");
+		doc.documentElement.innerHTML = markup;
+		return doc;
+	} else {
+		const el = mk.template({});
+		el.innerHTML = markup;
+		return el.content;
+	}
+}</script>
+<script>/* Boilerplate: script-dfn-panel */
+"use strict";
+{
+let dfnPanelData = {
+"037b46da": {"dfnID":"037b46da","dfnText":"prepare the script element","external":true,"refSections":[{"refs":[{"id":"ref-for-prepare-the-script-element"}],"title":"3. HTML monkeypatches"},{"refs":[{"id":"ref-for-prepare-the-script-element\u2460"},{"id":"ref-for-prepare-the-script-element\u2461"},{"id":"ref-for-prepare-the-script-element\u2462"},{"id":"ref-for-prepare-the-script-element\u2463"},{"id":"ref-for-prepare-the-script-element\u2464"},{"id":"ref-for-prepare-the-script-element\u2465"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-prepare-the-script-element\u2466"}],"title":"3.2. Firing events"}],"url":"https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element"},
+"04e154c5": {"dfnID":"04e154c5","dfnText":"report the exception","external":true,"refSections":[{"refs":[{"id":"ref-for-report-the-exception"}],"title":"3.2. Firing events"}],"url":"https://html.spec.whatwg.org/multipage/webappapis.html#report-the-exception"},
+"0698d556": {"dfnID":"0698d556","dfnText":"string","external":true,"refSections":[{"refs":[{"id":"ref-for-string"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-string\u2460"},{"id":"ref-for-string\u2461"},{"id":"ref-for-string\u2462"}],"title":"6.1. Parsing"}],"url":"https://infra.spec.whatwg.org/#string"},
+"1243a891": {"dfnID":"1243a891","dfnText":"exist","external":true,"refSections":[{"refs":[{"id":"ref-for-map-exists"},{"id":"ref-for-map-exists\u2460"},{"id":"ref-for-map-exists\u2461"},{"id":"ref-for-map-exists\u2462"}],"title":"6.1. Parsing"}],"url":"https://infra.spec.whatwg.org/#map-exists"},
+"16d07e10": {"dfnID":"16d07e10","dfnText":"for each","external":true,"refSections":[{"refs":[{"id":"ref-for-list-iterate"}],"title":"6.1. Parsing"}],"url":"https://infra.spec.whatwg.org/#list-iterate"},
+"1f67eee5": {"dfnID":"1f67eee5","dfnText":"ready to be parser-executed","external":true,"refSections":[{"refs":[{"id":"ref-for-ready-to-be-parser-executed"}],"title":"3.1. Prepare the script element"}],"url":"https://html.spec.whatwg.org/multipage/scripting.html#ready-to-be-parser-executed"},
+"2594e562": {"dfnID":"2594e562","dfnText":"navigate","external":true,"refSections":[{"refs":[{"id":"ref-for-navigate"}],"title":"4.2. Monkeypatch fetch scheme"}],"url":"https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate"},
+"2b07d94d": {"dfnID":"2b07d94d","dfnText":"mark as ready","external":true,"refSections":[{"refs":[{"id":"ref-for-mark-as-ready"},{"id":"ref-for-mark-as-ready\u2460"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-mark-as-ready\u2461"}],"title":"3.2. Firing events"}],"url":"https://html.spec.whatwg.org/multipage/scripting.html#mark-as-ready"},
+"3268a8eb": {"dfnID":"3268a8eb","dfnText":"url (for response)","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-response-url"}],"title":"5.2. Monkeypatch Does response to request match source list?"}],"url":"https://fetch.spec.whatwg.org/#concept-response-url"},
+"3327afdd": {"dfnID":"3327afdd","dfnText":"execute the script element","external":true,"refSections":[{"refs":[{"id":"ref-for-execute-the-script-element"},{"id":"ref-for-execute-the-script-element\u2460"}],"title":"3.2. Firing events"}],"url":"https://html.spec.whatwg.org/multipage/scripting.html#execute-the-script-element"},
+"3349d69f": {"dfnID":"3349d69f","dfnText":"associated document","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-document-window"}],"title":"2. Structures"}],"url":"https://html.spec.whatwg.org/multipage/nav-history-apis.html#concept-document-window"},
+"37e32f12": {"dfnID":"37e32f12","dfnText":"report a warning to the console","external":true,"refSections":[{"refs":[{"id":"ref-for-report-a-warning-to-the-console"}],"title":"6.1. Parsing"}],"url":"https://console.spec.whatwg.org/#report-a-warning-to-the-console"},
+"3a711be7": {"dfnID":"3a711be7","dfnText":"scheme","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-url-scheme"}],"title":"5.1. Monkeypatch Does request match source list?"},{"refs":[{"id":"ref-for-concept-url-scheme\u2460"}],"title":"5.2. Monkeypatch Does response to request match source list?"},{"refs":[{"id":"ref-for-concept-url-scheme\u2461"}],"title":"6.5. Finding a matching registration"}],"url":"https://url.spec.whatwg.org/#concept-url-scheme"},
+"3ae34c95": {"dfnID":"3ae34c95","dfnText":"destination","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-request-destination"}],"title":"6.2. Fetching a web bundle"}],"url":"https://fetch.spec.whatwg.org/#concept-request-destination"},
+"3e12e042": {"dfnID":"3e12e042","dfnText":"environment settings object","external":true,"refSections":[{"refs":[{"id":"ref-for-environment-settings-object"}],"title":"2. Structures"}],"url":"https://html.spec.whatwg.org/multipage/webappapis.html#environment-settings-object"},
+"3f2ca4de": {"dfnID":"3f2ca4de","dfnText":"current url","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-request-current-url"}],"title":"5.1. Monkeypatch Does request match source list?"}],"url":"https://fetch.spec.whatwg.org/#concept-request-current-url"},
+"3fca5a9e": {"dfnID":"3fca5a9e","dfnText":"map","external":true,"refSections":[{"refs":[{"id":"ref-for-ordered-map"}],"title":"6.1. Parsing"}],"url":"https://infra.spec.whatwg.org/#ordered-map"},
+"4435c4d9": {"dfnID":"4435c4d9","dfnText":"the script's type","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-script-type"}],"title":"3. HTML monkeypatches"},{"refs":[{"id":"ref-for-concept-script-type\u2460"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-concept-script-type\u2461"}],"title":"3.2. Firing events"},{"refs":[{"id":"ref-for-concept-script-type\u2462"}],"title":"3.3. Removing"}],"url":"https://html.spec.whatwg.org/#concept-script-type"},
+"4e92bc80": {"dfnID":"4e92bc80","dfnText":"get the keys","external":true,"refSections":[{"refs":[{"id":"ref-for-map-getting-the-keys"}],"title":"6.1. Parsing"}],"url":"https://infra.spec.whatwg.org/#map-getting-the-keys"},
+"53079ce3": {"dfnID":"53079ce3","dfnText":"queue a microtask","external":true,"refSections":[{"refs":[{"id":"ref-for-queue-a-microtask"}],"title":"3.3. Removing"}],"url":"https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-microtask"},
+"53275e46": {"dfnID":"53275e46","dfnText":"append","external":true,"refSections":[{"refs":[{"id":"ref-for-list-append"},{"id":"ref-for-list-append\u2460"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-list-append\u2461"}],"title":"6.1. Parsing"}],"url":"https://infra.spec.whatwg.org/#list-append"},
+"55213b5b": {"dfnID":"55213b5b","dfnText":"request","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-request"}],"title":"6.2. Fetching a web bundle"},{"refs":[{"id":"ref-for-concept-request\u2460"}],"title":"6.4. Fetching subresources from a web bundle"},{"refs":[{"id":"ref-for-concept-request\u2461"}],"title":"6.5. Finding a matching registration"}],"url":"https://fetch.spec.whatwg.org/#concept-request"},
+"5fd23811": {"dfnID":"5fd23811","dfnText":"fire an event","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-event-fire"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-concept-event-fire\u2460"},{"id":"ref-for-concept-event-fire\u2461"}],"title":"3.2. Firing events"}],"url":"https://dom.spec.whatwg.org/#concept-event-fire"},
+"649608b9": {"dfnID":"649608b9","dfnText":"list","external":true,"refSections":[{"refs":[{"id":"ref-for-list"},{"id":"ref-for-list\u2460"},{"id":"ref-for-list\u2461"},{"id":"ref-for-list\u2462"},{"id":"ref-for-list\u2463"},{"id":"ref-for-list\u2464"},{"id":"ref-for-list\u2465"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-list\u2466"},{"id":"ref-for-list\u2467"},{"id":"ref-for-list\u2468"},{"id":"ref-for-list\u2460\u24ea"},{"id":"ref-for-list\u2460\u2460"},{"id":"ref-for-list\u2460\u2461"}],"title":"6.1. Parsing"}],"url":"https://infra.spec.whatwg.org/#list"},
+"66f104fd": {"dfnID":"66f104fd","dfnText":"set up a window environment settings object","external":true,"refSections":[{"refs":[{"id":"ref-for-set-up-a-window-environment-settings-object"}],"title":"2. Structures"}],"url":"https://html.spec.whatwg.org/multipage/nav-history-apis.html#set-up-a-window-environment-settings-object"},
+"67296a45": {"dfnID":"67296a45","dfnText":"self-origin","external":true,"refSections":[{"refs":[{"id":"ref-for-policy-self-origin"}],"title":"5.1. Monkeypatch Does request match source list?"},{"refs":[{"id":"ref-for-policy-self-origin\u2460"}],"title":"5.2. Monkeypatch Does response to request match source list?"}],"url":"https://w3c.github.io/webappsec-csp/#policy-self-origin"},
+"6d1db60d": {"dfnID":"6d1db60d","dfnText":"service-workers mode","external":true,"refSections":[{"refs":[{"id":"ref-for-request-service-workers-mode"}],"title":"4.1. Monkeypatch fetch"},{"refs":[{"id":"ref-for-request-service-workers-mode\u2460"}],"title":"6.2. Fetching a web bundle"}],"url":"https://fetch.spec.whatwg.org/#request-service-workers-mode"},
+"6ee0eab1": {"dfnID":"6ee0eab1","dfnText":"header list","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-request-header-list"}],"title":"6.2. Fetching a web bundle"}],"url":"https://fetch.spec.whatwg.org/#concept-request-header-list"},
+"6ef88ad8": {"dfnID":"6ef88ad8","dfnText":"incrementally reading","external":true,"refSections":[{"refs":[{"id":"ref-for-body-incrementally-read"}],"title":"6.3. Process web bundle response"}],"url":"https://fetch.spec.whatwg.org/#body-incrementally-read"},
+"7393da89": {"dfnID":"7393da89","dfnText":"same origin","external":true,"refSections":[{"refs":[{"id":"ref-for-same-origin"}],"title":"6.5. Finding a matching registration"}],"url":"https://html.spec.whatwg.org/multipage/browsers.html#same-origin"},
+"7f9469b5": {"dfnID":"7f9469b5","dfnText":"ascii case-insensitive","external":true,"refSections":[{"refs":[{"id":"ref-for-ascii-case-insensitive"}],"title":"3.1. Prepare the script element"}],"url":"https://infra.spec.whatwg.org/#ascii-case-insensitive"},
+"81a76425": {"dfnID":"81a76425","dfnText":"body","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-response-body"}],"title":"6.3. Process web bundle response"}],"url":"https://fetch.spec.whatwg.org/#concept-response-body"},
+"82ca3efc": {"dfnID":"82ca3efc","dfnText":"TypeError","external":true,"refSections":[{"refs":[{"id":"ref-for-exceptiondef-typeerror"},{"id":"ref-for-exceptiondef-typeerror\u2460"},{"id":"ref-for-exceptiondef-typeerror\u2461"},{"id":"ref-for-exceptiondef-typeerror\u2462"},{"id":"ref-for-exceptiondef-typeerror\u2463"},{"id":"ref-for-exceptiondef-typeerror\u2464"}],"title":"6.1. Parsing"}],"url":"https://webidl.spec.whatwg.org/#exceptiondef-typeerror"},
+"85394472": {"dfnID":"85394472","dfnText":"Document","external":true,"refSections":[{"refs":[{"id":"ref-for-document"},{"id":"ref-for-document\u2460"}],"title":"2. Structures"}],"url":"https://dom.spec.whatwg.org/#document"},
+"857d5516": {"dfnID":"857d5516","dfnText":"client","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-request-client"}],"title":"6.5. Finding a matching registration"}],"url":"https://fetch.spec.whatwg.org/#concept-request-client"},
+"8ad9bc1a": {"dfnID":"8ad9bc1a","dfnText":"the script's result","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-script-result"}],"title":"3. HTML monkeypatches"},{"refs":[{"id":"ref-for-concept-script-result\u2460"},{"id":"ref-for-concept-script-result\u2461"},{"id":"ref-for-concept-script-result\u2462"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-concept-script-result\u2463"},{"id":"ref-for-concept-script-result\u2464"}],"title":"3.2. Firing events"},{"refs":[{"id":"ref-for-concept-script-result\u2465"},{"id":"ref-for-concept-script-result\u2466"},{"id":"ref-for-concept-script-result\u2467"},{"id":"ref-for-concept-script-result\u2468"}],"title":"3.3. Removing"}],"url":"https://html.spec.whatwg.org/#concept-script-result"},
+"8c3deeef": {"dfnID":"8c3deeef","dfnText":"redirect count","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-request-redirect-count"}],"title":"5.1. Monkeypatch Does request match source list?"},{"refs":[{"id":"ref-for-concept-request-redirect-count\u2460"}],"title":"5.2. Monkeypatch Does response to request match source list?"}],"url":"https://fetch.spec.whatwg.org/#concept-request-redirect-count"},
+"8e8decb4": {"dfnID":"8e8decb4","dfnText":"parse json into infra values","external":true,"refSections":[{"refs":[{"id":"ref-for-parse-a-json-string-to-an-infra-value"}],"title":"6.1. Parsing"}],"url":"https://infra.spec.whatwg.org/#parse-a-json-string-to-an-infra-value"},
+"902380f7": {"dfnID":"902380f7","dfnText":"credentials mode","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-request-credentials-mode"},{"id":"ref-for-concept-request-credentials-mode\u2460"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-concept-request-credentials-mode\u2461"}],"title":"6.2. Fetching a web bundle"}],"url":"https://fetch.spec.whatwg.org/#concept-request-credentials-mode"},
+"959ad97b": {"dfnID":"959ad97b","dfnText":"origin","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-url-origin"}],"title":"4.2. Monkeypatch fetch scheme"},{"refs":[{"id":"ref-for-concept-url-origin\u2460"},{"id":"ref-for-concept-url-origin\u2461"}],"title":"6.5. Finding a matching registration"}],"url":"https://url.spec.whatwg.org/#concept-url-origin"},
+"97aa4684": {"dfnID":"97aa4684","dfnText":"fetch params","external":true,"refSections":[{"refs":[{"id":"ref-for-fetch-params"}],"title":"6.2. Fetching a web bundle"}],"url":"https://fetch.spec.whatwg.org/#fetch-params"},
+"980528b0": {"dfnID":"980528b0","dfnText":"http-network-or-cache fetch","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-http-network-or-cache-fetch"}],"title":"4.3. Monkeypatch HTTP-network-or-cache fetch"}],"url":"https://fetch.spec.whatwg.org/#concept-http-network-or-cache-fetch"},
+"984221ca": {"dfnID":"984221ca","dfnText":"struct","external":true,"refSections":[{"refs":[{"id":"ref-for-struct"},{"id":"ref-for-struct\u2460"},{"id":"ref-for-struct\u2461"},{"id":"ref-for-struct\u2462"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-struct\u2463"}],"title":"3. HTML monkeypatches"}],"url":"https://infra.spec.whatwg.org/#struct"},
+"99c988d6": {"dfnID":"99c988d6","dfnText":"remove","external":true,"refSections":[{"refs":[{"id":"ref-for-list-remove"},{"id":"ref-for-list-remove\u2460"}],"title":"3.3. Removing"}],"url":"https://infra.spec.whatwg.org/#list-remove"},
+"9a517a7d": {"dfnID":"9a517a7d","dfnText":"queue a task","external":true,"refSections":[{"refs":[{"id":"ref-for-queue-a-task"}],"title":"3.1. Prepare the script element"}],"url":"https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task"},
+"9ad93b4c": {"dfnID":"9ad93b4c","dfnText":"fetch scheme","external":true,"refSections":[{"refs":[{"id":"ref-for-fetch-scheme"}],"title":"4.2. Monkeypatch fetch scheme"}],"url":"https://fetch.spec.whatwg.org/#fetch-scheme"},
+"a1d47575": {"dfnID":"a1d47575","dfnText":"status","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-response-status"}],"title":"6.3. Process web bundle response"}],"url":"https://fetch.spec.whatwg.org/#concept-response-status"},
+"a27468c5": {"dfnID":"a27468c5","dfnText":"ok status","external":true,"refSections":[{"refs":[{"id":"ref-for-ok-status"}],"title":"6.3. Process web bundle response"}],"url":"https://fetch.spec.whatwg.org/#ok-status"},
+"a33db89a": {"dfnID":"a33db89a","dfnText":"fetch","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-fetch"}],"title":"4.1. Monkeypatch fetch"},{"refs":[{"id":"ref-for-concept-fetch\u2460"}],"title":"6.2. Fetching a web bundle"}],"url":"https://fetch.spec.whatwg.org/#concept-fetch"},
+"a72449dd": {"dfnID":"a72449dd","dfnText":"in parallel","external":true,"refSections":[{"refs":[{"id":"ref-for-in-parallel"},{"id":"ref-for-in-parallel\u2460"}],"title":"3.1. Prepare the script element"}],"url":"https://html.spec.whatwg.org/multipage/infrastructure.html#in-parallel"},
+"a973e0fe": {"dfnID":"a973e0fe","dfnText":"document","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-document"}],"title":"2. Structures"}],"url":"https://dom.spec.whatwg.org/#concept-document"},
+"ae8def21": {"dfnID":"ae8def21","dfnText":"contain","external":true,"refSections":[{"refs":[{"id":"ref-for-list-contain"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-list-contain\u2460"},{"id":"ref-for-list-contain\u2461"}],"title":"3.3. Removing"},{"refs":[{"id":"ref-for-list-contain\u2462"}],"title":"6.1. Parsing"},{"refs":[{"id":"ref-for-list-contain\u2463"}],"title":"6.5. Finding a matching registration"}],"url":"https://infra.spec.whatwg.org/#list-contain"},
+"bbb5f6df": {"dfnID":"bbb5f6df","dfnText":"set up a worker environment settings object","external":true,"refSections":[{"refs":[{"id":"ref-for-set-up-a-worker-environment-settings-object"}],"title":"2. Structures"}],"url":"https://html.spec.whatwg.org/multipage/workers.html#set-up-a-worker-environment-settings-object"},
+"bd2fe71e": {"dfnID":"bd2fe71e","dfnText":"processresponse","external":true,"refSections":[{"refs":[{"id":"ref-for-process-response"}],"title":"6.2. Fetching a web bundle"}],"url":"https://fetch.spec.whatwg.org/#process-response"},
+"bundle-rule": {"dfnID":"bundle-rule","dfnText":"bundle rule","external":false,"refSections":[{"refs":[{"id":"ref-for-bundle-rule"},{"id":"ref-for-bundle-rule\u2460"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-bundle-rule\u2461"}],"title":"6.1. Parsing"}],"url":"#bundle-rule"},
+"bundle-rule-resources": {"dfnID":"bundle-rule-resources","dfnText":"resources","external":false,"refSections":[{"refs":[{"id":"ref-for-bundle-rule-resources"}],"title":"6.1. Parsing"},{"refs":[{"id":"ref-for-bundle-rule-resources\u2460"}],"title":"6.5. Finding a matching registration"}],"url":"#bundle-rule-resources"},
+"bundle-rule-scopes": {"dfnID":"bundle-rule-scopes","dfnText":"scopes","external":false,"refSections":[{"refs":[{"id":"ref-for-bundle-rule-scopes"}],"title":"6.1. Parsing"},{"refs":[{"id":"ref-for-bundle-rule-scopes\u2460"}],"title":"6.5. Finding a matching registration"}],"url":"#bundle-rule-scopes"},
+"c0868016": {"dfnID":"c0868016","dfnText":"path","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-url-path"},{"id":"ref-for-concept-url-path\u2460"}],"title":"6.5. Finding a matching registration"}],"url":"https://url.spec.whatwg.org/#concept-url-path"},
+"c3f357e8": {"dfnID":"c3f357e8","dfnText":"delay the load event","external":true,"refSections":[{"refs":[{"id":"ref-for-delay-the-load-event"}],"title":"3.2. Firing events"}],"url":"https://html.spec.whatwg.org/#delay-the-load-event"},
+"c88f3887": {"dfnID":"c88f3887","dfnText":"item","external":true,"refSections":[{"refs":[{"id":"ref-for-struct-item"},{"id":"ref-for-struct-item\u2460"},{"id":"ref-for-struct-item\u2461"},{"id":"ref-for-struct-item\u2462"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-struct-item\u2463"}],"title":"3. HTML monkeypatches"}],"url":"https://infra.spec.whatwg.org/#struct-item"},
+"c9e7c11a": {"dfnID":"c9e7c11a","dfnText":"header","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-header"}],"title":"6.2. Fetching a web bundle"}],"url":"https://fetch.spec.whatwg.org/#concept-header"},
+"ca3ca4ae": {"dfnID":"ca3ca4ae","dfnText":"url parser","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-url-parser"},{"id":"ref-for-concept-url-parser\u2460"}],"title":"6.1. Parsing"}],"url":"https://url.spec.whatwg.org/#concept-url-parser"},
+"cb98f71f": {"dfnID":"cb98f71f","dfnText":"mode","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-request-mode"}],"title":"6.2. Fetching a web bundle"}],"url":"https://fetch.spec.whatwg.org/#concept-request-mode"},
+"cfb25fa2": {"dfnID":"cfb25fa2","dfnText":"shortening","external":true,"refSections":[{"refs":[{"id":"ref-for-shorten-a-urls-path"}],"title":"6.5. Finding a matching registration"}],"url":"https://url.spec.whatwg.org/#shorten-a-urls-path"},
+"concept-process-web-bundle-response": {"dfnID":"concept-process-web-bundle-response","dfnText":"process web bundle\nresponse","external":false,"refSections":[{"refs":[{"id":"ref-for-concept-process-web-bundle-response"}],"title":"6.2. Fetching a web bundle"}],"url":"#concept-process-web-bundle-response"},
+"dc1cd39b": {"dfnID":"dc1cd39b","dfnText":"url (for request)","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-request-url"}],"title":"6.2. Fetching a web bundle"},{"refs":[{"id":"ref-for-concept-request-url\u2460"}],"title":"6.4. Fetching subresources from a web bundle"},{"refs":[{"id":"ref-for-concept-request-url\u2461"}],"title":"6.5. Finding a matching registration"}],"url":"https://fetch.spec.whatwg.org/#concept-request-url"},
+"dcffbccd": {"dfnID":"dcffbccd","dfnText":"url","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-url"},{"id":"ref-for-concept-url\u2460"},{"id":"ref-for-concept-url\u2461"},{"id":"ref-for-concept-url\u2462"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-concept-url\u2463"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-concept-url\u2464"},{"id":"ref-for-concept-url\u2465"}],"title":"6.1. Parsing"},{"refs":[{"id":"ref-for-concept-url\u2466"}],"title":"6.4. Fetching subresources from a web bundle"}],"url":"https://url.spec.whatwg.org/#concept-url"},
+"document-web-bundle-fetch-entry-list": {"dfnID":"document-web-bundle-fetch-entry-list","dfnText":"web bundle fetch entry list","external":false,"refSections":[{"refs":[{"id":"ref-for-document-web-bundle-fetch-entry-list"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-document-web-bundle-fetch-entry-list\u2460"},{"id":"ref-for-document-web-bundle-fetch-entry-list\u2461"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-document-web-bundle-fetch-entry-list\u2462"},{"id":"ref-for-document-web-bundle-fetch-entry-list\u2463"}],"title":"3.3. Removing"}],"url":"#document-web-bundle-fetch-entry-list"},
+"document-web-bundle-registration-list": {"dfnID":"document-web-bundle-registration-list","dfnText":"web bundle registration list","external":false,"refSections":[{"refs":[{"id":"ref-for-document-web-bundle-registration-list"},{"id":"ref-for-document-web-bundle-registration-list\u2460"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-document-web-bundle-registration-list\u2461"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-document-web-bundle-registration-list\u2462"},{"id":"ref-for-document-web-bundle-registration-list\u2463"}],"title":"3.3. Removing"}],"url":"#document-web-bundle-registration-list"},
+"eb1b1af3": {"dfnID":"eb1b1af3","dfnText":"network error","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-network-error"},{"id":"ref-for-concept-network-error\u2460"}],"title":"4.3. Monkeypatch HTTP-network-or-cache fetch"},{"refs":[{"id":"ref-for-concept-network-error\u2461"},{"id":"ref-for-concept-network-error\u2462"}],"title":"6.4. Fetching subresources from a web bundle"}],"url":"https://fetch.spec.whatwg.org/#concept-network-error"},
+"ec4838d8": {"dfnID":"ec4838d8","dfnText":"HTMLScriptElement","external":true,"refSections":[{"refs":[{"id":"ref-for-htmlscriptelement"},{"id":"ref-for-htmlscriptelement\u2460"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-htmlscriptelement\u2461"},{"id":"ref-for-htmlscriptelement\u2462"}],"title":"3.2. Firing events"}],"url":"https://html.spec.whatwg.org/multipage/scripting.html#htmlscriptelement"},
+"ee7bba09": {"dfnID":"ee7bba09","dfnText":"response","external":true,"refSections":[{"refs":[{"id":"ref-for-concept-response"}],"title":"6.3. Process web bundle response"},{"refs":[{"id":"ref-for-concept-response\u2460"}],"title":"6.4. Fetching subresources from a web bundle"}],"url":"https://fetch.spec.whatwg.org/#concept-response"},
+"environment-settings-object-web-bundle-registration-list": {"dfnID":"environment-settings-object-web-bundle-registration-list","dfnText":"web bundle registration list","external":false,"refSections":[{"refs":[{"id":"ref-for-environment-settings-object-web-bundle-registration-list"},{"id":"ref-for-environment-settings-object-web-bundle-registration-list\u2460"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-environment-settings-object-web-bundle-registration-list\u2461"}],"title":"6.5. Finding a matching registration"}],"url":"#environment-settings-object-web-bundle-registration-list"},
+"f937b7b6": {"dfnID":"f937b7b6","dfnText":"continue","external":true,"refSections":[{"refs":[{"id":"ref-for-iteration-continue"},{"id":"ref-for-iteration-continue\u2460"}],"title":"6.5. Finding a matching registration"}],"url":"https://infra.spec.whatwg.org/#iteration-continue"},
+"fetch-a-subresource-from-web-bundle": {"dfnID":"fetch-a-subresource-from-web-bundle","dfnText":"fetch a subresource from web bundle","external":false,"refSections":[{"refs":[{"id":"ref-for-fetch-a-subresource-from-web-bundle"}],"title":"4.3. Monkeypatch HTTP-network-or-cache fetch"}],"url":"#fetch-a-subresource-from-web-bundle"},
+"fetch-a-web-bundle": {"dfnID":"fetch-a-web-bundle","dfnText":"fetch a web bundle","external":false,"refSections":[{"refs":[{"id":"ref-for-fetch-a-web-bundle"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-fetch-a-web-bundle\u2460"}],"title":"3.2. Firing events"}],"url":"#fetch-a-web-bundle"},
+"fetched-web-bundle": {"dfnID":"fetched-web-bundle","dfnText":"fetched web bundle","external":false,"refSections":[{"refs":[{"id":"ref-for-fetched-web-bundle"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-fetched-web-bundle\u2460"}],"title":"3.2. Firing events"}],"url":"#fetched-web-bundle"},
+"find-a-matching-web-bundle-registration": {"dfnID":"find-a-matching-web-bundle-registration","dfnText":"find a matching web bundle registration","external":false,"refSections":[{"refs":[{"id":"ref-for-find-a-matching-web-bundle-registration"}],"title":"4.1. Monkeypatch fetch"},{"refs":[{"id":"ref-for-find-a-matching-web-bundle-registration\u2460"}],"title":"5.1. Monkeypatch Does request match source list?"},{"refs":[{"id":"ref-for-find-a-matching-web-bundle-registration\u2461"}],"title":"5.2. Monkeypatch Does response to request match source list?"},{"refs":[{"id":"ref-for-find-a-matching-web-bundle-registration\u2462"}],"title":"6.4. Fetching subresources from a web bundle"}],"url":"#find-a-matching-web-bundle-registration"},
+"get-response-from-web-bundle-fetch-entry": {"dfnID":"get-response-from-web-bundle-fetch-entry","dfnText":"get response from web bundle fetch entry","external":false,"refSections":[{"refs":[{"id":"ref-for-get-response-from-web-bundle-fetch-entry"}],"title":"6.4. Fetching subresources from a web bundle"}],"url":"#get-response-from-web-bundle-fetch-entry"},
+"parse-a-url-list": {"dfnID":"parse-a-url-list","dfnText":"parse a URL list","external":false,"refSections":[{"refs":[{"id":"ref-for-parse-a-url-list"},{"id":"ref-for-parse-a-url-list\u2460"}],"title":"6.1. Parsing"}],"url":"#parse-a-url-list"},
+"parse-a-web-bundle-string": {"dfnID":"parse-a-web-bundle-string","dfnText":"parse a web bundle string","external":false,"refSections":[{"refs":[{"id":"ref-for-parse-a-web-bundle-string"}],"title":"3.1. Prepare the script element"}],"url":"#parse-a-web-bundle-string"},
+"prepare-a-web-bundle": {"dfnID":"prepare-a-web-bundle","dfnText":"prepare a web bundle","external":false,"refSections":[{"refs":[{"id":"ref-for-prepare-a-web-bundle"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-prepare-a-web-bundle\u2460"}],"title":"3.3. Removing"}],"url":"#prepare-a-web-bundle"},
+"process-events-for-a-web-bundle": {"dfnID":"process-events-for-a-web-bundle","dfnText":"process events for a web bundle","external":false,"refSections":[{"refs":[{"id":"ref-for-process-events-for-a-web-bundle"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-process-events-for-a-web-bundle\u2460"}],"title":"3.2. Firing events"}],"url":"#process-events-for-a-web-bundle"},
+"web-bundle-fetch-entry": {"dfnID":"web-bundle-fetch-entry","dfnText":"web bundle fetch entry","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-fetch-entry"},{"id":"ref-for-web-bundle-fetch-entry\u2460"},{"id":"ref-for-web-bundle-fetch-entry\u2461"},{"id":"ref-for-web-bundle-fetch-entry\u2462"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry\u2463"},{"id":"ref-for-web-bundle-fetch-entry\u2464"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry\u2465"}],"title":"6.2. Fetching a web bundle"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry\u2466"}],"title":"6.3. Process web bundle response"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry\u2467"}],"title":"6.4. Fetching subresources from a web bundle"}],"url":"#web-bundle-fetch-entry"},
+"web-bundle-fetch-entry-credentials": {"dfnID":"web-bundle-fetch-entry-credentials","dfnText":"credentials","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-fetch-entry-credentials"},{"id":"ref-for-web-bundle-fetch-entry-credentials\u2460"},{"id":"ref-for-web-bundle-fetch-entry-credentials\u2461"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-credentials\u2462"}],"title":"6.2. Fetching a web bundle"}],"url":"#web-bundle-fetch-entry-credentials"},
+"web-bundle-fetch-entry-fetched-bundle": {"dfnID":"web-bundle-fetch-entry-fetched-bundle","dfnText":"fetched bundle","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-fetch-entry-fetched-bundle"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-fetched-bundle\u2460"}],"title":"3.3. Removing"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-fetched-bundle\u2461"},{"id":"ref-for-web-bundle-fetch-entry-fetched-bundle\u2462"}],"title":"6.3. Process web bundle response"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-fetched-bundle\u2463"},{"id":"ref-for-web-bundle-fetch-entry-fetched-bundle\u2464"},{"id":"ref-for-web-bundle-fetch-entry-fetched-bundle\u2465"}],"title":"6.4. Fetching subresources from a web bundle"}],"url":"#web-bundle-fetch-entry-fetched-bundle"},
+"web-bundle-fetch-entry-source": {"dfnID":"web-bundle-fetch-entry-source","dfnText":"source","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-fetch-entry-source"},{"id":"ref-for-web-bundle-fetch-entry-source\u2460"},{"id":"ref-for-web-bundle-fetch-entry-source\u2461"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-source\u2462"}],"title":"5.1. Monkeypatch Does request match source list?"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-source\u2463"}],"title":"5.2. Monkeypatch Does response to request match source list?"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-source\u2464"}],"title":"6.2. Fetching a web bundle"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-source\u2465"},{"id":"ref-for-web-bundle-fetch-entry-source\u2466"}],"title":"6.5. Finding a matching registration"}],"url":"#web-bundle-fetch-entry-source"},
+"web-bundle-fetch-entry-state": {"dfnID":"web-bundle-fetch-entry-state","dfnText":"state","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-fetch-entry-state"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-state\u2460"},{"id":"ref-for-web-bundle-fetch-entry-state\u2461"},{"id":"ref-for-web-bundle-fetch-entry-state\u2462"}],"title":"3.2. Firing events"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-state\u2463"}],"title":"6.2. Fetching a web bundle"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-state\u2464"},{"id":"ref-for-web-bundle-fetch-entry-state\u2465"},{"id":"ref-for-web-bundle-fetch-entry-state\u2466"}],"title":"6.3. Process web bundle response"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-state\u2467"},{"id":"ref-for-web-bundle-fetch-entry-state\u2468"},{"id":"ref-for-web-bundle-fetch-entry-state\u2460\u24ea"}],"title":"6.4. Fetching subresources from a web bundle"}],"url":"#web-bundle-fetch-entry-state"},
+"web-bundle-fetch-entry-used-by-a-registration": {"dfnID":"web-bundle-fetch-entry-used-by-a-registration","dfnText":"used\nby a registration","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-fetch-entry-used-by-a-registration"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-fetch-entry-used-by-a-registration\u2460"}],"title":"3.3. Removing"}],"url":"#web-bundle-fetch-entry-used-by-a-registration"},
+"web-bundle-parse-result": {"dfnID":"web-bundle-parse-result","dfnText":"web bundle parse result","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-parse-result"}],"title":"6.1. Parsing"}],"url":"#web-bundle-parse-result"},
+"web-bundle-parse-result-credentials": {"dfnID":"web-bundle-parse-result-credentials","dfnText":"credentials","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-parse-result-credentials"},{"id":"ref-for-web-bundle-parse-result-credentials\u2460"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-parse-result-credentials\u2461"}],"title":"6.1. Parsing"}],"url":"#web-bundle-parse-result-credentials"},
+"web-bundle-parse-result-rule": {"dfnID":"web-bundle-parse-result-rule","dfnText":"rule","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-parse-result-rule"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-parse-result-rule\u2460"}],"title":"6.1. Parsing"}],"url":"#web-bundle-parse-result-rule"},
+"web-bundle-parse-result-source": {"dfnID":"web-bundle-parse-result-source","dfnText":"source","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-parse-result-source"},{"id":"ref-for-web-bundle-parse-result-source\u2460"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-parse-result-source\u2461"}],"title":"6.1. Parsing"}],"url":"#web-bundle-parse-result-source"},
+"web-bundle-registration": {"dfnID":"web-bundle-registration","dfnText":"web bundle registration","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-registration"},{"id":"ref-for-web-bundle-registration\u2460"},{"id":"ref-for-web-bundle-registration\u2461"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-web-bundle-registration\u2462"}],"title":"3. HTML monkeypatches"},{"refs":[{"id":"ref-for-web-bundle-registration\u2463"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-registration\u2464"}],"title":"3.3. Removing"}],"url":"#web-bundle-registration"},
+"web-bundle-registration-fetch-entry": {"dfnID":"web-bundle-registration-fetch-entry","dfnText":"fetch entry","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-registration-fetch-entry"}],"title":"2. Structures"},{"refs":[{"id":"ref-for-web-bundle-registration-fetch-entry\u2460"},{"id":"ref-for-web-bundle-registration-fetch-entry\u2461"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-registration-fetch-entry\u2462"},{"id":"ref-for-web-bundle-registration-fetch-entry\u2463"},{"id":"ref-for-web-bundle-registration-fetch-entry\u2464"}],"title":"3.2. Firing events"},{"refs":[{"id":"ref-for-web-bundle-registration-fetch-entry\u2465"}],"title":"3.3. Removing"},{"refs":[{"id":"ref-for-web-bundle-registration-fetch-entry\u2466"}],"title":"5.1. Monkeypatch Does request match source list?"},{"refs":[{"id":"ref-for-web-bundle-registration-fetch-entry\u2467"}],"title":"5.2. Monkeypatch Does response to request match source list?"},{"refs":[{"id":"ref-for-web-bundle-registration-fetch-entry\u2468"}],"title":"6.4. Fetching subresources from a web bundle"},{"refs":[{"id":"ref-for-web-bundle-registration-fetch-entry\u2460\u24ea"},{"id":"ref-for-web-bundle-registration-fetch-entry\u2460\u2460"}],"title":"6.5. Finding a matching registration"}],"url":"#web-bundle-registration-fetch-entry"},
+"web-bundle-registration-rule": {"dfnID":"web-bundle-registration-rule","dfnText":"rule","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-registration-rule"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-registration-rule\u2460"}],"title":"6.5. Finding a matching registration"}],"url":"#web-bundle-registration-rule"},
+"web-bundle-result": {"dfnID":"web-bundle-result","dfnText":"web bundle result","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-result"},{"id":"ref-for-web-bundle-result\u2460"}],"title":"3. HTML monkeypatches"},{"refs":[{"id":"ref-for-web-bundle-result\u2461"},{"id":"ref-for-web-bundle-result\u2462"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-result\u2463"},{"id":"ref-for-web-bundle-result\u2464"}],"title":"3.2. Firing events"},{"refs":[{"id":"ref-for-web-bundle-result\u2465"}],"title":"3.3. Removing"}],"url":"#web-bundle-result"},
+"web-bundle-result-error-to-rethrow": {"dfnID":"web-bundle-result-error-to-rethrow","dfnText":"error to rethrow","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-result-error-to-rethrow"},{"id":"ref-for-web-bundle-result-error-to-rethrow\u2460"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-result-error-to-rethrow\u2461"},{"id":"ref-for-web-bundle-result-error-to-rethrow\u2462"},{"id":"ref-for-web-bundle-result-error-to-rethrow\u2463"}],"title":"3.2. Firing events"}],"url":"#web-bundle-result-error-to-rethrow"},
+"web-bundle-result-registration": {"dfnID":"web-bundle-result-registration","dfnText":"registration","external":false,"refSections":[{"refs":[{"id":"ref-for-web-bundle-result-registration"},{"id":"ref-for-web-bundle-result-registration\u2460"},{"id":"ref-for-web-bundle-result-registration\u2461"}],"title":"3.1. Prepare the script element"},{"refs":[{"id":"ref-for-web-bundle-result-registration\u2462"},{"id":"ref-for-web-bundle-result-registration\u2463"},{"id":"ref-for-web-bundle-result-registration\u2464"},{"id":"ref-for-web-bundle-result-registration\u2465"},{"id":"ref-for-web-bundle-result-registration\u2466"}],"title":"3.2. Firing events"},{"refs":[{"id":"ref-for-web-bundle-result-registration\u2467"}],"title":"3.3. Removing"}],"url":"#web-bundle-result-registration"},
+};
+
+document.addEventListener("DOMContentLoaded", ()=>{
+    genAllDfnPanels();
+
+    document.body.addEventListener("click", (e) => {
+        // If not handled already, just hide all dfn panels.
+        hideAllDfnPanels();
+    });
+});
+
+window.addEventListener("resize", () => {
+    // Pin any visible dfn panel
+    queryAll(".dfn-panel.on, .dfn-panel.activated").forEach(el=>positionDfnPanel(el));
+});
+
+function genAllDfnPanels() {
+    for(const panelData of Object.values(dfnPanelData)) {
+        const dfnID = panelData.dfnID;
+        const dfn = document.getElementById(dfnID);
+        if(!dfn) {
+            console.log(`Can't find dfn#${dfnID}.`, panelData);
+            continue;
+        }
+        dfn.panelData = panelData;
+        insertDfnPopupAction(dfn);
+    }
+}
+
+function genDfnPanel(dfn, { dfnID, url, dfnText, refSections, external }) {
+    const dfnPanel = mk.aside({
+        class: "dfn-panel on",
+        id: `infopanel-for-${dfnID}`,
+        "data-for": dfnID,
+        "aria-labelled-by":`infopaneltitle-for-${dfnID}`,
+        },
+        mk.span({id:`infopaneltitle-for-${dfnID}`, style:"display:none"},
+            `Info about the '${dfnText}' ${external?"external":""} reference.`),
+        mk.a({href:url, class:"dfn-link"}, url),
+        refSections.length == 0 ? [] :
+            mk.b({}, "Referenced in:"),
+            mk.ul({},
+                ...refSections.map(section=>
+                    mk.li({},
+                        ...section.refs.map((ref, refI)=>
+                            [
+                                mk.a({ href: `#${ref.id}` },
+                                    (refI == 0) ? section.title : `(${refI + 1})`
+                                ),
+                                " ",
+                            ]
+                        ),
+                    ),
+                ),
+            ),
+        genLinkingSyntaxes(dfn),
+    );
+
+    dfnPanel.addEventListener('click', (event) => {
+        if (event.target.nodeName == 'A') {
+            scrollToTargetAndHighlight(event);
+            pinDfnPanel(dfnPanel);
+        }
+        event.stopPropagation();
+        refocusOnTarget(event);
+    });
+    dfnPanel.addEventListener('keydown', (event) => {
+        if(event.keyCode == 27) { // Escape key
+            hideDfnPanel({dfnPanel});
+            event.stopPropagation();
+            event.preventDefault();
+        }
+    });
+
+    dfnPanel.dfn = dfn;
+    dfn.dfnPanel = dfnPanel;
+    return dfnPanel;
+}
+
+
+
+function hideAllDfnPanels() {
+    // Delete the currently-active dfn panel.
+    queryAll(".dfn-panel").forEach(dfnPanel=>hideDfnPanel({dfnPanel}));
+}
+
+function showDfnPanel(dfn) {
+    hideAllDfnPanels(); // Only display one at a time.
+
+    dfn.setAttribute("aria-expanded", "true");
+
+    const dfnPanel = genDfnPanel(dfn, dfn.panelData);
+
+    // Give the dfn a unique tabindex, and then
+    // give all the tabbable panel bits successive indexes.
+    let tabIndex = 100;
+    dfn.tabIndex = tabIndex++;
+    const tabbable = dfnPanel.querySelectorAll(":is(a, button)");
+    for (const el of tabbable) {
+        el.tabIndex = tabIndex++;
+    }
+
+    append(document.body, dfnPanel);
+    positionDfnPanel(dfnPanel);
+}
+
+function positionDfnPanel(dfnPanel) {
+    const dfn = dfnPanel.dfn;
+    const dfnPos = getBounds(dfn);
+    dfnPanel.style.top = dfnPos.bottom + "px";
+    dfnPanel.style.left = dfnPos.left + "px";
+
+    const panelPos = dfnPanel.getBoundingClientRect();
+    const panelMargin = 8;
+    const maxRight = document.body.parentNode.clientWidth - panelMargin;
+    if (panelPos.right > maxRight) {
+        const overflowAmount = panelPos.right - maxRight;
+        const newLeft = Math.max(panelMargin, dfnPos.left - overflowAmount);
+        dfnPanel.style.left = newLeft + "px";
+    }
+}
+
+function pinDfnPanel(dfnPanel) {
+    // Switch it to "activated" state, which pins it.
+    dfnPanel.classList.add("activated");
+    dfnPanel.style.position = "fixed";
+    dfnPanel.style.left = null;
+    dfnPanel.style.top = null;
+}
+
+function hideDfnPanel({dfn, dfnPanel}) {
+    if(!dfnPanel) dfnPanel = dfn.dfnPanel;
+    if(!dfn) dfn = dfnPanel.dfn;
+    dfn.dfnPanel = undefined;
+    dfnPanel.dfn = undefined;
+    dfn.setAttribute("aria-expanded", "false");
+    dfn.tabIndex = undefined;
+    dfnPanel.remove()
+}
+
+function toggleDfnPanel(dfn) {
+    if(dfn.dfnPanel) {
+        hideDfnPanel(dfn);
+    } else {
+        showDfnPanel(dfn);
+    }
+}
+
+function insertDfnPopupAction(dfn) {
+    dfn.setAttribute('role', 'button');
+    dfn.setAttribute('aria-expanded', 'false')
+    dfn.tabIndex = 0;
+    dfn.classList.add('has-dfn-panel');
+    dfn.addEventListener('click', (event) => {
+        toggleDfnPanel(dfn);
+        event.stopPropagation();
+    });
+    dfn.addEventListener('keypress', (event) => {
+        const kc = event.keyCode;
+        // 32->Space, 13->Enter
+        if(kc == 32 || kc == 13) {
+            toggleDfnPanel(dfn);
+            event.stopPropagation();
+            event.preventDefault();
+        }
+    });
+}
+
+function refocusOnTarget(event) {
+    const target = event.target;
+    setTimeout(() => {
+        // Refocus on the event.target element.
+        // This is needed after browser scrolls to the destination.
+        target.focus();
+    });
+}
+
+// TODO: shared util
+// Returns the root-level absolute position {left and top} of element.
+function getBounds(el, relativeTo=document.body) {
+    const relativeRect = relativeTo.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const top = elRect.top - relativeRect.top;
+    const left = elRect.left - relativeRect.left;
+    return {
+        top,
+        left,
+        bottom: top + elRect.height,
+        right: left + elRect.width,
+    }
+}
+
+function scrollToTargetAndHighlight(event) {
+    let hash = event.target.hash;
+    if (hash) {
+        hash = decodeURIComponent(hash.substring(1));
+        const dest = document.getElementById(hash);
+        if (dest) {
+            dest.classList.add('highlighted');
+            setTimeout(() => dest.classList.remove('highlighted'), 1000);
+        }
+    }
+}
+
+// Functions, divided by link type, that wrap an autolink's
+// contents with the appropriate outer syntax.
+// Alternately, a string naming another type they format
+// the same as.
+function needsFor(type) {
+    switch(type) {
+        case "descriptor":
+        case "value":
+        case "element-attr":
+        case "attr-value":
+        case "element-state":
+        case "method":
+        case "constructor":
+        case "argument":
+        case "attribute":
+        case "const":
+        case "dict-member":
+        case "event":
+        case "enum-value":
+        case "stringifier":
+        case "serializer":
+        case "iterator":
+        case "maplike":
+        case "setlike":
+        case "state":
+        case "mode":
+        case "context":
+        case "facet": return true;
+
+        default: return false;
+    }
+}
+function refusesFor(type) {
+    switch(type) {
+        case "property":
+        case "element":
+        case "interface":
+        case "namespace":
+        case "callback":
+        case "dictionary":
+        case "enum":
+        case "exception":
+        case "typedef":
+        case "http-header":
+        case "permission": return true;
+
+        default: return false;
+    }
+}
+function linkFormatterFromType(type) {
+    switch(type) {
+        case 'scheme':
+        case 'permission':
+        case 'dfn': return (text) => `[=${text}=]`;
+
+        case 'abstract-op': return (text) => `[\$${text}\$]`;
+
+        case 'function':
+        case 'at-rule':
+        case 'selector':
+        case 'value': return (text) => `''${text}''`;
+
+        case 'http-header': return (text) => `[:${text}:]`;
+
+        case 'interface':
+        case 'constructor':
+        case 'method':
+        case 'argument':
+        case 'attribute':
+        case 'callback':
+        case 'dictionary':
+        case 'dict-member':
+        case 'enum':
+        case 'enum-value':
+        case 'exception':
+        case 'const':
+        case 'typedef':
+        case 'stringifier':
+        case 'serializer':
+        case 'iterator':
+        case 'maplike':
+        case 'setlike':
+        case 'extended-attribute':
+        case 'event':
+        case 'idl': return (text) => `{{${text}}}`;
+
+        case 'element-state':
+        case 'element-attr':
+        case 'attr-value':
+        case 'element': return (element) => `<{${element}}>`;
+
+        case 'grammar': return (text) => `${text} (within a <pre class=prod>)`;
+
+        case 'type': return (text)=> `<<${text}>>`;
+
+        case 'descriptor':
+        case 'property': return (text) => `'${text}'`;
+
+        default: return;
+    };
+};
+
+function genLinkingSyntaxes(dfn) {
+    if(dfn.tagName != "DFN") return;
+
+    const type = dfn.getAttribute('data-dfn-type');
+    if(!type) {
+        console.log(`<dfn> doesn't have a data-dfn-type:`, dfn);
+        return [];
+    }
+
+    // Return a function that wraps link text based on the type
+    const linkFormatter = linkFormatterFromType(type);
+    if(!linkFormatter) {
+        console.log(`<dfn> has an unknown data-dfn-type:`, dfn);
+        return [];
+    }
+
+    let ltAlts;
+    if(dfn.hasAttribute('data-lt')) {
+        ltAlts = dfn.getAttribute('data-lt')
+            .split("|")
+            .map(x=>x.trim());
+    } else {
+        ltAlts = [dfn.textContent.trim()];
+    }
+    if(type == "type") {
+        // lt of "<foo>", but "foo" is the interior;
+        // <<foo/bar>> is how you write it with a for,
+        // not <foo/<bar>> or whatever.
+        for(var i = 0; i < ltAlts.length; i++) {
+            const lt = ltAlts[i];
+            const match = /<(.*)>/.exec(lt);
+            if(match) { ltAlts[i] = match[1]; }
+        }
+    }
+
+    let forAlts;
+    if(dfn.hasAttribute('data-dfn-for')) {
+        forAlts = dfn.getAttribute('data-dfn-for')
+            .split(",")
+            .map(x=>x.trim());
+    } else {
+        forAlts = [''];
+    }
+
+    let linkingSyntaxes = [];
+    if(!needsFor(type)) {
+        for(const lt of ltAlts) {
+            linkingSyntaxes.push(linkFormatter(lt));
+        }
+    }
+    if(!refusesFor(type)) {
+        for(const f of forAlts) {
+            linkingSyntaxes.push(linkFormatter(`${f}/${ltAlts[0]}`))
+        }
+    }
+    return [
+        mk.b({}, 'Possible linking syntaxes:'),
+        mk.ul({},
+            ...linkingSyntaxes.map(link => {
+                const copyLink = async () =>
+                    await navigator.clipboard.writeText(link);
+                return mk.li({},
+                    mk.div({ class: 'link-item' },
+                        mk.button({
+                            class: 'copy-icon', title: 'Copy',
+                            type: 'button',
+                            _onclick: copyLink,
+                            tabindex: 0,
+                        }, mk.span({ class: 'icon' }) ),
+                        mk.span({}, link)
+                    )
+                );
+            })
+        )
+    ];
+}
+}
+</script>
+<script>/* Boilerplate: script-ref-hints */
+"use strict";
+{
+let refsData = {
+"#bundle-rule": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"bundle rule","type":"dfn","url":"#bundle-rule"},
+"#bundle-rule-resources": {"export":true,"for_":["bundle rule"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"resources","type":"dfn","url":"#bundle-rule-resources"},
+"#bundle-rule-scopes": {"export":true,"for_":["bundle rule"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"scopes","type":"dfn","url":"#bundle-rule-scopes"},
+"#concept-process-web-bundle-response": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"process web bundle response","type":"dfn","url":"#concept-process-web-bundle-response"},
+"#document-web-bundle-fetch-entry-list": {"export":true,"for_":["Document"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"web bundle fetch entry list","type":"dfn","url":"#document-web-bundle-fetch-entry-list"},
+"#document-web-bundle-registration-list": {"export":true,"for_":["Document"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"web bundle registration list","type":"dfn","url":"#document-web-bundle-registration-list"},
+"#environment-settings-object-web-bundle-registration-list": {"export":true,"for_":["environment settings object"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"web bundle registration list","type":"dfn","url":"#environment-settings-object-web-bundle-registration-list"},
+"#fetch-a-subresource-from-web-bundle": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"fetch a subresource from web bundle","type":"dfn","url":"#fetch-a-subresource-from-web-bundle"},
+"#fetch-a-web-bundle": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"fetch a web bundle","type":"dfn","url":"#fetch-a-web-bundle"},
+"#fetched-web-bundle": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"fetched web bundle","type":"dfn","url":"#fetched-web-bundle"},
+"#find-a-matching-web-bundle-registration": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"find a matching web bundle registration","type":"dfn","url":"#find-a-matching-web-bundle-registration"},
+"#get-response-from-web-bundle-fetch-entry": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"get response from web bundle fetch entry","type":"dfn","url":"#get-response-from-web-bundle-fetch-entry"},
+"#parse-a-url-list": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"parse a url list","type":"dfn","url":"#parse-a-url-list"},
+"#parse-a-web-bundle-string": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"parse a web bundle string","type":"dfn","url":"#parse-a-web-bundle-string"},
+"#prepare-a-web-bundle": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"prepare a web bundle","type":"dfn","url":"#prepare-a-web-bundle"},
+"#process-events-for-a-web-bundle": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"process events for a web bundle","type":"dfn","url":"#process-events-for-a-web-bundle"},
+"#web-bundle-fetch-entry": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"web bundle fetch entry","type":"dfn","url":"#web-bundle-fetch-entry"},
+"#web-bundle-fetch-entry-credentials": {"export":true,"for_":["web bundle fetch entry"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"credentials","type":"dfn","url":"#web-bundle-fetch-entry-credentials"},
+"#web-bundle-fetch-entry-fetched-bundle": {"export":true,"for_":["web bundle fetch entry"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"fetched bundle","type":"dfn","url":"#web-bundle-fetch-entry-fetched-bundle"},
+"#web-bundle-fetch-entry-source": {"export":true,"for_":["web bundle fetch entry"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"source","type":"dfn","url":"#web-bundle-fetch-entry-source"},
+"#web-bundle-fetch-entry-state": {"export":true,"for_":["web bundle fetch entry"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"state","type":"dfn","url":"#web-bundle-fetch-entry-state"},
+"#web-bundle-fetch-entry-used-by-a-registration": {"export":true,"for_":["web bundle fetch entry"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"used by a registration","type":"dfn","url":"#web-bundle-fetch-entry-used-by-a-registration"},
+"#web-bundle-parse-result": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"web bundle parse result","type":"dfn","url":"#web-bundle-parse-result"},
+"#web-bundle-parse-result-credentials": {"export":true,"for_":["web bundle parse result"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"credentials","type":"dfn","url":"#web-bundle-parse-result-credentials"},
+"#web-bundle-parse-result-rule": {"export":true,"for_":["web bundle parse result"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"rule","type":"dfn","url":"#web-bundle-parse-result-rule"},
+"#web-bundle-parse-result-source": {"export":true,"for_":["web bundle parse result"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"source","type":"dfn","url":"#web-bundle-parse-result-source"},
+"#web-bundle-registration": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"web bundle registration","type":"dfn","url":"#web-bundle-registration"},
+"#web-bundle-registration-fetch-entry": {"export":true,"for_":["web bundle registration"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"fetch entry","type":"dfn","url":"#web-bundle-registration-fetch-entry"},
+"#web-bundle-registration-rule": {"export":true,"for_":["web bundle registration"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"rule","type":"dfn","url":"#web-bundle-registration-rule"},
+"#web-bundle-result": {"export":true,"for_":[],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"web bundle result","type":"dfn","url":"#web-bundle-result"},
+"#web-bundle-result-error-to-rethrow": {"export":true,"for_":["web bundle result"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"error to rethrow","type":"dfn","url":"#web-bundle-result-error-to-rethrow"},
+"#web-bundle-result-registration": {"export":true,"for_":["web bundle result"],"level":"","normative":true,"shortname":"web-package-subresource-loading","spec":"web-package-subresource-loading","status":"local","text":"registration","type":"dfn","url":"#web-bundle-result-registration"},
+"https://console.spec.whatwg.org/#report-a-warning-to-the-console": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"console","spec":"console","status":"current","text":"report a warning to the console","type":"dfn","url":"https://console.spec.whatwg.org/#report-a-warning-to-the-console"},
+"https://dom.spec.whatwg.org/#concept-document": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"dom","spec":"dom","status":"current","text":"document","type":"dfn","url":"https://dom.spec.whatwg.org/#concept-document"},
+"https://dom.spec.whatwg.org/#concept-event-fire": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"dom","spec":"dom","status":"current","text":"fire an event","type":"dfn","url":"https://dom.spec.whatwg.org/#concept-event-fire"},
+"https://dom.spec.whatwg.org/#document": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"dom","spec":"dom","status":"current","text":"Document","type":"interface","url":"https://dom.spec.whatwg.org/#document"},
+"https://fetch.spec.whatwg.org/#body-incrementally-read": {"export":true,"for_":[],"level":"","normative":true,"shortname":"fetch","spec":"fetch","status":"anchor-block","text":"incrementally reading","type":"dfn","url":"https://fetch.spec.whatwg.org/#body-incrementally-read"},
+"https://fetch.spec.whatwg.org/#concept-fetch": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"fetch","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-fetch"},
+"https://fetch.spec.whatwg.org/#concept-header": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"header","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-header"},
+"https://fetch.spec.whatwg.org/#concept-http-network-or-cache-fetch": {"export":false,"for_":[],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"http-network-or-cache fetch","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-http-network-or-cache-fetch"},
+"https://fetch.spec.whatwg.org/#concept-network-error": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"network error","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-network-error"},
+"https://fetch.spec.whatwg.org/#concept-request": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"request","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-request"},
+"https://fetch.spec.whatwg.org/#concept-request-client": {"export":true,"for_":["request"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"client","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-request-client"},
+"https://fetch.spec.whatwg.org/#concept-request-credentials-mode": {"export":true,"for_":["request"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"credentials mode","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-request-credentials-mode"},
+"https://fetch.spec.whatwg.org/#concept-request-current-url": {"export":true,"for_":["request"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"current url","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-request-current-url"},
+"https://fetch.spec.whatwg.org/#concept-request-destination": {"export":true,"for_":["request"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"destination","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-request-destination"},
+"https://fetch.spec.whatwg.org/#concept-request-header-list": {"export":true,"for_":["request"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"header list","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-request-header-list"},
+"https://fetch.spec.whatwg.org/#concept-request-mode": {"export":true,"for_":["request"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"mode","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-request-mode"},
+"https://fetch.spec.whatwg.org/#concept-request-redirect-count": {"export":true,"for_":["request"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"redirect count","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-request-redirect-count"},
+"https://fetch.spec.whatwg.org/#concept-request-url": {"export":true,"for_":["request"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"url","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-request-url"},
+"https://fetch.spec.whatwg.org/#concept-response": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"response","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-response"},
+"https://fetch.spec.whatwg.org/#concept-response-body": {"export":true,"for_":["response"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"body","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-response-body"},
+"https://fetch.spec.whatwg.org/#concept-response-status": {"export":true,"for_":["response"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"status","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-response-status"},
+"https://fetch.spec.whatwg.org/#concept-response-url": {"export":true,"for_":["response"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"url","type":"dfn","url":"https://fetch.spec.whatwg.org/#concept-response-url"},
+"https://fetch.spec.whatwg.org/#fetch-params": {"export":true,"for_":[],"level":"","normative":true,"shortname":"fetch","spec":"fetch","status":"anchor-block","text":"fetch params","type":"dfn","url":"https://fetch.spec.whatwg.org/#fetch-params"},
+"https://fetch.spec.whatwg.org/#fetch-scheme": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"fetch scheme","type":"dfn","url":"https://fetch.spec.whatwg.org/#fetch-scheme"},
+"https://fetch.spec.whatwg.org/#ok-status": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"ok status","type":"dfn","url":"https://fetch.spec.whatwg.org/#ok-status"},
+"https://fetch.spec.whatwg.org/#process-response": {"export":true,"for_":[],"level":"","normative":true,"shortname":"fetch","spec":"fetch","status":"anchor-block","text":"processresponse","type":"dfn","url":"https://fetch.spec.whatwg.org/#process-response"},
+"https://fetch.spec.whatwg.org/#request-service-workers-mode": {"export":true,"for_":["request"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"service-workers mode","type":"dfn","url":"https://fetch.spec.whatwg.org/#request-service-workers-mode"},
+"https://html.spec.whatwg.org/#concept-script-result": {"export":true,"for_":[],"level":"","normative":true,"shortname":"html","spec":"html","status":"anchor-block","text":"the script's result","type":"dfn","url":"https://html.spec.whatwg.org/#concept-script-result"},
+"https://html.spec.whatwg.org/#concept-script-type": {"export":true,"for_":[],"level":"","normative":true,"shortname":"html","spec":"html","status":"anchor-block","text":"the script's type","type":"dfn","url":"https://html.spec.whatwg.org/#concept-script-type"},
+"https://html.spec.whatwg.org/#delay-the-load-event": {"export":true,"for_":[],"level":"","normative":true,"shortname":"html","spec":"html","status":"anchor-block","text":"delay the load event","type":"dfn","url":"https://html.spec.whatwg.org/#delay-the-load-event"},
+"https://html.spec.whatwg.org/multipage/browsers.html#same-origin": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"same origin","type":"dfn","url":"https://html.spec.whatwg.org/multipage/browsers.html#same-origin"},
+"https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"navigate","type":"dfn","url":"https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate"},
+"https://html.spec.whatwg.org/multipage/infrastructure.html#in-parallel": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"in parallel","type":"dfn","url":"https://html.spec.whatwg.org/multipage/infrastructure.html#in-parallel"},
+"https://html.spec.whatwg.org/multipage/nav-history-apis.html#concept-document-window": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"associated document","type":"dfn","url":"https://html.spec.whatwg.org/multipage/nav-history-apis.html#concept-document-window"},
+"https://html.spec.whatwg.org/multipage/nav-history-apis.html#set-up-a-window-environment-settings-object": {"export":false,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"set up a window environment settings object","type":"dfn","url":"https://html.spec.whatwg.org/multipage/nav-history-apis.html#set-up-a-window-environment-settings-object"},
+"https://html.spec.whatwg.org/multipage/scripting.html#execute-the-script-element": {"export":false,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"execute the script element","type":"dfn","url":"https://html.spec.whatwg.org/multipage/scripting.html#execute-the-script-element"},
+"https://html.spec.whatwg.org/multipage/scripting.html#htmlscriptelement": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"HTMLScriptElement","type":"interface","url":"https://html.spec.whatwg.org/multipage/scripting.html#htmlscriptelement"},
+"https://html.spec.whatwg.org/multipage/scripting.html#mark-as-ready": {"export":false,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"mark as ready","type":"dfn","url":"https://html.spec.whatwg.org/multipage/scripting.html#mark-as-ready"},
+"https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element": {"export":false,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"prepare the script element","type":"dfn","url":"https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element"},
+"https://html.spec.whatwg.org/multipage/scripting.html#ready-to-be-parser-executed": {"export":false,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"ready to be parser-executed","type":"dfn","url":"https://html.spec.whatwg.org/multipage/scripting.html#ready-to-be-parser-executed"},
+"https://html.spec.whatwg.org/multipage/webappapis.html#environment-settings-object": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"environment settings object","type":"dfn","url":"https://html.spec.whatwg.org/multipage/webappapis.html#environment-settings-object"},
+"https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-microtask": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"queue a microtask","type":"dfn","url":"https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-microtask"},
+"https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"queue a task","type":"dfn","url":"https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task"},
+"https://html.spec.whatwg.org/multipage/webappapis.html#report-the-exception": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"report the exception","type":"dfn","url":"https://html.spec.whatwg.org/multipage/webappapis.html#report-the-exception"},
+"https://html.spec.whatwg.org/multipage/workers.html#set-up-a-worker-environment-settings-object": {"export":false,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"set up a worker environment settings object","type":"dfn","url":"https://html.spec.whatwg.org/multipage/workers.html#set-up-a-worker-environment-settings-object"},
+"https://infra.spec.whatwg.org/#ascii-case-insensitive": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"ascii case-insensitive","type":"dfn","url":"https://infra.spec.whatwg.org/#ascii-case-insensitive"},
+"https://infra.spec.whatwg.org/#iteration-continue": {"export":true,"for_":[],"level":"","normative":true,"shortname":"infra","spec":"infra","status":"anchor-block","text":"continue","type":"dfn","url":"https://infra.spec.whatwg.org/#iteration-continue"},
+"https://infra.spec.whatwg.org/#list": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"list","type":"dfn","url":"https://infra.spec.whatwg.org/#list"},
+"https://infra.spec.whatwg.org/#list-append": {"export":true,"for_":["list"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"append","type":"dfn","url":"https://infra.spec.whatwg.org/#list-append"},
+"https://infra.spec.whatwg.org/#list-contain": {"export":true,"for_":["list","stack","queue","set"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"contain","type":"dfn","url":"https://infra.spec.whatwg.org/#list-contain"},
+"https://infra.spec.whatwg.org/#list-iterate": {"export":true,"for_":["list","set"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"for each","type":"dfn","url":"https://infra.spec.whatwg.org/#list-iterate"},
+"https://infra.spec.whatwg.org/#list-remove": {"export":true,"for_":["list","set"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"remove","type":"dfn","url":"https://infra.spec.whatwg.org/#list-remove"},
+"https://infra.spec.whatwg.org/#map-exists": {"export":true,"for_":["map"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"exist","type":"dfn","url":"https://infra.spec.whatwg.org/#map-exists"},
+"https://infra.spec.whatwg.org/#map-getting-the-keys": {"export":true,"for_":["map"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"get the keys","type":"dfn","url":"https://infra.spec.whatwg.org/#map-getting-the-keys"},
+"https://infra.spec.whatwg.org/#ordered-map": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"map","type":"dfn","url":"https://infra.spec.whatwg.org/#ordered-map"},
+"https://infra.spec.whatwg.org/#parse-a-json-string-to-an-infra-value": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"parse json into infra values","type":"dfn","url":"https://infra.spec.whatwg.org/#parse-a-json-string-to-an-infra-value"},
+"https://infra.spec.whatwg.org/#string": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"string","type":"dfn","url":"https://infra.spec.whatwg.org/#string"},
+"https://infra.spec.whatwg.org/#struct": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"struct","type":"dfn","url":"https://infra.spec.whatwg.org/#struct"},
+"https://infra.spec.whatwg.org/#struct-item": {"export":true,"for_":["struct","tuple"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"item","type":"dfn","url":"https://infra.spec.whatwg.org/#struct-item"},
+"https://url.spec.whatwg.org/#concept-url": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"url","spec":"url","status":"current","text":"url","type":"dfn","url":"https://url.spec.whatwg.org/#concept-url"},
+"https://url.spec.whatwg.org/#concept-url-origin": {"export":true,"for_":["url"],"level":"1","normative":true,"shortname":"url","spec":"url","status":"current","text":"origin","type":"dfn","url":"https://url.spec.whatwg.org/#concept-url-origin"},
+"https://url.spec.whatwg.org/#concept-url-parser": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"url","spec":"url","status":"current","text":"url parser","type":"dfn","url":"https://url.spec.whatwg.org/#concept-url-parser"},
+"https://url.spec.whatwg.org/#concept-url-path": {"export":true,"for_":["url"],"level":"1","normative":true,"shortname":"url","spec":"url","status":"current","text":"path","type":"dfn","url":"https://url.spec.whatwg.org/#concept-url-path"},
+"https://url.spec.whatwg.org/#concept-url-scheme": {"export":true,"for_":["url"],"level":"1","normative":true,"shortname":"url","spec":"url","status":"current","text":"scheme","type":"dfn","url":"https://url.spec.whatwg.org/#concept-url-scheme"},
+"https://url.spec.whatwg.org/#shorten-a-urls-path": {"export":true,"for_":[],"level":"","normative":true,"shortname":"url","spec":"url","status":"anchor-block","text":"shortening","type":"dfn","url":"https://url.spec.whatwg.org/#shorten-a-urls-path"},
+"https://w3c.github.io/webappsec-csp/#policy-self-origin": {"export":true,"for_":["policy"],"level":"3","normative":true,"shortname":"csp","spec":"csp3","status":"current","text":"self-origin","type":"dfn","url":"https://w3c.github.io/webappsec-csp/#policy-self-origin"},
+"https://webidl.spec.whatwg.org/#exceptiondef-typeerror": {"export":true,"for_":[],"level":"1","normative":true,"shortname":"webidl","spec":"webidl","status":"current","text":"TypeError","type":"exception","url":"https://webidl.spec.whatwg.org/#exceptiondef-typeerror"},
+};
+
+function mkRefHint(link, ref) {
+    const linkText = link.textContent;
+    let dfnTextElements = '';
+    if (ref.text != linkText) {
+        dfnTextElements =
+            mk.li({},
+                mk.b({}, "Term: "),
+                mk.span({}, ref.text)
+            );
+    }
+    const forList = ref.for_;
+    let forListElements;
+    if(forList.length == 0) {
+        forListElements = [];
+    } else if(forList.length == 1) {
+        forListElements = mk.li({},
+            mk.b({}, "For: "),
+            mk.span({}, forList[0]),
+        );
+    } else {
+        forListElements = mk.li({},
+            mk.b({}, "For: "),
+            mk.ul({},
+                ...forList.map(forItem =>
+                    mk.li({},
+                        mk.span({}, forItem)
+                    ),
+                ),
+            ),
+        );
+    }
+    const url = ref.url;
+    const safeUrl = encodeURIComponent(url);
+    const hintPanel = mk.aside({
+        class: "ref-hint",
+        id: `ref-hint-for-${safeUrl}`,
+        "data-for": url,
+        "aria-labelled-by": `ref-hint-for-${safeUrl}`,
+    },
+        mk.ul({},
+            dfnTextElements,
+            mk.li({},
+                mk.b({}, "URL: "),
+                mk.a({ href: url, class: "ref" }, url),
+            ),
+            mk.li({},
+                mk.b({}, "Type: "),
+                mk.span({}, `${ref.type}`),
+            ),
+            mk.li({},
+                mk.b({}, "Spec: "),
+                mk.span({}, `${ref.spec ? ref.spec : ''}`),
+            ),
+            forListElements
+        ),
+    );
+    hintPanel.forLink = link;
+    setupRefHintEventListeners(link, hintPanel);
+    return hintPanel;
+}
+
+function hideAllRefHints() {
+    queryAll(".ref-hint").forEach(el=>hideRefHint(el));
+}
+
+function hideRefHint(refHint) {
+    const link = refHint.forLink;
+    link.setAttribute("aria-expanded", "false");
+    if(refHint.teardownEventListeners) {
+        refHint.teardownEventListeners();
+    }
+    refHint.remove();
+}
+
+function showRefHint(link) {
+    if(link.classList.contains("dfn-link")) return;
+    const url = link.getAttribute("href");
+    const ref = refsData[url];
+    if(!ref) return;
+
+    hideAllRefHints(); // Only display one at this time.
+
+    const refHint = mkRefHint(link, ref);
+    append(document.body, refHint);
+    link.setAttribute("aria-expanded", "true");
+    positionRefHint(refHint);
+}
+
+function setupRefHintEventListeners(link, refHint) {
+    if (refHint.teardownEventListeners) return;
+    // Add event handlers to hide the refHint after the user moves away
+    // from both the link and refHint, if not hovering either within one second.
+    let timeout = null;
+    const startHidingRefHint = (event) => {
+        if (timeout) {
+            clearTimeout(timeout);
+        }
+        timeout = setTimeout(() => {
+            hideRefHint(refHint);
+        }, 1000);
+    }
+    const resetHidingRefHint = (event) => {
+        if (timeout) clearTimeout(timeout);
+        timeout = null;
+    };
+    link.addEventListener("mouseleave", startHidingRefHint);
+    link.addEventListener("mouseenter", resetHidingRefHint);
+    link.addEventListener("blur", startHidingRefHint);
+    link.addEventListener("focus", resetHidingRefHint);
+    refHint.addEventListener("mouseleave", startHidingRefHint);
+    refHint.addEventListener("mouseenter", resetHidingRefHint);
+    refHint.addEventListener("blur", startHidingRefHint);
+    refHint.addEventListener("focus", resetHidingRefHint);
+
+    refHint.teardownEventListeners = () => {
+        // remove event listeners
+        resetHidingRefHint();
+        link.removeEventListener("mouseleave", startHidingRefHint);
+        link.removeEventListener("mouseenter", resetHidingRefHint);
+        link.removeEventListener("blur", startHidingRefHint);
+        link.removeEventListener("focus", resetHidingRefHint);
+        refHint.removeEventListener("mouseleave", startHidingRefHint);
+        refHint.removeEventListener("mouseenter", resetHidingRefHint);
+        refHint.removeEventListener("blur", startHidingRefHint);
+        refHint.removeEventListener("focus", resetHidingRefHint);
+    };
+}
+
+function positionRefHint(refHint) {
+    const link = refHint.forLink;
+    const linkPos = getBounds(link);
+    refHint.style.top = linkPos.bottom + "px";
+    refHint.style.left = linkPos.left + "px";
+
+    const panelPos = refHint.getBoundingClientRect();
+    const panelMargin = 8;
+    const maxRight = document.body.parentNode.clientWidth - panelMargin;
+    if (panelPos.right > maxRight) {
+        const overflowAmount = panelPos.right - maxRight;
+        const newLeft = Math.max(panelMargin, linkPos.left - overflowAmount);
+        refHint.style.left = newLeft + "px";
+    }
+}
+
+// TODO: shared util
+// Returns the root-level absolute position {left and top} of element.
+function getBounds(el, relativeTo=document.body) {
+    const relativeRect = relativeTo.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const top = elRect.top - relativeRect.top;
+    const left = elRect.left - relativeRect.left;
+    return {
+        top,
+        left,
+        bottom: top + elRect.height,
+        right: left + elRect.width,
+    }
+}
+
+function showRefHintListener(e) {
+    // If the target isn't in a link (or is a link),
+    // just ignore it.
+    let link = e.target.closest("a");
+    if(!link) return;
+
+    // If the target is in a ref-hint panel
+    // (aka a link in the already-open one),
+    // also just ignore it.
+    if(link.closest(".ref-hint")) return;
+
+    // Otherwise, show the panel for the link.
+    showRefHint(link);
+}
+
+function hideAllHintsListener(e) {
+    // If the click is inside a ref-hint panel, ignore it.
+    if(e.target.closest(".ref-hint")) return;
+    // Otherwise, close all the current panels.
+    hideAllRefHints();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.body.addEventListener("mousedown", showRefHintListener);
+    document.body.addEventListener("focus", showRefHintListener);
+
+    document.body.addEventListener("click", hideAllHintsListener);
+});
+
+window.addEventListener("resize", () => {
+    // Hide any open ref hint.
+    hideAllRefHints();
+});
+}
+</script>
