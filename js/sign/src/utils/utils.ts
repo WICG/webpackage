@@ -1,5 +1,10 @@
 import crypto, { KeyObject } from 'crypto';
 import read from 'read';
+import assert from 'assert';
+import {
+  ECDSA_P256_SHA256_PK_SIGNATURE_ATTRIBUTE_NAME,
+  ED25519_PK_SIGNATURE_ATTRIBUTE_NAME,
+} from './constants.js';
 
 // A helper function that can be used to read the passphrase to decrypt a
 // password-decrypted private key.
@@ -31,15 +36,63 @@ export function parsePemKey(
   });
 }
 
-export function getRawPublicKey(publicKey: crypto.KeyObject) {
-  // Currently this is the only way for us to get the raw 32 bytes of the public key.
-  return new Uint8Array(
-    publicKey.export({ type: 'spki', format: 'der' }).slice(-32)
+export function isAsymmetricKeyTypeSupported(key: crypto.KeyObject) {
+  return (
+    key.asymmetricKeyType === 'ed25519' ||
+    (key.asymmetricKeyType === 'ec' &&
+      key.asymmetricKeyDetails!.namedCurve === 'secp256k1')
   );
 }
 
-// Throws an error if the key is not a valid Ed25519 key of the specified type.
-export function checkIsValidEd25519Key(
+export enum SignatureType {
+  Ed25519,
+  EcdsaP256SHA256,
+}
+
+export function getSignatureType(key: crypto.KeyObject) {
+  assert(
+    isAsymmetricKeyTypeSupported(key),
+    'Expected either "Ed25519" or "ECDSA P-256" key.'
+  );
+  if (key.asymmetricKeyType === 'ed25519') {
+    return SignatureType.Ed25519;
+  }
+  return SignatureType.EcdsaP256SHA256;
+}
+
+export function getPublicKeyAttributeName(key: crypto.KeyObject) {
+  switch (getSignatureType(key)) {
+    case SignatureType.Ed25519:
+      return ED25519_PK_SIGNATURE_ATTRIBUTE_NAME;
+    case SignatureType.EcdsaP256SHA256:
+      return ECDSA_P256_SHA256_PK_SIGNATURE_ATTRIBUTE_NAME;
+  }
+}
+
+export function getRawPublicKey(publicKey: crypto.KeyObject) {
+  const exportedKey = publicKey.export({ type: 'spki', format: 'der' });
+  switch (getSignatureType(publicKey)) {
+    case SignatureType.Ed25519:
+      // Currently this is the only way for us to get the raw 32 bytes of the public key.
+      return new Uint8Array(exportedKey.slice(-32));
+    case SignatureType.EcdsaP256SHA256: {
+      // The last 65 bytes are the raw bytes of the ECDSA P-256 public key.
+      // For the purposes of signing, we'd like to convert it to its compressed form that takes only 33 bytes.
+      const uncompressedHex = exportedKey.slice(-65).toString('hex');
+      const compressedHex = crypto.ECDH.convertKey(
+        uncompressedHex,
+        'secp256k1',
+        'hex',
+        'hex',
+        'compressed'
+      ) as string;
+      return Buffer.from(compressedHex, 'hex');
+    }
+  }
+}
+
+// Throws an error if the key is not a valid Ed25519 or ECDSA P-256 key of the specified type.
+export function checkIsValidKey(
   expectedKeyType: crypto.KeyObjectType,
   key: KeyObject
 ) {
@@ -49,9 +102,7 @@ export function checkIsValidEd25519Key(
     );
   }
 
-  if (key.asymmetricKeyType !== 'ed25519') {
-    throw new Error(
-      `Expected asymmetric key type to be "ed25519", but it was "${key.asymmetricKeyType}".`
-    );
+  if (!isAsymmetricKeyTypeSupported(key)) {
+    throw new Error(`Expected either "Ed25519" or "ECDSA P-256" key.`);
   }
 }

@@ -1,15 +1,22 @@
 import crypto, { KeyObject } from 'crypto';
 import * as cborg from 'cborg';
 import {
+  ECDSA_P256_SHA256_PK_SIGNATURE_ATTRIBUTE_NAME,
   ED25519_PK_SIGNATURE_ATTRIBUTE_NAME,
   INTEGRITY_BLOCK_MAGIC,
   VERSION_B1,
 } from '../utils/constants.js';
 import { checkDeterministic } from '../cbor/deterministic.js';
-import { getRawPublicKey, checkIsValidEd25519Key } from '../utils/utils.js';
+import {
+  getRawPublicKey,
+  checkIsValidKey,
+  getSignatureType,
+  SignatureType,
+  getPublicKeyAttributeName,
+} from '../utils/utils.js';
 import { ISigningStrategy } from './signing-strategy-interface.js';
 
-type SignatureAttributeKey = typeof ED25519_PK_SIGNATURE_ATTRIBUTE_NAME;
+type SignatureAttributeKey = string;
 type SignatureAttributes = { [SignatureAttributeKey: string]: Uint8Array };
 
 type IntegritySignature = {
@@ -29,10 +36,10 @@ export class IntegrityBlockSigner {
   }> {
     const integrityBlock = this.obtainIntegrityBlock().integrityBlock;
     const publicKey = await this.signingStrategy.getPublicKey();
-    checkIsValidEd25519Key('public', publicKey);
+    checkIsValidKey('public', publicKey);
 
     const newAttributes: SignatureAttributes = {
-      [ED25519_PK_SIGNATURE_ATTRIBUTE_NAME]: getRawPublicKey(publicKey),
+      [getPublicKeyAttributeName(publicKey)]: getRawPublicKey(publicKey),
     };
 
     const ibCbor = integrityBlock.toCBOR();
@@ -56,6 +63,7 @@ export class IntegrityBlockSigner {
 
     const signedIbCbor = integrityBlock.toCBOR();
     checkDeterministic(signedIbCbor);
+
     return {
       integrityBlock: signedIbCbor,
       signedWebBundle: new Uint8Array(
