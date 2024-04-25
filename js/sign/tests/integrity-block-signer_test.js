@@ -41,9 +41,9 @@ describe('Web Bundle ID', () => {
     it(`calculates the ID and isolated web app origin correctly with key #${index}.`, () => {
       const expectedWebBundleId = (() => {
         switch (utils.getSignatureType(key)) {
-          case utils.SignatureType.Ed25519:
+          case constants.SignatureType.Ed25519:
             return TEST_ED25519_WEB_BUNDLE_ID;
-          case utils.SignatureType.EcdsaP256SHA256:
+          case constants.SignatureType.EcdsaP256SHA256:
             return TEST_ECDSA_P256_WEB_BUNDLE_ID;
         }
       })();
@@ -69,7 +69,7 @@ describe('Integrity Block Signer', () => {
   }
 
   function createTestSuffix(publicKey) {
-    return utils.SignatureType[utils.getSignatureType(publicKey)];
+    return constants.SignatureType[utils.getSignatureType(publicKey)];
   }
 
   it('accepts only selected key types.', () => {
@@ -89,6 +89,7 @@ describe('Integrity Block Signer', () => {
     for (const invalidKey of [
       { keyType: 'rsa', options: { modulusLength: 2048 } },
       { keyType: 'dsa', options: { modulusLength: 1024, divisorLength: 224 } },
+      { keyType: 'ec', options: { namedCurve: 'sect239k1' } },
       { keyType: 'ed448' },
       { keyType: 'x25519' },
       { keyType: 'x448' },
@@ -131,7 +132,7 @@ describe('Integrity Block Signer', () => {
     crypto.generateKeyPairSync('ed25519'),
     crypto.generateKeyPairSync('ec', { namedCurve: 'secp256k1' }),
   ].forEach((keypair) => {
-    fit(`generates the dataToBeSigned correctly with ${createTestSuffix(
+    it(`generates the dataToBeSigned correctly with ${createTestSuffix(
       keypair.publicKey
     )}.`, () => {
       const signer = initSignerWithTestWebBundleAndKeys(keypair.privateKey);
@@ -147,13 +148,13 @@ describe('Integrity Block Signer', () => {
 
       const attributesCborHex = (() => {
         switch (utils.getSignatureType(keypair.publicKey)) {
-          case utils.SignatureType.Ed25519:
+          case constants.SignatureType.Ed25519:
             return (
               /*52*/ '0000000000000034' +
               'a170656432353531395075626c69634b65795820' +
               Buffer.from(rawPubKey).toString('hex')
             );
-          case utils.SignatureType.EcdsaP256SHA256:
+          case constants.SignatureType.EcdsaP256SHA256:
             return (
               /*62*/ '000000000000003e' +
               'a178186563647361503235365348413235365075626c69634b65795821' +
@@ -205,6 +206,8 @@ describe('Integrity Block Signer', () => {
 
       const [signatureAttributes, signature] = signatureStack[0];
       expect(signatureAttributes).toEqual(sigAttr);
+
+      // For ECDSA P-256 keys the algorithm is implicitly selected as SHA-256.
       expect(
         crypto.verify(
           /*algorithm=*/ undefined,

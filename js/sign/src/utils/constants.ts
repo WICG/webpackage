@@ -1,6 +1,15 @@
-export const ED25519_PK_SIGNATURE_ATTRIBUTE_NAME = 'ed25519PublicKey';
-export const ECDSA_P256_SHA256_PK_SIGNATURE_ATTRIBUTE_NAME =
-  'ecdsaP256SHA256PublicKey';
+export enum SignatureType {
+  Ed25519,
+  EcdsaP256SHA256,
+}
+
+export const PUBLIC_KEY_ATTRIBUTE_NAME_MAPPING = new Map<SignatureType, string>(
+  [
+    [SignatureType.Ed25519, 'ed25519PublicKey'],
+    [SignatureType.EcdsaP256SHA256, 'ecdsaP256SHA256PublicKey'],
+  ]
+);
+
 export const INTEGRITY_BLOCK_MAGIC = new Uint8Array([
   0xf0, 0x9f, 0x96, 0x8b, 0xf0, 0x9f, 0x93, 0xa6,
 ]); // 🖋📦

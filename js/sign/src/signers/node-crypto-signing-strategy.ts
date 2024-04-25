@@ -10,6 +10,7 @@ export class NodeCryptoSigningStrategy implements ISigningStrategy {
   }
 
   async sign(data: Uint8Array): Promise<Uint8Array> {
+    // For ECDSA P-256 keys the algorithm is implicitly selected as SHA-256.
     return crypto.sign(/*algorithm=*/ undefined, data, this.privateKey);
   }
 

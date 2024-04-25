@@ -1,17 +1,10 @@
 import crypto, { KeyObject } from 'crypto';
 import * as cborg from 'cborg';
-import {
-  ECDSA_P256_SHA256_PK_SIGNATURE_ATTRIBUTE_NAME,
-  ED25519_PK_SIGNATURE_ATTRIBUTE_NAME,
-  INTEGRITY_BLOCK_MAGIC,
-  VERSION_B1,
-} from '../utils/constants.js';
+import { INTEGRITY_BLOCK_MAGIC, VERSION_B1 } from '../utils/constants.js';
 import { checkDeterministic } from '../cbor/deterministic.js';
 import {
   getRawPublicKey,
   checkIsValidKey,
-  getSignatureType,
-  SignatureType,
   getPublicKeyAttributeName,
 } from '../utils/utils.js';
 import { ISigningStrategy } from './signing-strategy-interface.js';
@@ -140,6 +133,7 @@ export class IntegrityBlockSigner {
     signature: Uint8Array,
     publicKey: KeyObject
   ): void {
+    // For ECDSA P-256 keys the algorithm is implicitly selected as SHA-256.
     const isVerified = crypto.verify(
       /*algorithm=*/ undefined,
       data,

@@ -2,8 +2,8 @@ import crypto, { KeyObject } from 'crypto';
 import read from 'read';
 import assert from 'assert';
 import {
-  ECDSA_P256_SHA256_PK_SIGNATURE_ATTRIBUTE_NAME,
-  ED25519_PK_SIGNATURE_ATTRIBUTE_NAME,
+  PUBLIC_KEY_ATTRIBUTE_NAME_MAPPING,
+  SignatureType,
 } from './constants.js';
 
 // A helper function that can be used to read the passphrase to decrypt a
@@ -40,13 +40,8 @@ export function isAsymmetricKeyTypeSupported(key: crypto.KeyObject) {
   return (
     key.asymmetricKeyType === 'ed25519' ||
     (key.asymmetricKeyType === 'ec' &&
-      key.asymmetricKeyDetails!.namedCurve === 'secp256k1')
+      key.asymmetricKeyDetails?.namedCurve === 'secp256k1')
   );
-}
-
-export enum SignatureType {
-  Ed25519,
-  EcdsaP256SHA256,
 }
 
 export function getSignatureType(key: crypto.KeyObject) {
@@ -61,12 +56,7 @@ export function getSignatureType(key: crypto.KeyObject) {
 }
 
 export function getPublicKeyAttributeName(key: crypto.KeyObject) {
-  switch (getSignatureType(key)) {
-    case SignatureType.Ed25519:
-      return ED25519_PK_SIGNATURE_ATTRIBUTE_NAME;
-    case SignatureType.EcdsaP256SHA256:
-      return ECDSA_P256_SHA256_PK_SIGNATURE_ATTRIBUTE_NAME;
-  }
+  return PUBLIC_KEY_ATTRIBUTE_NAME_MAPPING.get(getSignatureType(key))!;
 }
 
 export function getRawPublicKey(publicKey: crypto.KeyObject) {
