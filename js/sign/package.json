@@ -44,7 +44,7 @@
     "read": "^2.0.0"
   },
   "devDependencies": {
-    "@types/node": "^17.0.0",
+    "@types/node": "^16.0.0",
     "esbuild": "^0.14.47",
     "jasmine": "^4.2.1",
     "mock-stdin": "^1.0.0",
@@ -52,7 +52,7 @@
     "typescript": "^4.7.3"
   },
   "engines": {
-    "node": ">= 17.0.0",
+    "node": ">= 16.0.0",
     "npm": ">= 8.0.0"
   },
   "prettier": {

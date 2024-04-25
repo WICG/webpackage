@@ -17,7 +17,7 @@ npm install wbn-sign
 
 ## Requirements
 
-This plugin requires Node v14.0.0+.
+This plugin requires Node v16.0.0+.
 
 ## Usage
 
