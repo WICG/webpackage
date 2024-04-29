@@ -36,23 +36,32 @@ export function parsePemKey(
   });
 }
 
-export function isAsymmetricKeyTypeSupported(key: crypto.KeyObject) {
-  return (
-    key.asymmetricKeyType === 'ed25519' ||
-    (key.asymmetricKeyType === 'ec' &&
-      key.asymmetricKeyDetails?.namedCurve === 'secp256k1')
-  );
+function maybeGetSignatureType(key: crypto.KeyObject): SignatureType | null {
+  switch (key.asymmetricKeyType) {
+    case 'ed25519':
+      return SignatureType.Ed25519;
+    case 'ec':
+      if (key.asymmetricKeyDetails?.namedCurve === 'prime256v1') {
+        return SignatureType.EcdsaP256SHA256;
+      }
+      break;
+    default:
+      break;
+  }
+  return null;
 }
 
-export function getSignatureType(key: crypto.KeyObject) {
+export function isAsymmetricKeyTypeSupported(key: crypto.KeyObject): boolean {
+  return maybeGetSignatureType(key) !== null;
+}
+
+export function getSignatureType(key: crypto.KeyObject): SignatureType {
+  const signatureType = maybeGetSignatureType(key);
   assert(
-    isAsymmetricKeyTypeSupported(key),
+    signatureType !== null,
     'Expected either "Ed25519" or "ECDSA P-256" key.'
   );
-  if (key.asymmetricKeyType === 'ed25519') {
-    return SignatureType.Ed25519;
-  }
-  return SignatureType.EcdsaP256SHA256;
+  return signatureType;
 }
 
 export function getPublicKeyAttributeName(key: crypto.KeyObject) {
@@ -64,19 +73,19 @@ export function getRawPublicKey(publicKey: crypto.KeyObject) {
   switch (getSignatureType(publicKey)) {
     case SignatureType.Ed25519:
       // Currently this is the only way for us to get the raw 32 bytes of the public key.
-      return new Uint8Array(exportedKey.slice(-32));
+      return new Uint8Array(exportedKey.subarray(-32));
     case SignatureType.EcdsaP256SHA256: {
       // The last 65 bytes are the raw bytes of the ECDSA P-256 public key.
       // For the purposes of signing, we'd like to convert it to its compressed form that takes only 33 bytes.
-      const uncompressedHex = exportedKey.slice(-65).toString('hex');
-      const compressedHex = crypto.ECDH.convertKey(
-        uncompressedHex,
-        'secp256k1',
-        'hex',
-        'hex',
+      const uncompressedKey = exportedKey.subarray(-65);
+      const compressedKey = crypto.ECDH.convertKey(
+        uncompressedKey,
+        'prime256v1',
+        /*inputEncoding=*/ undefined,
+        /*outputEncoding=*/ undefined,
         'compressed'
-      ) as string;
-      return Buffer.from(compressedHex, 'hex');
+      ) as Buffer;
+      return new Uint8Array(compressedKey);
     }
   }
 }

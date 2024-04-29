@@ -11,19 +11,19 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const TEST_WEB_BUNDLE_HASH =
   '95f8713d382ffefb8f1e4f464e39a2bf18280c8b26434d2fcfc08d7d710c8919ace5a652e25e66f9292cda424f20e4b53bf613bf9488140272f56a455393f7e6';
 const EMPTY_INTEGRITY_BLOCK_HEX = '8348f09f968bf09f93a6443162000080';
-const TEST_ED25519_PRIVATE_KEY =
-  '-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIB8nP5PpWU7HiILHSfh5PYzb5GAcIfHZ+bw6tcd/LZXh\n-----END PRIVATE KEY-----';
+const TEST_ED25519_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
+MC4CAQAwBQYDK2VwBCIEIB8nP5PpWU7HiILHSfh5PYzb5GAcIfHZ+bw6tcd/LZXh
+-----END PRIVATE KEY-----`;
 const TEST_ECDSA_P256_PRIVATE_KEY = `
 -----BEGIN EC PRIVATE KEY-----
-MHQCAQEEINvcyT9OLOgYkdNoyHQiNn3ulwxuksh81C4BAYBig631oAcGBSuBBAAK
-oUQDQgAEcs04XzK1LlJq5/82AhgEQSaHjnBRM1j6yyBcjqMiC1OWqthATgIoGRoI
-n/YZWcvHcYJ8hgm2VLIgZJX7/VfNpg==
+MHcCAQEEIG6HAXvoG+dOP20rbyPuGC21od4DAZCKBkPy/1902xPnoAoGCCqGSM49
+AwEHoUQDQgAEHIIHO9B+7XJoXTXf3aTWC7aoK1PW4Db5Z8gSGXIkHlLrucUI4lyx
+DttYYhi36vrg5nR6zrfdhe7+8F1MoTvLuw==
 -----END EC PRIVATE KEY-----`;
-
 const TEST_ED25519_WEB_BUNDLE_ID =
   '4tkrnsmftl4ggvvdkfth3piainqragus2qbhf7rlz2a3wo3rh4wqaaic';
 const TEST_ECDSA_P256_WEB_BUNDLE_ID =
-  'ajzm2oc7gk2s4utk477tmaqyarasnb4oobitgwh2zmqfzdvdeifvgaacai';
+  'amoiebz32b7o24tilu257xne2yf3nkblkploanxzm7ebeglseqpfeaacai';
 
 const IWA_SCHEME = 'isolated-app://';
 
@@ -75,7 +75,7 @@ describe('Integrity Block Signer', () => {
   it('accepts only selected key types.', () => {
     for (const validKey of [
       { keyType: 'ed25519' },
-      { keyType: 'ec', options: { namedCurve: 'secp256k1' } },
+      { keyType: 'ec', options: { namedCurve: 'prime256v1' } },
     ]) {
       const keypairValid = crypto.generateKeyPairSync(
         validKey.keyType,
@@ -89,7 +89,7 @@ describe('Integrity Block Signer', () => {
     for (const invalidKey of [
       { keyType: 'rsa', options: { modulusLength: 2048 } },
       { keyType: 'dsa', options: { modulusLength: 1024, divisorLength: 224 } },
-      { keyType: 'ec', options: { namedCurve: 'sect239k1' } },
+      { keyType: 'ec', options: { namedCurve: 'secp256k1' } },
       { keyType: 'ed448' },
       { keyType: 'x25519' },
       { keyType: 'x448' },
@@ -130,7 +130,7 @@ describe('Integrity Block Signer', () => {
 
   [
     crypto.generateKeyPairSync('ed25519'),
-    crypto.generateKeyPairSync('ec', { namedCurve: 'secp256k1' }),
+    crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' }),
   ].forEach((keypair) => {
     it(`generates the dataToBeSigned correctly with ${createTestSuffix(
       keypair.publicKey
@@ -178,12 +178,11 @@ describe('Integrity Block Signer', () => {
 
   [
     crypto.generateKeyPairSync('ed25519'),
-    crypto.generateKeyPairSync('ec', { namedCurve: 'secp256k1' }),
+    crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' }),
   ].forEach((keypair) => {
     it(`generates a valid signature with ${createTestSuffix(
       keypair.publicKey
     )}.`, async () => {
-      const keypair = crypto.generateKeyPairSync('ed25519');
       const signer = initSignerWithTestWebBundleAndKeys(keypair.privateKey);
       const rawPubKey = wbnSign.getRawPublicKey(keypair.publicKey);
       const sigAttr = {
