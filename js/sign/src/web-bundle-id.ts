@@ -1,33 +1,44 @@
 import crypto, { KeyObject } from 'crypto';
 import base32Encode from 'base32-encode';
-import { getRawPublicKey } from './utils/utils.js';
+import {
+  getRawPublicKey,
+  isAsymmetricKeyTypeSupported,
+  getSignatureType,
+} from './utils/utils.js';
+import { SignatureType } from './utils/constants.js';
 
 // Web Bundle ID is a base32-encoded (without padding) ed25519 public key
 // transformed to lowercase. More information:
 // https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#signed-web-bundle-ids
 export class WebBundleId {
   // https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#suffix
-  private readonly appIdSuffix = [0x00, 0x01, 0x02];
+  private readonly TYPE_SUFFIX_MAPPING = new Map<SignatureType, number[]>([
+    [SignatureType.Ed25519, [0x00, 0x01, 0x02]],
+    [SignatureType.EcdsaP256SHA256, [0x00, 0x02, 0x02]],
+  ]);
   private readonly scheme = 'isolated-app://';
   private readonly key: KeyObject;
+  private readonly typeSuffix: number[];
 
-  constructor(ed25519key: KeyObject) {
-    if (ed25519key.asymmetricKeyType !== 'ed25519') {
+  constructor(key: KeyObject) {
+    if (!isAsymmetricKeyTypeSupported(key)) {
       throw new Error(
-        `WebBundleId: Only ed25519 keys are currently supported. Your key's type is ${ed25519key.asymmetricKeyType}.`
+        `WebBundleId: Only Ed25519 and ECDSA P-256 keys are currently supported.`
       );
     }
 
-    if (ed25519key.type === 'private') {
-      this.key = crypto.createPublicKey(ed25519key);
+    if (key.type === 'private') {
+      this.key = crypto.createPublicKey(key);
     } else {
-      this.key = ed25519key;
+      this.key = key;
     }
+
+    this.typeSuffix = this.TYPE_SUFFIX_MAPPING.get(getSignatureType(this.key))!;
   }
 
   serialize() {
     return base32Encode(
-      new Uint8Array([...getRawPublicKey(this.key), ...this.appIdSuffix]),
+      new Uint8Array([...getRawPublicKey(this.key), ...this.typeSuffix]),
       'RFC4648',
       { padding: false }
     ).toLowerCase();

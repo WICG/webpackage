@@ -17,7 +17,7 @@ npm install wbn-sign
 
 ## Requirements
 
-This plugin requires Node v14.0.0+.
+This plugin requires Node v16.0.0+.
 
 ## Usage
 
@@ -178,6 +178,10 @@ then you can bypass the passphrase prompt by storing the passphrase in an
 environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 
 ## Release Notes
+
+### v0.1.3
+
+- Add support for ECDSA P-256 SHA-256 signatures
 
 ### v0.1.2
 
