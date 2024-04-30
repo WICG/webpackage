@@ -179,6 +179,10 @@ environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 
 ## Release Notes
 
+### v0.1.3
+
+- Add support for ECDSA P-256 SHA-256 signatures
+
 ### v0.1.2
 
 - Add support for calculating the Web Bundle ID with the CLI tool.
