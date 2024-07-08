@@ -8,10 +8,10 @@ import {
 
 // A helper function that can be used to read the passphrase to decrypt a
 // password-decrypted private key.
-export async function readPassphrase(): Promise<string> {
+export async function readPassphrase(description: string): Promise<string> {
   try {
     const passphrase = await read({
-      prompt: 'Passphrase for the key: ',
+      prompt: `Passphrase for the key ${description}: `,
       silent: true,
       replace: '*',
       // Output must be != `stdout`. Otherwise saving the `wbn-dump-id`

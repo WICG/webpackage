@@ -2,3 +2,4 @@ node_modules
 lib
 wbn-sign*.tgz
 *.wbn
+*.swbn

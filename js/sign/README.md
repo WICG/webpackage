@@ -179,6 +179,13 @@ environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 
 ## Release Notes
 
+### v0.2.0
+
+- Add support for the v2 integrity block format. Now web-bundle-id is no longer
+  presumed to be a derivative of the first public key in the stack, but rather
+  acts as a separate entry in the integrity block attributes, and multiple
+  independent signatures are allowed to facilitate key rotation.
+
 ### v0.1.3
 
 - Add support for ECDSA P-256 SHA-256 signatures

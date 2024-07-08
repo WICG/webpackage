@@ -1,5 +1,6 @@
 import * as cliUtils from '../lib/utils/cli-utils.js';
 import * as mockStdin from 'mock-stdin';
+import fs from 'fs';
 
 const TEST_UNENCRYPTED_PRIVATE_KEY = Buffer.from(
   '-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEIB8nP5PpWU7HiILHSfh5PYzb5GAcIfHZ+bw6tcd/LZXh\n-----END PRIVATE KEY-----'
