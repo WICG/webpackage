@@ -58,12 +58,19 @@ describe('Web Bundle ID', () => {
 });
 
 describe('Integrity Block Signer', () => {
-  function initSignerWithTestWebBundleAndKeys(privateKey) {
+  function initSignerWithTestWebBundleAndKeys(
+    privateKeys,
+    webBundleId = undefined
+  ) {
     const file = path.resolve(__dirname, 'testdata/unsigned.wbn');
     const contents = fs.readFileSync(file);
     const signer = new wbnSign.IntegrityBlockSigner(
+      /*is_v2=*/ !!webBundleId,
       contents,
-      new wbnSign.NodeCryptoSigningStrategy(privateKey)
+      /*webBundleId=*/ webBundleId,
+      privateKeys.map(
+        (privateKey) => new wbnSign.NodeCryptoSigningStrategy(privateKey)
+      )
     );
     return signer;
   }
@@ -82,7 +89,7 @@ describe('Integrity Block Signer', () => {
         validKey.options
       );
       expect(() =>
-        initSignerWithTestWebBundleAndKeys(keypairValid.privateKey)
+        initSignerWithTestWebBundleAndKeys([keypairValid.privateKey])
       ).not.toThrowError();
     }
 
@@ -99,7 +106,7 @@ describe('Integrity Block Signer', () => {
         invalidKey.options
       );
       expect(() =>
-        initSignerWithTestWebBundleAndKeys(keypairInvalid.privateKey)
+        initSignerWithTestWebBundleAndKeys([keypairInvalid.privateKey])
       ).toThrowError();
     }
   });
@@ -121,7 +128,7 @@ describe('Integrity Block Signer', () => {
 
   it('calculates the hash of the web bundle correctly.', () => {
     const keypair = crypto.generateKeyPairSync('ed25519');
-    const signer = initSignerWithTestWebBundleAndKeys(keypair.privateKey);
+    const signer = initSignerWithTestWebBundleAndKeys([keypair.privateKey]);
 
     expect(signer.calcWebBundleHash()).toEqual(
       Uint8Array.from(Buffer.from(TEST_WEB_BUNDLE_HASH, 'hex'))
@@ -135,7 +142,7 @@ describe('Integrity Block Signer', () => {
     it(`generates the dataToBeSigned correctly with ${createTestSuffix(
       keypair.publicKey
     )}.`, () => {
-      const signer = initSignerWithTestWebBundleAndKeys(keypair.privateKey);
+      const signer = initSignerWithTestWebBundleAndKeys([keypair.privateKey]);
       const rawPubKey = wbnSign.getRawPublicKey(keypair.publicKey);
 
       const dataToBeSigned = signer.generateDataToBeSigned(
@@ -183,7 +190,7 @@ describe('Integrity Block Signer', () => {
     it(`generates a valid signature with ${createTestSuffix(
       keypair.publicKey
     )}.`, async () => {
-      const signer = initSignerWithTestWebBundleAndKeys(keypair.privateKey);
+      const signer = initSignerWithTestWebBundleAndKeys([keypair.privateKey]);
       const rawPubKey = wbnSign.getRawPublicKey(keypair.publicKey);
       const sigAttr = {
         [utils.getPublicKeyAttributeName(keypair.publicKey)]: rawPubKey,
@@ -216,5 +223,63 @@ describe('Integrity Block Signer', () => {
         )
       ).toBeTruthy();
     });
+  });
+
+  it(`generates valid signatures with multiple keys`, async () => {
+    const keyPairs = [
+      crypto.generateKeyPairSync('ed25519'),
+      crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' }),
+      crypto.generateKeyPairSync('ed25519'),
+      crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' }),
+    ];
+
+    const webBundleId = 'aaa';
+
+    const signer = initSignerWithTestWebBundleAndKeys(
+      keyPairs.map((keyPair) => keyPair.privateKey),
+      webBundleId
+    );
+
+    const ibData = (await signer.sign()).integrityBlock;
+    const ib = cborg.decode(ibData);
+    expect(ib.length).toEqual(4);
+
+    const [magic, version, ibAttributes, signatureStack] = ib;
+
+    expect(magic).toEqual(constants.INTEGRITY_BLOCK_MAGIC);
+    expect(version).toEqual(constants.VERSION_B2);
+    expect(Object.keys(ibAttributes).length).toEqual(1);
+    expect(ibAttributes.webBundleId).toEqual(webBundleId);
+    expect(signatureStack.length).toEqual(keyPairs.length);
+    signatureStack.map((entry) => expect(entry.length).toEqual(2));
+
+    const ibWithoutSignatures = new wbnSign.IntegrityBlock(/*is_v2=*/ true);
+    ibWithoutSignatures.setWebBundleId(webBundleId);
+
+    for (let i = 0; i < keyPairs.length; i++) {
+      const publicKey = keyPairs[i].publicKey;
+
+      const attrName = utils.getPublicKeyAttributeName(publicKey);
+      const rawPubKey = wbnSign.getRawPublicKey(publicKey);
+
+      const [signatureAttributes, signature] = signatureStack[i];
+      expect(Object.keys(signatureAttributes).length).toEqual(1);
+      expect(signatureAttributes[attrName]).toEqual(rawPubKey);
+
+      const dataToBeSigned = signer.generateDataToBeSigned(
+        signer.calcWebBundleHash(),
+        ibWithoutSignatures.toCBOR(),
+        cborg.encode(signatureAttributes)
+      );
+      // For ECDSA P-256 keys the algorithm is implicitly selected as SHA-256.
+      expect(
+        crypto.verify(
+          /*algorithm=*/ undefined,
+          dataToBeSigned,
+          publicKey,
+          signature
+        )
+      ).toBeTruthy();
+    }
   });
 });

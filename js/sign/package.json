@@ -1,6 +1,6 @@
 {
   "name": "wbn-sign",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Signing tool to sign a web bundle with integrity block",
   "homepage": "https://github.com/WICG/webpackage/tree/main/js/sign",
   "main": "./lib/wbn-sign.cjs",
@@ -40,7 +40,7 @@
   "dependencies": {
     "base32-encode": "^2.0.0",
     "cborg": "^1.9.4",
-    "commander": "^4.0.1",
+    "commander": "^7.0.0",
     "read": "^2.0.0"
   },
   "devDependencies": {

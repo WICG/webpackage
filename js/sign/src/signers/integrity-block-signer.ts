@@ -1,6 +1,10 @@
 import crypto, { KeyObject } from 'crypto';
 import * as cborg from 'cborg';
-import { INTEGRITY_BLOCK_MAGIC, VERSION_B1 } from '../utils/constants.js';
+import {
+  INTEGRITY_BLOCK_MAGIC,
+  VERSION_B1,
+  VERSION_B2,
+} from '../utils/constants.js';
 import { checkDeterministic } from '../cbor/deterministic.js';
 import {
   getRawPublicKey,
@@ -18,9 +22,12 @@ type IntegritySignature = {
 };
 
 export class IntegrityBlockSigner {
+  // `webBundleId` is ignored if `is_v2` is false.
   constructor(
+    private readonly is_v2: boolean,
     private readonly webBundle: Uint8Array,
-    private readonly signingStrategy: ISigningStrategy
+    private readonly webBundleId: string,
+    private readonly signingStrategies: Array<ISigningStrategy>
   ) {}
 
   async sign(): Promise<{
@@ -28,31 +35,43 @@ export class IntegrityBlockSigner {
     signedWebBundle: Uint8Array;
   }> {
     const integrityBlock = this.obtainIntegrityBlock().integrityBlock;
-    const publicKey = await this.signingStrategy.getPublicKey();
-    checkIsValidKey('public', publicKey);
+    if (this.is_v2) {
+      integrityBlock.setWebBundleId(this.webBundleId);
+    }
 
-    const newAttributes: SignatureAttributes = {
-      [getPublicKeyAttributeName(publicKey)]: getRawPublicKey(publicKey),
-    };
+    const signatures = new Array<IntegritySignature>();
+    for (const signingStrategy of this.signingStrategies) {
+      const publicKey = await signingStrategy.getPublicKey();
+      checkIsValidKey('public', publicKey);
+      const newAttributes: SignatureAttributes = {
+        [getPublicKeyAttributeName(publicKey)]: getRawPublicKey(publicKey),
+      };
 
-    const ibCbor = integrityBlock.toCBOR();
-    const attrCbor = cborg.encode(newAttributes);
-    checkDeterministic(ibCbor);
-    checkDeterministic(attrCbor);
+      const ibCbor = integrityBlock.toCBOR();
+      const attrCbor = cborg.encode(newAttributes);
+      checkDeterministic(ibCbor);
+      checkDeterministic(attrCbor);
 
-    const dataToBeSigned = this.generateDataToBeSigned(
-      this.calcWebBundleHash(),
-      ibCbor,
-      attrCbor
-    );
+      const dataToBeSigned = this.generateDataToBeSigned(
+        this.calcWebBundleHash(),
+        ibCbor,
+        attrCbor
+      );
 
-    const signature = await this.signingStrategy.sign(dataToBeSigned);
-    this.verifySignature(dataToBeSigned, signature, publicKey);
+      const signature = await signingStrategy.sign(dataToBeSigned);
+      this.verifySignature(dataToBeSigned, signature, publicKey);
 
-    integrityBlock.addIntegritySignature({
-      signature,
-      signatureAttributes: newAttributes,
-    });
+      // The signatures are calculated independently, and thus not appended to
+      // the integrity block here to not affect subsequent calculations.
+      signatures.push({
+        signature,
+        signatureAttributes: newAttributes,
+      });
+    }
+
+    for (const signature of signatures) {
+      integrityBlock.addIntegritySignature(signature);
+    }
 
     const signedIbCbor = integrityBlock.toCBOR();
     checkDeterministic(signedIbCbor);
@@ -85,7 +104,7 @@ export class IntegrityBlockSigner {
         'IntegrityBlockSigner: Re-signing signed bundles is not supported yet.'
       );
     }
-    return { integrityBlock: new IntegrityBlock(), offset: 0 };
+    return { integrityBlock: new IntegrityBlock(this.is_v2), offset: 0 };
   }
 
   calcWebBundleHash(): Uint8Array {
@@ -150,25 +169,46 @@ export class IntegrityBlockSigner {
 }
 
 export class IntegrityBlock {
-  private readonly magic = INTEGRITY_BLOCK_MAGIC;
-  private readonly version = VERSION_B1;
+  private attributes: Map<string, string> = new Map();
   private signatureStack: IntegritySignature[] = [];
 
-  constructor() {}
+  constructor(private readonly is_v2: boolean = false) {}
+
+  setWebBundleId(webBundleId: string) {
+    if (!this.is_v2) {
+      throw new Error(
+        'setWebBundleId() is only available for v2 integrity blocks.'
+      );
+    }
+    this.attributes.set('webBundleId', webBundleId);
+  }
 
   addIntegritySignature(is: IntegritySignature) {
-    this.signatureStack.unshift(is);
+    this.signatureStack.push(is);
   }
 
   toCBOR(): Uint8Array {
-    return cborg.encode([
-      this.magic,
-      this.version,
-      this.signatureStack.map((integritySig) => {
-        // The CBOR must have an array of length 2 containing the following:
-        // (0) attributes and (1) signature. The order is important.
-        return [integritySig.signatureAttributes, integritySig.signature];
-      }),
-    ]);
+    if (this.is_v2) {
+      return cborg.encode([
+        INTEGRITY_BLOCK_MAGIC,
+        VERSION_B2,
+        this.attributes,
+        this.signatureStack.map((integritySig) => {
+          // The CBOR must have an array of length 2 containing the following:
+          // (0) attributes and (1) signature. The order is important.
+          return [integritySig.signatureAttributes, integritySig.signature];
+        }),
+      ]);
+    } else {
+      return cborg.encode([
+        INTEGRITY_BLOCK_MAGIC,
+        VERSION_B1,
+        this.signatureStack.map((integritySig) => {
+          // The CBOR must have an array of length 2 containing the following:
+          // (0) attributes and (1) signature. The order is important.
+          return [integritySig.signatureAttributes, integritySig.signature];
+        }),
+      ]);
+    }
   }
 }
