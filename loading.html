@@ -4,9 +4,9 @@
   <title>Loading Signed Exchanges</title>
   <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
   <link href="https://www.w3.org/StyleSheets/TR/2021/cg-draft" rel="stylesheet">
-  <meta content="Bikeshed version d765c696b, updated Fri Mar 8 15:58:52 2024 -0800" name="generator">
+  <meta content="Bikeshed version c3a8ac783, updated Wed Jul 24 12:20:06 2024 -0700" name="generator">
   <link href="https://wicg.github.io/webpackage/loading.html" rel="canonical">
-  <meta content="2187f0d9873edff0d15d5e9be9799ffa95647e26" name="revision">
+  <meta content="aa6382d93f555ab2a5f8a1c104d5802f162345fc" name="revision">
   <meta content="dark light" name="color-scheme">
   <link href="https://www.w3.org/StyleSheets/TR/2021/dark.css" media="(prefers-color-scheme: dark)" rel="stylesheet" type="text/css">
 <style>/* Boilerplate: style-autolinks */
@@ -696,21 +696,43 @@ D50 2deg illuminant, L in [0,100], a and b in [-128, 128]
 4 = lab(85,5,15)
 5 = lab(85,-10,-50)
 6 = lab(85,35,-15)
+
+For darkmode:
+0 = oklab(50%   0%  108%)
+1 = oklab(50% -51%   51%)
+2 = oklab(50% -64%  -20%)
+3 = oklab(50%   6%   19%)
+4 = oklab(50% -12%  -64%)
+5 = oklab(50%  44%  -19%)  
+6 = oklab(50% 102%   38%)
 */
+
 [data-algorithm] var { cursor: pointer; }
-var[data-var-color="0"] { background-color: #F4D200; box-shadow: 0 0 0 2px #F4D200; }
-var[data-var-color="1"] { background-color: #FF87A2; box-shadow: 0 0 0 2px #FF87A2; }
-var[data-var-color="2"] { background-color: #96E885; box-shadow: 0 0 0 2px #96E885; }
-var[data-var-color="3"] { background-color: #3EEED2; box-shadow: 0 0 0 2px #3EEED2; }
-var[data-var-color="4"] { background-color: #EACFB6; box-shadow: 0 0 0 2px #EACFB6; }
-var[data-var-color="5"] { background-color: #82DDFF; box-shadow: 0 0 0 2px #82DDFF; }
-var[data-var-color="6"] { background-color: #FFBCF2; box-shadow: 0 0 0 2px #FFBCF2; }
+var[data-var-color] { background-color: var(--var-bg); box-shadow: 0 0 0 2px var(--var-bg); }
+
+var[data-var-color] { --var-bg: #F4D200; }
+var[data-var-color="1"] { --var-bg: #FF87A2; }
+var[data-var-color="2"] { --var-bg: #96E885; }
+var[data-var-color="3"] { --var-bg: #3EEED2; }
+var[data-var-color="4"] { --var-bg: #EACFB6; }
+var[data-var-color="5"] { --var-bg: #82DDFF; }
+var[data-var-color="6"] { --var-vg: #FFBCF2; }
+
+@media (prefers-color-scheme: dark) {
+	var[data-var-color] { --var-bg: #bc1a00; }
+	var[data-var-color="1"] { --var-bg: #007f00; }
+	var[data-var-color="2"] { --var-bg: #008698; }
+	var[data-var-color="3"] { --var-bg: #7f5b2b; }
+	var[data-var-color="4"] { --var-bg: #004df3; }
+	var[data-var-color="5"] { --var-bg: #a1248a; }
+	var[data-var-color="6"] { --var-vg: #ff0000; }
+}
 </style>
  <body class="h-entry">
   <div class="head">
    <p data-fill-with="logo"><a class="logo" href="https://www.w3.org/"> <img alt="W3C" height="48" src="https://www.w3.org/StyleSheets/TR/2021/logos/W3C" width="72"> </a> </p>
    <h1 class="p-name no-ref" id="title">Loading Signed Exchanges</h1>
-   <p id="w3c-state"><a href="https://www.w3.org/standards/types#CG-DRAFT">Draft Community Group Report</a>, <time class="dt-updated" datetime="2024-04-30">30 April 2024</time></p>
+   <p id="w3c-state"><a href="https://www.w3.org/standards/types#CG-DRAFT">Draft Community Group Report</a>, <time class="dt-updated" datetime="2024-07-29">29 July 2024</time></p>
    <div data-fill-with="spec-metadata">
     <dl>
      <dt>This version:
