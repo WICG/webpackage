@@ -103,15 +103,19 @@ This package also includes 2 CLI tools
 
 There are the following command-line flags available:
 
-- (required) `--privateKey <filePath>` (`-k <filePath>`)  
-  which takes the path to ed25519 private key.
+- (required) `--private-key <filePath>` (`-k <filePath>`)  
+  which takes the path to ed25519 private key. If chosen format is `v2`, this can be specified multiple times.
 - (required) `--input <filePath>` (`-i <filePath>`)  
   which takes the path to the web bundle to be signed.
 - (optional) `--output <filePath>` (`-o <filePath>`)  
   which takes the path to the wanted signed web bundle output. Default:
   `signed.swbn`.
+- (optional) `--version <version>`  
+  which can be either `v1` or `v2`, defaulting to `v1`. Sets the integrity block format.
+- (required if more than one key is provided) `--web-bundle-id <web-bundle-id>`  
+  which takes the `web-bundle-id` to be associated with the web bundle.
 
-Example command:
+Example commands:
 
 ```bash
 wbn-sign \
@@ -120,20 +124,31 @@ wbn-sign \
 -k ~/path/to/ed25519key.pem
 ```
 
+```bash
+wbn-sign \
+-i ~/path/to/webbundle.wbn \
+-o ~/path/to/signed-webbundle.swbn \
+-k ~/path/to/ed25519key.pem \
+-k ~/path/to/ecdsa_p256key.pem
+--version v2 \
+--web-bundle-id \
+  amfcf7c4bmpbjbmq4h4yptcobves56hfdyr7tm3doxqvfmsk5ss6maacai
+```
+
 ### Running wbn-dump-id
 
 There are the following command-line flags available:
 
-- (required) `--privateKey <filePath>` (`-k <filePath>`)  
+- (required) `--private-key <filePath>` (`-k <filePath>`)  
   which takes the path to ed25519 private key.
-- (optional) `--withIwaScheme <boolean>` (`-s`)  
+- (optional) `--with-iwa-scheme <boolean>` (`-s`)  
   which dumps the Web Bundle ID with isolated-app:// scheme. By default it only
   dumps the ID. Default: `false`.
 
 Example command:
 
 ```bash
-wbn-sign -s -k ~/path/to/ed25519key.pem
+wbn-dump-id -s -k ~/path/to/ed25519key.pem
 ```
 
 This would print the Web Bundle ID calculated from `ed25519key.pem` into the
