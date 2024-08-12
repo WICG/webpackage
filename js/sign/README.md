@@ -50,6 +50,9 @@ const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(
 
 // Option 3: With ones own CustomSigningStrategy class implementing
 // ISigningStrategy.
+// Example implementation of those two functionalities using Google Cloud KMS API:
+// sign: https://cloud.google.com/kms/docs/create-validate-signatures#create_signature
+// getPublicKey: https://cloud.google.com/kms/docs/create-validate-signatures#validate_ec_signature
 const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(
   webBundle,
   new (class {
@@ -78,7 +81,7 @@ import * as fs from 'fs';
 import * as wbnSign from 'wbn-sign';
 
 const privateKey = wbnSign.parsePemKey(
-  fs.readFileSync('./path/to/privatekey.pem', 'utf-8')
+  fs.readFileSync('./path/to/privatekey.pem', 'utf-8'),
 );
 
 // Web Bundle ID only:
@@ -86,7 +89,7 @@ const webBundleId = new wbnSign.WebBundleId(privateKey).serialize();
 
 // With origin, meaning "isolated-app://" combined with Web Bundle ID:
 const webBundleIdWithIWAOrigin = new wbnSign.WebBundleId(
-  privateKey
+  privateKey,
 ).serializeWithIsolatedWebAppOrigin();
 ```
 
@@ -104,15 +107,18 @@ This package also includes 2 CLI tools
 There are the following command-line flags available:
 
 - (required) `--private-key <filePath>` (`-k <filePath>`)  
-  which takes the path to ed25519 private key. If chosen format is `v2`, this can be specified multiple times.
+  which takes the path to ed25519 private key. If chosen format is `v2`, this
+  can be specified multiple times.
 - (required) `--input <filePath>` (`-i <filePath>`)  
   which takes the path to the web bundle to be signed.
 - (optional) `--output <filePath>` (`-o <filePath>`)  
   which takes the path to the wanted signed web bundle output. Default:
   `signed.swbn`.
 - (optional) `--version <version>`  
-  which can be either `v1` or `v2`, defaulting to `v1`. Sets the integrity block format.
-- (required if more than one key is provided) `--web-bundle-id <web-bundle-id>`  
+  which can be either `v1` or `v2`, defaulting to `v1`. Sets the integrity block
+  format.
+- (required if more than one key is provided)
+  `--web-bundle-id <web-bundle-id>`  
   which takes the `web-bundle-id` to be associated with the web bundle.
 
 Example commands:
