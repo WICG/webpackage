@@ -34,7 +34,8 @@
   "author": "Sonja Laurila <laurila@google.com> (https://github.com/sonkkeli)",
   "contributors": [
     "Christian Flach <cmfcmf@google.com> (https://github.com/cmfcmf)",
-    "Andrew Rayskiy <greengrape@google.com> (https://github.com/GrapeGreen)"
+    "Andrew Rayskiy <greengrape@google.com> (https://github.com/GrapeGreen)",
+    "Luke (Zgroza) Klimek <zgroza@google.com> (https://github.com/zgroza)"
   ],
   "license": "W3C-20150513",
   "dependencies": {
