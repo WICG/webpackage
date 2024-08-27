@@ -65,12 +65,12 @@ describe('Integrity Block Signer', () => {
     const file = path.resolve(__dirname, 'testdata/unsigned.wbn');
     const contents = fs.readFileSync(file);
     const signer = new wbnSign.IntegrityBlockSigner(
-      /*is_v2=*/ !!webBundleId,
       contents,
       /*webBundleId=*/ webBundleId,
       privateKeys.map(
         (privateKey) => new wbnSign.NodeCryptoSigningStrategy(privateKey)
-      )
+      ),
+      /*is_v2=*/ !!webBundleId
     );
     return signer;
   }

@@ -24,10 +24,10 @@ type IntegritySignature = {
 export class IntegrityBlockSigner {
   // `webBundleId` is ignored if `is_v2` is false.
   constructor(
-    private readonly is_v2: boolean,
     private readonly webBundle: Uint8Array,
     private readonly webBundleId: string,
-    private readonly signingStrategies: Array<ISigningStrategy>
+    private readonly signingStrategies: Array<ISigningStrategy>,
+    private readonly is_v2: boolean = true
   ) {}
 
   async sign(): Promise<{

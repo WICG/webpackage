@@ -194,6 +194,13 @@ environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 
 ## Release Notes
 
+### v0.2.1
+
+- Moved is_v2 to the last and optional (defaulting to true) argument of
+  `IntegrityBlockSigner` constructor. This is a preparation for the future
+  removal of the deprecated v1 format.
+- CLI signer defaults to v2 format of integrity block now.
+
 ### v0.2.0
 
 - Add support for the v2 integrity block format. Now web-bundle-id is no longer
