@@ -1,6 +1,6 @@
 {
   "name": "wbn-sign",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Signing tool to sign a web bundle with integrity block",
   "homepage": "https://github.com/WICG/webpackage/tree/main/js/sign",
   "main": "./lib/wbn-sign.cjs",
@@ -34,7 +34,8 @@
   "author": "Sonja Laurila <laurila@google.com> (https://github.com/sonkkeli)",
   "contributors": [
     "Christian Flach <cmfcmf@google.com> (https://github.com/cmfcmf)",
-    "Andrew Rayskiy <greengrape@google.com> (https://github.com/GrapeGreen)"
+    "Andrew Rayskiy <greengrape@google.com> (https://github.com/GrapeGreen)",
+    "Luke (Zgroza) Klimek <zgroza@google.com> (https://github.com/zgroza)"
   ],
   "license": "W3C-20150513",
   "dependencies": {

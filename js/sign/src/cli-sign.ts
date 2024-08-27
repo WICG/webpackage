@@ -20,7 +20,7 @@ const program = new Command()
 function readOptions() {
   return program
     .addOption(
-      new Option('--version <version>').choices(['v1', 'v2']).default('v1')
+      new Option('--version <version>').choices(['v1', 'v2']).default('v2')
     )
     .requiredOption(
       '-i, --input <file>',
@@ -80,10 +80,10 @@ export async function main() {
     ? options.webBundleId
     : new WebBundleId(privateKeys[0]).serialize();
   const signer = new IntegrityBlockSigner(
-    /*is_v2=*/ options.version === 'v2',
     webBundle,
     webBundleId,
-    privateKeys.map((privateKey) => new NodeCryptoSigningStrategy(privateKey))
+    privateKeys.map((privateKey) => new NodeCryptoSigningStrategy(privateKey)),
+    /*is_v2=*/ options.version === 'v2'
   );
   const { signedWebBundle } = await signer.sign();
   greenConsoleLog(`${webBundleId}`);
