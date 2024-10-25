@@ -19,9 +19,6 @@ const program = new Command()
 
 function readOptions() {
   return program
-    .addOption(
-      new Option('--version <version>').choices(['v1', 'v2']).default('v2')
-    )
     .requiredOption(
       '-i, --input <file>',
       'input web bundle to be signed (required)'
@@ -37,30 +34,10 @@ function readOptions() {
     )
     .option('--web-bundle-id <web-bundle-id>', 'web bundle ID (only for v2)')
     .action((options) => {
-      switch (options.version) {
-        case 'v1':
-          {
-            if (options.privateKey.length > 1) {
-              throw new Error(
-                `It's not allowed to specify more than one private key for v1 signing.`
-              );
-            }
-            if (options.webBundleId) {
-              throw new Error(
-                `It's not allowed to specify --web-bundle-id for v1 signing.`
-              );
-            }
-          }
-          break;
-        case 'v2':
-          {
-            if (options.privateKey.length > 1 && !options.webBundleId) {
-              throw new Error(
-                `--web-bundle-id must be specified if there's more than 1 signing key involved.`
-              );
-            }
-          }
-          break;
+      if (options.privateKey.length > 1 && !options.webBundleId) {
+        throw new Error(
+          `--web-bundle-id must be specified if there's more than 1 signing key involved.`
+        );
       }
     })
     .parse(process.argv)
@@ -80,10 +57,9 @@ export async function main() {
     ? options.webBundleId
     : new WebBundleId(privateKeys[0]).serialize();
   const signer = new IntegrityBlockSigner(
-    webBundle,
+    Uint8Array.from(webBundle),
     webBundleId,
     privateKeys.map((privateKey) => new NodeCryptoSigningStrategy(privateKey)),
-    /*is_v2=*/ options.version === 'v2'
   );
   const { signedWebBundle } = await signer.sign();
   greenConsoleLog(`${webBundleId}`);

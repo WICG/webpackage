@@ -10,7 +10,7 @@ import url from 'url';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const TEST_WEB_BUNDLE_HASH =
   '95f8713d382ffefb8f1e4f464e39a2bf18280c8b26434d2fcfc08d7d710c8919ace5a652e25e66f9292cda424f20e4b53bf613bf9488140272f56a455393f7e6';
-const EMPTY_INTEGRITY_BLOCK_HEX = '8348f09f968bf09f93a6443162000080';
+const EMPTY_INTEGRITY_BLOCK_HEX = '8448f09f968bf09f93a64432620000a080';
 const TEST_ED25519_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
 MC4CAQAwBQYDK2VwBCIEIB8nP5PpWU7HiILHSfh5PYzb5GAcIfHZ+bw6tcd/LZXh
 -----END PRIVATE KEY-----`;
@@ -66,11 +66,11 @@ describe('Integrity Block Signer', () => {
     const contents = fs.readFileSync(file);
     const signer = new wbnSign.IntegrityBlockSigner(
       contents,
-      /*webBundleId=*/ webBundleId,
+      /*webBundleId=*/ webBundleId ||
+        new wbnSign.WebBundleId(privateKeys[0]).serialize(),
       privateKeys.map(
         (privateKey) => new wbnSign.NodeCryptoSigningStrategy(privateKey)
-      ),
-      /*is_v2=*/ !!webBundleId
+      )
     );
     return signer;
   }
@@ -120,10 +120,11 @@ describe('Integrity Block Signer', () => {
     );
 
     const decoded = cborg.decode(cbor);
-    expect(decoded.length).toEqual(3);
+    expect(decoded.length).toEqual(4);
     expect(decoded[0]).toEqual(constants.INTEGRITY_BLOCK_MAGIC);
-    expect(decoded[1]).toEqual(constants.VERSION_B1);
-    expect(decoded[2]).toEqual([]);
+    expect(decoded[1]).toEqual(constants.VERSION_B2);
+    expect(decoded[2]).toEqual({});
+    expect(decoded[3]).toEqual([]);
   });
 
   it('calculates the hash of the web bundle correctly.', () => {
@@ -173,7 +174,7 @@ describe('Integrity Block Signer', () => {
       const hexHashString =
         /*64*/ '0000000000000040' +
         TEST_WEB_BUNDLE_HASH +
-        /*16*/ '0000000000000010' +
+        /*17*/ '0000000000000011' +
         EMPTY_INTEGRITY_BLOCK_HEX +
         attributesCborHex;
 
@@ -195,18 +196,29 @@ describe('Integrity Block Signer', () => {
       const sigAttr = {
         [utils.getPublicKeyAttributeName(keypair.publicKey)]: rawPubKey,
       };
+      const webBundleId = new wbnSign.WebBundleId(
+        keypair.privateKey
+      ).serialize();
+
+      const ibWithoutSignatures = new wbnSign.IntegrityBlock();
+      ibWithoutSignatures.setWebBundleId(webBundleId);
+
       const dataToBeSigned = signer.generateDataToBeSigned(
         signer.calcWebBundleHash(),
-        new wbnSign.IntegrityBlock().toCBOR(),
+        ibWithoutSignatures.toCBOR(),
         cborg.encode(sigAttr)
       );
 
       const ib = cborg.decode((await signer.sign()).integrityBlock);
-      expect(ib.length).toEqual(3);
+      expect(ib.length).toEqual(4);
 
-      const [magic, version, signatureStack] = ib;
+      const [magic, version, attributes, signatureStack] = ib;
+
       expect(magic).toEqual(constants.INTEGRITY_BLOCK_MAGIC);
-      expect(version).toEqual(constants.VERSION_B1);
+      expect(version).toEqual(constants.VERSION_B2);
+      expect(attributes).toEqual({
+        webBundleId: webBundleId,
+      });
       expect(signatureStack.length).toEqual(1);
       expect(signatureStack[0].length).toEqual(2);
 
@@ -253,7 +265,7 @@ describe('Integrity Block Signer', () => {
     expect(signatureStack.length).toEqual(keyPairs.length);
     signatureStack.map((entry) => expect(entry.length).toEqual(2));
 
-    const ibWithoutSignatures = new wbnSign.IntegrityBlock(/*is_v2=*/ true);
+    const ibWithoutSignatures = new wbnSign.IntegrityBlock();
     ibWithoutSignatures.setWebBundleId(webBundleId);
 
     for (let i = 0; i < keyPairs.length; i++) {

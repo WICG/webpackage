@@ -110,8 +110,6 @@ There are the following command-line flags available:
 - (optional) `--output <filePath>` (`-o <filePath>`)  
   which takes the path to the wanted signed web bundle output. Default:
   `signed.swbn`.
-- (optional) `--version <version>`  
-  which can be either `v1` or `v2`, defaulting to `v1`. Sets the integrity block format.
 - (required if more than one key is provided) `--web-bundle-id <web-bundle-id>`  
   which takes the `web-bundle-id` to be associated with the web bundle.
 
@@ -130,7 +128,6 @@ wbn-sign \
 -o ~/path/to/signed-webbundle.swbn \
 -k ~/path/to/ed25519key.pem \
 -k ~/path/to/ecdsa_p256key.pem
---version v2 \
 --web-bundle-id \
   amfcf7c4bmpbjbmq4h4yptcobves56hfdyr7tm3doxqvfmsk5ss6maacai
 ```
@@ -193,6 +190,9 @@ then you can bypass the passphrase prompt by storing the passphrase in an
 environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 
 ## Release Notes
+
+### v0.2.2
+- BREAKING CHANGE: Removed support for v1 integrity block format.
 
 ### v0.2.1
 
