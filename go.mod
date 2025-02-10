@@ -13,7 +13,7 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 	github.com/sirupsen/logrus v1.3.0 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a
-	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/term v0.27.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
