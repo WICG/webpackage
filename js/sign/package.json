@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@types/node": "^16.0.0",
-    "esbuild": "^0.14.47",
+    "esbuild": "^0.25.0",
     "jasmine": "^4.2.1",
     "mock-stdin": "^1.0.0",
     "prettier": "2.8.0",
