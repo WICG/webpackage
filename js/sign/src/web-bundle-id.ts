@@ -6,7 +6,12 @@ import {
   getSignatureType,
 } from './utils/utils.js';
 import { SignatureType } from './utils/constants.js';
+import * as cborg from 'cborg';
 
+type decodedSignedWebBundle = [
+  [Uint8Array, Uint8Array, { webBundleId: string }, any[][]],
+  Uint8Array
+];
 // Web Bundle ID is a base32-encoded (without padding) ed25519 public key
 // transformed to lowercase. More information:
 // https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#signed-web-bundle-ids
@@ -53,4 +58,17 @@ export class WebBundleId {
   Web Bundle ID: ${this.serialize()}
   Isolated Web App Origin: ${this.serializeWithIsolatedWebAppOrigin()}`;
   }
+}
+
+export function getBundleId(signedWebBundle: Uint8Array) {
+    try {
+      const decodedData: decodedSignedWebBundle =
+        cborg.decodeFirst(signedWebBundle);
+      const attributes = decodedData[0][2];
+      return attributes.webBundleId;
+    } catch (e) {
+      throw Error(
+        `Failed to get webBundleId from ${signedWebBundle}, cause: ${e}`
+      );
+    }
 }
