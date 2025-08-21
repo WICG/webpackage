@@ -191,6 +191,9 @@ environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 
 ## Release Notes
 
+### v0.2.3
+- Add support for obtaining bundleID from a .swbn file.
+
 ### v0.2.2
 - BREAKING CHANGE: Removed support for v1 integrity block format.
 

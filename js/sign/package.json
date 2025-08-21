@@ -1,6 +1,6 @@
 {
   "name": "wbn-sign",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Signing tool to sign a web bundle with integrity block",
   "homepage": "https://github.com/WICG/webpackage/tree/main/js/sign",
   "main": "./lib/wbn-sign.cjs",
