@@ -13,7 +13,7 @@ const EXPECTED_BUNDLE_ID = '4tkrnsmftl4ggvvdkfth3piainqragus2qbhf7rlz2a3wo3rh4wq
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('Obtaining Bundle ID from signed web bundle', () => {
-  it('Signs the .wbn and obtains the Web Bundle ID from the in-memory result', async () => {
+  it('Signs the .wbn file and obtains Web Bundle ID from the newly created .swbn file', async () => {
     const filePath = path.resolve(__dirname, 'testdata', 'unsigned.wbn');
     const unsignedWebBundle = await fs.readFile(filePath);
 
