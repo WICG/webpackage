@@ -32,4 +32,11 @@ describe('Obtaining Bundle ID from signed web bundle', () => {
 
     expect(bundleId).toEqual(EXPECTED_BUNDLE_ID);
   });
+
+  it("Throws an error when the .swbn structure is invalid", () =>{
+    const webBundle = Buffer.from('invalid-web-bundle', 'utf-8');
+
+    expect(() => getBundleId(webBundle)).toThrow()
+  })
 });
+

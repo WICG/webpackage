@@ -59,6 +59,10 @@ export class WebBundleId {
 export function getBundleId(signedWebBundle: Uint8Array) { 
     try {
       const decodedData = cborg.decodeFirst(signedWebBundle);
+      
+      if(!decodedData[0] || !decodedData[0][2]){
+        throw Error("Signed Web Bundle structure is invalid");
+      }
       const attributes = decodedData[0][2];
 
       if(!attributes.webBundleId){
