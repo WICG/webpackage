@@ -1,9 +1,6 @@
 import crypto, { KeyObject } from 'crypto';
 import * as cborg from 'cborg';
-import {
-  INTEGRITY_BLOCK_MAGIC,
-  VERSION_B2,
-} from '../utils/constants.js';
+import { INTEGRITY_BLOCK_MAGIC, VERSION_B2 } from '../utils/constants.js';
 import { checkDeterministic } from '../cbor/deterministic.js';
 import {
   getRawPublicKey,
@@ -24,7 +21,7 @@ export class IntegrityBlockSigner {
   constructor(
     private readonly webBundle: Uint8Array,
     private readonly webBundleId: string,
-    private readonly signingStrategies: Array<ISigningStrategy>,
+    private readonly signingStrategies: Array<ISigningStrategy>
   ) {}
 
   async sign(): Promise<{

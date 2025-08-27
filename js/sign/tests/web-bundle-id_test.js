@@ -24,7 +24,7 @@ describe('Obtaining Bundle ID from signed web bundle', () => {
     const signer = new wbnSign.IntegrityBlockSigner(
       unsignedWebBundle,
       new wbnSign.WebBundleId(publicKey).serialize(),
-      [new wbnSign.NodeCryptoSigningStrategy(ed25519PrivateKey)],
+      [new wbnSign.NodeCryptoSigningStrategy(ed25519PrivateKey)]
     );
 
     const { signedWebBundle } = await signer.sign();

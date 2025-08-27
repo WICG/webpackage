@@ -24,7 +24,7 @@ export class WebBundleId {
   constructor(key: KeyObject) {
     if (!isAsymmetricKeyTypeSupported(key)) {
       throw new Error(
-        `WebBundleId: Only Ed25519 and ECDSA P-256 keys are currently supported.`,
+        `WebBundleId: Only Ed25519 and ECDSA P-256 keys are currently supported.`
       );
     }
 
@@ -41,7 +41,7 @@ export class WebBundleId {
     return base32Encode(
       new Uint8Array([...getRawPublicKey(this.key), ...this.typeSuffix]),
       'RFC4648',
-      { padding: false },
+      { padding: false }
     ).toLowerCase();
   }
 
@@ -67,7 +67,7 @@ export function getBundleId(signedWebBundle: Uint8Array) {
 
     if (!attributes.webBundleId) {
       throw Error(
-        'Failed to obtain webBundleId: Decoded data does not contain webBundleId',
+        'Failed to obtain webBundleId: Decoded data does not contain webBundleId'
       );
     }
 
