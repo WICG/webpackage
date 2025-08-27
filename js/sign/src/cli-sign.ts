@@ -59,7 +59,7 @@ export async function main() {
   const signer = new IntegrityBlockSigner(
     Uint8Array.from(webBundle),
     webBundleId,
-    privateKeys.map((privateKey) => new NodeCryptoSigningStrategy(privateKey)),
+    privateKeys.map((privateKey) => new NodeCryptoSigningStrategy(privateKey))
   );
   const { signedWebBundle } = await signer.sign();
   greenConsoleLog(`${webBundleId}`);

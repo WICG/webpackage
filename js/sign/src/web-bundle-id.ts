@@ -6,6 +6,7 @@ import {
   getSignatureType,
 } from './utils/utils.js';
 import { SignatureType } from './utils/constants.js';
+import * as cborg from 'cborg';
 
 // Web Bundle ID is a base32-encoded (without padding) ed25519 public key
 // transformed to lowercase. More information:
@@ -52,5 +53,26 @@ export class WebBundleId {
     return `\
   Web Bundle ID: ${this.serialize()}
   Isolated Web App Origin: ${this.serializeWithIsolatedWebAppOrigin()}`;
+  }
+}
+
+export function getBundleId(signedWebBundle: Uint8Array) {
+  try {
+    const decodedData = cborg.decodeFirst(signedWebBundle);
+
+    if (!decodedData[0] || !decodedData[0][2]) {
+      throw Error('Signed Web Bundle structure is invalid');
+    }
+    const attributes = decodedData[0][2];
+
+    if (!attributes.webBundleId) {
+      throw Error(
+        'Failed to obtain webBundleId: Decoded data does not contain webBundleId'
+      );
+    }
+
+    return attributes.webBundleId;
+  } catch (e) {
+    throw Error(`Failed to obtain bundle ID, cause: ${e}`);
   }
 }
