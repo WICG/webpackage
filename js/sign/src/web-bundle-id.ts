@@ -24,7 +24,7 @@ export class WebBundleId {
   constructor(key: KeyObject) {
     if (!isAsymmetricKeyTypeSupported(key)) {
       throw new Error(
-        `WebBundleId: Only Ed25519 and ECDSA P-256 keys are currently supported.`
+        `WebBundleId: Only Ed25519 and ECDSA P-256 keys are currently supported.`,
       );
     }
 
@@ -41,7 +41,7 @@ export class WebBundleId {
     return base32Encode(
       new Uint8Array([...getRawPublicKey(this.key), ...this.typeSuffix]),
       'RFC4648',
-      { padding: false }
+      { padding: false },
     ).toLowerCase();
   }
 
@@ -56,22 +56,23 @@ export class WebBundleId {
   }
 }
 
-export function getBundleId(signedWebBundle: Uint8Array) { 
-    try {
-      const decodedData = cborg.decodeFirst(signedWebBundle);
-      
-      if(!decodedData[0] || !decodedData[0][2]){
-        throw Error("Signed Web Bundle structure is invalid");
-      }
-      const attributes = decodedData[0][2];
+export function getBundleId(signedWebBundle: Uint8Array) {
+  try {
+    const decodedData = cborg.decodeFirst(signedWebBundle);
 
-      if(!attributes.webBundleId){
-        throw Error("Failed to obtain webBundleId: Decoded data does not contain webBundleId");
-      }
-
-      return attributes.webBundleId;;
-      
-    } catch (e) {
-      throw Error(`Failed to obtain bundle ID, cause: ${e}`);
+    if (!decodedData[0] || !decodedData[0][2]) {
+      throw Error('Signed Web Bundle structure is invalid');
     }
+    const attributes = decodedData[0][2];
+
+    if (!attributes.webBundleId) {
+      throw Error(
+        'Failed to obtain webBundleId: Decoded data does not contain webBundleId',
+      );
+    }
+
+    return attributes.webBundleId;
+  } catch (e) {
+    throw Error(`Failed to obtain bundle ID, cause: ${e}`);
+  }
 }

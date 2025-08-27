@@ -8,7 +8,8 @@ import { getBundleId } from '../lib/web-bundle-id.js';
 const TEST_ED25519_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
 MC4CAQAwBQYDK2VwBCIEIB8nP5PpWU7HiILHSfh5PYzb5GAcIfHZ+bw6tcd/LZXh
 -----END PRIVATE KEY-----`;
-const EXPECTED_BUNDLE_ID = '4tkrnsmftl4ggvvdkfth3piainqragus2qbhf7rlz2a3wo3rh4wqaaic';
+const EXPECTED_BUNDLE_ID =
+  '4tkrnsmftl4ggvvdkfth3piainqragus2qbhf7rlz2a3wo3rh4wqaaic';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -21,9 +22,9 @@ describe('Obtaining Bundle ID from signed web bundle', () => {
     const publicKey = crypto.createPublicKey(ed25519PrivateKey);
 
     const signer = new wbnSign.IntegrityBlockSigner(
-      unsignedWebBundle, 
+      unsignedWebBundle,
       new wbnSign.WebBundleId(publicKey).serialize(),
-      [new wbnSign.NodeCryptoSigningStrategy(ed25519PrivateKey)]
+      [new wbnSign.NodeCryptoSigningStrategy(ed25519PrivateKey)],
     );
 
     const { signedWebBundle } = await signer.sign();
@@ -33,10 +34,9 @@ describe('Obtaining Bundle ID from signed web bundle', () => {
     expect(bundleId).toEqual(EXPECTED_BUNDLE_ID);
   });
 
-  it("Throws an error when the .swbn structure is invalid", () =>{
+  it('Throws an error when the .swbn structure is invalid', () => {
     const webBundle = Buffer.from('invalid-web-bundle', 'utf-8');
 
-    expect(() => getBundleId(webBundle)).toThrow()
-  })
+    expect(() => getBundleId(webBundle)).toThrow();
+  });
 });
-
