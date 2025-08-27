@@ -1,5 +1,5 @@
 import crypto, { KeyObject } from 'crypto';
-import * as cborg from 'cborg';
+import { encode } from 'cborg';
 import { INTEGRITY_BLOCK_MAGIC, VERSION_B2 } from '../utils/constants.js';
 import { checkDeterministic } from '../cbor/deterministic.js';
 import {
@@ -40,7 +40,7 @@ export class IntegrityBlockSigner {
       };
 
       const ibCbor = integrityBlock.toCBOR();
-      const attrCbor = cborg.encode(newAttributes);
+      const attrCbor = encode(newAttributes);
       checkDeterministic(ibCbor);
       checkDeterministic(attrCbor);
 
@@ -175,7 +175,7 @@ export class IntegrityBlock {
   }
 
   toCBOR(): Uint8Array {
-    return cborg.encode([
+    return encode([
       INTEGRITY_BLOCK_MAGIC,
       VERSION_B2,
       this.attributes,
