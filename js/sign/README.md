@@ -104,13 +104,15 @@ This package also includes 2 CLI tools
 There are the following command-line flags available:
 
 - (required) `--private-key <filePath>` (`-k <filePath>`)  
-  which takes the path to ed25519 private key. If chosen format is `v2`, this can be specified multiple times.
+  which takes the path to ed25519 private key. If chosen format is `v2`, this
+  can be specified multiple times.
 - (required) `--input <filePath>` (`-i <filePath>`)  
   which takes the path to the web bundle to be signed.
 - (optional) `--output <filePath>` (`-o <filePath>`)  
   which takes the path to the wanted signed web bundle output. Default:
   `signed.swbn`.
-- (required if more than one key is provided) `--web-bundle-id <web-bundle-id>`  
+- (required if more than one key is provided)
+  `--web-bundle-id <web-bundle-id>`  
   which takes the `web-bundle-id` to be associated with the web bundle.
 
 Example commands:
@@ -136,11 +138,13 @@ wbn-sign \
 
 There are the following command-line flags available:
 
-- (required) `--private-key <filePath>` (`-k <filePath>`)  
-  which takes the path to ed25519 private key.
-- (optional) `--with-iwa-scheme <boolean>` (`-s`)  
-  which dumps the Web Bundle ID with isolated-app:// scheme. By default it only
-  dumps the ID. Default: `false`.
+- (required) `--key <filePath>` which takes the path to ed25519/ecdsaP256 public
+  or private key.
+- (optional) `--with-iwa-scheme <boolean>` (`-s`) which dumps the Web Bundle ID
+  with isolated-app:// scheme. By default it only dumps the ID. Default:
+  `false`.
+- (optional) `--with-key-type <boolean>` (`-t`) which also outputs the type of
+  the key used (ecdsa/ed25519). Default: `false`.
 
 Example command:
 
@@ -191,10 +195,17 @@ environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 
 ## Release Notes
 
+### v0.2.5
+
+- Add support for dumping bundle IDs from public keys (used to be private-only).
+  Note that --private-key is hence renamed to --key.
+
 ### v0.2.3
+
 - Add support for obtaining bundleID from a .swbn file.
 
 ### v0.2.2
+
 - BREAKING CHANGE: Removed support for v1 integrity block format.
 
 ### v0.2.1

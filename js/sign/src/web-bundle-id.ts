@@ -17,6 +17,10 @@ export class WebBundleId {
     [SignatureType.Ed25519, [0x00, 0x01, 0x02]],
     [SignatureType.EcdsaP256SHA256, [0x00, 0x02, 0x02]],
   ]);
+  private readonly TYPE_NAME_MAPPING = new Map<SignatureType, string>([
+    [SignatureType.Ed25519, 'Ed25519'],
+    [SignatureType.EcdsaP256SHA256, 'EcdsaP256'],
+  ]);
   private readonly scheme = 'isolated-app://';
   private readonly key: KeyObject;
   private readonly typeSuffix: number[];
@@ -35,6 +39,10 @@ export class WebBundleId {
     }
 
     this.typeSuffix = this.TYPE_SUFFIX_MAPPING.get(getSignatureType(this.key))!;
+  }
+
+  getKeyTypeName(): string {
+    return this.TYPE_NAME_MAPPING.get(getSignatureType(this.key)) as string;
   }
 
   serialize() {
