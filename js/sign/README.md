@@ -4,8 +4,10 @@ This is a Node.js module for signing
 [Web Bundles](https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html)
 with [integrityblock](../../explainers/integrity-signature.md).
 
-The module takes an existing bundle file and an ed25519 private key, and emits a
-new bundle file with cryptographic signature added to the integrity block.
+The module takes an existing bundle file and an ed25519 or ecdsa-p256 private key, and emits a
+new bundle file with cryptographic signature(s) added to the integrity block.
+
+The module also support other operations on Integrity block like adding/removing/replacing signatures.
 
 ## Installation
 
@@ -24,7 +26,9 @@ This plugin requires Node v22.13.0+.
 Please be aware that the APIs are not stable yet and are subject to change at
 any time.
 
-Signing a web bundle file:
+### Signing a Web Bundle
+
+The recommended way to sign a web bundle is using the `SignedWebBundle` class.
 
 ```javascript
 import * as fs from 'fs';
@@ -37,41 +41,69 @@ const privateKey = wbnSign.parsePemKey(
   fs.readFileSync('./path/to/privatekey.pem', 'utf-8')
 );
 
-// Option 1: With the default (`NodeCryptoSigningStrategy`) signing strategy.
-const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(webBundle, {
-  key: privateKey,
-}).sign();
-
-// Option 2: With specified signing strategy.
-const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(
+// Sign with a single key.
+const signedWebBundle = await wbnSign.SignedWebBundle.fromWebBundle(
   webBundle,
-  new wbnSign.NodeCryptoSigningStrategy(privateKey)
-).sign();
+  [new wbnSign.NodeCryptoSigningStrategy(privateKey)]
+);
 
-// Option 3: With ones own CustomSigningStrategy class implementing
-// ISigningStrategy.
-const { signedWebBundle } = await new wbnSign.IntegrityBlockSigner(
-  webBundle,
-  new (class {
-    async sign(data: Uint8Array): Promise<Uint8Array> {
-      // E.g. connect to one's external signing service that signs the payload.
-    }
-    async getPublicKey(): Promise<KeyObject> {
-      /** E.g. connect to one's external signing service that returns the public
-       * key.*/
-    }
-  })()
-).sign();
+// Get the signed bytes to save to a file.
+const signedBytes = signedWebBundle.getSignedWebBundleBytes();
+fs.writeFileSync('./path/to/signed.swbn', signedBytes);
 
-fs.writeFileSync(signedWebBundle);
+// Get the Web Bundle ID (App ID).
+console.log('Web Bundle ID:', signedWebBundle.getWebBundleId());
 ```
 
+### Advanced Usage: Multiple Signatures
+
+You can sign a bundle with multiple keys at once, or add signatures to an already signed bundle.
+
+```javascript
+// Sign with multiple keys at once.
+const multiSigned = await wbnSign.SignedWebBundle.fromWebBundle(
+  webBundle,
+  [strategy1, strategy2]
+);
+
+// Or add a signature to an existing SignedWebBundle instance.
+await multiSigned.addSignature(strategy3);
+
+// You can also load an existing signed web bundle from bytes.
+const existingSigned = wbnSign.SignedWebBundle.fromBytes(
+  fs.readFileSync('./path/to/already_signed.swbn')
+);
+
+// And remove a signature by providing the public key.
+existingSigned.removeSignature(publicKeyBytes);
+```
+
+### Custom Signing Strategies
+
+You can implement your own signing strategy by implementing the `ISigningStrategy` interface.
+
+```javascript
+const customStrategy = new (class {
+  async sign(data: Uint8Array): Promise<Uint8Array> {
+    // Connect to an external signing service.
+  }
+  async getPublicKey(): Promise<KeyObject> {
+    // Return the public key from the service.
+  }
+})();
+
+const signedWebBundle = await wbnSign.SignedWebBundle.fromWebBundle(
+  webBundle,
+  [customStrategy]
+);
+```
+
+### Calculating Web Bundle ID
+
 This library also exposes a helper class to calculate the Web Bundle's ID (or
-App ID) from the private or public ed25519 key, which can then be used when
+App ID) from the private or public key, which can then be used when
 bundling
 [Isolated Web Apps](https://github.com/WICG/isolated-web-apps/blob/main/README.md).
-
-Calculating the web bundle ID for Isolated Web Apps:
 
 ```javascript
 import * as fs from 'fs';
@@ -210,6 +242,12 @@ then you can bypass the passphrase prompt by storing the passphrase in an
 environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 
 ## Release Notes
+
+### v0.3.0
+- **Major architectural update**: Introduced `SignedWebBundle` as the primary interface for managing signed bundles.
+- Support for **multi-signatures**: Add, remove, and replace signatures in already signed web bundles.
+- **NOTICE**: Upcoming breaking change. `IntegrityBlockSigner` is deprecated and will be removed in a future version. Migrate to `SignedWebBundle`.
+
 
 ### v0.2.7
   - The new command line interface that supports commands introduced for wbn-sign tool

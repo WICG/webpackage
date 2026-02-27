@@ -1,6 +1,6 @@
 {
   "name": "wbn-sign",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "description": "Tool to sign web bundles and manage signatures of signed web bundles.",
   "homepage": "https://github.com/WICG/webpackage/tree/main/js/sign",
   "main": "./lib/wbn-sign.cjs",

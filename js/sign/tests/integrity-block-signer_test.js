@@ -22,6 +22,7 @@ MHcCAQEEIG6HAXvoG+dOP20rbyPuGC21od4DAZCKBkPy/1902xPnoAoGCCqGSM49
 AwEHoUQDQgAEHIIHO9B+7XJoXTXf3aTWC7aoK1PW4Db5Z8gSGXIkHlLrucUI4lyx
 DttYYhi36vrg5nR6zrfdhe7+8F1MoTvLuw==
 -----END EC PRIVATE KEY-----`;
+
 const TEST_ED25519_WEB_BUNDLE_ID =
   '4tkrnsmftl4ggvvdkfth3piainqragus2qbhf7rlz2a3wo3rh4wqaaic';
 const TEST_ECDSA_P256_WEB_BUNDLE_ID =
@@ -115,7 +116,7 @@ describe('Integrity Block Signer', () => {
 
   it('encodes an empty integrity block CBOR correctly.', () => {
     const integrityBlock = new wbnSign.IntegrityBlock();
-    const cbor = integrityBlock.toCBOR();
+    const cbor = integrityBlock.toCbor();
 
     expect(cbor).toEqual(
       Uint8Array.from(Buffer.from(EMPTY_INTEGRITY_BLOCK_HEX, 'hex'))
@@ -150,7 +151,7 @@ describe('Integrity Block Signer', () => {
 
       const dataToBeSigned = signer.generateDataToBeSigned(
         signer.calcWebBundleHash(),
-        new wbnSign.IntegrityBlock().toCBOR(),
+        new wbnSign.IntegrityBlock().toCbor(),
         cborg.encode({
           [utils.getPublicKeyAttributeName(keypair.publicKey)]: rawPubKey,
         })
@@ -207,7 +208,7 @@ describe('Integrity Block Signer', () => {
 
       const dataToBeSigned = signer.generateDataToBeSigned(
         signer.calcWebBundleHash(),
-        ibWithoutSignatures.toCBOR(),
+        ibWithoutSignatures.toCbor(),
         cborg.encode(sigAttr)
       );
 
@@ -282,7 +283,7 @@ describe('Integrity Block Signer', () => {
 
       const dataToBeSigned = signer.generateDataToBeSigned(
         signer.calcWebBundleHash(),
-        ibWithoutSignatures.toCBOR(),
+        ibWithoutSignatures.toCbor(),
         cborg.encode(signatureAttributes)
       );
       // For ECDSA P-256 keys the algorithm is implicitly selected as SHA-256.

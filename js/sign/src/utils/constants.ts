@@ -10,6 +10,13 @@ export const PUBLIC_KEY_ATTRIBUTE_NAME_MAPPING = new Map<SignatureType, string>(
   ]
 );
 
+export const WEB_BUNDLE_ID_ATTRIBUTE_NAME = 'webBundleId';
+
+// Reversed map above, useful for parsing Integrity Block
+export const SIGNATURE_ATTRIBUTE_TO_TYPE_MAPPING = new Map(
+  Array.from(PUBLIC_KEY_ATTRIBUTE_NAME_MAPPING, ([k, v]) => [v, k])
+);
+
 export const INTEGRITY_BLOCK_MAGIC = new Uint8Array([
   0xf0, 0x9f, 0x96, 0x8b, 0xf0, 0x9f, 0x93, 0xa6,
 ]); // 🖋📦
