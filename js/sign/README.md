@@ -124,80 +124,47 @@ const webBundleIdWithIWAOrigin = new wbnSign.WebBundleId(
 
 ## CLI
 
-This package also includes 2 CLI tools
+This package also includes 2 CLI tools:
 
-- `wbn-sign` which lets you sign a web bundle easily without having to write any
-  additional JavaScript.
-- `wbn-dump-id` which can be used to calculate the Web Bundle ID corresponding
-  to your signing key.
+- `wbn-sign`: A comprehensive tool for signing bundles and managing signatures.
+- `wbn-dump-id`: A simple utility to calculate the Web Bundle ID for a given key.
 
-### Running wbn-sign 
-#### New usage form (>= 0.2.7)
+### Running wbn-sign
 
-The base usage from is: `wbn-sign [command] [options] <arguments...>`
+The base usage is: `wbn-sign [command] [options] <arguments...>`
 
-Currenly supported commands are:
-```
-Usage: wbn-sign sign [options] <web_bundle> <private_keys...>
+#### Commands:
 
-Signs the given web bundle with private key(s). Produces signed web bundle output file.
+- `sign <web_bundle> <private_keys...>`: Signs a web bundle with one or more private keys.
+- `add-signature <signed_web_bundle> <private_keys...>`: Adds new signatures to an already signed bundle.
+- `remove-signature <signed_web_bundle> <keys...>`: Removes signatures from a bundle. Keys can be public (Base64/.pem) or private (.pem).
+- `replace-signature <signed_web_bundle> <old_key> <new_private_key>`: Replaces an existing signature.
+- `info <web_bundle>`: Displays information about the integrity block, including the Web Bundle ID and public keys of signers.
 
-Arguments:
-  web_bundle                       a web bundle (file `*.wbn`) to sign
-  private_keys                     private keys (files `*.pem`) with which the web bundle will be signed. EcdsaP256 and ed25519 keys (encrypted and not encrypted) are supported.
+For more details, run `wbn-sign help [command]`.
 
-Options:
-  -o, --output <file>              signed web bundle output file (default: "signed.swbn")
-  --web-bundle-id <web-bundle-id>  web bundle ID. Derived from the first key if not specified.
-  -h, --help                       display help for command
-```
-
-For more details check `wbn-sign help [command]`.
-
-Example commands:
+#### Examples:
 
 ```bash
-wbn-sign sign ~/path/to/webbundle.wbn ~/path/to/ed25519key.pem -o ~/path/to/signed-webbundle.swbn
+# Sign a web bundle with two keys.
+wbn-sign sign webbundle.wbn key1.pem key2.pem -o signed.swbn
+
+# Add a signature to an existing swbn.
+wbn-sign add-signature signed.swbn key3.pem --in-place
+
+# View information about a signed bundle.
+wbn-sign info signed.swbn
 ```
-
-```bash
-wbn-sign sign ~/path/to/webbundle.wbn ~/path/to/ed25519key.pem ~/path/to/ecdsa_p256key.pem \
-  --web-bundle-id amfcf7c4bmpbjbmq4h4yptcobves56hfdyr7tm3doxqvfmsk5ss6maacai \
-  -o ~/path/to/signed-webbundle.swbn
-```
-
-
-#### Legacy usage (<0.2.6)
-Previously the CLI tool used only options (no command). This usage form will be deprecated, but in the actual version is still supported.
-
-In `wbn-sign [options]` form followling options are available:
-- (required) `--private-key <filePath>` (`-k <filePath>`)  
-  which takes the path to ed25519/ecdsaP256 private key. Can be specified multiple times.
-- (required) `--input <filePath>` (`-i <filePath>`)  
-  which takes the path to the web bundle to be signed.
-- (optional) `--output <filePath>` (`-o <filePath>`)  
-  which takes the path to the wanted signed web bundle output. Default:
-  `signed.swbn`.
-- (required if more than one key is provided)
-  `--web-bundle-id <web-bundle-id>`  
-  which takes the `web-bundle-id` to be associated with the web bundle.
 
 ### Running wbn-dump-id
 
-There are the following command-line flags available:
+- `--key <filePath>` (required): Path to ed25519/ecdsaP256 public or private key.
+- `--with-iwa-scheme` (`-s`): Dumps the Web Bundle ID with `isolated-app://` scheme.
+- `--with-key-type` (`-t`): Outputs the type of the key used (ecdsa/ed25519).
 
-- (required) `--key <filePath>` which takes the path to ed25519/ecdsaP256 public
-  or private key.
-- (optional) `--with-iwa-scheme <boolean>` (`-s`) which dumps the Web Bundle ID
-  with isolated-app:// scheme. By default it only dumps the ID. Default:
-  `false`.
-- (optional) `--with-key-type <boolean>` (`-t`) which also outputs the type of
-  the key used (ecdsa/ed25519). Default: `false`.
-
-Example command:
-
+Example:
 ```bash
-wbn-dump-id -s -k ~/path/to/ed25519key.pem
+wbn-dump-id -s -k path/to/ed25519key.pem
 ```
 
 This would print the Web Bundle ID calculated from `ed25519key.pem` into the
@@ -218,7 +185,9 @@ The environment variable set like this, can then be used in other scripts, for
 example in `--baseURL` when creating a web bundle with
 [wbn CLI tool](https://github.com/WICG/webpackage/tree/main/js/bundle#cli).
 
-## Generating Ed25519 key
+## Generating Keys
+
+### Ed25519 (recommended)
 
 An unencrypted ed25519 private key can be generated with:
 
@@ -226,22 +195,34 @@ An unencrypted ed25519 private key can be generated with:
 openssl genpkey -algorithm Ed25519 -out ed25519key.pem
 ```
 
-For better security, one should prefer using passphrase-encrypted ed25519
-private keys. To encrypt an unencrypted private key, run:
+**Note**: Although both are key types are secure, 
+we recommend using ed25519 as it is cosidered slightly more secure than ecdsa-p256.
+The ecdsa algorithm, in opposite to deterimistic ed25519, is relying on strength of pseudo-random generator.
 
+### ECDSA P-256
+```bash
+openssl ecparam -name prime256v1 -genkey -noout -out ecdsap256key.pem
 ```
+
+### Encryption
+For better security, one should prefer using passphrase-encrypted
+private keys. To encrypt an unencrypted private key (both supported types), run:
+
+```bash
 # encrypt the key (will ask for a passphrase, make sure to use a strong one)
-openssl pkcs8 -in ed25519key.pem -topk8 -out encrypted_ed25519key.pem
+openssl pkcs8 -in private_key.pem -topk8 -out encrypted_key.pem
 # delete the unencrypted key
-rm ed25519key.pem
+rm private_key.pem
 ```
 
-If you use an encrypted private key, you will be prompted for its passphrase as
+If you use an encrypted private key to sign a bundle, you will be prompted for its passphrase as
 part of the signing process. If you want to use the CLI tool programmatically,
 then you can bypass the passphrase prompt by storing the passphrase in an
 environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
-
 ## Release Notes
+
+### v0.3.1
+- Enhanced **CLI**: New commands `add-signature`, `remove-signature`, `replace-signature`, and `info`.
 
 ### v0.3.0
 - **Major architectural update**: Introduced `SignedWebBundle` as the primary interface for managing signed bundles.

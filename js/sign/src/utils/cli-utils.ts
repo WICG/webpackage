@@ -2,6 +2,7 @@ import { KeyObject } from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
+import colors from 'colors';
 import read from 'read';
 
 import { parsePemKey } from '../wbn-sign.js';
@@ -74,45 +75,20 @@ export async function readPassphrase(description: string): Promise<string> {
 }
 
 // Logging module
-//TODO: Replace with more professional js logging tools
-
-const COLORS: Record<string, string> = {
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
-  //aka reset
-  default: '\x1b[0m',
-};
-
-function coloredConsoleLog(
-  colorEscCode: string,
-  text: string,
-  stream: NodeJS.WriteStream = process.stdout
-): void {
-  const reset = COLORS.default;
-
-  // Check if the stream is a TTY (interactive terminal)
-  // If the log is used for non-terminal (fd != 1), e.g., setting an environment
-  // variable, it shouldn't have any formatting.
-  if (stream.isTTY) {
-    stream.write(`${colorEscCode}${text}${reset}\n`);
-  } else {
-    stream.write(`${text}\n`);
-  }
-}
-
+// TODO: Replace with more professional js logging tools
 export function greenConsoleLog(text: string): void {
-  coloredConsoleLog(COLORS.green, text);
+  colors.enabled = process.stdout.isTTY;
+  console.log(text.green);
 }
 export function infoLog(text: string): void {
-  coloredConsoleLog(COLORS.default, 'INFO: ' + text, process.stderr);
+  // Warn to print on stderr, not stdout
+  console.warn('INFO: ' + text);
 }
 export function warnLog(text: string): void {
-  coloredConsoleLog(COLORS.yellow, 'WARN: ' + text, process.stderr);
+  colors.enabled = process.stdout.isTTY;
+  console.warn(`WARN: ${text}`.yellow);
 }
 export function errorLog(text: string): void {
-  coloredConsoleLog(COLORS.red, 'ERROR: ' + text, process.stderr);
+  colors.enabled = process.stdout.isTTY;
+  console.error(`ERROR:  ${text}`.red);
 }
