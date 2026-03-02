@@ -1,0 +1,88 @@
+import crypto, { KeyObject } from 'crypto';
+
+import base32Encode from 'base32-encode';
+import { decodeFirst } from 'cborg';
+
+import { SignatureType } from './utils/constants.js';
+import {
+  getRawPublicKey,
+  getSignatureType,
+  isAsymmetricKeyTypeSupported,
+} from './utils/utils.js';
+
+// Web Bundle ID is a base32-encoded (without padding) ed25519 public key
+// transformed to lowercase. More information:
+// https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#signed-web-bundle-ids
+export class WebBundleId {
+  // https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#suffix
+  private readonly TYPE_SUFFIX_MAPPING = new Map<SignatureType, number[]>([
+    [SignatureType.Ed25519, [0x00, 0x01, 0x02]],
+    [SignatureType.EcdsaP256SHA256, [0x00, 0x02, 0x02]],
+  ]);
+  private readonly TYPE_NAME_MAPPING = new Map<SignatureType, string>([
+    [SignatureType.Ed25519, 'Ed25519'],
+    [SignatureType.EcdsaP256SHA256, 'EcdsaP256'],
+  ]);
+  private readonly scheme = 'isolated-app://';
+  private readonly key: KeyObject;
+  private readonly typeSuffix: number[];
+
+  constructor(key: KeyObject) {
+    if (!isAsymmetricKeyTypeSupported(key)) {
+      throw new Error(
+        `WebBundleId: Only Ed25519 and ECDSA P-256 keys are currently supported.`
+      );
+    }
+
+    if (key.type === 'private') {
+      this.key = crypto.createPublicKey(key);
+    } else {
+      this.key = key;
+    }
+
+    this.typeSuffix = this.TYPE_SUFFIX_MAPPING.get(getSignatureType(this.key))!;
+  }
+
+  getKeyTypeName(): string {
+    return this.TYPE_NAME_MAPPING.get(getSignatureType(this.key)) as string;
+  }
+
+  serialize() {
+    return base32Encode(
+      new Uint8Array([...getRawPublicKey(this.key), ...this.typeSuffix]),
+      'RFC4648',
+      { padding: false }
+    ).toLowerCase();
+  }
+
+  serializeWithIsolatedWebAppOrigin() {
+    return `${this.scheme}${this.serialize()}/`;
+  }
+
+  toString() {
+    return `\
+  Web Bundle ID: ${this.serialize()}
+  Isolated Web App Origin: ${this.serializeWithIsolatedWebAppOrigin()}`;
+  }
+}
+
+export function getBundleId(signedWebBundle: Uint8Array) {
+  try {
+    const decodedData = decodeFirst(signedWebBundle);
+
+    if (!decodedData[0] || !decodedData[0][2]) {
+      throw Error('Signed Web Bundle structure is invalid');
+    }
+    const attributes = decodedData[0][2];
+
+    if (!attributes.webBundleId) {
+      throw Error(
+        'Failed to obtain webBundleId: Decoded data does not contain webBundleId'
+      );
+    }
+
+    return attributes.webBundleId;
+  } catch (e) {
+    throw Error(`Failed to obtain bundle ID.`, { cause: e });
+  }
+}

@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/WICG/webpackage/go/bundle/version"
-	"github.com/WICG/webpackage/go/signedexchange/cbor"
+	"github.com/WICG/webpackage/go/internal/cbor"
 	"github.com/WICG/webpackage/go/signedexchange/structuredheader"
 )
 
@@ -166,51 +166,40 @@ func (is *indexSection) Finalize(ver version.Version) error {
 			return err
 		}
 	} else {
-		// CDDL: index = [* (headers, length: uint) ]
-		if err := enc.EncodeArrayHeader(len(is.es) * 2); err != nil {
-			return err
+		// CDDL:
+		// index = {* whatwg-url => [ location-in-responses ] }
+		// whatwg-url = tstr
+		// location-in-responses = (offset: uint, length: uint)
+		m := make(map[string][]*indexEntry)
+		for _, e := range is.es {
+			url := e.URL.String()
+			m[url] = append(m[url], e)
 		}
 
-		for _, e := range is.es {
-			mes := []*cbor.MapEntryEncoder{
-				cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-					if err := keyE.EncodeByteString([]byte(":method")); err != nil {
-						panic(err)
-					}
-					if err := valueE.EncodeByteString([]byte("GET")); err != nil {
-						panic(err)
-					}
-				}),
-				cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-					if err := keyE.EncodeByteString([]byte(":url")); err != nil {
-						panic(err)
-					}
-					if err := valueE.EncodeByteString([]byte(e.URL.String())); err != nil {
-						panic(err)
-					}
-				}),
+		mes := []*cbor.MapEntryEncoder{}
+		for url, es := range m {
+			if len(es) > 1 {
+				return errors.New("This WebBundle version '" + string(ver) + "' does not support variants, so we cannot have multiple resources per URL.")
 			}
-			h := e.Header
-			for name, _ := range h {
-				lname := strings.ToLower(name)
-				value := h.Get(name)
-				me := cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
-					if err := keyE.EncodeByteString([]byte(lname)); err != nil {
-						panic(err)
-					}
-					if err := valueE.EncodeByteString([]byte(value)); err != nil {
-						panic(err)
-					}
-				})
-				mes = append(mes, me)
-			}
+			me := cbor.GenerateMapEntry(func(keyE *cbor.Encoder, valueE *cbor.Encoder) {
+				if err := keyE.EncodeTextString(url); err != nil {
+					panic(err)
+				}
 
-			if err := enc.EncodeMap(mes); err != nil {
-				return err
-			}
-			if err := enc.EncodeUint(uint64(e.Length)); err != nil {
-				return err
-			}
+				if err := valueE.EncodeArrayHeader(2); err != nil {
+					panic(err)
+				}
+				if err := valueE.EncodeUint(es[0].Offset); err != nil {
+					panic(err)
+				}
+				if err := valueE.EncodeUint(es[0].Length); err != nil {
+					panic(err)
+				}
+			})
+			mes = append(mes, me)
+		}
+		if err := enc.EncodeMap(mes); err != nil {
+			return err
 		}
 	}
 
@@ -431,6 +420,21 @@ func (rs *responsesSection) WriteTo(w io.Writer) (int64, error) {
 	return rs.buf.WriteTo(w)
 }
 
+type primarySection struct {
+	bytes.Buffer
+}
+
+func (ps *primarySection) Name() string { return "primary" }
+
+func newPrimarySection(url *url.URL) (*primarySection, error) {
+	var ps primarySection
+	enc := cbor.NewEncoder(&ps)
+	if err := enc.EncodeTextString(url.String()); err != nil {
+		return nil, err
+	}
+	return &ps, nil
+}
+
 type manifestSection struct {
 	bytes.Buffer
 }
@@ -572,7 +576,17 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 
 	sections := []section{}
 	sections = append(sections, is)
+	if !b.Version.HasPrimaryURLFieldInHeader() && b.PrimaryURL != nil {
+		ps, err := newPrimarySection(b.PrimaryURL)
+		if err != nil {
+			return cw.Written, err
+		}
+		sections = append(sections, ps)
+	}
 	if b.ManifestURL != nil {
+		if !b.Version.SupportsManifestSection() {
+			return cw.Written, errors.New("This version of the WebBundle does not support storing manifest URL.")
+		}
 		ms, err := newManifestSection(b.ManifestURL)
 		if err != nil {
 			return cw.Written, err
@@ -591,7 +605,7 @@ func (b *Bundle) WriteTo(w io.Writer) (int64, error) {
 	if _, err := cw.Write(b.Version.HeaderMagicBytes()); err != nil {
 		return cw.Written, err
 	}
-	if b.Version.HasPrimaryURLField() {
+	if b.Version.HasPrimaryURLFieldInHeader() {
 		if err := writePrimaryURL(cw, b.PrimaryURL); err != nil {
 			return cw.Written, err
 		}

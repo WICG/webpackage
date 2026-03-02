@@ -104,7 +104,7 @@ so that test implementations can interoperate.
 ### Web bundles
 
 We're defining a [new Zip-like archive
-format](https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html)
+format](https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html)
 to serve the Web's needs. ([IETF
 draft](https://tools.ietf.org/html/draft-yasskin-wpack-bundled-exchanges))
 

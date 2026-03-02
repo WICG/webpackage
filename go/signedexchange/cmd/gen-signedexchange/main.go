@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/WICG/webpackage/go/internal/signingalgorithm"
 	"github.com/WICG/webpackage/go/signedexchange"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 	"github.com/WICG/webpackage/go/signedexchange/version"
@@ -69,7 +70,7 @@ func run() error {
 		return fmt.Errorf("failed to read certificate file %q. err: %v", *flagCertificate, err)
 
 	}
-	certs, err := signedexchange.ParseCertificates(certtext)
+	certs, err := signingalgorithm.ParseCertificates(certtext)
 	if err != nil {
 		return fmt.Errorf("failed to parse certificate file %q. err: %v", *flagCertificate, err)
 	}
@@ -91,7 +92,7 @@ func run() error {
 	if !ok {
 		return fmt.Errorf("failed to parse version %q", *flagVersion)
 	}
-	privkey, err := signedexchange.ParsePrivateKey(privkeytext)
+	privkey, err := signingalgorithm.ParsePrivateKey(privkeytext)
 	if err != nil {
 		return fmt.Errorf("failed to parse private key file %q. err: %v", *flagPrivateKey, err)
 	}

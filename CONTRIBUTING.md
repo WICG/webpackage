@@ -40,3 +40,7 @@ repository constitutes Contributions to the IETF Standards Process
 You agree to comply with all applicable IETF policies and procedures, including,
 BCP 78, 79, the TLP, and the TLP rules regarding code components (e.g. being
 subject to a Simplified BSD License) in Contributions.
+
+# Additional Contribution Guidelines
+
+- For changes to code in `js/`, please also follow the guidelines in [js/CONTRIBUTING.md](js/CONTRIBUTING.md).

@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	_ "crypto/sha256"
+	"crypto/sha256"
 	_ "crypto/sha512"
 	"encoding/asn1"
 	"errors"
@@ -15,6 +15,14 @@ import (
 
 type SigningAlgorithm interface {
 	Sign(m []byte) ([]byte, error)
+}
+
+type MockSigningAlgorithm struct{}
+
+// Sign returns the SHA-256 hash of the input.
+func (e *MockSigningAlgorithm) Sign(m []byte) ([]byte, error) {
+	h := sha256.Sum256(m)
+	return h[:], nil
 }
 
 type ecdsaSigningAlgorithm struct {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/WICG/webpackage/go/bundle"
 	"github.com/WICG/webpackage/go/bundle/signature"
+	"github.com/WICG/webpackage/go/integrityblock"
 )
 
 var (
@@ -24,6 +26,16 @@ func ReadBundleFromFile(path string) (*bundle.Bundle, error) {
 		return nil, fmt.Errorf("Failed to open input file %q for reading. err: %v", path, err)
 	}
 	defer fi.Close()
+
+	hasIntegrityBlock, err := integrityblock.WebBundleHasIntegrityBlock(fi)
+	if err != nil {
+		return nil, err
+	}
+
+	if hasIntegrityBlock {
+		return nil, errors.New("dump-bundle doesn't support bundles which have been signed using integrity block.")
+	}
+
 	return bundle.Read(fi)
 }
 
@@ -99,7 +111,7 @@ func run() error {
 
 	fmt.Printf("Version: %v\n", b.Version)
 
-	if b.Version.HasPrimaryURLField() {
+	if b.PrimaryURL != nil {
 		fmt.Printf("Primary URL: %v\n", b.PrimaryURL)
 	}
 	if b.ManifestURL != nil {

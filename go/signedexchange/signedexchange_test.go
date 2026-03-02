@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/WICG/webpackage/go/internal/signingalgorithm"
 	. "github.com/WICG/webpackage/go/signedexchange"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 	"github.com/WICG/webpackage/go/signedexchange/version"
@@ -46,15 +47,6 @@ var signatureDate = time.Date(2018, 1, 31, 17, 13, 20, 0, time.UTC)
 var nullLogger = log.New(ioutil.Discard, "", 0)     // Use when some output is expected.
 var stdoutLogger = log.New(os.Stdout, "ERROR: ", 0) // Use when no output is expected.
 
-type zeroReader struct{}
-
-func (zeroReader) Read(b []byte) (int, error) {
-	for i := range b {
-		b[i] = 0
-	}
-	return len(b), nil
-}
-
 func mustReadFile(path string) []byte {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -70,12 +62,12 @@ func testForEachVersion(t *testing.T, testFunc func(ver version.Version, t *test
 }
 
 func TestSignedExchange(t *testing.T) {
-	certs, err := ParseCertificates([]byte(pemCerts))
+	certs, err := signingalgorithm.ParseCertificates([]byte(pemCerts))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	privKey, err := ParsePrivateKey([]byte(pemPrivateKey))
+	privKey, err := signingalgorithm.ParsePrivateKey([]byte(pemPrivateKey))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,9 +95,9 @@ func TestSignedExchange(t *testing.T) {
 		},
 	}
 	expectedSignatureHeader := map[version.Version]string{
-		version.Version1b1: "label;cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*;cert-url=\"https://example.com/cert.msg\";date=1517418800;expires=1517422400;integrity=\"mi-draft2\";sig=*MEYCIQCbay5VbkR9mi4pnwDAJamuf7Fj1CWnEnJt6Uxm7YeqiwIhAL8JISyzF5sDhtUaEbNCE6vgv2NIKCkONzLgwL23UL6P*;validity-url=\"https://example.com/resource.validity\"",
-		version.Version1b2: "label;cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*;cert-url=\"https://example.com/cert.msg\";date=1517418800;expires=1517422400;integrity=\"digest/mi-sha256-03\";sig=*MEUCIHNiDRQncQpVxW2x+woinMUTY8nuSQfi0mbJ5J6x7FZyAiEAgh6FH6PdncNCK8GHTwN3wfUUUFdjVswNi1PfIgCOwHk=*;validity-url=\"https://example.com/resource.validity\"",
-		version.Version1b3: "label;cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*;cert-url=\"https://example.com/cert.msg\";date=1517418800;expires=1517422400;integrity=\"digest/mi-sha256-03\";sig=*MEUCIEQPK0UKPm9/XP5Jko2V72vTrGlBqB9HHoOzhJmVPflmAiEAwCSBw98NhUhFGJaxL6ITT+QZBBeO7TCLAiHn1apY6Es=*;validity-url=\"https://example.com/resource.validity\"",
+		version.Version1b1: "label;cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*;cert-url=\"https://example.com/cert.msg\";date=1517418800;expires=1517422400;integrity=\"mi-draft2\";sig=*P+xY4Q8STWMxPzA8aAsyD+cS48e2kDkX0Zb87AkjP4I=*;validity-url=\"https://example.com/resource.validity\"",
+		version.Version1b2: "label;cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*;cert-url=\"https://example.com/cert.msg\";date=1517418800;expires=1517422400;integrity=\"digest/mi-sha256-03\";sig=*MuyacyYQQhivyQnoSAxjzyeYo3EaUuRd8H+WkpbEjio=*;validity-url=\"https://example.com/resource.validity\"",
+		version.Version1b3: "label;cert-sha256=*eLWHusI0YcDcHSG5nkYbyZddE2sidVyhx6iSYoJ+SFc=*;cert-url=\"https://example.com/cert.msg\";date=1517418800;expires=1517422400;integrity=\"digest/mi-sha256-03\";sig=*0xyLkp/b7AwNNfj6gWrRiQrvdITlVoWxXsQ4STLWv+Q=*;validity-url=\"https://example.com/resource.validity\"",
 	}
 
 	testForEachVersion(t, func(ver version.Version, t *testing.T) {
@@ -130,7 +122,7 @@ func TestSignedExchange(t *testing.T) {
 			CertUrl:     certUrl,
 			ValidityUrl: validityUrl,
 			PrivKey:     privKey,
-			Rand:        zeroReader{},
+			Algorithm:   &signingalgorithm.MockSigningAlgorithm{},
 		}
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
@@ -195,10 +187,10 @@ func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		certs, _ := ParseCertificates([]byte(pemCerts))
+		certs, _ := signingalgorithm.ParseCertificates([]byte(pemCerts))
 		certUrl, _ := url.Parse("http://example.com/cert.msg")
 		validityUrl, _ := url.Parse("https://example.com/resource.validity")
-		privKey, _ := ParsePrivateKey([]byte(pemPrivateKey))
+		privKey, _ := signingalgorithm.ParsePrivateKey([]byte(pemPrivateKey))
 		s := &Signer{
 			Date:        signatureDate,
 			Expires:     signatureDate.Add(1 * time.Hour),
@@ -206,7 +198,6 @@ func TestSignedExchangeBannedCertUrlScheme(t *testing.T) {
 			CertUrl:     certUrl,
 			ValidityUrl: validityUrl,
 			PrivKey:     privKey,
-			Rand:        zeroReader{},
 		}
 		if err := e.AddSignatureHeader(s); err == nil {
 			t.Errorf("non-{https,data} cert-url unexpectedly allowed in an exchange")
@@ -223,12 +214,12 @@ func createTestExchange(ver version.Version, t *testing.T) (e *Exchange, s *Sign
 		t.Fatal(err)
 	}
 
-	certs, err := ParseCertificates([]byte(pemCerts))
+	certs, err := signingalgorithm.ParseCertificates([]byte(pemCerts))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	privKey, err := ParsePrivateKey([]byte(pemPrivateKey))
+	privKey, err := signingalgorithm.ParsePrivateKey([]byte(pemPrivateKey))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,7 +232,6 @@ func createTestExchange(ver version.Version, t *testing.T) (e *Exchange, s *Sign
 		CertUrl:     certUrl,
 		ValidityUrl: validityUrl,
 		PrivKey:     privKey,
-		Rand:        zeroReader{},
 	}
 
 	certChain, err := certurl.NewCertChain(certs, []byte("dummy"), nil)
@@ -368,7 +358,7 @@ func TestVerifyBadSignature(t *testing.T) {
 func TestVerifyNoContentType(t *testing.T) {
 	testForEachVersion(t, func(ver version.Version, t *testing.T) {
 		e, s, c := createTestExchange(ver, t)
-		e.ResponseHeaders.Del("Content-Type");
+		e.ResponseHeaders.Del("Content-Type")
 		if err := e.AddSignatureHeader(s); err != nil {
 			t.Fatal(err)
 		}

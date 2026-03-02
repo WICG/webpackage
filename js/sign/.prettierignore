@@ -1,0 +1,5 @@
+lib
+*.wbn
+*.swbn
+testdata
+README.md

@@ -7,12 +7,11 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"fmt"
-	"io"
 	"net/url"
 	"time"
 
+	"github.com/WICG/webpackage/go/internal/cbor"
 	"github.com/WICG/webpackage/go/internal/signingalgorithm"
-	"github.com/WICG/webpackage/go/signedexchange/cbor"
 	"github.com/WICG/webpackage/go/signedexchange/internal/bigendian"
 	"github.com/WICG/webpackage/go/signedexchange/structuredheader"
 	"github.com/WICG/webpackage/go/signedexchange/version"
@@ -40,7 +39,7 @@ type Signer struct {
 	CertUrl     *url.URL
 	ValidityUrl *url.URL
 	PrivKey     crypto.PrivateKey
-	Rand        io.Reader
+	Algorithm   signingalgorithm.SigningAlgorithm
 }
 
 func calculateCertSha256(certs []*x509.Certificate) []byte {
@@ -179,13 +178,12 @@ func serializeSignedMessage(e *Exchange, certSha256 []byte, validityUrl string, 
 }
 
 func (s *Signer) sign(e *Exchange) ([]byte, error) {
-	r := s.Rand
-	if r == nil {
-		r = rand.Reader
-	}
-	alg, err := signingalgorithm.SigningAlgorithmForPrivateKey(s.PrivKey, r)
-	if err != nil {
-		return nil, err
+	if s.Algorithm == nil {
+		var err error
+		s.Algorithm, err = signingalgorithm.SigningAlgorithmForPrivateKey(s.PrivKey, rand.Reader)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	msg, err := serializeSignedMessage(e, calculateCertSha256(s.Certs), s.ValidityUrl.String(), s.Date.Unix(), s.Expires.Unix())
@@ -193,7 +191,7 @@ func (s *Signer) sign(e *Exchange) ([]byte, error) {
 		return nil, err
 	}
 
-	return alg.Sign(msg)
+	return s.Algorithm.Sign(msg)
 }
 
 func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
@@ -212,13 +210,13 @@ func (s *Signer) signatureHeaderValue(e *Exchange) (string, error) {
 	pi := structuredheader.ParameterisedIdentifier{
 		Label: "label",
 		Params: structuredheader.Parameters{
-			"sig": sig,
+			"sig":          sig,
 			"validity-url": s.ValidityUrl.String(),
-			"integrity": e.Version.MiceEncoding().IntegrityIdentifier(),
-			"cert-url": s.CertUrl.String(),
-			"cert-sha256": calculateCertSha256(s.Certs),
-			"date": s.Date.Unix(),
-			"expires": s.Expires.Unix(),
+			"integrity":    e.Version.MiceEncoding().IntegrityIdentifier(),
+			"cert-url":     s.CertUrl.String(),
+			"cert-sha256":  calculateCertSha256(s.Certs),
+			"date":         s.Date.Unix(),
+			"expires":      s.Expires.Unix(),
 		}}
 	return pi.String()
 }

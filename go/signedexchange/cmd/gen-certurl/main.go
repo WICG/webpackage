@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"golang.org/x/crypto/ocsp"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/WICG/webpackage/go/signedexchange"
+	"golang.org/x/crypto/ocsp"
+
+	"github.com/WICG/webpackage/go/internal/signingalgorithm"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
@@ -26,7 +27,7 @@ func run(pemFilePath, ocspFilePath, sctDirPath string) error {
 	if err != nil {
 		return err
 	}
-	certs, err := signedexchange.ParseCertificates(pem)
+	certs, err := signingalgorithm.ParseCertificates(pem)
 	if err != nil {
 		return err
 	}

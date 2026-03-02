@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	. "github.com/WICG/webpackage/go/signedexchange/cbor"
+	. "github.com/WICG/webpackage/go/internal/cbor"
 )
 
 func TestDecodeByteString(t *testing.T) {

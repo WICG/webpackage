@@ -54,11 +54,16 @@ func convertPathToURL(path string, baseDir string, baseURL *url.URL) (string, er
 	if err != nil {
 		return "", fmt.Errorf("Cannot make relative path for %q: %v", path, err)
 	}
-	url, err := baseURL.Parse(filepath.ToSlash(relPath))
+	var result *url.URL
+	if baseURL != nil {
+		result, err = baseURL.Parse(filepath.ToSlash(relPath))
+	} else {
+		result, err = url.Parse(filepath.ToSlash(relPath))
+	}
 	if err != nil {
 		return "", fmt.Errorf("Failed to construct URL for %s. err: %v", path, err)
 	}
-	return url.String(), nil
+	return result.String(), nil
 }
 
 // responseWriter implements http.ResponseWriter.

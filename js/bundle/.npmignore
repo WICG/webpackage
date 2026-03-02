@@ -1,3 +1,5 @@
 src
 tests
 tsconfig.json
+wbn*.tgz
+*.wbn

@@ -1,0 +1,65 @@
+# Assets source
+
+This is the original source from where SVG files are generated.
+This would be usuful if you want to update SVG files.
+
+SVGs files are generated with [mermaid(https://mermaid-js.github.io/mermaid/).
+
+#+begin_src mermaid :file dependencies-section-resource-dep.svg
+graph LR
+    main1.html --> a1.js
+    main1.html --> a.png
+    main1.html --> a.css
+    a1.js --> a2.js
+    a1.js --> a3.js
+    a3.js --> b1.js
+    b1.js --> b2.js
+    b1.js --> b3.js
+    a3.js --> c1.js
+    c1.js --> c2.js
+    c1.js --> c3.js
+    c2.js --> d1.js
+    d1.js --> d2.js
+    d1.js --> d3.js
+    main2.html --> e1.js
+    main2.html --> e.css
+    main2.html --> e.png
+    e1.js --> c1.js
+#+end_src
+
+#+RESULTS:
+:results:
+[[file:dependencies-section-resource-dep.svg]]
+:end:
+
+
+#+begin_src mermaid :file dependencies-section-bundle-dep.svg
+graph LR
+    A --> B
+    A --> C
+    C --> D
+    E --> C
+#+end_src
+
+#+RESULTS:
+:results:
+[[file:dependencies-section-bundle-dep.svg]]
+:end:
+
+
+#+begin_src mermaid :file dependencies-section-bundle-dep-deep.svg
+graph LR
+    A --> B
+    A --> C
+    C --> D
+    E --> C
+    C --> F
+    F --> G
+    F --> I
+    G --> H
+#+end_src
+
+#+RESULTS:
+:results:
+[[file:dependencies-section-bundle-dep-deep.svg]]
+:end:

@@ -1,0 +1,75 @@
+name: build
+on: [push, pull_request]
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.6"
+      - run: go test -v ./go/...
+
+  js-wbn:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm --prefix ./js/bundle ci
+      - run: npm --prefix ./js/bundle run build
+      - run: npm --prefix ./js/bundle test
+
+  js-wbn-sign:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm --prefix ./js/sign ci
+      - run: npm --prefix ./js/sign run build
+      - run: npm --prefix ./js/sign test
+
+  prettier-wbn:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: js/bundle
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Prettier
+        run: |
+          npm install prettier@3.5 --no-save
+      - name: Run Prettier Check
+        run: |
+            npx prettier --check . --ignore-unknown
+
+  prettier-wbn-sign:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: js/sign
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Prettier and Plugins
+        run: |
+          npm install prettier@3.5 @ianvs/prettier-plugin-sort-imports --no-save
+      - name: Run Prettier Check
+        run: |
+            npx prettier --check . --ignore-unknown --plugin=@ianvs/prettier-plugin-sort-imports

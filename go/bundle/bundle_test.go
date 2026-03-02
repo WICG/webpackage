@@ -9,7 +9,7 @@ import (
 
 	. "github.com/WICG/webpackage/go/bundle"
 	"github.com/WICG/webpackage/go/bundle/version"
-	"github.com/WICG/webpackage/go/signedexchange"
+	"github.com/WICG/webpackage/go/internal/signingalgorithm"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
@@ -56,13 +56,7 @@ func createTestBundle(t *testing.T, ver version.Version) *Bundle {
 			},
 		},
 	}
-	if ver == version.Unversioned {
-		bundle.Exchanges[0].Request.Header = make(http.Header)
-		bundle.Signatures = nil // Unversioned bundle cannot have signatures.
-	}
-	if ver.HasPrimaryURLField() {
-		bundle.PrimaryURL = urlMustParse("https://bundle.example.com/")
-	}
+	bundle.PrimaryURL = urlMustParse("https://bundle.example.com/")
 	return bundle
 }
 
@@ -101,7 +95,7 @@ func createTestBundleWithVariants(ver version.Version) *Bundle {
 }
 
 func createTestCerts(t *testing.T) []*certurl.AugmentedCertificate {
-	certs, err := signedexchange.ParseCertificates([]byte(pemCerts))
+	certs, err := signingalgorithm.ParseCertificates([]byte(pemCerts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,5 +147,15 @@ func TestWriteAndReadWithVariants(t *testing.T) {
 		if !reflect.DeepEqual(deserialized, bundle) {
 			t.Errorf("got: %v\nwant: %v", deserialized, bundle)
 		}
+	}
+}
+
+func TestB2BundleWithSpecifiedManifestURLShouldFail(t *testing.T) {
+	bundle := createTestBundle(t, version.VersionB2)
+	bundle.ManifestURL = urlMustParse("https://bundle.example.com/manifest")
+	var buf bytes.Buffer
+	_, err := bundle.WriteTo(&buf)
+	if err == nil || err.Error() != "This version of the WebBundle does not support storing manifest URL." {
+		t.Errorf("Bundle write should fail as version B2 does not support manifest URL.")
 	}
 }

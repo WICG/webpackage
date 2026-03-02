@@ -1,16 +1,24 @@
 {
   "name": "wbn",
-  "version": "0.0.5",
-  "description": "Generator and parser for the application/webbundle format, defined in draft-yasskin-wpack-bundled-exchanges-01.",
-  "homepage": "https://github.com/WICG/webpackage/tree/master/js/bundle",
-  "main": "./lib/wbn.js",
+  "version": "0.0.9",
+  "description": "Generator and parser for the application/webbundle format, defined in draft-ietf-wpack-bundled-responses-01.",
+  "homepage": "https://github.com/WICG/webpackage/tree/main/js/bundle",
+  "main": "./lib/wbn.cjs",
+  "type": "module",
+  "exports": {
+    "import": "./lib/wbn.js",
+    "require": "./lib/wbn.cjs"
+  },
   "types": "./lib/wbn.d.js",
   "scripts": {
-    "build": "tsc",
-    "test": "jasmine tests/*.js"
+    "build": "npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc",
+    "build:cjs": "esbuild --bundle --format=cjs --external:cborg --outfile=lib/wbn.cjs src/wbn.ts",
+    "test": "jasmine tests/*.js tests/*.cjs",
+    "lint": "npx prettier --write . --ignore-unknown --config ./package.json"
   },
   "bin": {
-    "wbn": "./bin/wbn"
+    "wbn": "./bin/wbn.js"
   },
   "repository": {
     "type": "git",
@@ -23,20 +31,33 @@
     "bundled exchanges"
   ],
   "author": "Kunihiko Sakamoto <ksakamoto@chromium.org>",
+  "contributors": [
+    "Sonja Laurila <laurila@google.com> (https://github.com/sonkkeli)",
+    "Christian Flach <cmfcmf@google.com> (https://github.com/cmfcmf)"
+  ],
   "license": "W3C-20150513",
   "dependencies": {
-    "cbor": "^5.0.1",
+    "cborg": "^1.9.4",
     "commander": "^4.0.1",
     "mime": "^2.4.4"
   },
   "devDependencies": {
-    "@types/cbor": "^2.0.0",
     "@types/mime": "^2.0.1",
     "@types/node": "^12.7.11",
-    "jasmine": "^3.5.0",
-    "typescript": "^3.6.3"
+    "esbuild": "^0.25.0",
+    "jasmine": "^4.2.1",
+    "prettier": "3.5.3",
+    "typescript": "^4.7.3"
   },
   "engines": {
-    "node": ">= 8.0.0"
+    "node": ">= 20.0.0"
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "semi": true,
+    "singleQuote": true,
+    "printWidth": 80,
+    "proseWrap": "always",
+    "trailingComma": "es5"
   }
 }

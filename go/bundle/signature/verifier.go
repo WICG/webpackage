@@ -10,8 +10,8 @@ import (
 
 	"github.com/WICG/webpackage/go/bundle"
 	"github.com/WICG/webpackage/go/bundle/version"
+	"github.com/WICG/webpackage/go/internal/cbor"
 	"github.com/WICG/webpackage/go/internal/signingalgorithm"
-	"github.com/WICG/webpackage/go/signedexchange/cbor"
 	"github.com/WICG/webpackage/go/signedexchange/certurl"
 )
 
@@ -144,7 +144,7 @@ func verifyVouchedSubset(vs *bundle.VouchedSubset, authorities []*certurl.Augmen
 }
 
 // decodeSignedSubset deserializes a "signed-subset" CBOR item.
-// https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#signatures-section
+// https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html#signatures-section
 func decodeSignedSubset(signed []byte) (*SignedSubset, error) {
 	dec := cbor.NewDecoder(bytes.NewBuffer(signed))
 	n, err := dec.DecodeMapHeader()
@@ -204,7 +204,7 @@ func decodeSignedSubset(signed []byte) (*SignedSubset, error) {
 }
 
 // decodeSignedSubset deserializes a "subset-hashes" CBOR item.
-// https://wicg.github.io/webpackage/draft-yasskin-wpack-bundled-exchanges.html#signatures-section
+// https://wpack-wg.github.io/bundled-responses/draft-ietf-wpack-bundled-responses.html#signatures-section
 func decodeSubsetHashes(dec *cbor.Decoder) (map[string]*ResponseHashes, error) {
 	n, err := dec.DecodeMapHeader()
 	if err != nil {
