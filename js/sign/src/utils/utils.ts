@@ -1,7 +1,10 @@
 import assert from 'assert';
 import crypto, { KeyObject } from 'crypto';
 
+import { decode } from 'cborg';
+
 import {
+  INTEGRITY_BLOCK_MAGIC,
   PUBLIC_KEY_ATTRIBUTE_NAME_MAPPING,
   SignatureType,
 } from './constants.js';
@@ -9,7 +12,7 @@ import {
 // A helper function which can be used to parse string formatted keys to
 // KeyObjects.
 export function parsePemKey(
-  unparsedKey: Buffer,
+  unparsedKey: string | Buffer<ArrayBufferLike>,
   passphrase?: string
 ): KeyObject {
   return crypto.createPrivateKey({
@@ -35,6 +38,37 @@ function maybeGetSignatureType(key: crypto.KeyObject): SignatureType | null {
 
 export function isAsymmetricKeyTypeSupported(key: crypto.KeyObject): boolean {
   return maybeGetSignatureType(key) !== null;
+}
+
+// 'Pure' = not signed web bundles (without integrity block)
+export function isPureWebBundle(bundle: Uint8Array): boolean {
+  let parsedBundle: Uint8Array[];
+  try {
+    parsedBundle = decode(bundle, { useMaps: true }) as Uint8Array[];
+    if (new TextDecoder('utf-8').decode(parsedBundle[0]) !== '🌐📦') {
+      return false;
+    }
+    // WebBundles have their length in the last cbor section
+    const buffer = Buffer.from(bundle.slice(-8));
+    if (bundle.length != Number(buffer.readBigUint64BE())) {
+      return false;
+    }
+  } catch {
+    return false;
+  }
+  return true;
+}
+
+// Just checks magic bytes at the begging, does not check if valid/parsable
+export function isSignedWebBundle(bundle: Uint8Array): boolean {
+  // First CBOR byte: Array of length ...
+  // Second CBOR byte: String of length ...
+  // and then 8 bytes of magic string
+  return (
+    bundle.length >= 10 &&
+    (bundle[1] & 0b00011111) == 8 &&
+    Buffer.from(bundle.slice(2, 10)).equals(INTEGRITY_BLOCK_MAGIC)
+  );
 }
 
 export function getSignatureType(key: crypto.KeyObject): SignatureType {
@@ -86,4 +120,19 @@ export function checkIsValidKey(
   if (!isAsymmetricKeyTypeSupported(key)) {
     throw new Error(`Expected either "Ed25519" or "ECDSA P-256" key.`);
   }
+}
+
+export function verifySignature(
+  data: Uint8Array,
+  signature: Uint8Array,
+  publicKey: KeyObject
+): boolean {
+  // For ECDSA P-256 keys the algorithm is implicitly selected as SHA-256.
+  const isVerified = crypto.verify(
+    /*algorithm=*/ undefined,
+    data,
+    publicKey,
+    signature
+  );
+  return isVerified;
 }
