@@ -1,9 +1,11 @@
 import assert from 'assert';
 
 import { decode, encode } from 'cborg';
+import pc from 'picocolors';
 
 import {
   INTEGRITY_BLOCK_MAGIC,
+  PUBLIC_KEY_ATTRIBUTE_NAME_MAPPING,
   SIGNATURE_ATTRIBUTE_TO_TYPE_MAPPING,
   VERSION_B2,
   WEB_BUNDLE_ID_ATTRIBUTE_NAME,
@@ -86,6 +88,49 @@ export class IntegrityBlock {
         cause: err,
       });
     }
+  }
+
+  printInfo() {
+    console.group('Integrity Block:');
+    const webBundleId = this.attributes
+      .get(WEB_BUNDLE_ID_ATTRIBUTE_NAME)
+      ?.toString();
+
+    console.log(
+      'Web bundle ID: ' +
+        (webBundleId ? pc.green(webBundleId) : pc.red('No key'))
+    );
+
+    if (this.signatureStack.length == 0) {
+      console.log(pc.red('No signatures'));
+    }
+
+    for (let i = 0; i < this.signatureStack.length; i++) {
+      const signature = this.signatureStack[i];
+      try {
+        // May throw if attributes are invalid
+        const [keyType, publicKey] = IntegrityBlock.parseSignatureAttributes(
+          signature.signatureAttributes
+        );
+        console.group(`Signature ${i}:`);
+        console.log(
+          `Key type: ${PUBLIC_KEY_ATTRIBUTE_NAME_MAPPING.get(keyType)!.slice(0, -'PublicKey'.length)!}`
+        );
+        console.log(`Public key: ${Buffer.from(publicKey).toString('base64')}`);
+        console.log(
+          `Signature: ${Array.from(signature.signature)
+            .map((b) => b.toString(16).toUpperCase().padStart(2, '0'))
+            .join(' ')}`
+        );
+        console.groupEnd(); // Key
+      } catch (err) {
+        if (err instanceof Error) {
+          // do not use errorLog, since printStatus prints to stdout by design
+          console.log(pc.red(`Key ${i}: ${err.message}`));
+        }
+      }
+    }
+    console.groupEnd(); // Integrity block
   }
 
   getWebBundleId(): string {

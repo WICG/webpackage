@@ -225,4 +225,158 @@ describe('CLI wbn-sign:', () => {
       "--web-bundle-id must be specified if there's more than 1 signing key"
     );
   });
+
+  it('Add-signature command - success', async () => {
+    // First sign
+    await execPromise(
+      `node ${cliPath} sign -o ${outputPath} ${unsignedWbnPath} ${ed25519KeyPath}`
+    );
+
+    // Then add signature
+    const addOutputPath = path.join(tmpDir, 'added.swbn');
+    const { stdout } = await execPromise(
+      `node ${cliPath} add-signature -o ${addOutputPath} ${outputPath} ${ecdsaP256KeyPath}`
+    );
+    expect(stdout).toContain('Signature added successfully.');
+    expect(fs.existsSync(addOutputPath)).toBeTrue();
+  });
+
+  it('Remove-signature command - success', async () => {
+    // First sign with two keys
+    await execPromise(
+      `node ${cliPath} sign -o ${outputPath} ${unsignedWbnPath} ${ed25519KeyPath}`
+    );
+    await execPromise(
+      `node ${cliPath} add-signature -i ${outputPath} ${ecdsaP256KeyPath}`
+    );
+
+    // Then remove one signature using public key (Base64)
+    const { stdout: infoOutput } = await execPromise(
+      `node ${cliPath} info ${outputPath}`
+    );
+    const match = infoOutput.match(/Public key: (.*)/);
+    const publicKeyBase64 = match[1];
+
+    const removeOutputPath = path.join(tmpDir, 'removed.swbn');
+    const { stdout } = await execPromise(
+      `node ${cliPath} remove-signature -o ${removeOutputPath} ${outputPath} ${publicKeyBase64}`
+    );
+    expect(stdout).toContain('Signature removed successfully.');
+    expect(fs.existsSync(removeOutputPath)).toBeTrue();
+  });
+
+  it('Replace-signature command - success', async () => {
+    // First sign
+    await execPromise(
+      `node ${cliPath} sign -o ${outputPath} ${unsignedWbnPath} ${ed25519KeyPath}`
+    );
+
+    const { stdout: infoOutput } = await execPromise(
+      `node ${cliPath} info ${outputPath}`
+    );
+    const match = infoOutput.match(/Public key: (.*)/);
+    const oldPublicKeyBase64 = match[1];
+
+    const replaceOutputPath = path.join(tmpDir, 'replaced.swbn');
+    const { stdout } = await execPromise(
+      `node ${cliPath} replace-signature -o ${replaceOutputPath} ${outputPath} ${oldPublicKeyBase64} ${ecdsaP256KeyPath}`
+    );
+    expect(stdout).toContain('Signature replaced successfully.');
+    expect(fs.existsSync(replaceOutputPath)).toBeTrue();
+  });
+
+  it('Remove-signature command - invalid inputs', async () => {
+    // First sign
+    await execPromise(
+      `node ${cliPath} sign -o ${outputPath} ${unsignedWbnPath} ${ed25519KeyPath}`
+    );
+
+    // Test non-existent file
+    try {
+      await execPromise(
+        `node ${cliPath} remove-signature -i ${outputPath} non-existent-key.pem`
+      );
+      fail('Should have failed for non-existent file');
+    } catch (error) {
+      expect(error.stderr).toContain(
+        'The key file "non-existent-key.pem" does not exist.'
+      );
+    }
+
+    // Test invalid Base64
+    try {
+      await execPromise(
+        `node ${cliPath} remove-signature -i ${outputPath} "invalid_base64_!@#"`
+      );
+      fail('Should have failed for invalid Base64');
+    } catch (error) {
+      expect(error.stderr).toContain(
+        'is neither a valid file path nor a proper Base64-encoded string.'
+      );
+    }
+  });
+
+  it('Deterministic Ed25519 tests - add, remove, replace consistency', async () => {
+    const key1Path = ed25519KeyPath;
+    const key2Path = path.resolve(__dirname, 'testdata/ed25519-key-2.pem');
+    const bundleId1 =
+      '4tkrnsmftl4ggvvdkfth3piainqragus2qbhf7rlz2a3wo3rh4wqaaic';
+
+    // 1. Adding one by one vs two at once
+    const pathOneByOne = path.join(tmpDir, 'one-by-one.swbn');
+    const pathTwoAtOnce = path.join(tmpDir, 'two-at-once.swbn');
+
+    await execPromise(
+      `node ${cliPath} sign -o ${pathOneByOne} ${unsignedWbnPath} ${key1Path}`
+    );
+    await execPromise(
+      `node ${cliPath} add-signature -i ${pathOneByOne} ${key2Path}`
+    );
+
+    await execPromise(
+      `node ${cliPath} sign -o ${pathTwoAtOnce} ${unsignedWbnPath} ${key1Path} ${key2Path}`
+    );
+
+    expect(fs.readFileSync(pathOneByOne)).toEqual(
+      fs.readFileSync(pathTwoAtOnce)
+    );
+
+    // 2. Adding two and removing one vs adding one
+    const pathSignTwoRemoveOne = path.join(tmpDir, 'sign-two-remove-one.swbn');
+    const pathSignOne = path.join(tmpDir, 'sign-one.swbn');
+
+    await execPromise(
+      `node ${cliPath} sign -o ${pathSignTwoRemoveOne} ${unsignedWbnPath} ${key1Path} ${key2Path}`
+    );
+    await execPromise(
+      `node ${cliPath} remove-signature -i ${pathSignTwoRemoveOne} ${key2Path}`
+    );
+
+    await execPromise(
+      `node ${cliPath} sign -o ${pathSignOne} ${unsignedWbnPath} ${key1Path}`
+    );
+
+    expect(fs.readFileSync(pathSignTwoRemoveOne)).toEqual(
+      fs.readFileSync(pathSignOne)
+    );
+
+    // 3. Replace key1 with key2 vs sign with key2 (with same bundle ID)
+    const pathReplace = path.join(tmpDir, 'replace-deterministic.swbn');
+    const pathSignKey2SameId = path.join(tmpDir, 'sign-key2-same-id.swbn');
+
+    await execPromise(
+      `node ${cliPath} sign -o ${pathReplace} ${unsignedWbnPath} ${key1Path}`
+    );
+    await execPromise(
+      `node ${cliPath} replace-signature -i ${pathReplace} ${key1Path} ${key2Path}`
+    );
+
+    await execPromise(
+      `node ${cliPath} sign -o ${pathSignKey2SameId} --web-bundle-id ${bundleId1} ${unsignedWbnPath} ${key2Path}`
+    );
+
+    expect(fs.readFileSync(pathReplace)).toEqual(
+      fs.readFileSync(pathSignKey2SameId)
+    );
+  });
 });

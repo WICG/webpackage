@@ -2,6 +2,7 @@ import { assert } from 'console';
 
 import { IntegrityBlockSigner } from '../signers/integrity-block-signer.js';
 import { ISigningStrategy } from '../signers/signing-strategy-interface.js';
+import { warnLog } from '../utils/cli-utils.js';
 import { isSignedWebBundle } from '../utils/utils.js';
 import { WebBundleId } from '../web-bundle-id.js';
 import { IntegrityBlock } from './integrity-block.js';
@@ -61,6 +62,13 @@ export class SignedWebBundle {
   removeSignature(publicKey: Uint8Array): this {
     this.integrityBlock.removeIntegritySignature(publicKey);
     return this;
+  }
+
+  printInfo(): void {
+    warnLog(
+      'This feature is experimental, the form of output will change in the future. Do not use with scripts.'
+    );
+    this.integrityBlock.printInfo();
   }
 
   getIntegrityBlock(): IntegrityBlock {
