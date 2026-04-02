@@ -1,7 +1,7 @@
 import assert from 'assert';
 
 import { decode, encode } from 'cborg';
-import colors from 'colors';
+import pc from 'picocolors';
 
 import {
   INTEGRITY_BLOCK_MAGIC,
@@ -91,17 +91,18 @@ export class IntegrityBlock {
   }
 
   printInfo() {
-    colors.enabled = process.stdout.isTTY;
-
     console.group('Integrity Block:');
+    const webBundleId = this.attributes
+      .get(WEB_BUNDLE_ID_ATTRIBUTE_NAME)
+      ?.toString();
+
     console.log(
       'Web bundle ID: ' +
-        (this.attributes.get(WEB_BUNDLE_ID_ATTRIBUTE_NAME)?.toString()?.green ??
-          'No key'.red.bold)
+        (webBundleId ? pc.green(webBundleId) : pc.red('No key'))
     );
 
     if (this.signatureStack.length == 0) {
-      console.log('No signatures'.red.bold);
+      console.log(pc.red('No signatures'));
     }
 
     for (let i = 0; i < this.signatureStack.length; i++) {
@@ -125,7 +126,7 @@ export class IntegrityBlock {
       } catch (err) {
         if (err instanceof Error) {
           // do not use errorLog, since printStatus prints to stdout by design
-          console.log(`Key ${i}: ${err.message}`.red);
+          console.log(pc.red(`Key ${i}: ${err.message}`));
         }
       }
     }

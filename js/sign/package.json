@@ -44,8 +44,8 @@
   "dependencies": {
     "base32-encode": "^2.0.0",
     "cborg": "^4.2.14",
-    "colors": "^1.4.0",
     "commander": "^14.0.0",
+    "picocolors": "^1.1.1",
     "read": "^2.0.0"
   },
   "devDependencies": {

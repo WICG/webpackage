@@ -2,7 +2,7 @@ import { KeyObject } from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
-import colors from 'colors';
+import pc from 'picocolors';
 import read from 'read';
 
 import { parsePemKey } from '../wbn-sign.js';
@@ -77,18 +77,15 @@ export async function readPassphrase(description: string): Promise<string> {
 // Logging module
 // TODO: Replace with more professional js logging tools
 export function greenConsoleLog(text: string): void {
-  colors.enabled = process.stdout.isTTY;
-  console.log(text.green);
+  console.log(pc.green(text));
 }
 export function infoLog(text: string): void {
   // Warn to print on stderr, not stdout
   console.warn('INFO: ' + text);
 }
 export function warnLog(text: string): void {
-  colors.enabled = process.stdout.isTTY;
-  console.warn(`WARN: ${text}`.yellow);
+  console.warn(pc.yellow(`WARN: ${text}`));
 }
 export function errorLog(text: string): void {
-  colors.enabled = process.stdout.isTTY;
-  console.error(`ERROR:  ${text}`.red);
+  console.error(pc.red(`ERROR:  ${text}`));
 }

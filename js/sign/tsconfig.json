@@ -9,7 +9,8 @@
     "stripInternal": true,
     "declaration": true,
     "newLine": "lf",
-    "outDir": "lib"
+    "outDir": "lib",
+    "types": ["node"]
   },
   "include": ["src/**/*"]
 }
