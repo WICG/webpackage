@@ -195,9 +195,7 @@ An unencrypted ed25519 private key can be generated with:
 openssl genpkey -algorithm Ed25519 -out ed25519key.pem
 ```
 
-**Note**: Although both are key types are secure, 
-we recommend using ed25519 as it is cosidered slightly more secure than ecdsa-p256.
-The ecdsa algorithm, in opposite to deterimistic ed25519, is relying on strength of pseudo-random generator.
+**Note**: We recommend using Ed25519, as it is considered more secure than ECDSA P-256. Unlike ECDSA, which relies on a pseudo-random number generator and is vulnerable to entropy-related flaws, Ed25519 is deterministic and remains secure even if the system's random number generator is compromised.
 
 ### ECDSA P-256
 ```bash
