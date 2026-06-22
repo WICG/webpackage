@@ -136,3 +136,82 @@ export function verifySignature(
   );
   return isVerified;
 }
+
+export function parseRawPublicKey(
+  type: SignatureType,
+  rawPublicKey: Uint8Array
+): KeyObject {
+  if (type === SignatureType.Ed25519) {
+    const jwk = {
+      kty: 'OKP',
+      crv: 'Ed25519',
+      x: Buffer.from(rawPublicKey).toString('base64url'),
+    };
+    return crypto.createPublicKey({ key: jwk, format: 'jwk' });
+  } else if (type === SignatureType.EcdsaP256SHA256) {
+    // Node.js doesn't have a built-in helper to parse raw ECDSA public key points synchronously
+    // without manual ASN.1 wrapping. As a cleaner alternative, we uncompress the point, slice
+    // the X and Y coordinates manually, and import it using the standardized JWK format.
+    const uncompressedPub = crypto.ECDH.convertKey(
+      rawPublicKey,
+      'prime256v1',
+      /*inputEncoding=*/ undefined,
+      /*outputEncoding=*/ undefined,
+      'uncompressed'
+    ) as Buffer;
+
+    // uncompressedPub is a 65-byte Buffer.
+    // Byte 0 is the prefix (0x04), bytes 1-32 are X, bytes 33-64 are Y.
+    const x = uncompressedPub.subarray(1, 33);
+    const y = uncompressedPub.subarray(33, 65);
+
+    const jwk = {
+      kty: 'EC',
+      crv: 'P-256',
+      x: Buffer.from(x).toString('base64url'),
+      y: Buffer.from(y).toString('base64url'),
+    };
+    return crypto.createPublicKey({ key: jwk, format: 'jwk' });
+  }
+  throw new Error('Unsupported signature type.');
+}
+
+export function calcWebBundleHash(webBundle: Uint8Array): Uint8Array {
+  const hash = crypto.createHash('sha512');
+  const data = hash.update(webBundle);
+  return new Uint8Array(data.digest());
+}
+
+export function generateDataToBeSigned(
+  webBundleHash: Uint8Array,
+  integrityBlockCborBytes: Uint8Array,
+  newAttributesCborBytes: Uint8Array
+): Uint8Array {
+  // The order is critical and must be the following:
+  // (0) hash of the bundle,
+  // (1) integrity block, and
+  // (2) attributes.
+  const dataParts = [
+    webBundleHash,
+    integrityBlockCborBytes,
+    newAttributesCborBytes,
+  ];
+
+  const bigEndianNumLength = 8;
+
+  const totalLength = dataParts.reduce((previous, current) => {
+    return previous + current.length;
+  }, /*one big endian num per part*/ dataParts.length * bigEndianNumLength);
+  const buffer = Buffer.alloc(totalLength);
+
+  let offset = 0;
+  dataParts.forEach((d) => {
+    buffer.writeBigInt64BE(BigInt(d.length), offset);
+    offset += bigEndianNumLength;
+
+    Buffer.from(d).copy(buffer, offset);
+    offset += d.length;
+  });
+
+  return new Uint8Array(buffer);
+}

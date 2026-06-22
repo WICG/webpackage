@@ -139,7 +139,7 @@ The base usage is: `wbn-sign [command] [options] <arguments...>`
 - `add-signature <signed_web_bundle> <private_keys...>`: Adds new signatures to an already signed bundle.
 - `remove-signature <signed_web_bundle> <keys...>`: Removes signatures from a bundle. Keys can be public (Base64/.pem) or private (.pem).
 - `replace-signature <signed_web_bundle> <old_key> <new_private_key>`: Replaces an existing signature.
-- `info <web_bundle>`: Displays information about the integrity block, including the Web Bundle ID and public keys of signers.
+- `info <web_bundle>`: Displays information about the integrity block, including the Web Bundle ID, public keys of signers, their corresponding generated Web Bundle IDs, and whether each signature is correct.
 
 For more details, run `wbn-sign help [command]`.
 
@@ -218,6 +218,9 @@ part of the signing process. If you want to use the CLI tool programmatically,
 then you can bypass the passphrase prompt by storing the passphrase in an
 environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 ## Release Notes
+
+### v0.3.2
+- Enhanced `info` command to display cryptographic validation status and the derived Web Bundle ID for each signature.
 
 ### v0.3.1
 - Enhanced **CLI**: New commands `add-signature`, `remove-signature`, `replace-signature`, and `info`.

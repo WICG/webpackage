@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import { createRequire } from 'module';
 
 import { Command } from 'commander';
+import pc from 'picocolors';
 
 import {
   errorLog,
@@ -103,6 +104,22 @@ async function parseArguments(): Promise<void> {
       const signedWebBundle = SignedWebBundle.fromBytes(webBundle);
 
       signedWebBundle.printInfo();
+
+      const validations = signedWebBundle.validateSignatures();
+      validations.forEach((val, i) => {
+        if (val.status === 'error') {
+          console.log(pc.red(`Signature ${i} validation failed: ${val.error}`));
+        } else {
+          console.log(
+            `Signature ${i} derived Web Bundle ID: ${val.derivedBundleId}`
+          );
+          console.log(
+            `Signature ${i} is correct: ${
+              val.isValid ? pc.green('Yes') : pc.red('No')
+            }`
+          );
+        }
+      });
     });
 
   program.commandsGroup('Signature management commands');

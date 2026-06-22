@@ -177,7 +177,7 @@ export class IntegrityBlock {
     return encode([INTEGRITY_BLOCK_MAGIC, VERSION_B2, this.attributes, []]);
   }
 
-  private static parseSignatureAttributes(
+  static parseSignatureAttributes(
     attributes: SignatureAttributes
   ): [SignatureType, Uint8Array] {
     assert(
