@@ -9,7 +9,9 @@ import {
   type SignatureAttributes,
 } from '../core/integrity-block.js';
 import {
+  calcWebBundleHash,
   checkIsValidKey,
+  generateDataToBeSigned,
   getPublicKeyAttributeName,
   getRawPublicKey,
   isPureWebBundle,
@@ -88,7 +90,7 @@ export class IntegrityBlockSigner {
   async signAndGetIntegrityBlock(): Promise<IntegrityBlock> {
     const ibCbor = this.integrityBlock.toStrippedCbor();
     checkDeterministic(ibCbor);
-    const webBundleHash = this.calcWebBundleHash();
+    const webBundleHash = calcWebBundleHash(this.webBundle);
 
     // Append new signatures to the old stack
     for (const signingStrategy of this.signingStrategies) {
@@ -101,7 +103,7 @@ export class IntegrityBlockSigner {
       const attrCbor = encode(newAttributes);
       checkDeterministic(attrCbor);
 
-      const dataToBeSigned = this.generateDataToBeSigned(
+      const dataToBeSigned = generateDataToBeSigned(
         webBundleHash,
         ibCbor,
         attrCbor
@@ -136,47 +138,9 @@ export class IntegrityBlockSigner {
     return Number(buffer.readBigUint64BE());
   }
 
-  // TODO: Move this method to SignedWebBundle/WebBundle class, signer do not need this, especially externally
   /** @deprecated This method will not be supported in a future release. */
   calcWebBundleHash(): Uint8Array {
-    const hash = crypto.createHash('sha512');
-    const data = hash.update(this.webBundle);
-    return new Uint8Array(data.digest());
-  }
-
-  /** @internal */
-  generateDataToBeSigned(
-    webBundleHash: Uint8Array,
-    integrityBlockCborBytes: Uint8Array,
-    newAttributesCborBytes: Uint8Array
-  ): Uint8Array {
-    // The order is critical and must be the following:
-    // (0) hash of the bundle,
-    // (1) integrity block, and
-    // (2) attributes.
-    const dataParts = [
-      webBundleHash,
-      integrityBlockCborBytes,
-      newAttributesCborBytes,
-    ];
-
-    const bigEndianNumLength = 8;
-
-    const totalLength = dataParts.reduce((previous, current) => {
-      return previous + current.length;
-    }, /*one big endian num per part*/ dataParts.length * bigEndianNumLength);
-    const buffer = Buffer.alloc(totalLength);
-
-    let offset = 0;
-    dataParts.forEach((d) => {
-      buffer.writeBigInt64BE(BigInt(d.length), offset);
-      offset += bigEndianNumLength;
-
-      Buffer.from(d).copy(buffer, offset);
-      offset += d.length;
-    });
-
-    return new Uint8Array(buffer);
+    return calcWebBundleHash(this.webBundle);
   }
 
   /** @deprecated  Moved to utils */

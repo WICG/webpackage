@@ -1,11 +1,23 @@
 import { assert } from 'console';
 
+import { encode } from 'cborg';
+
 import { IntegrityBlockSigner } from '../signers/integrity-block-signer.js';
 import { ISigningStrategy } from '../signers/signing-strategy-interface.js';
 import { warnLog } from '../utils/cli-utils.js';
-import { isSignedWebBundle } from '../utils/utils.js';
+import {
+  calcWebBundleHash,
+  generateDataToBeSigned,
+  isSignedWebBundle,
+  parseRawPublicKey,
+  verifySignature,
+} from '../utils/utils.js';
 import { WebBundleId } from '../web-bundle-id.js';
 import { IntegrityBlock } from './integrity-block.js';
+
+export type SignatureValidationResult =
+  | { status: 'success'; derivedBundleId: string; isValid: boolean }
+  | { status: 'error'; error: string };
 
 export class SignedWebBundle {
   private constructor(
@@ -73,6 +85,38 @@ export class SignedWebBundle {
 
   getIntegrityBlock(): IntegrityBlock {
     return this.integrityBlock;
+  }
+
+  validateSignatures(): SignatureValidationResult[] {
+    const webBundleHash = calcWebBundleHash(this.pureWebBundle);
+    const ibCbor = this.integrityBlock.toStrippedCbor();
+
+    return this.integrityBlock.getSignatureStack().map((signature) => {
+      try {
+        const [keyType, publicKey] = IntegrityBlock.parseSignatureAttributes(
+          signature.signatureAttributes
+        );
+        const keyObject = parseRawPublicKey(keyType, publicKey);
+        const derivedBundleId = new WebBundleId(keyObject).serialize();
+        const attrCbor = encode(signature.signatureAttributes);
+        const dataToBeSigned = generateDataToBeSigned(
+          webBundleHash,
+          ibCbor,
+          attrCbor
+        );
+        const isValid = verifySignature(
+          dataToBeSigned,
+          signature.signature,
+          keyObject
+        );
+        return { status: 'success', isValid, derivedBundleId };
+      } catch (err) {
+        return {
+          status: 'error',
+          error: err instanceof Error ? err.message : String(err),
+        };
+      }
+    });
   }
 
   getWebBundleId(): string {

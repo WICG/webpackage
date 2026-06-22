@@ -149,7 +149,7 @@ describe('Integrity Block Signer', () => {
       const signer = initSignerWithTestWebBundleAndKeys([keypair.privateKey]);
       const rawPubKey = wbnSign.getRawPublicKey(keypair.publicKey);
 
-      const dataToBeSigned = signer.generateDataToBeSigned(
+      const dataToBeSigned = utils.generateDataToBeSigned(
         signer.calcWebBundleHash(),
         new wbnSign.IntegrityBlock().toCbor(),
         cborg.encode({
@@ -206,7 +206,7 @@ describe('Integrity Block Signer', () => {
       const ibWithoutSignatures = new wbnSign.IntegrityBlock();
       ibWithoutSignatures.setWebBundleId(webBundleId);
 
-      const dataToBeSigned = signer.generateDataToBeSigned(
+      const dataToBeSigned = utils.generateDataToBeSigned(
         signer.calcWebBundleHash(),
         ibWithoutSignatures.toCbor(),
         cborg.encode(sigAttr)
@@ -281,7 +281,7 @@ describe('Integrity Block Signer', () => {
       expect(Object.keys(signatureAttributes).length).toEqual(1);
       expect(signatureAttributes[attrName]).toEqual(rawPubKey);
 
-      const dataToBeSigned = signer.generateDataToBeSigned(
+      const dataToBeSigned = utils.generateDataToBeSigned(
         signer.calcWebBundleHash(),
         ibWithoutSignatures.toCbor(),
         cborg.encode(signatureAttributes)

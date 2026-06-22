@@ -107,4 +107,23 @@ describe('Signed Web Bundle - ', function () {
       bundle_signed_by_second_key
     );
   });
+
+  it('validateSignatures() - correctly validates signatures and returns bundle ID', async function () {
+    const double_signed_bundle = await SignedWebBundle.fromWebBundle(
+      UNSIGNED_WEB_BUNDLE_BYTES,
+      [STRATEGY_KEY_1, STRATEGY_KEY_2]
+    );
+
+    const validations = double_signed_bundle.validateSignatures();
+    expect(validations.length).toEqual(2);
+
+    expect(validations[0].status).toEqual('success');
+    expect(validations[0].isValid).toBe(true);
+    expect(validations[0].derivedBundleId).toEqual(
+      TEST_ED25519_WEB_BUNDLE_ID_1
+    );
+
+    expect(validations[1].status).toEqual('success');
+    expect(validations[1].isValid).toBe(true);
+  });
 });
