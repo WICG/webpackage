@@ -1,6 +1,6 @@
 {
   "name": "wbn-sign",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Tool to sign web bundles and manage signatures of signed web bundles.",
   "homepage": "https://github.com/WICG/webpackage/tree/main/js/sign",
   "main": "./lib/wbn-sign.cjs",
@@ -9,14 +9,15 @@
     "import": "./lib/wbn-sign.js",
     "require": "./lib/wbn-sign.cjs"
   },
-  "types": "./lib/wbn-sign.d.js",
+  "types": "./lib/wbn-sign.d.ts",
   "scripts": {
     "build": "npm run build:esm && npm run build:cjs",
     "build:esm": "tsc",
     "build:cjs": "esbuild --bundle --format=cjs --outfile=lib/wbn-sign.cjs src/wbn-sign.ts --platform=node",
-    "test": "jasmine tests/*.js tests/*.cjs",
+    "test": "jasmine tests/*.js tests/*.cjs && npm run test:types",
     "test:cli": "jasmine tests/cli_test.js",
-    "prepublishOnly": "npm test",
+    "test:types": "tsc -p tests/types",
+    "prepublishOnly": "npm run build && npm test",
     "lint": "npx prettier --write . --ignore-unknown --config ./package.json"
   },
   "bin": {

@@ -7,7 +7,7 @@ import * as cborg from 'cborg';
 
 import * as constants from '../lib/utils/constants.js';
 import * as utils from '../lib/utils/utils.js';
-import * as wbnSign from '../lib/wbn-sign.js';
+import { describeEachBuild } from './helpers/builds.js';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const TEST_WEB_BUNDLE_HASH =
@@ -30,7 +30,7 @@ const TEST_ECDSA_P256_WEB_BUNDLE_ID =
 
 const IWA_SCHEME = 'isolated-app://';
 
-describe('Web Bundle ID', () => {
+describeEachBuild('Web Bundle ID', (wbnSign) => {
   const ed25519PrivateKey = wbnSign.parsePemKey(TEST_ED25519_PRIVATE_KEY);
   const ecdsaP256PrivateKey = wbnSign.parsePemKey(TEST_ECDSA_P256_PRIVATE_KEY);
   const testKeys = [
@@ -60,7 +60,7 @@ describe('Web Bundle ID', () => {
   });
 });
 
-describe('Integrity Block Signer', () => {
+describeEachBuild('Integrity Block Signer', (wbnSign) => {
   function initSignerWithTestWebBundleAndKeys(
     privateKeys,
     webBundleId = undefined
