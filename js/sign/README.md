@@ -221,6 +221,8 @@ environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 
 ### v0.3.2
 - Enhanced `info` command to display cryptographic validation status and the derived Web Bundle ID for each signature.
+- Fixed the TypeScript declarations: the `types` entry in `package.json` now points to `lib/wbn-sign.d.ts`, the declaration of the (deprecated) `IntegrityBlockSigner` is no longer missing, and the declarations no longer require `esModuleInterop`.
+- Publishing now always rebuilds and tests the package. The tests of the public API run against both the ESM and the CommonJS build, and further tests check that `lib/` contains no stale files and that the emitted declarations type-check.
 
 ### v0.3.1
 - Enhanced **CLI**: New commands `add-signature`, `remove-signature`, `replace-signature`, and `info`.

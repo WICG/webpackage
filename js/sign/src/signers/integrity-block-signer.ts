@@ -19,9 +19,9 @@ import {
 } from '../utils/utils.js';
 import { ISigningStrategy } from './signing-strategy-interface.js';
 
-// This class were previously exported, but now is going to be used only internally.
+// This class was previously exported, but now is going to be used only internally.
 // Therefore its methods are marked as deprecated to discourage using them while still keeping backward compatible.
-// Later @deprecated markers may change to @internal to make it fully internal.
+// Later the deprecation markers may be replaced with internal ones to make it fully internal.
 export class IntegrityBlockSigner {
   private readonly integrityBlock: IntegrityBlock;
   private readonly webBundle: Uint8Array;

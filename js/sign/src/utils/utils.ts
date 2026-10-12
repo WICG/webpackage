@@ -1,5 +1,7 @@
 import assert from 'assert';
-import crypto, { KeyObject } from 'crypto';
+// Exported signatures use the named `KeyObject`/`KeyObjectType` types (not `crypto.*`), so that the
+// emitted `.d.ts` files don't require `esModuleInterop` from consumers for the default import.
+import crypto, { KeyObject, type KeyObjectType } from 'crypto';
 
 import { decode } from 'cborg';
 
@@ -21,7 +23,7 @@ export function parsePemKey(
   });
 }
 
-function maybeGetSignatureType(key: crypto.KeyObject): SignatureType | null {
+function maybeGetSignatureType(key: KeyObject): SignatureType | null {
   switch (key.asymmetricKeyType) {
     case 'ed25519':
       return SignatureType.Ed25519;
@@ -36,7 +38,7 @@ function maybeGetSignatureType(key: crypto.KeyObject): SignatureType | null {
   return null;
 }
 
-export function isAsymmetricKeyTypeSupported(key: crypto.KeyObject): boolean {
+export function isAsymmetricKeyTypeSupported(key: KeyObject): boolean {
   return maybeGetSignatureType(key) !== null;
 }
 
@@ -71,7 +73,7 @@ export function isSignedWebBundle(bundle: Uint8Array): boolean {
   );
 }
 
-export function getSignatureType(key: crypto.KeyObject): SignatureType {
+export function getSignatureType(key: KeyObject): SignatureType {
   const signatureType = maybeGetSignatureType(key);
   assert(
     signatureType !== null,
@@ -80,11 +82,11 @@ export function getSignatureType(key: crypto.KeyObject): SignatureType {
   return signatureType;
 }
 
-export function getPublicKeyAttributeName(key: crypto.KeyObject) {
+export function getPublicKeyAttributeName(key: KeyObject) {
   return PUBLIC_KEY_ATTRIBUTE_NAME_MAPPING.get(getSignatureType(key))!;
 }
 
-export function getRawPublicKey(publicKey: crypto.KeyObject) {
+export function getRawPublicKey(publicKey: KeyObject) {
   const exportedKey = publicKey.export({ type: 'spki', format: 'der' });
   switch (getSignatureType(publicKey)) {
     case SignatureType.Ed25519:
@@ -108,7 +110,7 @@ export function getRawPublicKey(publicKey: crypto.KeyObject) {
 
 // Throws an error if the key is not a valid Ed25519 or ECDSA P-256 key of the specified type.
 export function checkIsValidKey(
-  expectedKeyType: crypto.KeyObjectType,
+  expectedKeyType: KeyObjectType,
   key: KeyObject
 ) {
   if (key.type !== expectedKeyType) {

@@ -3,8 +3,7 @@ import * as fs from 'node:fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import * as wbnSign from '../lib/wbn-sign.js';
-import { getBundleId } from '../lib/web-bundle-id.js';
+import { describeEachBuild } from './helpers/builds.js';
 
 const TEST_ED25519_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
 MC4CAQAwBQYDK2VwBCIEIB8nP5PpWU7HiILHSfh5PYzb5GAcIfHZ+bw6tcd/LZXh
@@ -14,7 +13,8 @@ const EXPECTED_BUNDLE_ID =
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-describe('Obtaining Bundle ID from signed web bundle', () => {
+describeEachBuild('Obtaining Bundle ID from signed web bundle', (wbnSign) => {
+  const { getBundleId } = wbnSign;
   it('Signs the .wbn file and obtains Web Bundle ID from the newly created .swbn file', async () => {
     const filePath = path.resolve(__dirname, 'testdata', 'unsigned.wbn');
     const unsignedWebBundle = await fs.readFile(filePath);

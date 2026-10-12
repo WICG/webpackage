@@ -1,9 +1,9 @@
 // @ts-check
 /** @typedef {import('jasmine')} _ */
 
-import { IntegrityBlock } from '../lib/wbn-sign.js';
+import { describeEachBuild } from './helpers/builds.js';
 
-describe('Integrity Block', () => {
+describeEachBuild('Integrity Block', ({ IntegrityBlock }) => {
   it('fromCbor(toCbor(a)) == a', () => {
     const ib = new IntegrityBlock();
     ib.setWebBundleId(
