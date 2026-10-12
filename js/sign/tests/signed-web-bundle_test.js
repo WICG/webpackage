@@ -4,12 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import url from 'url';
 
-import {
-  getRawPublicKey,
-  NodeCryptoSigningStrategy,
-  parsePemKey,
-  SignedWebBundle,
-} from '../lib/wbn-sign.js';
+import { describeEachBuild } from './helpers/builds.js';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const TEST_ED25519_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
@@ -24,17 +19,23 @@ const TEST_ECDSA_P256_WEB_BUNDLE_ID =
 const TEST_ED25519_WEB_BUNDLE_ID_1 =
   '4tkrnsmftl4ggvvdkfth3piainqragus2qbhf7rlz2a3wo3rh4wqaaic';
 
-const [STRATEGY_KEY_1, STRATEGY_KEY_2] = [
-  TEST_ED25519_PRIVATE_KEY,
-  TEST_ED25519_PRIVATE_KEY_2,
-].map((key) => new NodeCryptoSigningStrategy(parsePemKey(key)));
-
 const UNSIGNED_BUNDLE_PATH = path.resolve(__dirname, 'testdata/unsigned.wbn');
 const UNSIGNED_WEB_BUNDLE_BYTES = Uint8Array.from(
   fs.readFileSync(UNSIGNED_BUNDLE_PATH)
 );
 
-describe('Signed Web Bundle - ', function () {
+describeEachBuild('Signed Web Bundle - ', function (wbnSign) {
+  const {
+    getRawPublicKey,
+    NodeCryptoSigningStrategy,
+    parsePemKey,
+    SignedWebBundle,
+  } = wbnSign;
+  const [STRATEGY_KEY_1, STRATEGY_KEY_2] = [
+    TEST_ED25519_PRIVATE_KEY,
+    TEST_ED25519_PRIVATE_KEY_2,
+  ].map((key) => new NodeCryptoSigningStrategy(parsePemKey(key)));
+
   it('fromWebBundle() - bundle id got from first key by default', async function () {
     const double_signed_bundle = await SignedWebBundle.fromWebBundle(
       UNSIGNED_WEB_BUNDLE_BYTES,
