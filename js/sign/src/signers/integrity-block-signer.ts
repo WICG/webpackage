@@ -1,5 +1,5 @@
 import assert from 'assert';
-import crypto, { KeyObject } from 'crypto';
+import { KeyObject } from 'crypto';
 
 import { encode } from 'cborg';
 
