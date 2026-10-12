@@ -1,6 +1,6 @@
 import crypto, { KeyObject } from 'crypto';
 
-import { checkIsValidKey } from '../utils/utils.js';
+import { checkIsValidKey, getDigestAlgorithm } from '../utils/utils.js';
 import { ISigningStrategy } from './signing-strategy-interface.js';
 
 // Class to be used when signing with parsed `crypto.KeyObject` private key
@@ -11,8 +11,11 @@ export class NodeCryptoSigningStrategy implements ISigningStrategy {
   }
 
   async sign(data: Uint8Array): Promise<Uint8Array> {
-    // For ECDSA P-256 keys the algorithm is implicitly selected as SHA-256.
-    return crypto.sign(/*algorithm=*/ undefined, data, this.privateKey);
+    return crypto.sign(
+      getDigestAlgorithm(this.privateKey),
+      data,
+      this.privateKey
+    );
   }
 
   async getPublicKey(): Promise<KeyObject> {

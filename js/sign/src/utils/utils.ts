@@ -124,19 +124,26 @@ export function checkIsValidKey(
   }
 }
 
+// Returns the digest to pass to `crypto.sign()` and `crypto.verify()`. Ed25519 must not be given
+// one. ECDSA P-256 signatures use SHA-256, which is passed explicitly because crypto libraries
+// differ in whether EC keys have a default digest (BoringSSL-based Node.js builds have none).
+export function getDigestAlgorithm(key: KeyObject): string | undefined {
+  return getSignatureType(key) === SignatureType.EcdsaP256SHA256
+    ? 'sha256'
+    : undefined;
+}
+
 export function verifySignature(
   data: Uint8Array,
   signature: Uint8Array,
   publicKey: KeyObject
 ): boolean {
-  // For ECDSA P-256 keys the algorithm is implicitly selected as SHA-256.
-  const isVerified = crypto.verify(
-    /*algorithm=*/ undefined,
+  return crypto.verify(
+    getDigestAlgorithm(publicKey),
     data,
     publicKey,
     signature
   );
-  return isVerified;
 }
 
 export function parseRawPublicKey(
