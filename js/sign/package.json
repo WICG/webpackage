@@ -24,6 +24,10 @@
     "wbn-sign": "./bin/wbn-sign.js",
     "wbn-dump-id": "./bin/wbn-dump-id.js"
   },
+  "files": [
+    "bin/",
+    "lib/"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/WICG/webpackage.git",
