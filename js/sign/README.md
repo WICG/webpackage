@@ -222,6 +222,7 @@ environment variable named `WEB_BUNDLE_SIGNING_PASSPHRASE`.
 ### v0.3.3
 - Fixed TypeScript declarations (`types` path, `IntegrityBlockSigner` export, and compatibility without `esModuleInterop`).
 - Rebuilt and tested both ESM and CommonJS outputs before publishing.
+- Explicitly pass SHA-256 for ECDSA P-256 signing and verification to support BoringSSL-based Node.js builds.
 
 ### v0.3.2
 - Enhanced `info` command to display cryptographic validation status and the derived Web Bundle ID for each signature.
