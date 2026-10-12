@@ -6,7 +6,7 @@ import * as utils from '../lib/utils/utils.js';
 describe('Utils', () => {
   describe('parseRawPublicKey', () => {
     it('correctly parses an Ed25519 raw public key', () => {
-      const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
+      const { publicKey } = crypto.generateKeyPairSync('ed25519');
       // Export to raw bytes
       const spki = publicKey.export({ type: 'spki', format: 'der' });
       const rawPublicKey = new Uint8Array(spki.subarray(-32));
@@ -23,7 +23,7 @@ describe('Utils', () => {
     });
 
     it('correctly parses an ECDSA P-256 raw public key (compressed)', () => {
-      const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', {
+      const { publicKey } = crypto.generateKeyPairSync('ec', {
         namedCurve: 'prime256v1',
       });
       const spki = publicKey.export({ type: 'spki', format: 'der' });
