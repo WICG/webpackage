@@ -370,7 +370,7 @@ In <a spec="fetch">fetch</a>, before
 add the following step:
 
 2. If the result of [=find a matching web bundle registration=] given |request|
-   is null, set |request|'s [=request/service-workers mode=] to "`none`".
+   is not null, set |request|'s [=request/service-workers mode=] to "`none`".
 
 Note: This means that no service workers will get events for a subresource
 loading from a webbundle.
