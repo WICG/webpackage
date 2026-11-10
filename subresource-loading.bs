@@ -296,7 +296,7 @@ To <dfn>process events for a web bundle</dfn> given an {{HTMLScriptElement}}
    fire `error` events, then change this step accordingly.
 
 1. Assert: |element|'s <a spec="html">node document</a> is equal to |element|'s
-   <a href="spec">preparation-time document</a>.
+   <a href="https://html.spec.whatwg.org/multipage/scripting.html#preparation-time-document">preparation-time document</a>.
 1. If |result|'s [=web bundle result/error to rethrow=] is not null, then:
 
    1. <a spec="html">Report the exception</a> given |result|'s [=web bundle
